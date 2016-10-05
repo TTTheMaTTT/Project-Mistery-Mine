@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2015
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "2DGamePlatformer.CSharp.Plugins", "2DGamePlatformer.CSharp.Plugins.csproj", "{1B45516A-4A70-397C-5AB5-43711393738B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "2DGamePlatformer.CSharp", "2DGamePlatformer.CSharp.csproj", "{75AA5BF4-87F6-02D6-B9BA-D049DDAEB08E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "2DGamePlatformer.CSharp.Editor", "2DGamePlatformer.CSharp.Editor.csproj", "{AC35E7D8-C4CB-46FB-6299-A6065A8692BD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1B45516A-4A70-397C-5AB5-43711393738B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B45516A-4A70-397C-5AB5-43711393738B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B45516A-4A70-397C-5AB5-43711393738B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B45516A-4A70-397C-5AB5-43711393738B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{75AA5BF4-87F6-02D6-B9BA-D049DDAEB08E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75AA5BF4-87F6-02D6-B9BA-D049DDAEB08E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75AA5BF4-87F6-02D6-B9BA-D049DDAEB08E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75AA5BF4-87F6-02D6-B9BA-D049DDAEB08E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC35E7D8-C4CB-46FB-6299-A6065A8692BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC35E7D8-C4CB-46FB-6299-A6065A8692BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC35E7D8-C4CB-46FB-6299-A6065A8692BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC35E7D8-C4CB-46FB-6299-A6065A8692BD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
