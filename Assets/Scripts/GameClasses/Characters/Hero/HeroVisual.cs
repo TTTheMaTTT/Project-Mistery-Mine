@@ -25,8 +25,40 @@ public class HeroVisual : GroundMoveVisual
     {
         base.FormDictionaries();
         visualFunctions.Add("airMove", AirMove);
+        visualFunctions.Add("ladderMove", LadderMove);
+        visualFunctions.Add("setLadderMove", SetLadderMove);
         visualFunctions.Add("shoot", Shoot);
         visualFunctions.Add("flip", Flip);
+    }
+
+    /// <summary>
+    /// Функция, отвечающая за перемещение персонажа по лестнице
+    /// </summary>
+    protected virtual void LadderMove(string id, int argument)
+    {
+        if (Mathf.Abs(rigid.velocity.y) >= minSpeed)
+        {
+            anim.speed=1f;
+        }
+        else
+        {
+            anim.speed=0f;
+        }
+    }
+
+    /// <summary>
+    /// Перейти в режим визуализации перемещения по лестнице, или выйти из него
+    /// </summary>
+    protected virtual void SetLadderMove(string id, int argument)
+    {
+        if (argument == 1)
+        {
+            anim.Play("LadderMove");
+        }
+        else
+        {
+            anim.speed=1f;
+        }
     }
 
     /// <summary>

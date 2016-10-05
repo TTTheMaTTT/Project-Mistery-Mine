@@ -47,3 +47,19 @@ public class HealthEventArgs : EventArgs
     }
 
 }
+
+/// <summary>
+/// Данные о событии, связанном с изменениями в инвентаре
+/// </summary>
+public class EquipmentEventArgs : EventArgs
+{
+    private ItemClass item;
+
+    public ItemClass Item { get { return item; } }
+
+    public EquipmentEventArgs(ItemClass _item)
+    {
+        item = _item;
+    }
+
+}

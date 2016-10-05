@@ -7,12 +7,21 @@ using System.Collections.Generic;
 /// </summary>
 public class Interactor : MonoBehaviour {
 
+    #region consts
+
+    protected const float ladderOffsetY = 0.1f, ladderOffsetX = .05f;//Максимальное относительное положение лестницы, чтобы на неё ещё можно было взобраться
+
+    #endregion //consts
+
     #region fields
 
     [SerializeField]
     protected List<string> whatIsInteractable = new List<string>();//С какими объектами впринципе можно провзаимодействовать
 
-    protected List<IInteractive> interactions = new List<IInteractive>();//С какими объектами можно провзаимодействовать в данный момент
+    protected List<GameObject> interactions = new List<GameObject>();//С какими объектами можно провзаимодействовать в данный момент
+
+    protected GameObject ladder = null;
+    public GameObject Ladder { get { return ladder; } }
 
     #endregion //fields
 
@@ -21,10 +30,10 @@ public class Interactor : MonoBehaviour {
         Initialize();
     }
 
-    protected virtual void Initialize ()
+    protected virtual void Initialize()
     {
-        interactions = new List<IInteractive>();
-	}
+        interactions = new List<GameObject>();
+    }
 
     /// <summary>
     /// Функция взаимодействия
@@ -33,7 +42,15 @@ public class Interactor : MonoBehaviour {
     {
         if (interactions.Count > 0)
         {
-            interactions[0].Interact();
+            if (interactions[0] != null)
+            {
+                IInteractive interaction = interactions[0].GetComponent<IInteractive>();
+                interaction.Interact();
+            }
+            if (interactions[0] == null)
+            {
+                interactions.RemoveAt(0);
+            }
         }
     }
 
@@ -42,9 +59,9 @@ public class Interactor : MonoBehaviour {
         if (whatIsInteractable.Contains(other.gameObject.tag))
         {
             IInteractive interaction = other.gameObject.GetComponent<IInteractive>();
-            if (interaction != null ? !interactions.Contains(interaction) : false)
+            if (interaction != null ? !interactions.Contains(other.gameObject) : false)
             {
-                interactions.Add(interaction);
+                interactions.Add(other.gameObject);
             }
         }
     }
@@ -54,11 +71,35 @@ public class Interactor : MonoBehaviour {
         if (whatIsInteractable.Contains(other.gameObject.tag))
         {
             IInteractive interaction = other.gameObject.GetComponent<IInteractive>();
-            if (interaction != null ? interactions.Contains(interaction) : false)
+            if (interaction != null ? interactions.Contains(other.gameObject) : false)
             {
-                interactions.Remove(interaction);
+                interactions.Remove(other.gameObject);
             }
         }
+        else if (ladder != null? other.gameObject == ladder:false)
+        {
+            ladder = null;
+        }
+    }
+
+    protected virtual void OnTriggerStay2D(Collider2D other)
+    {
+        if (other.gameObject.tag == "ladder")
+        {
+            Vector2 offset = other.transform.position - transform.position;
+            if ((Mathf.Abs(offset.x) < ladderOffsetX) && (Mathf.Abs(offset.y) < ladderOffsetY))
+            {
+                ladder = other.gameObject;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Функция, возвращающая степень готовности персонажа к взаимодействию
+    /// </summary>
+    public bool ReadyForInteraction()
+    {
+        return (interactions.Count > 0);
     }
 
 }

@@ -17,6 +17,8 @@ public class GameUIScript : MonoBehaviour
 
     protected List<Image> heartImages=new List<Image>();
 
+    protected Image weaponImage;
+
     #endregion //fields
 
     void Awake()
@@ -36,6 +38,9 @@ public class GameUIScript : MonoBehaviour
         HeroController player = SpecialFunctions.GetPlayer().GetComponent<HeroController>();
         player.healthChangedEvent += HandleHealthChanges;
 
+        weaponImage = transform.FindChild("WeaponImage").GetComponent<Image>();
+        player.equipmentChangedEvent += HandleEquipmentChanges;
+
         ConsiderHealth(player.Health);
     }
 
@@ -47,7 +52,7 @@ public class GameUIScript : MonoBehaviour
         int i = 0;
         for (i=0; i < heartImages.Count; i++)
         {
-            if (hp > i + 0.5f)
+            if (hp > (i + 0.5f)*4)
             {
                 heartImages[i].sprite = wholeHeart;
             }
@@ -75,6 +80,15 @@ public class GameUIScript : MonoBehaviour
     protected virtual void HandleHealthChanges(object sender, HealthEventArgs e)
     {
         ConsiderHealth(e.HP);
+    }
+
+    /// <summary>
+    /// Обработать событие "Инвентарь изменился"
+    /// </summary>
+    protected virtual void HandleEquipmentChanges(object sender, EquipmentEventArgs e)
+    {
+        if (e.Item.itemImage!=null)
+            weaponImage.sprite = e.Item.itemImage;
     }
 
     #endregion //eventHandlers

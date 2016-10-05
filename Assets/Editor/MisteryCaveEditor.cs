@@ -9,4 +9,11 @@ public class MisteryCaveEditor : Editor{
     {
         EditorWindow.GetWindow(typeof(SpeechCreateWindow));
     }
+
+    [MenuItem("Mistery Cave/Create Item")]
+    public static void CreateItem()
+    {
+        EditorWindow.GetWindow(typeof(ItemCreator));
+    }
+
 }

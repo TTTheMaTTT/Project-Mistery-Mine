@@ -86,11 +86,17 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\NPCController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\DropClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Hearing.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\HitBox.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Interactor.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\WallChecker.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Items\BowClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Items\ItemClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Items\SwordClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Items\WeaponClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\MushroomScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\ObstacleScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Speech.cs" />
     <Compile Include="Assets\Scripts\Interface\DialogWindowScript.cs" />
     <Compile Include="Assets\Scripts\Interface\GameUIScript.cs" />

@@ -21,6 +21,8 @@ public class HeroController : CharacterController
     protected const float shootTime = .65f;
     protected const float shootDistance = 15f;
 
+    protected const float ladderCheckOffset = .05f, ladderStep = .01f;
+
     #endregion //consts
 
     #region fields
@@ -29,11 +31,14 @@ public class HeroController : CharacterController
     protected WallChecker wallCheck;//Индикатор, необходимый для отсутствия зависаний в стене
     protected Interactor interactor;//Индикатор, ответственный за обнаружение и взаимодействие со всеми интерактивными объектами
 
-    [SerializeField] protected GameObject bullet; //Чем стреляет герой
     [SerializeField] protected GameObject attackParticles; //Чем атакует герой
 
     protected LineRenderer line;
     [SerializeField] protected Material arrowMaterial;
+
+    [SerializeField]
+    protected WeaponClass currentWeapon;//Оружие, которое используется персонажем в данный момент
+    public GameObject dropPrefab;
 
     #endregion //fields
 
@@ -41,29 +46,28 @@ public class HeroController : CharacterController
 
     public override float Health { get { return base.Health; } set{base.Health = value; OnHealthChanged(new HealthEventArgs(value));}}
 
-    private Vector2
-                    hitSize = new Vector2(.1f, .1f),
-                    hitPosition = new Vector2(.1f, 0f);
-
     [SerializeField] protected float jumpForce = 200f,
-                                     flipForce= 150f;
+                                     flipForce= 150f,
+                                     ladderSpeed=.8f;
 
     [SerializeField] protected LayerMask whatIsGround, whatIsAim;
 
-    [SerializeField] protected float attackDamage, shootDamage;//Урон, наносимый в ближнем и дальнем бою
-    [SerializeField] protected float hitForce = 60f;
 
     protected bool jumping;
     protected bool grounded;
+    protected bool onLadder;
 
     protected bool invul;//Если true, то персонаж невосприимчив к урону
 
     protected bool immobile;//Можно ли управлять персонажем
 
+    protected string fightingMode;
+
     #endregion //parametres
 
     #region eventHandlers
 
+    public EventHandler<EquipmentEventArgs> equipmentChangedEvent;
     public EventHandler<HealthEventArgs> healthChangedEvent;
 
     #endregion //eventHandlers
@@ -72,39 +76,78 @@ public class HeroController : CharacterController
     {
         if (!immobile)
         {
-            if (employment > 6)
+            #region usualMovement
+
+            if (!onLadder)
             {
-                if (Input.GetButton("Horizontal"))
+                if (employment > 6)
                 {
-                    Move(Input.GetAxis("Horizontal") > 0f ? OrientationEnum.right : OrientationEnum.left);
+
+                    if (Input.GetButton("Horizontal"))
+                    {
+                        Move(Input.GetAxis("Horizontal") > 0f ? OrientationEnum.right : OrientationEnum.left);
+                    }
+
+                    if (Input.GetButtonDown("Jump"))
+                    {
+                        if (grounded && !jumping)
+                        {
+                            rigid.AddForce(new Vector2(0f, jumpForce));
+                            StartCoroutine(JumpProcess());
+                        }
+                    }
+
+                    if (Input.GetButtonDown("Up"))
+                    {
+                        LadderOn();
+                    }
+
+                    if (employment > 8)
+                    {
+                        if (Input.GetButtonDown("Attack"))
+                        {
+                            if (interactor.ReadyForInteraction())
+                                interactor.Interact();
+                            else
+                                Attack();
+                        }
+                        else if (Input.GetButtonDown("Flip") && (rigid.velocity.x * (int)orientation > .1f) && (grounded))
+                            Flip();
+                    }
+                }
+            }
+
+            #endregion //usualMovement
+
+            #region ladderMovement
+
+            else
+            {
+                if (Input.GetButton("Vertical"))
+                {
+                    LadderMove();
+                }
+                else
+                {
+                    StopLadderMoving();
                 }
                 if (Input.GetButtonDown("Jump"))
                 {
-                    if (grounded && !jumping)
-                    {
-                        rigid.AddForce(new Vector2(0f, jumpForce));
-                        StartCoroutine(JumpProcess());
-                    }
-                }
-                if (employment > 8)
-                {
-                    if (Input.GetButtonDown("Attack"))
-                        Attack();
-                    else if (Input.GetButtonDown("Shoot"))
-                        Shoot();
-                    else if (Input.GetButtonDown("Flip") && (rigid.velocity.x*(int)orientation>.1f)&&(grounded))
-                        Flip();
+                    LadderOff();
                 }
             }
-            if (Input.GetButtonDown("Interact"))
-            {
-                interactor.Interact();
-            }
+
+            #endregion //ladderMovement
+
         }
 
         Analyse();
 
-        if (grounded)
+        if (onLadder)
+        {
+            Animate(new AnimationEventArgs("ladderMove"));
+        }
+        else if (grounded)
         {
             Animate(new AnimationEventArgs("groundMove"));
         }
@@ -127,6 +170,12 @@ public class HeroController : CharacterController
 
         immobile = false;
         jumping = false;
+        onLadder = false;
+
+        if (currentWeapon != null)
+        {
+            fightingMode = (currentWeapon is SwordClass) ? "melee" : "range";
+        }
     }
 
     /// <summary>
@@ -168,6 +217,59 @@ public class HeroController : CharacterController
         rigid.velocity = new Vector3(0f, rigid.velocity.y);
     }
 
+    /// <summary>
+    /// Взобраться на лестницу
+    /// </summary>
+    protected virtual void LadderOn()
+    {
+        if (interactor.Ladder != null)
+        {
+            if (orientation == OrientationEnum.left)
+            {
+                Turn(OrientationEnum.right);
+            }
+            onLadder = true;
+            rigid.velocity = Vector3.zero;
+            rigid.gravityScale = 0f;
+            Animate(new AnimationEventArgs("setLadderMove", "", 1));
+            Vector3 vect = transform.position;
+            transform.position = new Vector3(interactor.Ladder.transform.position.x, vect.y, vect.z);
+        }
+    }
+
+    /// <summary>
+    /// Слезть с лестницы
+    /// </summary>
+    protected virtual void LadderOff()
+    {
+        onLadder = false;
+        rigid.gravityScale = 1f;
+        Animate(new AnimationEventArgs("setLadderMove", "", 0));
+        if (Input.GetAxis("Vertical")>0f)
+        {
+            rigid.AddForce(new Vector2(0f, jumpForce / 2));
+            StartCoroutine(JumpProcess());
+        }
+    }
+
+    /// <summary>
+    /// Перемещение по лестнице
+    /// </summary>
+    protected virtual void LadderMove()
+    {
+        float value = Input.GetAxis("Vertical");
+        rigid.velocity = new Vector3(0f, 
+                                     Physics2D.OverlapCircle(transform.position + Mathf.Sign(value) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? value * ladderSpeed : 0f);
+    }
+
+    /// <summary>
+    /// Прекратить передвижение по лестнице
+    /// </summary>
+    protected virtual void StopLadderMoving()
+    {
+        rigid.velocity = Vector2.zero;
+    }
+
     protected override void Turn(OrientationEnum _orientation)
     {
         if (employment == 10)
@@ -181,9 +283,44 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Attack()
     {
-        hitBox.SetHitBox(new HitClass(attackDamage, attackTime, hitSize, hitPosition, hitForce));
-        Animate(new AnimationEventArgs("attack"));
-        StartCoroutine(AttackProcess());
+        if (fightingMode == "melee")
+        {
+            SwordClass sword = (SwordClass)currentWeapon;
+            hitBox.SetHitBox(new HitClass(sword.damage, attackTime, sword.attackSize, sword.attackPosition, sword.attackForce));
+            Animate(new AnimationEventArgs("attack"));
+            StartCoroutine(AttackProcess());
+        }
+        else if (fightingMode == "range")
+        {
+            BowClass bow = (BowClass)currentWeapon;
+            StopMoving();
+            RaycastHit2D hit = Physics2D.Raycast(transform.position + (int)orientation * transform.right * .1f, (int)orientation * transform.right, shootDistance, whatIsAim);
+            Vector2 endPoint = transform.position + (int)orientation * transform.right * (shootDistance + .1f);
+            if (hit)
+            {
+                IDamageable target;
+                if ((target = hit.collider.gameObject.GetComponent<IDamageable>()) != null)
+                {
+                    target.TakeDamage(bow.damage);
+                }
+                else
+                {
+                    GameObject _bullet = GameObject.Instantiate(bow.arrow, new Vector3(hit.point.x, hit.point.y, transform.position.z), transform.rotation) as GameObject;
+                    Vector3 vect = _bullet.transform.localScale;
+                    _bullet.transform.localScale = new Vector3((int)orientation * vect.x, vect.y, vect.z);
+                }
+                endPoint = hit.point;
+            }
+            Animate(new AnimationEventArgs("shoot"));
+            line = gameObject.AddComponent<LineRenderer>();
+            line.material = arrowMaterial;
+            line.SetWidth(.02f, .02f);
+            line.SetVertexCount(2);
+            line.SetPosition(0, transform.position + (int)orientation * transform.right * .1f);
+            line.SetPosition(1, new Vector3(endPoint.x, endPoint.y, transform.position.z));
+            Destroy(line, .1f);
+            StartCoroutine(ShootProcess());
+        }
     }
 
     /// <summary>
@@ -197,40 +334,6 @@ public class HeroController : CharacterController
         employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
         yield return new WaitForSeconds(attackTime);
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
-    }
-
-    /// <summary>
-    /// Выстрелить
-    /// </summary>
-    protected virtual void Shoot()
-    {
-        StopMoving();
-        RaycastHit2D hit=Physics2D.Raycast(transform.position + (int)orientation * transform.right * .1f, (int)orientation * transform.right, shootDistance, whatIsAim);
-        Vector2 endPoint = transform.position + (int)orientation * transform.right * (shootDistance + .1f);
-        if (hit)
-        {
-            IDamageable target;
-            if ((target = hit.collider.gameObject.GetComponent<IDamageable>()) != null)
-            {
-                target.TakeDamage(shootDamage);
-            }
-            else
-            {
-                GameObject _bullet = GameObject.Instantiate(bullet, new Vector3(hit.point.x, hit.point.y, transform.position.z), transform.rotation) as GameObject;
-                Vector3 vect = _bullet.transform.localScale;
-                _bullet.transform.localScale = new Vector3((int)orientation * vect.x, vect.y, vect.z);
-            }
-            endPoint = hit.point;
-        }
-        Animate(new AnimationEventArgs("shoot"));
-        line = gameObject.AddComponent<LineRenderer>();
-        line.material = arrowMaterial;
-        line.SetWidth(.02f, .02f);
-        line.SetVertexCount(2);
-        line.SetPosition(0, transform.position + (int)orientation*transform.right * .1f);
-        line.SetPosition(1, new Vector3(endPoint.x, endPoint.y, transform.position.z));
-        Destroy(line, .1f);
-        StartCoroutine(ShootProcess());
     }
 
     /// <summary>
@@ -249,6 +352,7 @@ public class HeroController : CharacterController
     protected virtual void Flip()
     {
         rigid.AddForce(new Vector2((int)orientation*flipForce, 0f));
+        StartCoroutine(InvulProcess(flipTime, false));
         StartCoroutine(FlipProcess());
         Animate(new AnimationEventArgs("flip"));
     }
@@ -271,7 +375,7 @@ public class HeroController : CharacterController
         if (!invul)
         {
             base.TakeDamage(damage);
-            StartCoroutine(InvulProcess());
+            StartCoroutine(InvulProcess(invulTime, true));
         }
     }
 
@@ -292,15 +396,30 @@ public class HeroController : CharacterController
     }
 
     /// <summary>
+    /// Добавить предмет в инвентарь
+    /// </summary>
+    public void SetItem(ItemClass item)
+    {
+        if (item is WeaponClass)
+        {
+            GameObject drop = Instantiate(dropPrefab, transform.position, transform.rotation) as GameObject;
+            drop.GetComponent<DropClass>().item = currentWeapon;
+            currentWeapon = (WeaponClass)item;
+            fightingMode = (currentWeapon is SwordClass) ? "melee" : "range";
+            OnEquipmentChanged(new EquipmentEventArgs(currentWeapon));
+        }
+    }
+
+    /// <summary>
     /// Процесс, при котором персонаж находится в инвуле
     /// </summary>
-    protected IEnumerator InvulProcess()
+    protected IEnumerator InvulProcess(float _invulTime,bool hitted)
     {
         HeroVisual hAnim = (HeroVisual)anim;
-        if (hAnim != null)
+        if (hAnim != null && hitted)
             hAnim.Blink();
         invul = true;
-        yield return new WaitForSeconds(invulTime);
+        yield return new WaitForSeconds(_invulTime);
         invul = false;
     }
 
@@ -309,10 +428,18 @@ public class HeroController : CharacterController
     /// <summary>
     /// Событие "уровень здоровья изменился"
     /// </summary>
-    /// <param name="e"></param>
     protected virtual void OnHealthChanged(HealthEventArgs e)
     {
         EventHandler<HealthEventArgs> handler = healthChangedEvent;
+        if (handler != null)
+        {
+            handler(this, e);
+        }
+    }
+
+    protected virtual void OnEquipmentChanged(EquipmentEventArgs e)
+    {
+        EventHandler<EquipmentEventArgs> handler = equipmentChangedEvent;
         if (handler != null)
         {
             handler(this, e);

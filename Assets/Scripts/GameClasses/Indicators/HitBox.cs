@@ -152,9 +152,11 @@ public class HitBox : MonoBehaviour
 
 }
 
+
 /// <summary>
 /// Класс, содержащий данные об атаке
 /// </summary>
+[System.Serializable]
 public class HitClass
 {
     public float damage;
