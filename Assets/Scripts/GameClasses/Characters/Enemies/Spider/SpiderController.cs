@@ -11,17 +11,27 @@ public class SpiderController : AIController
 
     protected const float attackTime = .6f, preAttackTime = .3f;
 
+    protected const float patrolDistance = 2f;//По таким дистанциям паук будет патрулировать
+
     #endregion //consts
+
+    #region fields
+
+    protected WallChecker wallCheck;
+
+    #endregion //fields
 
     #region parametres
 
     [SerializeField] protected float attackDistance = .2f;//На каком расстоянии должен стоять паук, чтобы решить атаковать
 
+    protected Vector2 waypoint;//Пункт назначения, к которому стремится ИИ
+
     #endregion //parametres
 
     protected virtual void FixedUpdate()
     {
-        if (agressive && target != null && employment>2)
+        if (agressive && target != null && employment > 2)
         {
             Vector3 targetPosition = target.transform.position;
             if (Vector2.Distance(targetPosition, transform.position) > attackDistance)
@@ -31,6 +41,18 @@ public class SpiderController : AIController
             else
             {
                 Attack();
+            }
+        }
+        else if (!agressive)
+        {
+            if ((Vector2.Distance(waypoint, transform.position) < attackDistance) || (wallCheck.WallInFront()))
+            {
+                Turn((OrientationEnum)(-1 * (int)orientation));
+                Patrol();
+            }
+            else
+            {
+                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(waypoint.x - transform.position.x)));
             }
         }
 
@@ -44,6 +66,13 @@ public class SpiderController : AIController
     protected override void Initialize()
     {
         base.Initialize();
+
+        Transform indicators = transform.FindChild("Indicators");
+        if (indicators != null)
+        {
+            wallCheck = indicators.GetComponentInChildren<WallChecker>();
+        }
+        Patrol();
     }
 
     /// <summary>
@@ -58,6 +87,14 @@ public class SpiderController : AIController
         {
             Turn(_orientation);
         }
+    }
+
+    /// <summary>
+    /// Определить следующую точку патрулирования
+    /// </summary>
+    protected virtual void Patrol()
+    {
+        waypoint = new Vector3((int)orientation * patrolDistance, 0f,0f) + transform.position;
     }
 
     /// <summary>

@@ -56,7 +56,7 @@ public class GameUIScript : MonoBehaviour
             {
                 heartImages[i].sprite = wholeHeart;
             }
-            else if (hp > i)
+            else if (hp > i*4)
             {
                 heartImages[i].sprite = halfHeart;
             }

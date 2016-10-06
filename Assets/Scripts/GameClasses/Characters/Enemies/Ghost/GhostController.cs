@@ -15,12 +15,6 @@ public class GhostController : BatController
 
     #endregion //consts
 
-    #region fields
-
-    protected Hearing hearing;//Слух персонажа
-
-    #endregion //fields
-
     protected override void FixedUpdate()
     {
         if (agressive && target != null && employment > 7)
@@ -100,11 +94,6 @@ public class GhostController : BatController
     }
 
     #region eventHandlers
-
-    protected virtual void HandleHearingEvent(object sender, EventArgs e)
-    {
-        BecomeAgressive();
-    }
 
     protected override void BecomeAgressive()
     {

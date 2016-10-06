@@ -16,6 +16,13 @@ public class BatController : AIController
 
     #endregion //consts
 
+    #region fields
+
+    protected Hearing hearing;//Слух персонажа
+
+    #endregion //fields
+
+
     protected virtual void FixedUpdate()
     {
         if (agressive && target!=null)
@@ -46,6 +53,10 @@ public class BatController : AIController
         rigid.isKinematic = true;
 
         hitBox.AttackEventHandler += HandleAttackProcess;
+        Transform indicators = transform.FindChild("Indicators");
+        hearing = indicators.GetComponentInChildren<Hearing>();
+        hearing.hearingEventHandler += HandleHearingEvent;
+
     }
 
     /// <summary>
@@ -92,6 +103,14 @@ public class BatController : AIController
     }
 
     #region events
+
+    /// <summary>
+    /// Обработка события "Услышал врага"
+    /// </summary>
+    protected virtual void HandleHearingEvent(object sender, EventArgs e)
+    {
+        BecomeAgressive();
+    }
 
     /// <summary>
     ///  Обработка события "произошла атака"

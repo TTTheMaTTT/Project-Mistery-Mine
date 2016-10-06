@@ -23,6 +23,9 @@ public class HeroController : CharacterController
 
     protected const float ladderCheckOffset = .05f, ladderStep = .01f;
 
+    protected const float minDamageFallSpeed = 5f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
+    protected const float damagePerFallSpeed = .2f;
+
     #endregion //consts
 
     #region fields
@@ -55,6 +58,7 @@ public class HeroController : CharacterController
 
     protected bool jumping;
     protected bool grounded;
+    protected float fallSpeed=0f;
     protected bool onLadder;
 
     protected bool invul;//Если true, то персонаж невосприимчив к урону
@@ -184,6 +188,21 @@ public class HeroController : CharacterController
     protected override void Analyse()
     {
         grounded = Physics2D.OverlapCircle(groundCheck.position, groundRadius, whatIsGround);
+        if (grounded)
+        {
+            if (fallSpeed > minDamageFallSpeed)
+            {
+                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed));
+                fallSpeed = 0f;
+            }
+        }
+        else
+        {
+            if (rigid.velocity.y < -fallSpeed)
+            {
+                fallSpeed = -rigid.velocity.y;
+            }
+        }
     }
 
     /// <summary>
