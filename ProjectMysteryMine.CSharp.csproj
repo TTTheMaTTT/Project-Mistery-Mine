@@ -96,7 +96,8 @@
     <Compile Include="Assets\Scripts\GameClasses\Items\SwordClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\WeaponClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\MushroomScript.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\ObstacleScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Obstacles\ObstacleScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Obstacles\SpikesScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Speech.cs" />
     <Compile Include="Assets\Scripts\Interface\DialogWindowScript.cs" />
     <Compile Include="Assets\Scripts\Interface\GameUIScript.cs" />
