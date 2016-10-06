@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/Scenes/BattleSystem.unity
+- path: Assets/Scenes/cave_lvl1.unity
   isLoaded: 1
   isActive: 1
