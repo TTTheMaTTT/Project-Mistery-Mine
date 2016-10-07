@@ -23,14 +23,18 @@ public class HeroController : CharacterController
 
     protected const float ladderCheckOffset = .05f, ladderStep = .01f;
 
-    protected const float minDamageFallSpeed = 5f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
-    protected const float damagePerFallSpeed = .2f;
+    protected const float minDamageFallSpeed = 7f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
+    protected const float damagePerFallSpeed = 3.5f;
+
+    protected const float suffocateTime = .3f;//Сколько времени должно пройти, чтобы запас воздуха уменьшился на 1 или здоровье ГГ на .5
+    protected const int maxAirSupply = 10;
 
     #endregion //consts
 
     #region fields
 
     protected Transform groundCheck;
+    protected Transform waterCheck;
     protected WallChecker wallCheck;//Индикатор, необходимый для отсутствия зависаний в стене
     protected Interactor interactor;//Индикатор, ответственный за обнаружение и взаимодействие со всеми интерактивными объектами
 
@@ -49,17 +53,21 @@ public class HeroController : CharacterController
 
     public override float Health { get { return base.Health; } set{base.Health = value; OnHealthChanged(new HealthEventArgs(value));}}
 
+    protected int airSupply = 10;//Запас воздуха
+    public int AirSupply { get { return airSupply; }  set { airSupply = value; OnSuffocate(new SuffocateEventArgs(airSupply)); } }
+
     [SerializeField] protected float jumpForce = 200f,
                                      flipForce= 150f,
-                                     ladderSpeed=.8f;
+                                     ladderSpeed=.8f,
+                                     waterCoof=.7f;
 
     [SerializeField] protected LayerMask whatIsGround, whatIsAim;
-
 
     protected bool jumping;
     protected bool grounded;
     protected float fallSpeed=0f;
     protected bool onLadder;
+    protected bool underWater;
 
     protected bool invul;//Если true, то персонаж невосприимчив к урону
 
@@ -73,6 +81,7 @@ public class HeroController : CharacterController
 
     public EventHandler<EquipmentEventArgs> equipmentChangedEvent;
     public EventHandler<HealthEventArgs> healthChangedEvent;
+    public EventHandler<SuffocateEventArgs> suffocateEvent;
 
     #endregion //eventHandlers
 
@@ -96,7 +105,7 @@ public class HeroController : CharacterController
                     {
                         if (grounded && !jumping)
                         {
-                            rigid.AddForce(new Vector2(0f, jumpForce));
+                            rigid.AddForce(new Vector2(0f, jumpForce * (underWater ? waterCoof : 1f)));
                             StartCoroutine(JumpProcess());
                         }
                     }
@@ -169,6 +178,7 @@ public class HeroController : CharacterController
         base.Initialize();
         Transform indicators = transform.FindChild("Indicators");
         groundCheck = indicators.FindChild("GroundCheck");
+        waterCheck = indicators.FindChild("WaterCheck");
         wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
         interactor = indicators.FindChild("Interactor").GetComponent<Interactor>();
 
@@ -203,6 +213,23 @@ public class HeroController : CharacterController
                 fallSpeed = -rigid.velocity.y;
             }
         }
+
+        bool _underWater=Physics2D.OverlapCircle(waterCheck.position, groundRadius, LayerMask.GetMask("Water"));
+        if (underWater != _underWater)
+        {
+            underWater = _underWater;
+            WaterIndicator waterIndicator = waterCheck.GetComponent<WaterIndicator>();
+            if (_underWater)
+            {
+                waterIndicator.StartCoroutine(SuffocateProcess());
+            }
+            else
+            {
+                waterIndicator.StopAllCoroutines();
+                AirSupply = maxAirSupply;
+            }
+        }
+
     }
 
     /// <summary>
@@ -216,11 +243,31 @@ public class HeroController : CharacterController
     }
 
     /// <summary>
+    /// Процесс задыхания под вод
+    /// </summary>
+    protected IEnumerator SuffocateProcess()
+    {
+        //Сначала заканчивается запас здоровья
+        int _airSupply = airSupply;
+        for (int i =0;i< _airSupply;i++)
+        {
+            yield return new WaitForSeconds(suffocateTime);
+            AirSupply--;
+        }
+        //А потом и жизнь персонажа
+        while (true)
+        {
+            yield return new WaitForSeconds(suffocateTime);
+            TakeDamage(1f);
+        }
+    }
+
+    /// <summary>
     /// Перемещение
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        rigid.velocity = new Vector3(wallCheck.WallInFront() ? 0f : Input.GetAxis("Horizontal") * speed, rigid.velocity.y);
+        rigid.velocity = new Vector3(wallCheck.WallInFront() ? 0f : Input.GetAxis("Horizontal") * speed*(underWater ? waterCoof : 1f), rigid.velocity.y);
         if (orientation != _orientation)
         {
             Turn(_orientation);
@@ -459,6 +506,15 @@ public class HeroController : CharacterController
     protected virtual void OnEquipmentChanged(EquipmentEventArgs e)
     {
         EventHandler<EquipmentEventArgs> handler = equipmentChangedEvent;
+        if (handler != null)
+        {
+            handler(this, e);
+        }
+    }
+
+    protected virtual void OnSuffocate(SuffocateEventArgs e)
+    {
+        EventHandler<SuffocateEventArgs> handler = suffocateEvent;
         if (handler != null)
         {
             handler(this, e);

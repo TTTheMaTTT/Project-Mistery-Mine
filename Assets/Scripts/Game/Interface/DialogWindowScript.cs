@@ -113,12 +113,12 @@ public class DialogWindowScript : MonoBehaviour
 
     protected void Initialize()
     {
-        CurrentSpeech = null;
         canvas = GetComponent<Canvas>();
 
         Transform panel = transform.FindChild("Panel");
         speechText = panel.FindChild("SpeechText").GetComponent<Text>();
-        speechText.text = "";
+        portrait = transform.FindChild("Portrait").GetComponent<Image>();
+        CurrentSpeech = null;
     }
 
 }

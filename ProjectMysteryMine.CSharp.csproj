@@ -100,6 +100,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Interactor.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\StoryTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\WallChecker.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\WaterIndicator.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\BowClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\ItemClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\SwordClass.cs" />

@@ -17,6 +17,8 @@ public class GameUIScript : MonoBehaviour
 
     protected List<Image> heartImages=new List<Image>();
 
+    protected Transform breathPanel;
+
     protected Image weaponImage;
 
     #endregion //fields
@@ -40,6 +42,10 @@ public class GameUIScript : MonoBehaviour
 
         weaponImage = transform.FindChild("WeaponImage").GetComponent<Image>();
         player.equipmentChangedEvent += HandleEquipmentChanges;
+
+        breathPanel = transform.FindChild("BreathPanel");
+        player.suffocateEvent += HandleSuffocate;
+        ConsiderBreath(10);
 
         ConsiderHealth(player.Health);
     }
@@ -72,6 +78,32 @@ public class GameUIScript : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Учитывая текущий запас воздуха, отобразить его на экране
+    /// </summary>
+    void ConsiderBreath(int airSupply)
+    {
+        if (airSupply == 10)
+        {
+            breathPanel.gameObject.SetActive(false);
+        }
+        else
+        {
+            breathPanel.gameObject.SetActive(true);
+            for (int i = 0; i < 10; i++)
+            {
+                if (i < airSupply)
+                {
+                    breathPanel.GetChild(i).gameObject.SetActive(true);
+                }
+                else
+                {
+                    breathPanel.GetChild(i).gameObject.SetActive(false);
+                }
+            }
+        }
+    }
+
     #region eventHandlers
 
     /// <summary>
@@ -89,6 +121,14 @@ public class GameUIScript : MonoBehaviour
     {
         if (e.Item.itemImage!=null)
             weaponImage.sprite = e.Item.itemImage;
+    }
+
+    /// <summary>
+    /// Обработать событие "Запас воздуха изменился"
+    /// </summary>
+    protected virtual void HandleSuffocate(object sender, SuffocateEventArgs e)
+    {
+        ConsiderBreath(e.AirSupply);
     }
 
     #endregion //eventHandlers
