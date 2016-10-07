@@ -45,7 +45,7 @@ public class DropClass : MonoBehaviour, IInteractive
     /// </summary>
     public void Interact()
     {
-        SpecialFunctions.GetPlayer().GetComponent<HeroController>().SetItem(item);
+        SpecialFunctions.player.GetComponent<HeroController>().SetItem(item);
         Destroy(gameObject);
     }
 }

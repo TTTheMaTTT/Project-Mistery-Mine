@@ -63,3 +63,27 @@ public class EquipmentEventArgs : EventArgs
     }
 
 }
+
+/// <summary>
+/// Событийные данные, используемые для осуществления сюжетных событий
+/// </summary>
+public class StoryEventArgs : EventArgs
+{
+
+    private string id;
+    private int argument;
+
+    public StoryEventArgs(string _id, int _argument)
+    {
+        id = _id;
+        argument = _argument;
+    }
+
+    public StoryEventArgs()
+    {
+    }
+
+    public string ID { get { return id; } }
+    public int Argument { get { return argument; } }
+
+}

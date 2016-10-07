@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -7,6 +8,25 @@ using System.Collections.Generic;
 /// </summary>
 public class NPCController : MonoBehaviour, IInteractive
 {
+
+    #region delegates
+
+    public delegate void storyActionDelegate(StoryAction _action);
+
+    #endregion //delegates
+
+    #region dictionaries
+
+    private Dictionary<string, storyActionDelegate> storyActionBase = new Dictionary<string, storyActionDelegate>(); //Словарь сюжетных действий
+    public Dictionary<string, storyActionDelegate> StoryActionBase { get { return storyActionBase; } }
+
+    #endregion //dictionaries
+
+    #region eventHandlers
+
+    public EventHandler<StoryEventArgs> SpeechSaidEvent;
+
+    #endregion //eventHandlers
 
     #region fields
 
@@ -22,13 +42,21 @@ public class NPCController : MonoBehaviour, IInteractive
         Initialize();    
 	}
 	
-	protected virtual void Update () {
+	protected virtual void Update ()
+    {
 	
 	}
 
     protected virtual void Initialize()
     {
         anim = GetComponent<Animator>();
+    }
+
+    protected virtual void FormDictionaries()
+    {
+        storyActionBase = new Dictionary<string, storyActionDelegate>();
+
+        storyActionBase.Add("speechAction", SpeechAction);
     }
 
     /// <summary>
@@ -47,7 +75,7 @@ public class NPCController : MonoBehaviour, IInteractive
         if (speeches.Count > 0)
         {
             anim.Play("Talk");
-            GameObject.FindGameObjectWithTag("gameController").GetComponent<GameController>().StartDialog(transform, speeches[0]);
+            SpecialFunctions.gameController.StartDialog(this, speeches[0]);
         }
     }
 
@@ -55,5 +83,34 @@ public class NPCController : MonoBehaviour, IInteractive
     {
         anim.Play("Idle");
     }
+
+    public void SpeechSaid(string speechName)
+    {
+        SpecialFunctions.StartStoryEvent(this, SpeechSaidEvent, new StoryEventArgs(speechName,0));
+    }
+
+    #region storyActions
+
+    /// <summary>
+    /// Диалоговое действие
+    /// </summary>
+    public void SpeechAction(StoryAction _action)
+    {
+        Speech _speech = speeches.Find(x => (x.speechName == _action.id2));
+        if (_speech != null)
+        {
+            if (_action.id1 == "change speech")
+            {
+                speeches[0] = _speech;
+            }
+            else if (_action.id1 == "talk")
+            {
+                speeches[0] = _speech;
+                Talk();
+            }
+        }
+    }
+
+    #endregion //storyActions
 
 }

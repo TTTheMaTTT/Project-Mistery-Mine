@@ -98,7 +98,7 @@ public class GhostController : BatController
     protected override void BecomeAgressive()
     {
         agressive = true;
-        target = SpecialFunctions.GetPlayer();
+        target = SpecialFunctions.player;
     }
 
     #endregion //eventHandlers

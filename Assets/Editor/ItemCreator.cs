@@ -2,6 +2,9 @@
 using UnityEditor;
 using System.Collections;
 
+/// <summary>
+/// Окошко создания предметов
+/// </summary>
 public class ItemCreator : EditorWindow
 {
     public string itemName = "Item";

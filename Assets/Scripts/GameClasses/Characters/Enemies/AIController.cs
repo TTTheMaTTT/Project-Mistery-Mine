@@ -39,7 +39,7 @@ public class AIController : CharacterController
     protected virtual void BecomeAgressive()
     {
         agressive = true;
-        target = SpecialFunctions.GetPlayer();
+        target = SpecialFunctions.player;
     }
 
     /// <summary>

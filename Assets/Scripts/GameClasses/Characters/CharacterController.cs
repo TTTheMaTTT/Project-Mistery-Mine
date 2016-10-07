@@ -45,6 +45,8 @@ public class CharacterController : MonoBehaviour, IDamageable
 
     public EventHandler<AnimationEventArgs> AnimationEventHandler;//Хэндлер события о визуализации действия
 
+    public EventHandler<StoryEventArgs> CharacterDeathEvent;//Событие о смерти персонажа
+
     #endregion //eventHandlers
 
     protected virtual void Awake ()
@@ -134,6 +136,7 @@ public class CharacterController : MonoBehaviour, IDamageable
     /// </summary>
     protected virtual void Death()
     {
+        SpecialFunctions.StartStoryEvent(this, CharacterDeathEvent, new StoryEventArgs());
     }
 
     #region events

@@ -33,9 +33,9 @@ public class GameController : MonoBehaviour
     /// <summary>
     ///  Начать диалог
     /// </summary>
-    public void StartDialog(Transform npc, Speech speech)
+    public void StartDialog(NPCController npc, Speech speech)
     {
-        Transform player = GameObject.FindGameObjectWithTag("player").transform;
+        Transform player = SpecialFunctions.player.transform;
         dialogWindow.BeginDialog(player, npc, speech);
     }
 
