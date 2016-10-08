@@ -16,4 +16,16 @@ public class MisteryCaveEditor : Editor{
         EditorWindow.GetWindow(typeof(ItemCreator));
     }
 
+    [MenuItem("Mistery Cave/Create Quest")]
+    public static void CreateQuest()
+    {
+        EditorWindow.GetWindow(typeof(QuestCreator));
+    }
+
+    [MenuItem("Mistery Cave/Create Story")]
+    public static void CreateStory()
+    {
+        EditorWindow.GetWindow(typeof(StoryCreator));
+    }
+
 }

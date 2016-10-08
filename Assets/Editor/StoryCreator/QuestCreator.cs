@@ -7,9 +7,9 @@ using System.Collections;
 /// </summary>
 public class QuestCreator : EditorWindow
 {
-    public string questName = "Item";
+    public string questName = "Quest";
 
-    public string questPath = "Assets/Database/Items/";
+    public string questPath = "Assets/Database/Quests/";
 
     void OnGUI()
     {

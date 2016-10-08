@@ -17,6 +17,8 @@ public class GameStatistics : MonoBehaviour
 
     #region fields
 
+    public List<Statistics> statistics=new List<Statistics>();//Здесь задаётся, подсчёт каких игровых параметров нас интересует
+
     public DatabaseClass database;//База данных в игре
 
     #endregion //fields
@@ -37,5 +39,15 @@ public class GameStatistics : MonoBehaviour
             return null;
     }
 
+    public void ConsiderStatistics(UnityEngine.Object obj)
+    {
+        List<Statistics> currentList = statistics.FindAll(x => (x.GetObjType.IsAssignableFrom(obj.GetType())));
+
+        foreach (Statistics currentStatistics in currentList)
+        {
+            currentStatistics.Compare(obj);
+        }
+
+    }
 
 }
