@@ -79,6 +79,7 @@
     <Compile Include="Assets\Scripts\Game\GameControl\GameHistory\Story.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\DatabaseClass.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\GameStatistics.cs" />
+    <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\StatisticClass.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\DialogWindowScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\GameUIScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\MainMenuScript.cs" />
