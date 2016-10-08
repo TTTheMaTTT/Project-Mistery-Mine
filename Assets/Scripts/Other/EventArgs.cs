@@ -49,6 +49,22 @@ public class HealthEventArgs : EventArgs
 }
 
 /// <summary>
+/// Данные о событии, связанном с задыханием персонажа
+/// </summary>
+public class SuffocateEventArgs : EventArgs
+{
+    private int airSupply;
+
+    public int AirSupply { get { return airSupply; } }
+
+    public SuffocateEventArgs(int _airSupply)
+    {
+        airSupply = _airSupply;
+    }
+
+}
+
+/// <summary>
 /// Данные о событии, связанном с изменениями в инвентаре
 /// </summary>
 public class EquipmentEventArgs : EventArgs
@@ -61,5 +77,29 @@ public class EquipmentEventArgs : EventArgs
     {
         item = _item;
     }
+
+}
+
+/// <summary>
+/// Событийные данные, используемые для осуществления сюжетных событий
+/// </summary>
+public class StoryEventArgs : EventArgs
+{
+
+    private string id;
+    private int argument;
+
+    public StoryEventArgs(string _id, int _argument)
+    {
+        id = _id;
+        argument = _argument;
+    }
+
+    public StoryEventArgs()
+    {
+    }
+
+    public string ID { get { return id; } }
+    public int Argument { get { return argument; } }
 
 }
