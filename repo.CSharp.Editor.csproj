@@ -120,6 +120,8 @@
     <Compile Include="Assets\Editor\ItemCreator.cs" />
     <Compile Include="Assets\Editor\MisteryCaveEditor.cs" />
     <Compile Include="Assets\Editor\SpeechCreator\SpeechCreateWindow.cs" />
+    <Compile Include="Assets\Editor\StoryCreator\QuestCreator.cs" />
+    <Compile Include="Assets\Editor\StoryCreator\StoryCreator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />

@@ -73,7 +73,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Game\CameraController.cs" />
-    <Compile Include="Assets\Scripts\Game\GameController.cs" />
+    <Compile Include="Assets\Scripts\Game\GameControl\GameController.cs" />
+    <Compile Include="Assets\Scripts\Game\GameControl\GameHistory\GameHistory.cs" />
+    <Compile Include="Assets\Scripts\Game\GameControl\GameHistory\Quest.cs" />
+    <Compile Include="Assets\Scripts\Game\GameControl\GameHistory\Story.cs" />
+    <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\DatabaseClass.cs" />
+    <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\GameStatistics.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\DialogWindowScript.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\GameUIScript.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\MainMenuScript.cs" />
     <Compile Include="Assets\Scripts\Game\LevelEndController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterVisual.cs" />
@@ -91,7 +99,9 @@
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Hearing.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\HitBox.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Interactor.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\StoryTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\WallChecker.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\WaterIndicator.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\BowClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\ItemClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\SwordClass.cs" />
@@ -100,9 +110,6 @@
     <Compile Include="Assets\Scripts\GameClasses\Obstacles\ObstacleScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Obstacles\SpikesScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Speech.cs" />
-    <Compile Include="Assets\Scripts\Interface\DialogWindowScript.cs" />
-    <Compile Include="Assets\Scripts\Interface\GameUIScript.cs" />
-    <Compile Include="Assets\Scripts\Interface\MainMenuScript.cs" />
     <Compile Include="Assets\Scripts\Interfaces\interfaces.cs" />
     <Compile Include="Assets\Scripts\Other\Enums.cs" />
     <Compile Include="Assets\Scripts\Other\EventArgs.cs" />
