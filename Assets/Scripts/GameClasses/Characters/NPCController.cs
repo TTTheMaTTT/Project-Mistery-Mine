@@ -33,9 +33,15 @@ public class NPCController : MonoBehaviour, IInteractive
     protected Animator anim;
 
     [SerializeField]
-    protected List<Speech> speeches=new List<Speech>();//Реплики, которые может произнести этот персонаж
+    protected List<Dialog> dialogs=new List<Dialog>();//Диалоги, что могут произойти с этим персонажем
 
     #endregion //fields
+
+    #region parametres
+
+    protected bool spoken=false;
+
+    #endregion //parametres
 
     protected virtual void Awake ()
     {
@@ -50,6 +56,7 @@ public class NPCController : MonoBehaviour, IInteractive
     protected virtual void Initialize()
     {
         anim = GetComponent<Animator>();
+        FormDictionaries();
     }
 
     protected virtual void FormDictionaries()
@@ -72,16 +79,23 @@ public class NPCController : MonoBehaviour, IInteractive
     /// </summary>
     protected virtual void Talk()
     {
-        if (speeches.Count > 0)
+        if (dialogs.Count > 0)
         {
-            anim.Play("Talk");
-            SpecialFunctions.gameController.StartDialog(this, speeches[0]);
+            if (anim!=null)
+                anim.Play("Talk");
+            SpecialFunctions.gameController.StartDialog(this, dialogs[0]);
+        }
+        if (!spoken)
+        {
+            spoken = true;
+            SpecialFunctions.statistics.ConsiderStatistics(this);
         }
     }
 
     public virtual void StopTalking()
     {
-        anim.Play("Idle");
+        if (anim!=null)
+            anim.Play("Idle");
     }
 
     public void SpeechSaid(string speechName)
@@ -96,16 +110,20 @@ public class NPCController : MonoBehaviour, IInteractive
     /// </summary>
     public void SpeechAction(StoryAction _action)
     {
-        Speech _speech = speeches.Find(x => (x.speechName == _action.id2));
-        if (_speech != null)
+        Dialog _dialog = null;
+        if (_action.argument > 0)
+            _dialog = dialogs[_action.argument];
+        else
+            _dialog = dialogs.Find(x => (x.dialogName == _action.id2));
+        if (_dialog != null)
         {
             if (_action.id1 == "change speech")
             {
-                speeches[0] = _speech;
+                dialogs[0] = _dialog;
             }
             else if (_action.id1 == "talk")
             {
-                speeches[0] = _speech;
+                dialogs[0] = _dialog;
                 Talk();
             }
         }

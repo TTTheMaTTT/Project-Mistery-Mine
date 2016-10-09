@@ -4,10 +4,10 @@ using System.Collections;
 
 public class MisteryCaveEditor : Editor{
 
-    [MenuItem("Mistery Cave/AI/Create Speech")]
-    public static void CreateSpeech()
+    [MenuItem("Mistery Cave/Create Speech")]
+    public static void CreateDialog()
     {
-        EditorWindow.GetWindow(typeof(SpeechCreateWindow));
+        EditorWindow.GetWindow(typeof(DialogCreateWindow));
     }
 
     [MenuItem("Mistery Cave/Create Item")]
@@ -28,4 +28,11 @@ public class MisteryCaveEditor : Editor{
         EditorWindow.GetWindow(typeof(StoryCreator));
     }
 
+    [MenuItem("Mistery Cave/Create Database")]
+    public static void CreateDatabase()
+    {
+        EditorWindow.GetWindow(typeof(DatabaseCreator));
+    }
+
 }
+    

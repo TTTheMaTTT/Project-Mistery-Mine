@@ -10,6 +10,8 @@ public class DatabaseClass : ScriptableObject
 
     #region fields
 
+
+    public string databaseName;
     public List<Quest> quests;//Список квестов, используемых в игре
 
     #endregion //fields

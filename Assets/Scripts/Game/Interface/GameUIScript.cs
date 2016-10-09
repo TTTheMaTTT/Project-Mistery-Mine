@@ -19,6 +19,8 @@ public class GameUIScript : MonoBehaviour
 
     protected Transform breathPanel;
 
+    protected Text[] questTexts = new Text[3];//Строчки, рассказывающие об активных квестах
+    
     protected Image weaponImage;
 
     #endregion //fields
@@ -40,8 +42,13 @@ public class GameUIScript : MonoBehaviour
         HeroController player = SpecialFunctions.player.GetComponent<HeroController>();
         player.healthChangedEvent += HandleHealthChanges;
 
-        weaponImage = transform.FindChild("WeaponImage").GetComponent<Image>();
+        weaponImage = transform.FindChild("WeaponPanel").FindChild("WeaponImage").GetComponent<Image>();
         player.equipmentChangedEvent += HandleEquipmentChanges;
+
+        Transform questsPanel = transform.FindChild("QuestsPanel");
+        questTexts[0] = questsPanel.GetChild(0).GetComponent<Text>();
+        questTexts[1] = questsPanel.GetChild(1).GetComponent<Text>();
+        questTexts[2] = questsPanel.GetChild(2).GetComponent<Text>();
 
         breathPanel = transform.FindChild("BreathPanel");
         player.suffocateEvent += HandleSuffocate;
@@ -101,6 +108,21 @@ public class GameUIScript : MonoBehaviour
                     breathPanel.GetChild(i).gameObject.SetActive(false);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Учесть, какие квесты на данный момент активны
+    /// </summary>
+    public void ConsiderQuests(List<string> activeQuests)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            questTexts[i].text = "";
+            if (i >= activeQuests.Count)
+                continue;
+            else
+                questTexts[i].text = activeQuests[i];
         }
     }
 

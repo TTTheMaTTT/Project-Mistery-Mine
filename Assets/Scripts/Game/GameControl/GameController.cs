@@ -21,7 +21,7 @@ public class GameController : MonoBehaviour
 
     protected void Initialize()
     {
-        Transform interfaceWindows = transform.FindChild("Interface");
+        Transform interfaceWindows = SpecialFunctions.gameInterface.transform;
         dialogWindow = interfaceWindows.GetComponentInChildren<DialogWindowScript>();
     }
 
@@ -33,10 +33,10 @@ public class GameController : MonoBehaviour
     /// <summary>
     ///  Начать диалог
     /// </summary>
-    public void StartDialog(NPCController npc, Speech speech)
+    public void StartDialog(NPCController npc, Dialog dialog)
     {
         Transform player = SpecialFunctions.player.transform;
-        dialogWindow.BeginDialog(player, npc, speech);
+        dialogWindow.BeginDialog(player, npc, dialog);
     }
 
 }

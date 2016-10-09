@@ -65,6 +65,7 @@ public class AIController : CharacterController
     protected override void Death()
     {
         base.Death();
+        SpecialFunctions.statistics.ConsiderStatistics(this);
         Destroy(gameObject);
     }
 

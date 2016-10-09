@@ -1,14 +1,18 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 
 /// <summary>
 /// Класс, реализующий статистические данные (подсчёт некой игровой сущности), которая могла бы легко редактироваться
 /// </summary>
-public abstract class Statistics
+public abstract class Statistics: ScriptableObject
 {
-    public string statisticName;//Наименовании статистики
+    [HideInInspector]
+    public string statisticName="New Statistics", datapath="DataPath";//Наименовании статистики и её местоположение
+
+    [NonSerialized]
     public int value;//Сам подсчёт характеристики
 
     public virtual void Compare(UnityEngine.Object obj)
@@ -23,11 +27,11 @@ public abstract class Statistics
 /// <summary>
 /// Статистика, которая может вестись для подсчёта смерти определённого монстра
 /// </summary>
-public class MonsterDeathStatistics: Statistics
+public class MonsterDeathStatistics : Statistics
 {
     public string enemyName;
 
-    public override Type GetObjType {get{ return typeof(AIController); }}
+    public override Type GetObjType { get { return typeof(AIController); } }
 
     public override void Compare(UnityEngine.Object obj)
     {
@@ -35,6 +39,7 @@ public class MonsterDeathStatistics: Statistics
         if (monster.gameObject.name.Contains(enemyName))
             value++;
     }
+
 }
 
 /// <summary>

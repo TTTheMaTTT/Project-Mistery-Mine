@@ -16,6 +16,9 @@ public class Quest : ScriptableObject
     [HideInInspector]
     public int stage = 0;// На какой стадии находится квест?
 
+    public bool hasStatistic=false;//Ведётся ли статистика по выполнению задания?
+    public string statisticName = "";//По какой статистике отслеживается задание?
+
     #endregion //fields
 
     public Quest()
@@ -27,6 +30,8 @@ public class Quest : ScriptableObject
         questName = _quest.questName;
         stage = 0;
         questLine = _quest.questLine;
+        hasStatistic = _quest.hasStatistic;
+        statisticName = _quest.statisticName;
     }
 
 }
