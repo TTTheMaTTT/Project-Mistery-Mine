@@ -118,8 +118,6 @@ public class CustomGameStatistics_Editor : Editor
     public override void OnInspectorGUI()
     {
 
-        serializedObject.Update();
-
         base.OnInspectorGUI();  //вызов функции отрисовки базового класса для показа публичных полей компонента   
 
         EditorGUILayout.BeginHorizontal();
@@ -195,8 +193,8 @@ public class CustomGameStatistics_Editor : Editor
             EditorGUILayout.Space();
 
         }
+        EditorUtility.SetDirty(gStats);
 
-        serializedObject.ApplyModifiedProperties();
     }
 
 }

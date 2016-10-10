@@ -23,8 +23,8 @@ public class HeroController : CharacterController
 
     protected const float ladderCheckOffset = .05f, ladderStep = .01f;
 
-    protected const float minDamageFallSpeed = 8f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
-    protected const float damagePerFallSpeed = 4.5f;
+    protected const float minDamageFallSpeed = 4.5f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
+    protected const float damagePerFallSpeed = 2f;
 
     protected const float suffocateTime = .3f;//Сколько времени должно пройти, чтобы запас воздуха уменьшился на 1 или здоровье ГГ на .5
     protected const int maxAirSupply = 10;
