@@ -18,6 +18,8 @@ public class DialogWindowScript : MonoBehaviour
     protected Transform hero;
     protected NPCController npc;
 
+    protected Dialog currentDialog = null;
+
     protected Speech currentSpeech = null;
     public Speech CurrentSpeech { get { return currentSpeech; }
                                   set { currentSpeech = value; if (value != null) { speechText.text = value.text; portrait.sprite = value.portrait; npc.SpeechSaid(currentSpeech.speechName); }
@@ -48,10 +50,14 @@ public class DialogWindowScript : MonoBehaviour
     /// <summary>
     /// Начать диалог
     /// </summary>
-    public void BeginDialog(Transform _hero, NPCController _npc, Speech speech)
+    public void BeginDialog(Transform _hero, NPCController _npc, Dialog dialog)
     {
         npc = _npc;
-        CurrentSpeech = speech;
+        currentDialog = dialog;
+        currentDialog.stage = 0;
+
+        CurrentSpeech = dialog.speeches[0];
+
         canvas.enabled = true;
         hero = _hero;
 
@@ -70,7 +76,7 @@ public class DialogWindowScript : MonoBehaviour
             npc.transform.localScale += new Vector3(-2f * prevScale2, 0f);
         }
 
-        if (currentSpeech.pause)
+        if (currentDialog.pause)
         {
             SpecialFunctions.PauseGame();
         }
@@ -107,8 +113,15 @@ public class DialogWindowScript : MonoBehaviour
     /// </summary>
     public void NextSpeech()
     {
-        if (currentSpeech.nextSpeech==null)
-            CurrentSpeech = currentSpeech.nextSpeech;
+        currentDialog.stage++;
+        int stage = currentDialog.stage;
+        if (currentDialog.speeches.Count > stage)
+            CurrentSpeech = currentDialog.speeches[stage];
+        else
+        {
+            CurrentSpeech = null;
+            StopDialog();
+        }
     }
 
     protected void Initialize()
@@ -117,7 +130,7 @@ public class DialogWindowScript : MonoBehaviour
 
         Transform panel = transform.FindChild("Panel");
         speechText = panel.FindChild("SpeechText").GetComponent<Text>();
-        portrait = transform.FindChild("Portrait").GetComponent<Image>();
+        portrait = transform.FindChild("PortraitImage").FindChild("Portrait").GetComponent<Image>();
         CurrentSpeech = null;
     }
 

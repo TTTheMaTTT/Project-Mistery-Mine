@@ -12,6 +12,8 @@ public class StoryTrigger : MonoBehaviour
 
     public EventHandler<StoryEventArgs> TriggerEvent;
 
+    protected bool triggered=false;
+
     #endregion //events
 
     void OnTriggerEnter2D(Collider2D other)
@@ -19,6 +21,11 @@ public class StoryTrigger : MonoBehaviour
         if (other.gameObject.tag == "player")
         {
             SpecialFunctions.StartStoryEvent(this, TriggerEvent, new StoryEventArgs());
+            if (!triggered)
+            {
+                triggered = true;
+                SpecialFunctions.statistics.ConsiderStatistics(this);
+            }
         }
     }
 

@@ -17,8 +17,11 @@ public class GameHistory : MonoBehaviour
 
     public void Awake()
     {
-        history.Initialize();
         history.FormJournalBase();
+    }
+
+    public void Start()
+    {
     }
 
 }
@@ -54,8 +57,10 @@ public class History
 
     #region fields
 
-    public List<StoryInitializer> initList = new List<StoryInitializer>();
     public List<Story> storyList = new List<Story>();
+
+    public List<StoryInitializer> initList = new List<StoryInitializer>();
+    public List<StoryInitializer> InitList { get { return initList; } }
 
     [Space(10)]
     [SerializeField]
@@ -68,10 +73,21 @@ public class History
     //то, что вызывается в самом начале
     public void Initialize()
     {
+
         foreach (Story _story in storyList)
         {
             InitializeScript(_story);
         }
+
+        SpecialFunctions.statistics.StatisticCountEvent += HandleStatisticCountEvent;
+    }
+
+    /// <summary>
+    /// Найти инициализатор, соответствующий данной истории
+    /// </summary>
+    public StoryInitializer FindInitializer(Story _story)
+    {
+        return initList.Find(x => (x.story.storyName == _story.storyName));
     }
 
     /// <summary>
@@ -80,17 +96,21 @@ public class History
     public void FormJournalBase()
     {
 
-        storyActionBase.Add("changeQuestsData", ChangeQuestData);
+        storyActionBase.Add("changeQuestData", ChangeQuestData);
 
+        storyConditionBase.Clear();
         storyConditionBase.Add("compare", Compare);
         storyConditionBase.Add("compareSpeech", CompareSpeech);
+        storyConditionBase.Add("compareStatistics", CompareStatistics);
 
         storyInitBase.Add("startGame", (x,y)=> { if(y.GetComponent<GameStatistics>()!=null) y.GetComponent<GameStatistics>().StartGameEvent += x.HandleStoryEvent; });
+        storyInitBase.Add("statisticCount", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameStatistics>().StatisticCountEvent += x.HandleStoryEvent; });
         storyInitBase.Add("characterDeath", (x, y) => { if (y.GetComponent<CharacterController>()!=null) y.GetComponent<CharacterController>().CharacterDeathEvent += x.HandleStoryEvent; });
         storyInitBase.Add("triggerEvent", (x, y) => { if (y.GetComponent<StoryTrigger>() != null) y.GetComponent<StoryTrigger>().TriggerEvent += x.HandleStoryEvent; });
         storyInitBase.Add("speech", (x, y) => { if (y.GetComponent<NPCController>() != null) y.GetComponent<NPCController>().SpeechSaidEvent += x.HandleStoryEvent; });
 
         storyDeInitBase.Add("startGame", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameStatistics>().StartGameEvent -= x.HandleStoryEvent; });
+        storyDeInitBase.Add("statisticCount", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameStatistics>().StatisticCountEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("characterDeath", (x, y) => { if (y.GetComponent<CharacterController>() != null) y.GetComponent<CharacterController>().CharacterDeathEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("triggerEvent", (x, y) => { if (y.GetComponent<StoryTrigger>() != null) y.GetComponent<StoryTrigger>().TriggerEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("speech", (x, y) => { if (y.GetComponent<NPCController>() != null) y.GetComponent<NPCController>().SpeechSaidEvent -= x.HandleStoryEvent; });
@@ -102,47 +122,47 @@ public class History
     /// </summary>
     public void InitializeScript(Story _story)
     {
-        StoryInitializer storyInit = null;
         GameObject storyTarget = null;
 
-        storyInit = initList.Find(x => (x.story == _story));
-
-        if (storyInit == null)
-        {
+        StoryInitializer init = FindInitializer(_story);
+        if (init == null)
             return;
-        }
 
-        storyTarget = storyInit.eventReason;
-        //В первую очередь, подпишемся на журнальные объекты
-        if (storyInitBase.ContainsKey(_story.storyCondition.conditionName))
+        storyTarget = init.eventReason;
+
+        if (storyTarget == null)
+            return;
+
+        //В первую очередь, подпишемся на сюжетные объекты объекты
+        if (storyInitBase.ContainsKey(_story.storyCondition.storyConditionName))
         {
-            string s = _story.storyCondition.conditionName;
+            string s = _story.storyCondition.storyConditionName;
             storyInitBase[s].Invoke(_story, storyTarget);
         }
 
         for (int i=0;i<_story.storyActions.Count; i++)
         {
-            StoryAction _action = _story.storyActions[i];
-            _action= null;
-            if (i > storyInit.eventObj.Count)
-            {
+            if (i >= init.eventObjects.Count)
                 break;
-            }
-            GameObject obj = storyInit.eventObj[i];
+            StoryAction _action = _story.storyActions[i];
+
+            GameObject obj = init.eventObjects[i];
+            if (obj == null)
+                continue;
             if (obj.GetComponent<GameHistory>() != null)
             {
-                if (storyActionBase.ContainsKey(_action.storyActionName))
+                if (storyActionBase.ContainsKey(_action.actionName))
                 {
-                    string s = _action.storyActionName;
+                    string s = _action.actionName;
                     _action.storyAction = storyActionBase[s].Invoke;
                 }
             }
             else if (obj.GetComponent<NPCController>() != null)
             {
                 NPCController npc = obj.GetComponent<NPCController>();
-                if (npc.StoryActionBase.ContainsKey(_action.storyActionName))
+                if (npc.StoryActionBase.ContainsKey(_action.actionName))
                 {
-                    string s = _action.storyActionName;
+                    string s = _action.actionName;
                     _action.storyAction = npc.StoryActionBase[s].Invoke;
                 }      
             }
@@ -164,17 +184,15 @@ public class History
     /// </summary>
     public void DeInitializeScript(Story _story)
     {
-        StoryInitializer storyInit = initList.Find(x => (x.story == _story));
-
-        if (storyInit == null)
+        StoryInitializer init = FindInitializer(_story);
+        GameObject obj = init.eventReason;
+        if (obj == null)
             return;
 
-        GameObject obj = storyInit.eventReason;
-
         //В первую очередь, отпишимся от журнальных объектов
-        if (storyDeInitBase.ContainsKey(_story.storyCondition.conditionName))
+        if (storyDeInitBase.ContainsKey(_story.storyCondition.storyConditionName))
         {
-            string s = _story.storyCondition.conditionName;
+            string s = _story.storyCondition.storyConditionName;
             storyDeInitBase[s].Invoke(_story, obj);
         }
 
@@ -194,7 +212,7 @@ public class History
     {
         for (int i = 0; i < _story.presequences.Count; i++)
         {
-            if (!FindStoryInitializer(_story.presequences[i].storyName).completed)
+            if (FindInitializer(_story.presequences[i])!=null? !FindInitializer(_story.presequences[i]).completed:false)
                 return;
         }
 
@@ -209,7 +227,7 @@ public class History
     {
         if (storyList.Contains(_story))
         {
-            FindStoryInitializer(_story.storyName).completed = true;
+            FindInitializer(_story).completed = true;
             storyList.Remove(_story);
             DeInitializeScript(_story);
         }
@@ -225,14 +243,6 @@ public class History
             storyList.Remove(_story);
             DeInitializeScript(_story);
         }
-    }
-
-    /// <summary>
-    /// Найти инициализатор данной истории
-    /// </summary>
-    protected StoryInitializer FindStoryInitializer(string _storyName)
-    {
-        return initList.Find(x => x.story.storyName == _storyName);
     }
 
     /// <summary>
@@ -255,9 +265,9 @@ public class History
     public void ChangeQuestData(StoryAction _action)
     {
         Quest _quest = null;
-        if ((_quest = SpecialFunctions.statistics.GetQuest(_action.id1)) != null)
+        if ((_quest = SpecialFunctions.statistics.GetQuest(_action.id2)) != null)
         {
-            switch (_action.id2)
+            switch (_action.id1)
             {
                 case "add":
                     {
@@ -293,14 +303,16 @@ public class History
                         if (ContainsQuest(_quest))
                         {
                             Quest quest1 = activeQuests.Find(x => (x.questName == _quest.questName));
-                            if (quest1.questLine.Contains(_action.id2))
+                            if (quest1.questLine.Contains(_action.id1))
                             {
-                                quest1.stage = quest1.questLine.IndexOf(_action.id2);
+                                quest1.stage = quest1.questLine.IndexOf(_action.id1);
                             }
                         }
                         break;
                     }
             }
+            SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<string>(x => x.questLine[x.stage]));
+            HandleStatisticCountEvent(this, new StoryEventArgs("", 0));
         }
     }
 
@@ -332,23 +344,56 @@ public class History
         return (e.ID == _condition.id);
     }
 
-
+    /// <summary>
+    /// Проверить учёт выбранной статистики
+    /// </summary>
+    static bool CompareStatistics(StoryCondition _condition, StoryEventArgs e)
+    {
+        return (e.ID == _condition.id && e.Argument==_condition.argument);
+    }
     #endregion //conditionFunctions
+
+    #region events
+
+    protected void HandleStatisticCountEvent(object other, StoryEventArgs e)
+    {
+        List<string> questLines = new List<string>();
+        foreach (Quest _quest in activeQuests)
+        {
+            if (_quest.hasStatistic)
+            {
+                string s = _quest.questLine[_quest.stage];
+                string s1 = s.Substring(0, s.LastIndexOf("/"));
+                string s2 = s.Substring(s.LastIndexOf("/") + 1);
+                if (_quest.statisticName == e.ID && _quest.questLine[_quest.stage].Contains("/"))
+                {
+                    _quest.statisticCount = e.Argument;
+                }
+                questLines.Add(s1 + _quest.statisticCount.ToString() + "/" + s2);
+            }
+            else
+                questLines.Add(_quest.questLine[_quest.stage]);
+        }
+        SpecialFunctions.gameUI.ConsiderQuests(questLines);
+    }
+
+    #endregion //events
 
 }
 
-
 /// <summary>
-/// Класс, необходимый для инициализации сюжетных скриптов и учёта их выполнения
+/// Класс, инициализирующий истории
 /// </summary>
 [System.Serializable]
 public class StoryInitializer
 {
     public Story story;
-    public GameObject eventReason;//Какой объект вызовет событие?
-    public List<GameObject> eventObj;//Какие объекты подключатся к событию?
+    public GameObject eventReason;
+    public List<GameObject> eventObjects;
 
-    public bool completed = false;//Был ли выполнен данный сюжетный скрипт?
+    [NonSerialized][HideInInspector]
+    public bool completed=false;
 }
+
 
 

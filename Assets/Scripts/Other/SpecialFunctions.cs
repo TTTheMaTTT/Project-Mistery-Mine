@@ -15,6 +15,10 @@ public static class SpecialFunctions
 
     public static GameStatistics statistics { get { return gameController.GetComponent<GameStatistics>(); } }
 
+    public static GameObject gameInterface { get { return GameObject.FindGameObjectWithTag("interface"); } }
+
+    public static GameUIScript gameUI { get { return gameInterface.GetComponentInChildren<GameUIScript>(); } }
+
     /// <summary>
     /// Функция, которая позволяет использовать ComparativeClass и по сути ей можно заменять 
     /// простейшие операции сравнения int c int'ом.

@@ -1,7 +1,12 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 
 /// <summary>
 /// Класс, представляющий собой некий сюжет - что-то произошло и вызвало череду событий. Вообще Story - базовый элемент для построений цепочки игровых событий
@@ -12,6 +17,8 @@ public class Story : ScriptableObject
     #region fields
 
     public string storyName;
+    public string sceneName;//для какой сцены предназначен эта история?
+
     public List<StoryAction> storyActions = new List<StoryAction>();//Сюжетные действия
 
     public StoryCondition storyCondition = new StoryCondition();//Сюжетная причина для действия
@@ -68,7 +75,7 @@ public class StoryAction
     public string actionName;//имя действия производимого историей
     public string id1, id2; //параметры, что использует
     public int argument;//данное действие
-    public GameObject gameObj;//с каким префабом произвести действие
+    public GameObject gameObj;//с каким игровым объектом произвести действие
     public StoryActionDelegate storyAction;//ссылка на функцию, которая соответствует названию выше
 
 }
@@ -86,7 +93,345 @@ public class StoryCondition
     public string conditionName;//имя функции проверки сюжетного события
     public string id;    //параметры, что использует
     public int argument;//данное действие
-    //public GameObject obj;//с каким префабом произвести действие
+    public GameObject obj;//с каким объектом произвести действие
     public StoryConditionDelegate storyCondition;//ссылка на функцию, которая соответствует названию выше
 
 }
+
+
+#if UNITY_EDITOR
+[CustomEditor(typeof(Story))]
+public class CustomStoryEditor : Editor
+{
+
+    int actionSize, presequencesSize, consequencesSize, nonsequencesSize;
+    Story story;
+
+    public override void OnInspectorGUI()
+    {
+        if (story == null)
+            story = (Story)target;
+
+        story.storyName = EditorGUILayout.TextField("story name", story.storyName);
+
+        story.sceneName = EditorGUILayout.TextField("scene name", story.sceneName);
+
+        History history=null;
+        List<StoryInitializer> initList = null;
+        string sceneName = SceneManager.GetActiveScene().name;
+
+        if (GameObject.FindGameObjectWithTag("gameController") != null)
+        {
+            history = SpecialFunctions.history;
+            if (history!=null)
+                initList = history.InitList;
+        }
+
+        if (story.storyActions == null)
+        {
+            story.storyActions = new List<StoryAction>();
+        }
+        if (story.presequences == null)
+        {
+            story.presequences = new List<Story>();
+        }
+        if (story.consequences == null)
+        {
+            story.consequences = new List<Story>();
+        }
+        if (story.nonConsequences == null)
+        {
+            story.nonConsequences = new List<Story>(); ;
+        }
+
+        EditorGUILayout.Space();
+
+        #region storyActions
+
+        EditorGUILayout.HelpBox("story actions",MessageType.Info);
+
+        actionSize = story.storyActions.Count;
+        actionSize = EditorGUILayout.IntField("action size", actionSize);
+        if (actionSize !=story.storyActions.Count)
+        {
+            int m = story.storyActions.Count;
+            for (int i = m; i < actionSize; i++)
+                story.storyActions.Add(new StoryAction());
+            for (int i = m - 1; i >= actionSize; i--)
+                story.storyActions.RemoveAt(i);
+        }
+
+        if (story.sceneName == SceneManager.GetActiveScene().name)
+        {
+            if (initList != null)
+            {
+                StoryInitializer init = history.FindInitializer(story);
+                if (init == null)
+                {
+                    init = new StoryInitializer();
+                    init.story = story;
+                    init.eventObjects = new List<GameObject>();
+                    initList.Add(init);
+                }
+                if (init.eventObjects.Count!=story.storyActions.Count)
+                {
+                    int m = init.eventObjects.Count;
+                    for (int i = m; i < story.storyActions.Count; i++)
+                    {
+                        init.eventObjects.Add(null);
+                    }
+                    for (int i = m - 1; i >= story.storyActions.Count; i--)
+                    {
+                        init.eventObjects.RemoveAt(i);
+                    }
+                }
+            }
+        }
+
+        foreach (StoryAction _action in story.storyActions)
+        {
+
+            _action.storyActionName = EditorGUILayout.TextField("story action name", _action.storyActionName);
+            _action.actionName= EditorGUILayout.TextField("action name", _action.actionName);
+            _action.id1 = EditorGUILayout.TextField("id1", _action.id1);
+            _action.id2 = EditorGUILayout.TextField("id2", _action.id2);
+            _action.argument=EditorGUILayout.IntField("argument",_action.argument);
+
+            _action.gameObj=(GameObject)EditorGUILayout.ObjectField("action object",_action.gameObj,typeof(GameObject), true);//с каким игровым объектом произвести действие
+            if ((sceneName == story.sceneName) && (_action.gameObj!=null))
+            {
+                if (initList != null)
+                {
+                    StoryInitializer init = history.FindInitializer(story);
+                    if (init != null)
+                    {
+                        init.eventObjects[story.storyActions.IndexOf(_action)]=_action.gameObj;
+                    }
+                }
+            }
+
+            if (GUILayout.Button("Delete"))
+            {
+                if (initList != null && sceneName==story.sceneName)
+                {
+                    StoryInitializer init = history.FindInitializer(story);
+                    if (init != null)
+                    {
+                        init.eventObjects.RemoveAt(story.storyActions.IndexOf(_action));
+                    }
+                }
+                story.storyActions.Remove(_action);
+            }
+
+            EditorGUILayout.Space();
+
+        }
+
+        #endregion //storyActions
+
+        EditorGUILayout.Space();
+
+        #region presequences
+
+        EditorGUILayout.HelpBox("presequences", MessageType.Info);
+        EditorGUILayout.Space();
+
+        presequencesSize = story.presequences.Count;
+        presequencesSize = EditorGUILayout.IntField("presequences size", presequencesSize);
+        if (presequencesSize != story.presequences.Count)
+        {
+            int m = story.presequences.Count;
+            for (int i = m; i < presequencesSize; i++)
+                story.presequences.Add(null);
+            for (int i = m - 1; i >= presequencesSize; i--)
+                story.storyActions.RemoveAt(i);
+        }
+
+        for (int i=0; i<story.presequences.Count;i++)
+        {
+            EditorGUILayout.BeginHorizontal();
+            {
+                story.presequences[i] = (Story)EditorGUILayout.ObjectField(story.presequences[i], typeof(Story));
+                Story _presequence = story.presequences[i];
+                if (_presequence != null)
+                {
+                    if (!_presequence.consequences.Contains(story))
+                        _presequence.consequences.Add(story);
+                    if (story.presequences.FindAll(x => (story.presequences.IndexOf(x) != i)).Contains(_presequence))
+                    {
+                        _presequence = null;
+                        story.presequences[i] = null;
+                    }
+                }
+                if (GUILayout.Button("Delete"))
+                {
+                    if (_presequence != null)
+                        DeletePresequence(story, _presequence);
+                    else
+                        story.presequences.RemoveAt(i);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        EditorGUILayout.Space();
+
+        #endregion //presequences
+
+        #region consequences
+
+        EditorGUILayout.HelpBox("consequences", MessageType.Info);
+        EditorGUILayout.Space();
+
+        consequencesSize = story.consequences.Count;
+        consequencesSize = EditorGUILayout.IntField("consequences size", consequencesSize);
+        if (consequencesSize != story.consequences.Count)
+        {
+            int m = story.consequences.Count;
+            for (int i = m; i < consequencesSize; i++)
+                story.consequences.Add(null);
+            for (int i = m - 1; i >= consequencesSize; i--)
+                story.consequences.RemoveAt(i);
+        }
+
+        for (int i = 0; i < story.consequences.Count; i++)
+        {
+            EditorGUILayout.BeginHorizontal();
+            {
+                story.consequences[i] = (Story)EditorGUILayout.ObjectField(story.consequences[i], typeof(Story));
+                Story _consequence = story.consequences[i];
+                if (_consequence != null)
+                {
+                    if (story.nonConsequences.Contains(_consequence))
+                    {
+                        story.nonConsequences.Remove(_consequence);
+                    }
+                    if (!_consequence.presequences.Contains(story))
+                        _consequence.presequences.Add(story);
+                    if (story.consequences.FindAll(x => (story.consequences.IndexOf(x) != i)).Contains(_consequence))
+                    {
+                        story.consequences[i] = null;
+                        _consequence = null;
+                    }
+                }
+                if (GUILayout.Button("Delete"))
+                {
+                    if (_consequence != null)
+                        DeleteConsequence(story, _consequence);
+                    else
+                        story.consequences.RemoveAt(i);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+        EditorGUILayout.Space();
+
+        #endregion //consequences
+
+        #region nonsequences
+
+        EditorGUILayout.HelpBox("nonsequences", MessageType.Info);
+        EditorGUILayout.Space();
+
+        nonsequencesSize = story.nonConsequences.Count;
+        nonsequencesSize = EditorGUILayout.IntField("nonConsequences size", nonsequencesSize);
+        if (nonsequencesSize != story.nonConsequences.Count)
+        {
+            int m = story.nonConsequences.Count;
+            for (int i = m; i < nonsequencesSize; i++)
+                story.nonConsequences.Add(null);
+            for (int i = m - 1; i >= nonsequencesSize; i--)
+                story.nonConsequences.RemoveAt(i);
+        }
+
+        for (int i = 0; i < story.nonConsequences.Count; i++)
+        {
+            EditorGUILayout.BeginHorizontal();
+            {
+                story.nonConsequences[i] = (Story)EditorGUILayout.ObjectField(story.nonConsequences[i], typeof(Story));
+                Story _nonsequence = story.nonConsequences[i];
+                if (_nonsequence != null)
+                {
+                    if (story.consequences.Contains(_nonsequence))
+                    {
+                        DeleteConsequence(story, _nonsequence);
+                    }
+                    if (story.nonConsequences.FindAll(x => (story.nonConsequences.IndexOf(x) != i)).Contains(_nonsequence))
+                    {
+                        story.nonConsequences[i] = null;
+                        _nonsequence = null;
+                    }
+                }
+                if (GUILayout.Button("Delete"))
+                {
+                    story.nonConsequences.RemoveAt(i);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+        EditorGUILayout.Space();
+
+        #endregion //nonsequences
+
+        #region storyCondition
+
+        EditorGUILayout.HelpBox("story condition", MessageType.Info);
+        EditorGUILayout.Space();
+
+        StoryCondition _condition = story.storyCondition;
+        if (_condition == null)
+            _condition = story.storyCondition = new StoryCondition();
+
+        _condition.storyConditionName=EditorGUILayout.TextField("story condition name", _condition.storyConditionName);
+
+        _condition.conditionName= EditorGUILayout.TextField("condition name", _condition.conditionName);
+        _condition.id = EditorGUILayout.TextField("id", _condition.id);
+        _condition.argument=EditorGUILayout.IntField("argument",_condition.argument);
+        _condition.obj=(GameObject)EditorGUILayout.ObjectField("condition object",_condition.obj, typeof(GameObject),true);
+
+        if ((sceneName == story.sceneName) && (_condition.obj != null))
+        {
+            if (initList != null)
+            {
+                StoryInitializer init = history.FindInitializer(story);
+                if (init != null)
+                {
+                    init.eventReason= _condition.obj;
+                }
+            }
+        }
+
+        #endregion//storyCondition
+
+        story.SetDirty();
+        if (history != null)
+            EditorUtility.SetDirty(SpecialFunctions.gameController.GetComponent<GameHistory>());
+
+    }
+
+    /// <summary>
+    /// Удалить причину события
+    /// </summary>
+    public void DeletePresequence(Story _story, Story _presequence)
+    {
+        if (_presequence != null)
+        {
+            _presequence.consequences.Remove(story);
+        }
+        story.presequences.Remove(_presequence);
+    }
+
+    /// <summary>
+    /// Удалить последствие
+    /// </summary>
+    public void DeleteConsequence(Story _story, Story _consequence)
+    {
+        if (_consequence != null)
+        {
+            _consequence.presequences.Remove(story);
+        }
+        story.consequences.Remove(_consequence);
+    }
+
+}
+#endif
