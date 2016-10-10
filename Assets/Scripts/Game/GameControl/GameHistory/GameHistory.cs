@@ -60,6 +60,7 @@ public class History
     public List<Story> storyList = new List<Story>();
 
     public List<StoryInitializer> initList = new List<StoryInitializer>();
+    public List<StoryInitializer> InitList { get { return initList; } }
 
     [Space(10)]
     [SerializeField]
@@ -84,7 +85,7 @@ public class History
     /// <summary>
     /// Найти инициализатор, соответствующий данной истории
     /// </summary>
-    StoryInitializer FindInitializer(Story _story)
+    public StoryInitializer FindInitializer(Story _story)
     {
         return initList.Find(x => (x.story.storyName == _story.storyName));
     }
@@ -100,6 +101,7 @@ public class History
         storyConditionBase.Clear();
         storyConditionBase.Add("compare", Compare);
         storyConditionBase.Add("compareSpeech", CompareSpeech);
+        storyConditionBase.Add("compareStatistics", CompareStatistics);
 
         storyInitBase.Add("startGame", (x,y)=> { if(y.GetComponent<GameStatistics>()!=null) y.GetComponent<GameStatistics>().StartGameEvent += x.HandleStoryEvent; });
         storyInitBase.Add("statisticCount", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameStatistics>().StatisticCountEvent += x.HandleStoryEvent; });
@@ -263,9 +265,9 @@ public class History
     public void ChangeQuestData(StoryAction _action)
     {
         Quest _quest = null;
-        if ((_quest = SpecialFunctions.statistics.GetQuest(_action.id1)) != null)
+        if ((_quest = SpecialFunctions.statistics.GetQuest(_action.id2)) != null)
         {
-            switch (_action.id2)
+            switch (_action.id1)
             {
                 case "add":
                     {
@@ -301,15 +303,16 @@ public class History
                         if (ContainsQuest(_quest))
                         {
                             Quest quest1 = activeQuests.Find(x => (x.questName == _quest.questName));
-                            if (quest1.questLine.Contains(_action.id2))
+                            if (quest1.questLine.Contains(_action.id1))
                             {
-                                quest1.stage = quest1.questLine.IndexOf(_action.id2);
+                                quest1.stage = quest1.questLine.IndexOf(_action.id1);
                             }
                         }
                         break;
                     }
             }
             SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<string>(x => x.questLine[x.stage]));
+            HandleStatisticCountEvent(this, new StoryEventArgs("", 0));
         }
     }
 
@@ -354,20 +357,24 @@ public class History
 
     protected void HandleStatisticCountEvent(object other, StoryEventArgs e)
     {
+        List<string> questLines = new List<string>();
         foreach (Quest _quest in activeQuests)
         {
             if (_quest.hasStatistic)
             {
-                if (_quest.statisticName == e.ID)
+                string s = _quest.questLine[_quest.stage];
+                string s1 = s.Substring(0, s.LastIndexOf("/"));
+                string s2 = s.Substring(s.LastIndexOf("/") + 1);
+                if (_quest.statisticName == e.ID && _quest.questLine[_quest.stage].Contains("/"))
                 {
-                    string s = _quest.questLine[_quest.stage];
-                    string s1 = s.Substring(0, s.LastIndexOf("/"));
-                    string s2 = s.Substring(s.LastIndexOf("/") + 1);
-                    _quest.questLine[_quest.stage] = s1 + e.Argument + s2;
+                    _quest.statisticCount = e.Argument;
                 }
+                questLines.Add(s1 + _quest.statisticCount.ToString() + "/" + s2);
             }
+            else
+                questLines.Add(_quest.questLine[_quest.stage]);
         }
-        SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<string>(x => x.questLine[x.stage]));
+        SpecialFunctions.gameUI.ConsiderQuests(questLines);
     }
 
     #endregion //events

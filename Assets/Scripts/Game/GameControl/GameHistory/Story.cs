@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -113,6 +114,19 @@ public class CustomStoryEditor : Editor
 
         story.storyName = EditorGUILayout.TextField("story name", story.storyName);
 
+        story.sceneName = EditorGUILayout.TextField("scene name", story.sceneName);
+
+        History history=null;
+        List<StoryInitializer> initList = null;
+        string sceneName = SceneManager.GetActiveScene().name;
+
+        if (GameObject.FindGameObjectWithTag("gameController") != null)
+        {
+            history = SpecialFunctions.history;
+            if (history!=null)
+                initList = history.InitList;
+        }
+
         if (story.storyActions == null)
         {
             story.storyActions = new List<StoryAction>();
@@ -147,6 +161,33 @@ public class CustomStoryEditor : Editor
                 story.storyActions.RemoveAt(i);
         }
 
+        if (story.sceneName == SceneManager.GetActiveScene().name)
+        {
+            if (initList != null)
+            {
+                StoryInitializer init = history.FindInitializer(story);
+                if (init == null)
+                {
+                    init = new StoryInitializer();
+                    init.story = story;
+                    init.eventObjects = new List<GameObject>();
+                    initList.Add(init);
+                }
+                if (init.eventObjects.Count!=story.storyActions.Count)
+                {
+                    int m = init.eventObjects.Count;
+                    for (int i = m; i < story.storyActions.Count; i++)
+                    {
+                        init.eventObjects.Add(null);
+                    }
+                    for (int i = m - 1; i >= story.storyActions.Count; i--)
+                    {
+                        init.eventObjects.RemoveAt(i);
+                    }
+                }
+            }
+        }
+
         foreach (StoryAction _action in story.storyActions)
         {
 
@@ -157,9 +198,28 @@ public class CustomStoryEditor : Editor
             _action.argument=EditorGUILayout.IntField("argument",_action.argument);
 
             _action.gameObj=(GameObject)EditorGUILayout.ObjectField("action object",_action.gameObj,typeof(GameObject), true);//с каким игровым объектом произвести действие
+            if ((sceneName == story.sceneName) && (_action.gameObj!=null))
+            {
+                if (initList != null)
+                {
+                    StoryInitializer init = history.FindInitializer(story);
+                    if (init != null)
+                    {
+                        init.eventObjects[story.storyActions.IndexOf(_action)]=_action.gameObj;
+                    }
+                }
+            }
 
             if (GUILayout.Button("Delete"))
             {
+                if (initList != null && sceneName==story.sceneName)
+                {
+                    StoryInitializer init = history.FindInitializer(story);
+                    if (init != null)
+                    {
+                        init.eventObjects.RemoveAt(story.storyActions.IndexOf(_action));
+                    }
+                }
                 story.storyActions.Remove(_action);
             }
 
@@ -329,9 +389,23 @@ public class CustomStoryEditor : Editor
         _condition.argument=EditorGUILayout.IntField("argument",_condition.argument);
         _condition.obj=(GameObject)EditorGUILayout.ObjectField("condition object",_condition.obj, typeof(GameObject),true);
 
+        if ((sceneName == story.sceneName) && (_condition.obj != null))
+        {
+            if (initList != null)
+            {
+                StoryInitializer init = history.FindInitializer(story);
+                if (init != null)
+                {
+                    init.eventReason= _condition.obj;
+                }
+            }
+        }
+
         #endregion//storyCondition
 
         story.SetDirty();
+        if (history != null)
+            EditorUtility.SetDirty(SpecialFunctions.gameController.GetComponent<GameHistory>());
 
     }
 
