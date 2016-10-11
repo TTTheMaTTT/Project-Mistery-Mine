@@ -132,6 +132,18 @@ public class CharacterController : MonoBehaviour, IDamageable
     }
 
     /// <summary>
+    /// Ещё одна функция получения урона, что не обращает на неуязвимость поражённого персонажа, если таковая имеется
+    /// </summary>
+    public virtual void TakeDamage(float damage, bool ignoreInvul)
+    {
+        Health = Mathf.Clamp(Health - damage, 0f, 100f);
+        if (health <= 0f)
+            Death();
+        else
+            Animate(new AnimationEventArgs("hitted"));
+    }
+
+    /// <summary>
     /// Функция смерти персонажа
     /// </summary>
     protected virtual void Death()

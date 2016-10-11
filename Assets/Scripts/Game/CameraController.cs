@@ -10,7 +10,7 @@ public class CameraController : MonoBehaviour
     #region consts
 
     protected const float offsetX = 0f;
-    protected const float offsetY = 0.255f;
+    protected const float offsetY = 0.1f;
     protected const float offsetZ = -10f;
 
     #endregion //consts

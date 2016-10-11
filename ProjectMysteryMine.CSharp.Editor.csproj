@@ -120,7 +120,6 @@
     <Compile Include="Assets\Editor\ImageEffects\VignetteAndChromaticAberrationEditor.cs" />
     <Compile Include="Assets\Editor\ItemCreator.cs" />
     <Compile Include="Assets\Editor\LevelEditor\LevelEditor.cs" />
-    <Compile Include="Assets\Editor\LevelEditor\TileWindow.cs" />
     <Compile Include="Assets\Editor\MisteryCaveEditor.cs" />
     <Compile Include="Assets\Editor\SpeechCreator\DialogCreateWindow.cs" />
     <Compile Include="Assets\Editor\StoryCreator\QuestCreator.cs" />

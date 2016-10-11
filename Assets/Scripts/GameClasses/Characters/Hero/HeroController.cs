@@ -35,8 +35,11 @@ public class HeroController : CharacterController
 
     protected Transform groundCheck;
     protected Transform waterCheck;
+    protected Transform wallAboveCheck;//Индикатор того, что над персонажем располагается твёрдое тело, земля
     protected WallChecker wallCheck;//Индикатор, необходимый для отсутствия зависаний в стене
     protected Interactor interactor;//Индикатор, ответственный за обнаружение и взаимодействие со всеми интерактивными объектами
+
+    protected Collider2D col1,col2;
 
     [SerializeField] protected GameObject attackParticles; //Чем атакует герой
 
@@ -64,7 +67,7 @@ public class HeroController : CharacterController
     [SerializeField] protected LayerMask whatIsGround, whatIsAim;
 
     protected bool jumping;
-    protected bool grounded;
+    protected GroundStateEnum groundState;
     protected float fallSpeed=0f;
     protected bool onLadder;
     protected bool underWater;
@@ -103,7 +106,7 @@ public class HeroController : CharacterController
 
                     if (Input.GetButtonDown("Jump"))
                     {
-                        if (grounded && !jumping)
+                        if (groundState==GroundStateEnum.grounded && !jumping)
                         {
                             rigid.AddForce(new Vector2(0f, jumpForce * (underWater ? waterCoof : 1f)));
                             StartCoroutine(JumpProcess());
@@ -119,12 +122,15 @@ public class HeroController : CharacterController
                     {
                         if (Input.GetButtonDown("Attack"))
                         {
-                            if (interactor.ReadyForInteraction())
-                                interactor.Interact();
-                            else
-                                Attack();
+                            if (groundState != GroundStateEnum.crouching)
+                            {
+                                if (interactor.ReadyForInteraction())
+                                    interactor.Interact();
+                                else
+                                    Attack();
+                            }
                         }
-                        else if (Input.GetButtonDown("Flip") && (rigid.velocity.x * (int)orientation > .1f) && (grounded))
+                        else if (Input.GetButtonDown("Flip") && (rigid.velocity.x * (int)orientation > .1f) && (groundState==GroundStateEnum.grounded))
                             Flip();
                     }
                 }
@@ -160,13 +166,13 @@ public class HeroController : CharacterController
         {
             Animate(new AnimationEventArgs("ladderMove"));
         }
-        else if (grounded)
+        else if (groundState==GroundStateEnum.inAir)
         {
-            Animate(new AnimationEventArgs("groundMove"));
+            Animate(new AnimationEventArgs("airMove"));
         }
         else
         {
-            Animate(new AnimationEventArgs("airMove"));
+            Animate(new AnimationEventArgs("groundMove"));
         }
 	}
 
@@ -180,6 +186,7 @@ public class HeroController : CharacterController
         groundCheck = indicators.FindChild("GroundCheck");
         waterCheck = indicators.FindChild("WaterCheck");
         wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
+        wallAboveCheck = indicators.FindChild("WallAboveCheck");
         interactor = indicators.FindChild("Interactor").GetComponent<Interactor>();
 
         immobile = false;
@@ -190,6 +197,12 @@ public class HeroController : CharacterController
         {
             fightingMode = (currentWeapon is SwordClass) ? "melee" : "range";
         }
+
+        Collider2D[] cols = new Collider2D[2];
+        cols = GetComponents<Collider2D>();
+        col1 = cols[0]; col2 = cols[1];
+        col2.enabled = false;
+
     }
 
     /// <summary>
@@ -197,21 +210,34 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Analyse()
     {
-        grounded = Physics2D.OverlapCircle(groundCheck.position, groundRadius, whatIsGround);
-        if (grounded)
+        if (Physics2D.OverlapCircle(groundCheck.position, groundRadius, whatIsGround))
+            groundState = GroundStateEnum.grounded;
+        else
+            groundState = GroundStateEnum.inAir;
+
+        if ((groundState==GroundStateEnum.grounded))
         {
+            bool crouching=false;
+            if (Physics2D.OverlapCircle(wallAboveCheck.position, groundRadius, whatIsGround) || Input.GetButton("Flip"))
+            {
+                groundState = GroundStateEnum.crouching;
+                crouching = true;
+            }
+            if (employment > 6)
+            {
+                Crouch(crouching);
+            }
+
             if (fallSpeed > minDamageFallSpeed)
             {
                 TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed));
-                fallSpeed = 0f;
             }
+            fallSpeed = 0f;
         }
         else
         {
-            if (rigid.velocity.y < -fallSpeed)
-            {
-                fallSpeed = -rigid.velocity.y;
-            }
+            Crouch(false);
+            fallSpeed = -rigid.velocity.y;
         }
 
         bool _underWater=Physics2D.OverlapCircle(waterCheck.position, groundRadius, LayerMask.GetMask("Water"));
@@ -237,9 +263,20 @@ public class HeroController : CharacterController
     /// </summary>
     protected IEnumerator JumpProcess()
     {
+        employment = Mathf.Clamp(employment - 2, 0, maxEmployment);
         jumping = true;
         yield return new WaitForSeconds(jumpTime);
+        employment = Mathf.Clamp(employment + 2, 0, maxEmployment);
         jumping = false;
+    }
+
+    /// <summary>
+    /// Функция приседания
+    /// </summary>
+    protected void Crouch(bool crouching)
+    {
+        col1.enabled = !crouching;
+        col2.enabled = crouching;
     }
 
     /// <summary>
@@ -267,7 +304,9 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        rigid.velocity = new Vector3(wallCheck.WallInFront() ? 0f : Input.GetAxis("Horizontal") * speed*(underWater ? waterCoof : 1f), rigid.velocity.y);
+        bool crouching = (groundState == GroundStateEnum.crouching);
+        float currentSpeed = speed * ((underWater || crouching) ? waterCoof : 1f); 
+        rigid.velocity = new Vector3((wallCheck.WallInFront() && !crouching) ? 0f : Input.GetAxis("Horizontal") * currentSpeed, rigid.velocity.y);
         if (orientation != _orientation)
         {
             Turn(_orientation);
@@ -311,11 +350,13 @@ public class HeroController : CharacterController
         onLadder = false;
         rigid.gravityScale = 1f;
         Animate(new AnimationEventArgs("setLadderMove", "", 0));
-        if (Input.GetAxis("Vertical")>0f)
-        {
             rigid.AddForce(new Vector2(0f, jumpForce / 2));
             StartCoroutine(JumpProcess());
-        }
+        //if (Input.GetAxis("Vertical")>0f)
+        //{
+        //  rigid.AddForce(new Vector2(0f, jumpForce / 2));
+        //  StartCoroutine(JumpProcess());
+        //}
     }
 
     /// <summary>
@@ -429,8 +470,12 @@ public class HeroController : CharacterController
     protected virtual IEnumerator FlipProcess()
     {
         employment = Mathf.Clamp(employment - 5, 0, maxEmployment);
+        col1.enabled = false;
+        col2.enabled = true;
         yield return new WaitForSeconds(flipTime);
         employment = Mathf.Clamp(employment + 5, 0, maxEmployment);
+        col1.enabled = true;
+        col2.enabled = false;
     }
 
     /// <summary>
@@ -443,6 +488,17 @@ public class HeroController : CharacterController
             base.TakeDamage(damage);
             StartCoroutine(InvulProcess(invulTime, true));
         }
+    }
+
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    public override void TakeDamage(float damage, bool ignoreInvul)
+    {
+        base.TakeDamage(damage, ignoreInvul);
+        SpriteRenderer sprite = GetComponentInChildren<SpriteRenderer>();
+        if (sprite != null) sprite.enabled = true;
+        StartCoroutine(InvulProcess(invulTime, true));
     }
 
     /// <summary>
