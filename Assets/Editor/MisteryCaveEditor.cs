@@ -34,5 +34,11 @@ public class MisteryCaveEditor : Editor{
         EditorWindow.GetWindow(typeof(DatabaseCreator));
     }
 
+    [MenuItem("Mistery Cave/LevelEditor/LevelEditor")]
+    public static void LevelEditor()
+    {
+        EditorWindow.GetWindow(typeof(LevelEditor));
+    }
+
 }
     
