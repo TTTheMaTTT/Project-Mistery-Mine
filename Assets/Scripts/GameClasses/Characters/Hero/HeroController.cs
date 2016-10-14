@@ -12,7 +12,7 @@ public class HeroController : CharacterController
     #region consts
 
     protected const float groundRadius = .01f;
-    protected const float jumpTime = .2f;
+    protected const float jumpTime = .2f, jumpInputTime=.2f ;
     protected const float flipTime = .6f;
 
     protected const float invulTime = 1f;
@@ -23,7 +23,7 @@ public class HeroController : CharacterController
 
     protected const float ladderCheckOffset = .05f, ladderStep = .01f;
 
-    protected const float minDamageFallSpeed = 4.5f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
+    protected const float minDamageFallSpeed = 5.5f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
     protected const float damagePerFallSpeed = 2f;
 
     protected const float suffocateTime = .3f;//Сколько времени должно пройти, чтобы запас воздуха уменьшился на 1 или здоровье ГГ на .5
@@ -60,13 +60,14 @@ public class HeroController : CharacterController
     public int AirSupply { get { return airSupply; }  set { airSupply = value; OnSuffocate(new SuffocateEventArgs(airSupply)); } }
 
     [SerializeField] protected float jumpForce = 200f,
+                                     jumpAdd = 20f,//Добавление к силе прыжка при зажимании
                                      flipForce= 150f,
                                      ladderSpeed=.8f,
                                      waterCoof=.7f;
 
     [SerializeField] protected LayerMask whatIsGround, whatIsAim;
 
-    protected bool jumping;
+    protected bool jumping, jumpInput=false;
     protected GroundStateEnum groundState;
     protected float fallSpeed=0f;
     protected bool onLadder;
@@ -111,6 +112,12 @@ public class HeroController : CharacterController
                             rigid.AddForce(new Vector2(0f, jumpForce * (underWater ? waterCoof : 1f)));
                             StartCoroutine(JumpProcess());
                         }
+                    }
+
+                    if (Input.GetButton("Jump"))
+                    {
+                        if (jumpInput)
+                            rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
                     }
 
                     if (Input.GetButtonDown("Up"))
@@ -256,6 +263,12 @@ public class HeroController : CharacterController
             }
         }
 
+        if (onLadder)
+        {
+            if (!Physics2D.OverlapCircle(transform.position - transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")))
+                LadderOff();
+        }
+
     }
 
     /// <summary>
@@ -264,6 +277,9 @@ public class HeroController : CharacterController
     protected IEnumerator JumpProcess()
     {
         employment = Mathf.Clamp(employment - 2, 0, maxEmployment);
+        jumpInput = true;
+        yield return new WaitForSeconds(jumpInputTime);
+        jumpInput = false;
         jumping = true;
         yield return new WaitForSeconds(jumpTime);
         employment = Mathf.Clamp(employment + 2, 0, maxEmployment);

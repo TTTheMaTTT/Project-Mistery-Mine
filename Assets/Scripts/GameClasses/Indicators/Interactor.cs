@@ -9,7 +9,7 @@ public class Interactor : MonoBehaviour {
 
     #region consts
 
-    protected const float ladderOffsetY = 0.1f, ladderOffsetX = .05f;//Максимальное относительное положение лестницы, чтобы на неё ещё можно было взобраться
+    protected const float ladderOffsetY = 0.1f, ladderOffsetX = .1f;//Максимальное относительное положение лестницы, чтобы на неё ещё можно было взобраться
 
     #endregion //consts
 
