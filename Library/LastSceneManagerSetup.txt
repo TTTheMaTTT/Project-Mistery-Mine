@@ -1,6 +1,10 @@
 sceneSetups:
 <<<<<<< HEAD
+<<<<<<< HEAD
 - path: Assets/Scenes/cave_lvl4.unity
+=======
+- path: Assets/Scenes/cave_lvl2.unity
+>>>>>>> 2f701e2edd6c71f78de25d74179772c7cf14f035
 =======
 - path: Assets/Scenes/cave_lvl2.unity
 >>>>>>> 2f701e2edd6c71f78de25d74179772c7cf14f035
