@@ -11,8 +11,15 @@ public class GameController : MonoBehaviour
     #region fields
 
     protected DialogWindowScript dialogWindow;
+    protected GameMenuScript gameMenu;
 
     #endregion //fields
+
+    protected void Update()
+    {
+        if (Input.GetButtonDown("Cancel"))
+            gameMenu.ChangeGameMod();
+    }
 
     protected void Awake()
     {
@@ -23,6 +30,8 @@ public class GameController : MonoBehaviour
     {
         Transform interfaceWindows = SpecialFunctions.gameInterface.transform;
         dialogWindow = interfaceWindows.GetComponentInChildren<DialogWindowScript>();
+        gameMenu = interfaceWindows.GetComponentInChildren<GameMenuScript>();
+        SpecialFunctions.PlayGame();
     }
 
     public static void GoToTheNextLevel()
