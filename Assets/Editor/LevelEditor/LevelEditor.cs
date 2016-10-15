@@ -17,6 +17,9 @@ public class LevelEditor : EditorWindow
 
     private const string iconPath = "Assets/Editor/LevelEditor/EditorIcons/";//в этой папке находятся все нужные иконки редактора
     private const string groundBrushesPath= "Assets/Editor/LevelEditor/GroundBrushes/";//в этой папке находятся все нужные кисти
+    private const string databasePath= "Assets/Editor/LevelEditor/Database/";//в этой папке находится база данных
+
+    private const float maxCtr = 200f;
 
     #endregion //consts
 
@@ -57,6 +60,17 @@ public class LevelEditor : EditorWindow
     private static bool groundAngle=false;
 
     #endregion //groundBrush
+
+    #region plantBrush
+
+    private static PlantBase plantBase;//База данных по растительности
+    private static float plantOffset;//Насколько сильно дольжно отклониться растение от центра сетки
+    private static List<Sprite> currentPlants=new List<Sprite>();//Выборка из растений которыми мы будем украшать уровень в данный момент, взятая из базы данных
+
+    private static int plantLayer = LayerMask.NameToLayer("plant");
+    private static Sprite nextPlant;
+
+    #endregion //plantBrush
 
     private Sprite[] sprites;
     private static Sprite activeSprite;//Спрайт, что мы используем для отрисовки
@@ -120,8 +134,16 @@ public class LevelEditor : EditorWindow
         {
             groundBrushes.Add(AssetDatabase.LoadAssetAtPath<GroundBrush>(brushName));
         }
-
         groundAngle = false;
+
+        if (!File.Exists(databasePath + "PlantBase.asset"))
+        {
+            PlantBase _plantBase = new PlantBase();
+            AssetDatabase.CreateAsset(_plantBase, databasePath + "PlantBase" + ".asset");
+            AssetDatabase.SaveAssets();
+            _plantBase.plants = new List<Sprite>();  
+        }
+        plantBase = AssetDatabase.LoadAssetAtPath<PlantBase>(databasePath + "PlantBase.asset");
 
         System.Type internalEditorUtilityType = typeof(InternalEditorUtility);
         PropertyInfo sortingLayersProperty = internalEditorUtilityType.GetProperty("sortingLayerNames", BindingFlags.Static | BindingFlags.NonPublic);
@@ -272,8 +294,7 @@ public class LevelEditor : EditorWindow
                             col.points = new Vector2[]{new Vector2(texSize.x, texSize.y) / 2f / gSprite.pixelsPerUnit, 
                                           new Vector2(-texSize.x, -texSize.y) / 2f / gSprite.pixelsPerUnit,
                                           new Vector2(texSize.x, -texSize.y) / 2f / gSprite.pixelsPerUnit};
-                            int lol = 1;
-                        }
+                         }
                         else
                         {
                             newGround.AddComponent<BoxCollider2D>();
@@ -466,7 +487,82 @@ public class LevelEditor : EditorWindow
         #endregion //ground
 
         static void PlantHandler()
-        { }
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && (currentPlants != null))
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = Vector3.zero;
+                Vector3 mouseWorldPos1 = camera.ScreenPointToRay(mousePos).origin;
+                mouseWorldPos1.z = mouseWorldPos.z = zPosition;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos1.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos1.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                Vector2 pos = gridSize;
+                Vector2 dif = mouseWorldPos1 - mouseWorldPos;
+                Vector3 offsetVect = (Mathf.Abs(dif.x) > Mathf.Abs(dif.y) ? new Vector3(gridSize.x * Mathf.Sign(dif.x), 0f) : new Vector3(0f, gridSize.y * Mathf.Sign(dif.y)));
+                int grLayer = groundLayer;
+                string glName = LayerMask.LayerToName(grLayer), plName=LayerMask.LayerToName(plantLayer);
+
+                float step = Mathf.Min(gridSize.x, gridSize.y);
+                bool b1 = Physics2D.Raycast(mouseWorldPos+Vector3.up*step/10f, Vector2.up, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
+                bool b2 = Physics2D.Raycast(mouseWorldPos + Vector3.right * step/10f, Vector2.right, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
+                bool b3 = Physics2D.Raycast(mouseWorldPos + Vector3.down * step/10f, Vector2.down, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
+                bool b4 = Physics2D.Raycast(mouseWorldPos + Vector3.left * step/10f, Vector2.left, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
+
+                Vector2 plantUp = Vector2.zero;
+
+
+                if (b3 && b4 && !b1 && !b2)
+                    plantUp = new Vector2(1f, 1f).normalized;
+                else if (b4 && b1 && !b2 && !b3)
+                    plantUp = new Vector2(1f, -1f).normalized;
+                else if (b1 && b2 && !b3 && !b4)
+                    plantUp = new Vector2(-1f, -1f).normalized;
+                else if (b2 && b3 && !b4 && !b1)
+                    plantUp = new Vector2(-1f, 1f).normalized;
+                else if (b1 && b2 && b3 && b4)
+                    plantUp = offsetVect.normalized;
+                bool a1 = (b1 || b2 || b3 || b4);
+                bool a2 = !(b1 & b2 && b3 && b4);
+                bool a3 = !Physics2D.Raycast(mouseWorldPos + new Vector3(plantUp.x, plantUp.y) * step / 5f, plantUp, step / 4f, LayerMask.GetMask(glName));
+                bool a4 = !Physics2D.Raycast(mouseWorldPos + new Vector3(plantUp.x, plantUp.y) * plantOffset, plantUp, step / 4f, LayerMask.GetMask(glName, LayerMask.LayerToName(plantLayer)));
+                if ((b1 && b2 && b3 && b4 &&
+                         !Physics2D.Raycast(mouseWorldPos + offsetVect,
+                                       plantUp, step/ 4f, LayerMask.GetMask(glName)) &&
+                         !Physics2D.Raycast(mouseWorldPos,plantUp,
+                                        offsetVect.magnitude+plantOffset, LayerMask.GetMask(plName))) ||
+                    ((b1||b2||b3||b4) && !(b1&b2&&b3&&b4) && 
+                    !Physics2D.Raycast(mouseWorldPos+new Vector3(plantUp.x,plantUp.y)*step/10f,plantUp,step/4f,LayerMask.GetMask(glName))&&
+                    !Physics2D.Raycast(mouseWorldPos-new Vector3(plantUp.x,plantUp.y)*step/4f,plantUp,plantOffset + step / 4f, LayerMask.GetMask(plName))))
+                {
+                    Sprite loadedPlant = currentPlants[Random.Range(0, currentPlants.Count)];
+                    string plantName = (parentObj != null) ? parentObj.name + "0" : grBrush.outGround.name;
+                    GameObject newPlant = new GameObject(plantName, typeof(SpriteRenderer));
+                    newPlant.transform.position = mouseWorldPos + ((b1&&b2&&b3&&b4)? (offsetVect / 2f):Vector3.zero) +new Vector3(plantUp.x,plantUp.y) * plantOffset;
+                    newPlant.transform.eulerAngles=new Vector3(0f,0f,plantUp.x<0? Vector2.Angle(Vector2.up,plantUp): 360f-Vector2.Angle(Vector2.up, plantUp));
+                    newPlant.transform.localScale += new Vector3((plantUp.x * plantUp.y != 0f ? Mathf.Sqrt(2)-1f : 0f),0f,0f);
+                    newPlant.GetComponent<SpriteRenderer>().sprite = loadedPlant;
+                    newPlant.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                    newPlant.tag = tagName;
+                    newPlant.layer = plantLayer;
+                    if (parentObj != null)
+                        newPlant.transform.parent = parentObj.transform;
+                    BoxCollider2D col=newPlant.AddComponent<BoxCollider2D>();
+                    col.size = new Vector2(col.size.x, col.size.y /5f);
+                    newPlant.AddComponent<EditorCollider>();
+
+                }
+            }
+        }
 
         static void WaterHandler()
         {}
@@ -673,7 +769,6 @@ public class LevelEditor : EditorWindow
     /// </summary>
     void OnDrawGUI()
     {
-
         EditorGUILayout.BeginHorizontal(textureStyleAct);
         {
             Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon };
@@ -781,16 +876,17 @@ public class LevelEditor : EditorWindow
         {
             drawScrollPos = EditorGUILayout.BeginScrollView(drawScrollPos);
             EditorGUILayout.BeginHorizontal();
-            float ctr = 0.0f;
+            float ctr = maxCtr;
             foreach (GroundBrush gBrush in groundBrushes)
             {
                 Sprite gBrushImage = gBrush.outGround;
-                if (ctr > gBrushImage.textureRect.x)
+                if (ctr < gBrushImage.textureRect.x)
                 {
                     GUILayout.EndHorizontal();
                     GUILayout.BeginHorizontal();
+                    ctr = maxCtr;
                 }
-                ctr = gBrushImage.textureRect.x;
+                ctr -= gBrushImage.textureRect.x;
                 if (grBrush == gBrush)
                 {
                     GUILayout.Button("", textureStyleAct, GUILayout.Width(gBrushImage.textureRect.width + 6), GUILayout.Height(gBrushImage.texture.height + 4));
@@ -851,7 +947,112 @@ public class LevelEditor : EditorWindow
     /// Меню отрисовки растений
     /// </summary>
     void PlantDrawGUI()
-    { }
+    {
+
+        if (currentPlants == null)
+        {
+            currentPlants = new List<Sprite>();
+        }
+
+        tagName = EditorGUILayout.TagField("tag", tagName);
+        plantLayer = EditorGUILayout.LayerField("plant layer", plantLayer);
+        groundLayer = EditorGUILayout.LayerField("ground layer", groundLayer);
+
+        EditorGUILayout.BeginHorizontal();
+        if (sLayerIndex >= sortingLayers.Length)
+        {
+            sLayerIndex = 0;
+        }
+        EditorGUILayout.LabelField("sorting layer");
+        sLayerIndex = EditorGUILayout.Popup(sLayerIndex, sortingLayers);
+        sortingLayer = sortingLayers[sLayerIndex];
+        EditorGUILayout.EndHorizontal();
+
+        zPosition = EditorGUILayout.FloatField("z-position", zPosition);
+        parentObjName = EditorGUILayout.TextField("parent name", parentObjName);
+        if (parentObjName != string.Empty && (parentObj != null ? parentObj.name != parentObjName : true))
+        {
+            parentObj = GameObject.Find(parentObjName);
+        }
+
+        plantOffset = EditorGUILayout.FloatField("plant offset", plantOffset);
+
+        drawScrollPos = EditorGUILayout.BeginScrollView(drawScrollPos);
+        EditorGUILayout.BeginHorizontal();
+        float ctr = maxCtr;
+        if (plantBase.plants == null)
+        {
+            plantBase.plants = new List<Sprite>();
+        }
+        foreach (Sprite plant in plantBase.plants)
+        {
+            if (ctr < plant.textureRect.x)
+            {
+                GUILayout.EndHorizontal();
+                EditorGUILayout.Space(); 
+                GUILayout.BeginHorizontal();
+                ctr = maxCtr;
+            }
+            ctr -= plant.textureRect.x;
+            if (currentPlants.Contains(plant))
+            {
+                if (GUILayout.Button("", textureStyleAct, GUILayout.Width(plant.textureRect.width + 6), GUILayout.Height(plant.texture.height + 4)))
+                    currentPlants.Remove(plant);
+                GUI.DrawTextureWithTexCoords(new Rect(GUILayoutUtility.GetLastRect().x + 3f,
+                                                      GUILayoutUtility.GetLastRect().y + 2f,
+                                                      GUILayoutUtility.GetLastRect().width - 6f,
+                                                      GUILayoutUtility.GetLastRect().height - 4f),
+                                             plant.texture,
+                                             new Rect(plant.textureRect.x / (float)plant.texture.width,
+                                                        plant.textureRect.y / (float)plant.texture.height,
+                                                        plant.textureRect.width / (float)plant.texture.width,
+                                                        plant.textureRect.height / (float)plant.texture.height));
+            }
+            else
+            {
+                if (GUILayout.Button("", textureStyle, GUILayout.Width(plant.textureRect.width + 2), GUILayout.Height(plant.textureRect.height + 2)))
+                    currentPlants.Add(plant);
+                GUI.DrawTextureWithTexCoords(GUILayoutUtility.GetLastRect(), plant.texture,
+                                             new Rect(plant.textureRect.x / (float)plant.texture.width,
+                                                         plant.textureRect.y / (float)plant.texture.height,
+                                                         plant.textureRect.width / (float)plant.texture.width,
+                                                         plant.textureRect.height / (float)plant.texture.height));
+            }
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.EndScrollView();
+
+        EditorGUILayout.BeginHorizontal();
+        {
+            nextPlant = (Sprite)EditorGUILayout.ObjectField("new object", nextPlant, typeof(Sprite));
+
+            EditorGUILayout.BeginVertical();
+            {
+                if (GUILayout.Button("Add"))
+                {
+                    if (nextPlant != null)
+                        if (!plantBase.plants.Contains(nextPlant))
+                        {
+                            plantBase.plants.Add(nextPlant);
+                            currentPlants.Add(nextPlant);
+                            nextPlant = null;
+                        }
+                }
+                if (GUILayout.Button("Delete"))
+                {
+                    for (int i = currentPlants.Count - 1; i >= 0; i--)
+                    {
+                        plantBase.plants.Remove(currentPlants[i]);
+                        currentPlants.RemoveAt(i);
+                    }
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+            
+        }
+        EditorGUILayout.EndHorizontal();
+        plantBase.SetDirty();
+    }
 
     /// <summary>
     /// Меню отрисовки воды
