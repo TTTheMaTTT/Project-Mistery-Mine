@@ -116,6 +116,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Obstacles\ObstacleScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Obstacles\SpikesScript.cs" />
     <Compile Include="Assets\Scripts\Interfaces\interfaces.cs" />
+    <Compile Include="Assets\Scripts\Other\EditorCollider.cs" />
     <Compile Include="Assets\Scripts\Other\Enums.cs" />
     <Compile Include="Assets\Scripts\Other\EventArgs.cs" />
     <Compile Include="Assets\Scripts\Other\SpecialFunctions.cs" />
