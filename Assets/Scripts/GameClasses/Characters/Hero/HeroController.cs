@@ -254,10 +254,12 @@ public class HeroController : CharacterController
             WaterIndicator waterIndicator = waterCheck.GetComponent<WaterIndicator>();
             if (_underWater)
             {
+                rigid.gravityScale = .6f;
                 waterIndicator.StartCoroutine(SuffocateProcess());
             }
             else
             {
+                rigid.gravityScale = 1f;
                 waterIndicator.StopAllCoroutines();
                 AirSupply = maxAirSupply;
             }
