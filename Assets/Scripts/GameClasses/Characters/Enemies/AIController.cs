@@ -8,9 +8,16 @@ using System.Collections;
 public class AIController : CharacterController
 {
 
+    #region consts
+
+    protected const float sightRadius = 5f, sightOffset = 0.1f;
+
+    #endregion //consts
+
     #region fields
 
-    protected GameObject target;//Что является целью ИИ
+    protected GameObject mainTarget;//Что является целью ИИ
+    protected GameObject currentTarget;//Что является текущей целью ИИ
 
     #endregion //fields
 
@@ -39,7 +46,8 @@ public class AIController : CharacterController
     protected virtual void BecomeAgressive()
     {
         agressive = true;
-        target = SpecialFunctions.player;
+        mainTarget = SpecialFunctions.player;
+        currentTarget = mainTarget;
     }
 
     /// <summary>
@@ -48,7 +56,7 @@ public class AIController : CharacterController
     protected virtual void BecomeCalm()
     {
         agressive = false;
-        target = null;
+        mainTarget = null;
     }
 
     /// <summary>

@@ -32,6 +32,8 @@ public class GameController : MonoBehaviour
         dialogWindow = interfaceWindows.GetComponentInChildren<DialogWindowScript>();
         gameMenu = interfaceWindows.GetComponentInChildren<GameMenuScript>();
         SpecialFunctions.PlayGame();
+        if (SceneManager.GetActiveScene().name != "MainMenu")
+            Cursor.visible = false;
     }
 
     public static void GoToTheNextLevel()

@@ -86,6 +86,7 @@
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\Statistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\StoryTriggerStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\DialogWindowScript.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\GameMenuScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\GameUIScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\MainMenuScript.cs" />
     <Compile Include="Assets\Scripts\Game\LevelEndController.cs" />
@@ -116,6 +117,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Obstacles\ObstacleScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Obstacles\SpikesScript.cs" />
     <Compile Include="Assets\Scripts\Interfaces\interfaces.cs" />
+    <Compile Include="Assets\Scripts\Other\EditorCollider.cs" />
     <Compile Include="Assets\Scripts\Other\Enums.cs" />
     <Compile Include="Assets\Scripts\Other\EventArgs.cs" />
     <Compile Include="Assets\Scripts\Other\SpecialFunctions.cs" />

@@ -17,9 +17,9 @@ public class GhostController : BatController
 
     protected override void FixedUpdate()
     {
-        if (agressive && target != null && employment > 7)
+        if (agressive && mainTarget != null && employment > 7)
         {
-            Vector2 targetPosition = target.transform.position;
+            Vector2 targetPosition = mainTarget.transform.position;
             if ((Mathf.Abs(targetPosition.x-transform.position.x) > attackDistance) || 
                 (Mathf.Abs(targetPosition.y-transform.position.y)> (attackDistance/2f)))
             {
@@ -98,7 +98,7 @@ public class GhostController : BatController
     protected override void BecomeAgressive()
     {
         agressive = true;
-        target = SpecialFunctions.player;
+        mainTarget = SpecialFunctions.player;
     }
 
     #endregion //eventHandlers
