@@ -105,7 +105,7 @@ public class HitBox : MonoBehaviour
                         Rigidbody2D rigid;
                         if ((rigid = other.GetComponent<Rigidbody2D>()) != null)
                         {
-                            rigid.AddForce((other.transform.position - transform.position).normalized * hitData.hitForce);
+                            rigid.AddForce((new Vector2(transform.lossyScale.x,0f)).normalized * hitData.hitForce);//Атака всегда толкает вперёд
                         }
                         OnAttack(new EventArgs());
                         return;

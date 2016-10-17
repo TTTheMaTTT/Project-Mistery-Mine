@@ -254,10 +254,12 @@ public class HeroController : CharacterController
             WaterIndicator waterIndicator = waterCheck.GetComponent<WaterIndicator>();
             if (_underWater)
             {
+                rigid.gravityScale = .6f;
                 waterIndicator.StartCoroutine(SuffocateProcess());
             }
             else
             {
+                rigid.gravityScale = 1f;
                 waterIndicator.StopAllCoroutines();
                 AirSupply = maxAirSupply;
             }
@@ -276,7 +278,7 @@ public class HeroController : CharacterController
     /// </summary>
     protected IEnumerator JumpProcess()
     {
-        employment = Mathf.Clamp(employment - 2, 0, maxEmployment);
+        employment = Mathf.Clamp(employment - 1, 0, maxEmployment);
         jumpInput = true;
         yield return new WaitForSeconds(jumpInputTime);
         jumpInput = false;
@@ -395,7 +397,7 @@ public class HeroController : CharacterController
 
     protected override void Turn(OrientationEnum _orientation)
     {
-        if (employment == 10)
+        if (employment >=8)
         {
             base.Turn(_orientation);
         }

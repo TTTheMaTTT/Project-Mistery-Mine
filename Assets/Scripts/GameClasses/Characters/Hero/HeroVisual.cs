@@ -36,6 +36,8 @@ public class HeroVisual : GroundMoveVisual
     /// </summary>
     protected virtual void LadderMove(string id, int argument)
     {
+        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("LadderMove"))
+            anim.Play("LadderMove");
         if (Mathf.Abs(rigid.velocity.y) >= minSpeed)
         {
             anim.speed=1f;

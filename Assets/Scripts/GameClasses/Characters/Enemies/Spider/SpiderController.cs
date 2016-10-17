@@ -31,9 +31,9 @@ public class SpiderController : AIController
 
     protected virtual void FixedUpdate()
     {
-        if (agressive && target != null && employment > 2)
+        if (agressive && mainTarget != null && employment > 2)
         {
-            Vector3 targetPosition = target.transform.position;
+            Vector3 targetPosition = mainTarget.transform.position;
             if (Vector2.Distance(targetPosition, transform.position) > attackDistance)
             {
                 Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));

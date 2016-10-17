@@ -50,5 +50,7 @@ public class GroundBrushEditor: Editor
         EditorGUILayout.ObjectField("inner ground", grBrush.inGround, typeof(Sprite));
         EditorGUILayout.ObjectField("45 angle ground",grBrush.angleGround, typeof(Sprite));
 
+        grBrush.SetDirty();
+
     }
 }

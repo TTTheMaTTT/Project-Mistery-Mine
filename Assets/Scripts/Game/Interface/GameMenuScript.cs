@@ -42,6 +42,7 @@ public class GameMenuScript : MonoBehaviour
         canvas.enabled = false;
         SpecialFunctions.PlayGame();
         SpecialFunctions.player.GetComponent<HeroController>().SetImmobile(false);
+        Cursor.visible = false;
     }
 
     public void Pause()
@@ -49,6 +50,7 @@ public class GameMenuScript : MonoBehaviour
         canvas.enabled = true;
         SpecialFunctions.PauseGame();
         SpecialFunctions.player.GetComponent<HeroController>().SetImmobile(true);
+        Cursor.visible = true;
     }
 
     public void RestartGame()

@@ -123,6 +123,7 @@
     <Compile Include="Assets\Editor\LevelEditor\GroundBrush.cs" />
     <Compile Include="Assets\Editor\LevelEditor\LevelEditor.cs" />
     <Compile Include="Assets\Editor\LevelEditor\PlantBase.cs" />
+    <Compile Include="Assets\Editor\LevelEditor\WaterBrush.cs" />
     <Compile Include="Assets\Editor\MisteryCaveEditor.cs" />
     <Compile Include="Assets\Editor\SpeechCreator\DialogCreateWindow.cs" />
     <Compile Include="Assets\Editor\StoryCreator\QuestCreator.cs" />
