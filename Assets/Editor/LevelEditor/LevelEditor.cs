@@ -289,6 +289,7 @@ public class LevelEditor : EditorWindow
                         }
                     case DrawModEnum.ladder:
                         {
+                            LadderHandler();
                             break;
                         }
                     case DrawModEnum.spikes:
@@ -635,7 +636,7 @@ public class LevelEditor : EditorWindow
         #region water
 
         /// <summary>
-        /// Отрисовка воды
+        /// Отрисовка воды 
         /// </summary>
         static void WaterHandler(bool wErase)
         {
@@ -1072,6 +1073,50 @@ public class LevelEditor : EditorWindow
 
         #endregion //water
 
+        #region ladder
+
+        static void LadderHandler()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && (currentPlants != null))
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                string glName = LayerMask.LayerToName(groundLayer), llName = LayerMask.LayerToName(ladderLayer);
+
+                float step = Mathf.Min(gridSize.x, gridSize.y);
+
+                if (!Physics2D.Raycast(mouseWorldPos,Vector2.down, gridSize.y*.45f, LayerMask.GetMask(glName, llName)) && 
+                    (!isLiana || Physics2D.Raycast(mouseWorldPos+Vector3.up*gridSize.y*.5f,Vector2.up,gridSize.y*.05f,LayerMask.GetMask(glName,llName))))
+                {
+                    if (parentObj == null && ladderParentObjName != string.Empty)
+                        parentObj = new GameObject(ladderParentObjName);
+                    string ladderName = (parentObj != null) ? parentObj.name + "0" : (isLiana? "liana" : "ladder");
+                    GameObject newLadder = Instantiate(currentLadder, mouseWorldPos, Quaternion.identity) as GameObject;
+                    newLadder.tag = tagName;
+                    newLadder.layer = ladderLayer;
+                    newLadder.name = ladderName;
+                    newLadder.GetComponent<SpriteRenderer>().sortingLayerName=sortingLayer;
+                    
+                    if (parentObj != null)
+                        newLadder.transform.parent = parentObj.transform;
+                }
+            }
+        }
+
+        #endregion //ladder
+
         #endregion //draw
 
         /// <summary>
@@ -1102,11 +1147,25 @@ public class LevelEditor : EditorWindow
                         }
                     case DrawModEnum.plant:
                         {
+                            GroundErase();
                             break;
                         }
                     case DrawModEnum.water:
                         {
                             WaterErase();
+                            break;
+                        }
+                    case DrawModEnum.ladder:
+                        {
+                            GroundErase();
+                            break;
+                        }
+                    case DrawModEnum.spikes:
+                        {
+                            break;
+                        }
+                    case DrawModEnum.usual:
+                        {
                             break;
                         }
                 }
@@ -1369,6 +1428,7 @@ public class LevelEditor : EditorWindow
                 }
             case DrawModEnum.ladder:
                 {
+                    LadderDrawGUI();
                     break;
                 }
             case DrawModEnum.spikes:
@@ -1783,9 +1843,9 @@ public class LevelEditor : EditorWindow
         }
         foreach (GameObject ladder in ladderBase.ladders)
         {
-            if (ladder.GetComponent<Sprite>() == null)
+            if (ladder.GetComponent<SpriteRenderer>() == null)
                 continue;
-            Sprite ladderSprite = ladder.GetComponent<Sprite>();
+            Sprite ladderSprite = ladder.GetComponent<SpriteRenderer>().sprite;
             Rect textRect = ladderSprite.textureRect;
             Texture2D texture = ladderSprite.texture;
             if (ctr < ladderSprite.textureRect.x)
@@ -1826,13 +1886,14 @@ public class LevelEditor : EditorWindow
 
         EditorGUILayout.BeginHorizontal();
         {
-            nextLadder = (GameObject)EditorGUILayout.ObjectField("new ladder", nextLadder, typeof(GameObject));
+            EditorGUILayout.LabelField("new ladder", GUILayout.Width(75f));
+            nextLadder = (GameObject)EditorGUILayout.ObjectField(nextLadder,typeof(GameObject), GUILayout.Width(150f));
 
             EditorGUILayout.BeginVertical();
             {
                 if (GUILayout.Button("Add"))
                 {
-                    if (nextLadder != null? nextLadder.GetComponent<Collider2D>()!=null:false)
+                    if (nextLadder != null? nextLadder.GetComponent<Collider2D>()!=null && nextLadder.GetComponent<SpriteRenderer>() != null : false)
                         if (!ladderBase.ladders.Contains(nextLadder))
                         {
                             ladderBase.ladders.Add(nextLadder);
