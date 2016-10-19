@@ -27,7 +27,7 @@ public class LevelEditor : EditorWindow
     #region fields
 
     private static Sprite selectIcon, drawIcon, dragIcon, eraseIcon;//Иконки, используемые при отрисовки меню редактора
-    private static Sprite groundIcon, waterIcon, plantIcon;//Иконки, используемые в меню рисования
+    private static Sprite groundIcon, waterIcon, plantIcon, ladderIcon, spikesIcon, usualDrawIcon;//Иконки, используемые в меню рисования
 
     #endregion //fields
 
@@ -86,6 +86,18 @@ public class LevelEditor : EditorWindow
 
     #endregion //waterBrush
 
+    #region ladderBrush
+
+    private static LadderBase ladderBase;//База данных по лестницам
+    private static GameObject currentLadder;//Какая лестница используется в данный момент
+
+    private static int ladderLayer = LayerMask.NameToLayer("ladder");
+    private static GameObject nextLadder;
+    private static string ladderParentObjName;//Имя объекта, который станет родительским по отношению к создаваемым объектам.
+    private static bool isLiana = false;//Мы рисуем лиану или лестницу?
+
+    #endregion //ladderBrush
+
     private Sprite[] sprites;
     private static Sprite activeSprite;//Спрайт, что мы используем для отрисовки
 
@@ -135,6 +147,9 @@ public class LevelEditor : EditorWindow
         groundIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "rockIcon.png");
         plantIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "plantIcon.png");
         waterIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "waterIcon.png");
+        ladderIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "ladderIcon.png");
+        spikesIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "spikeIcon.png");
+        usualDrawIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "brushIcon.png");
 
         if (!Directory.Exists(groundBrushesPath))
         {
@@ -171,6 +186,15 @@ public class LevelEditor : EditorWindow
             _plantBase.plants = new List<Sprite>();  
         }
         plantBase = AssetDatabase.LoadAssetAtPath<PlantBase>(databasePath + "PlantBase.asset");
+
+        if (!File.Exists(databasePath + "LadderBase.asset"))
+        {
+            LadderBase _ladderBase = new LadderBase();
+            AssetDatabase.CreateAsset(_ladderBase, databasePath + "LadderBase" + ".asset");
+            AssetDatabase.SaveAssets();
+            _ladderBase.ladders = new List<GameObject>();
+        }
+        ladderBase = AssetDatabase.LoadAssetAtPath<LadderBase>(databasePath + "LadderBase.asset");
 
         System.Type internalEditorUtilityType = typeof(InternalEditorUtility);
         PropertyInfo sortingLayersProperty = internalEditorUtilityType.GetProperty("sortingLayerNames", BindingFlags.Static | BindingFlags.NonPublic);
@@ -261,6 +285,18 @@ public class LevelEditor : EditorWindow
                     case DrawModEnum.water:
                         {
                             WaterHandler(false);
+                            break;
+                        }
+                    case DrawModEnum.ladder:
+                        {
+                            break;
+                        }
+                    case DrawModEnum.spikes:
+                        {
+                            break;
+                        }
+                    case DrawModEnum.usual:
+                        {
                             break;
                         }
                 }
@@ -576,7 +612,7 @@ public class LevelEditor : EditorWindow
                     !Physics2D.Raycast(mouseWorldPos-new Vector3(plantUp.x,plantUp.y)*step/4f,plantUp,plantOffset + step / 4f, LayerMask.GetMask(plName))))
                 {
                     Sprite loadedPlant = currentPlants[Random.Range(0, currentPlants.Count)];
-                    string plantName = (parentObj != null) ? parentObj.name + "0" : grBrush.outGround.name;
+                    string plantName = (parentObj != null) ? parentObj.name + "0" :"plant";
                     GameObject newPlant = new GameObject(plantName, typeof(SpriteRenderer));
                     newPlant.transform.position = mouseWorldPos + ((b1&&b2&&b3&&b4)? (offsetVect / 2f):Vector3.zero) +new Vector3(plantUp.x,plantUp.y) * plantOffset;
                     newPlant.transform.eulerAngles=new Vector3(0f,0f,plantUp.x<0? Vector2.Angle(Vector2.up,plantUp): 360f-Vector2.Angle(Vector2.up, plantUp));
@@ -665,9 +701,11 @@ public class LevelEditor : EditorWindow
             float step = Mathf.Abs(gridSize.x * movVect.x + gridSize.y * movVect.y);
             string glName = LayerMask.LayerToName(groundLayer), wlName = LayerMask.LayerToName(waterLayer);
             Vector2 leftPoint = beginPoint;
-            Vector2 rightPoint = leftPoint;
-            while ((rightPoint.y < leftPoint.y+gridSize.y/10f))
+            Vector2 rightPoint = leftPoint+Vector2.up*gridSize.y;
+            while (!((Mathf.Abs(rightPoint.y - leftPoint.y)<gridSize.y/10f)&&(Physics2D.Raycast(rightPoint+Vector2.right*gridSize.x*.1f,Vector2.right,gridSize.x*.7f,LayerMask.GetMask(glName)))))
             {
+                if (rightPoint.y - leftPoint.y > gridSize.y / 10f)
+                    rightPoint = leftPoint;
                 if (!Physics2D.Raycast(leftPoint + gridSize.x * .1f * Vector2.right, Vector2.left, gridSize.x * .7f, LayerMask.GetMask(glName)))
                 {
                     while (!Physics2D.Raycast(leftPoint + gridSize.x * .1f * Vector2.right, Vector2.left, gridSize.x * .7f, LayerMask.GetMask(glName)))
@@ -716,7 +754,7 @@ public class LevelEditor : EditorWindow
                     border = new List<Vector2>();
                     movVect = new Vector2(0f, -1f);
                     colVect = new Vector2(-1f, 0f);
-                    rightPoint = leftPoint;
+                    rightPoint = leftPoint + Vector2.up * gridSize.y;
                     if (Physics2D.Raycast(leftPoint + gridSize.x * .1f * Vector2.right, Vector2.left, gridSize.x * .7f, LayerMask.GetMask(glName)))
                     {
                         movVect = Vector2.down;
@@ -724,6 +762,8 @@ public class LevelEditor : EditorWindow
                         step = Mathf.Abs(gridSize.x * movVect.x + gridSize.y * movVect.y);
                     }
                 }
+                else if (Mathf.Approximately(rightPoint.y, leftPoint.y))
+                    border.Add(rightPoint);
             }
             // Учтём внутренние контуры и замыкнём нужный нам
             bool onBorder = false;
@@ -736,17 +776,25 @@ public class LevelEditor : EditorWindow
                 int turnCount = 0;
                 if (onBorder)
                 {
-                    if (!(Mathf.Abs(leftPoint.y - rightPoint.y) <= gridSize.y / 10f) && (!Physics2D.Raycast(rightPoint+Vector2.left*step*.1f, Vector2.left, .7f * gridSize.x, LayerMask.GetMask(glName))))
+                    if ((Mathf.Abs(leftPoint.y - rightPoint.y) <= gridSize.y / 10f) &&
+                        (!Physics2D.Raycast(rightPoint+Vector2.left*step*.1f, Vector2.left, .7f * gridSize.x, LayerMask.GetMask(glName)))&&
+                        (Physics2D.Raycast(rightPoint + Vector2.right * step * .1f, Vector2.right, .7f * gridSize.x, LayerMask.GetMask(glName))))
                     {
-                        onBorder = true;
+                        onBorder = false;
                         movVect = Vector2.left;
                         colVect = Vector2.up;
-                        step = gridSize.y;
+                        step = gridSize.x;
                     }
                 }
                 else
                 {
-                    onBorder = Physics2D.Raycast(rightPoint+Vector2.left*step*.1f, Vector2.left, .7f * gridSize.x, LayerMask.GetMask(glName));
+                    if (Physics2D.Raycast(rightPoint + Vector2.left * step * .1f, Vector2.left, .7f * gridSize.x, LayerMask.GetMask(glName)))
+                    {
+                        onBorder = true;
+                        movVect = Vector2.down;
+                        colVect = Vector2.left;
+                        step = gridSize.y;
+                    }
                 }
                 if (onBorder)
                 {
@@ -774,6 +822,13 @@ public class LevelEditor : EditorWindow
                 else
                 {
                     return border;
+                }
+                if (Mathf.Approximately(rightPoint.y, leftPoint.y) && Physics2D.Raycast(rightPoint+Vector2.right*gridSize.x*.1f,Vector2.right,gridSize.x*.7f,LayerMask.GetMask(glName)))
+                {
+                    onBorder = false;
+                    movVect = Vector2.left;
+                    colVect = Vector2.up;
+                    step = gridSize.x;
                 }
             }
             return border;
@@ -803,16 +858,16 @@ public class LevelEditor : EditorWindow
                 for (int i=0;i< border.Count;i++)
                 {
                     leftPos = border[i].x;
-                    if (i < border.Count-1 ? !Physics2D.Raycast(border[i], border[i + 1] - border[i], gridSize.x * .7f, LayerMask.GetMask(glName)) : false)
+                    if (i < border.Count - 1 ? !(Physics2D.Raycast(border[i] + Vector2.right*gridSize.x/10f, border[i + 1] - border[i], gridSize.x * .7f, LayerMask.GetMask(glName)) && 
+                                                (Physics2D.Raycast(border[i+1] + Vector2.left * gridSize.x / 10f, Vector2.left, gridSize.x * .7f, LayerMask.GetMask(glName)))): false)
                     {
                         rightPos = border[i + 1].x;
-                        while (leftPos < rightPos || Mathf.Abs(leftPos - rightPos) < gridSize.x / 10f)
+                        while (leftPos < rightPos)
                         {
                             Vector2 cellPosition = new Vector2(leftPos, depth);
                             FillCellWithWater(cellPosition, (Mathf.Abs(depth - areaBorder[0].y) < gridSize.y / 10f));
                             leftPos += gridSize.x;
                         }
-                        i++;
                     }
                     else
                     {
@@ -887,48 +942,66 @@ public class LevelEditor : EditorWindow
         }
 
         /// <summary>
+        /// Убрать всю воду из клетки
+        /// </summary>
+        static void RemoveWaterFromCell(Vector2 cellPosition)
+        {
+            string wlName = LayerMask.LayerToName(waterLayer);
+            GameObject destrWater = null;
+            if (Physics2D.Raycast(cellPosition + Vector2.left * gridSize.x * .1f, Vector2.left, gridSize.x * .35f, LayerMask.GetMask(wlName)))
+            {
+                destrWater = Physics2D.Raycast(cellPosition + Vector2.left * gridSize.x * .1f, Vector2.left, gridSize.x * .35f, LayerMask.GetMask(wlName)).collider.gameObject;
+            }
+            if ((destrWater == null) && (Physics2D.Raycast(cellPosition + Vector2.right * gridSize.x * .1f, Vector2.right, gridSize.x * .35f, LayerMask.GetMask(wlName))))
+                destrWater = Physics2D.Raycast(cellPosition + Vector2.right * gridSize.x * .1f, Vector2.right, gridSize.x * .35f, LayerMask.GetMask(wlName)).collider.gameObject;
+            if (destrWater != null)
+                DestroyImmediate(destrWater);
+
+            GameObject newWaterObj = null;
+            Vector2 downCellPosition = new Vector2(cellPosition.x, cellPosition.y - gridSize.y);
+            if (Physics2D.Raycast(downCellPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.x * .35f, LayerMask.GetMask(wlName)))
+                newWaterObj = Physics2D.Raycast(downCellPosition+ Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y * .35f, LayerMask.GetMask(wlName)).collider.gameObject;
+            if (newWaterObj != null && wBrush != null ? wBrush.waterObjects.Count > 0 : false)
+            {
+                GameObject wObject = GameObject.Instantiate(wBrush.waterObjects[Random.Range(0, wBrush.waterObjects.Count - 1)], newWaterObj.transform.position + Vector3.up * gridSize.y / 2f, Quaternion.identity) as GameObject;
+                wObject.transform.parent = newWaterObj.transform;
+                if (wObject.GetComponent<SpriteRenderer>() != null)
+                    wObject.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+            }
+
+        }
+
+        /// <summary>
         /// Уменьшить уровень воды на размер сетки
         /// </summary>
         static void ReduceWaterLevel(List<Vector2> areaBorder)
         {
-            if (areaBorder != null ? areaBorder.Count > 0 : false)
+            if (areaBorder != null ? areaBorder.Count == 0 : true)
                 return;
-            List<Vector2> border1 = areaBorder.FindAll(x => Mathf.Approximately(x.y, areaBorder[0].y-gridSize.y));
-            float x1 = areaBorder[0].x;
-            float maxX = Mathf.NegativeInfinity;
-            foreach (Vector2 vect in border1) if (vect.x > maxX) maxX = vect.x;
+            List<Vector2> border1 = areaBorder.FindAll(x => Mathf.Approximately(x.y, areaBorder[0].y));
+            border1.Sort((x, y) => { return x.x.CompareTo(y.x); });
+            float leftPos = areaBorder[0].x;
             float y1 = areaBorder[0].y;
             string wlName = LayerMask.LayerToName(waterLayer);
-            while (x1<maxX || Mathf.Abs(maxX-x1)<gridSize.x/10f)
+            string glName = LayerMask.LayerToName(groundLayer);
+            for (int i = 0; i < border1.Count; i++)
             {
-                GameObject destrWater = Physics2D.Raycast(new Vector2(x1, y1) + Vector2.left * .1f, Vector2.right, gridSize.x * .45f, LayerMask.GetMask(wlName)).collider.gameObject;
-                if (destrWater==null)
-                    destrWater = Physics2D.Raycast(new Vector2(x1, y1) + Vector2.right * .1f, Vector2.left, gridSize.x * .45f, LayerMask.GetMask(wlName)).collider.gameObject;
-                if (destrWater != null)
-                    DestroyImmediate(destrWater);
-                x1 += gridSize.x;
-            }
-            y1 = areaBorder[0].y - gridSize.y;
-            float xMax = Mathf.NegativeInfinity;
-            x1 = Mathf.Infinity;
-            foreach(Vector2 vect in border1)
-            {
-                if (vect.x < x1)
-                    x1 = vect.x;
-                if (vect.x > xMax)
-                    xMax = vect.x;
-            }
-            while (x1 <= xMax)
-            {
-                GameObject newWaterObj = Physics2D.Raycast(new Vector2(x1, y1) + Vector2.left * .1f, Vector2.right, gridSize.x * .45f, LayerMask.GetMask(wlName)).collider.gameObject;
-                if (newWaterObj==null)
-                    newWaterObj = Physics2D.Raycast(new Vector2(x1, y1) + Vector2.right * .1f, Vector2.left, gridSize.x * .45f, LayerMask.GetMask(wlName)).collider.gameObject;
-                if (newWaterObj!=null && wBrush!=null? wBrush.waterObjects.Count>0:false)
+                leftPos = border1[i].x;
+                if (i < border1.Count - 1 ? !(Physics2D.Raycast(new Vector2(leftPos, y1), Vector2.right, gridSize.x * .75f, LayerMask.GetMask(glName))&&
+                                              (Physics2D.Raycast(new Vector2(border1[i+1].x, y1), Vector2.left, gridSize.x * .75f, LayerMask.GetMask(glName)))) : false)
                 {
-                    GameObject wObject = GameObject.Instantiate(wBrush.waterObjects[Random.Range(0, wBrush.waterObjects.Count - 1)], newWaterObj.transform.position + Vector3.up * gridSize.y / 2f, Quaternion.identity) as GameObject;
-                    wObject.transform.parent = newWaterObj.transform;
-                    if (wObject.GetComponent<SpriteRenderer>() != null)
-                        wObject.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                    float rightPos = border1[i + 1].x;
+                    while (leftPos < rightPos || Mathf.Abs(rightPos - leftPos) < gridSize.x / 10f)
+                    {
+                        Vector2 cellPosition = new Vector2(leftPos, y1);
+                        RemoveWaterFromCell(cellPosition);
+                        leftPos += gridSize.x;
+                    }
+                }
+                else
+                {
+                    Vector2 cellPosition = new Vector2(leftPos, y1);
+                    RemoveWaterFromCell(cellPosition);
                 }
             }
         }
@@ -942,39 +1015,56 @@ public class LevelEditor : EditorWindow
             bool findBorder = false;
             Vector2 currentPosition = waterPoint;
             Vector2 movVect = Vector2.up;
+            Vector2 colVect = Vector2.right;
             Vector2 rightPoint = currentPosition;
             float step = gridSize.y;
             string glName = LayerMask.LayerToName(groundLayer), wlName=LayerMask.LayerToName(waterLayer);
-            while (!(findBorder && rightPoint==currentPosition) && (Physics2D.Raycast(currentPosition+Vector2.up*gridSize.y*.55f,Vector2.up,gridSize.y/2f,LayerMask.GetMask(glName,wlName))))
+            while (!(findBorder && Mathf.Approximately(rightPoint.y,currentPosition.y) && Mathf.Approximately(rightPoint.x, currentPosition.x)) && 
+                   (Physics2D.Raycast(currentPosition+Vector2.up*gridSize.y*.55f,Vector2.up,gridSize.y*.3f,LayerMask.GetMask(glName,wlName))))
             {
                 int turnCount = 0;
                 if (!findBorder)
                 {
-                    findBorder = Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .55f, Vector2.up, gridSize.y / 2f, LayerMask.GetMask(glName));
-                    rightPoint = currentPosition;
+                    if (Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y*.7f, LayerMask.GetMask(glName)))
+                    {
+                        findBorder = true;
+                        rightPoint = currentPosition;
+                        movVect = Vector2.left;
+                        colVect = Vector2.up;
+                        step = gridSize.x;
+                    }
                 }
-                else if (!Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .55f, Vector2.up, gridSize.y / 2f, LayerMask.GetMask(glName)) && currentPosition.y >= rightPoint.y)
+                else if (!Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y*.7f, LayerMask.GetMask(glName)) && currentPosition.y >= rightPoint.y)
                 {
                     findBorder = false;
                     step = gridSize.y;
                     movVect = Vector2.up;
+                    colVect = Vector2.right;
                 }
-                else if (currentPosition.y >= rightPoint.y)
+                if (currentPosition.y > rightPoint.y)
                     rightPoint = currentPosition;
                 if (findBorder)
                 {
-                    while (turnCount<4 && Physics2D.Raycast(currentPosition+movVect*step*.55f,movVect,step/2f,LayerMask.GetMask(glName)))
+                    if (!Physics2D.Raycast(currentPosition + colVect * step * .1f, colVect, step * .7f, LayerMask.GetMask(glName)))
                     {
-                        float a = movVect.x;
-                        movVect.x = movVect.y;
-                        movVect.y = -a;
-                        step = movVect.x * gridSize.x + movVect.y * gridSize.y;
+                        Vector2 vect = -movVect;
+                        movVect = colVect;
+                        colVect=vect;
+                        step = movVect.x != 0 ? gridSize.x : gridSize.y;
+                    }
+                    while (turnCount<4 && Physics2D.Raycast(currentPosition+movVect*step*.1f,movVect,step*.7f,LayerMask.GetMask(glName)))
+                    {
+                        Vector2 vect= -colVect;
+                        colVect = movVect;
+                        movVect = vect;
+                        step = movVect.x!=0? gridSize.x : gridSize.y;
                         turnCount++;
                     }
                 }
                 if (turnCount < 4)
                     currentPosition += movVect * step;
             }
+            bool k = Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .55f, Vector2.up, gridSize.y * .3f, LayerMask.GetMask(glName, wlName));
             rightPoint = currentPosition;
             List<Vector2> border = FormWaterPoints(rightPoint);
             return border;
@@ -1016,6 +1106,7 @@ public class LevelEditor : EditorWindow
                         }
                     case DrawModEnum.water:
                         {
+                            WaterErase();
                             break;
                         }
                 }
@@ -1065,6 +1156,48 @@ public class LevelEditor : EditorWindow
                     for (int i = 0; i < 8; i++)
                         if (groundBlocks[i] != null)
                             CorrectGround(groundBlocks[i]);
+                }
+            }
+        }
+
+        static void WaterErase()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && (wBrush != null ? !wBrush.Incomplete : false))
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                mouseWorldPos.z = zPosition;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                Vector2 pos = gridSize;
+                int wLayer = waterLayer;
+                string wlName = LayerMask.LayerToName(eraseLayer);
+
+                bool b1 = (!Physics2D.Raycast(mouseWorldPos + Vector3.up * gridSize.y / 10f, Vector2.up, gridSize.y / 4f, LayerMask.GetMask(wlName)));
+                bool b2 = (!Physics2D.Raycast(mouseWorldPos + Vector3.right * gridSize.x / 10f, Vector2.right, gridSize.x / 4f, LayerMask.GetMask(wlName)));
+                bool b3 = (!Physics2D.Raycast(mouseWorldPos + Vector3.down * gridSize.y / 10f, Vector2.down, gridSize.y / 4f, LayerMask.GetMask(wlName)));
+                bool b4 = (!Physics2D.Raycast(mouseWorldPos + Vector3.left * gridSize.x / 10f, Vector2.left, gridSize.x / 4f, LayerMask.GetMask(wlName)));
+
+                if (!b1 || !b2 || !b3 || !b4)
+                {
+                    while (Physics2D.Raycast(mouseWorldPos + Vector3.up * gridSize.y * 0.1f, Vector2.down, gridSize.y / 2f, LayerMask.GetMask(wlName)))
+                    {
+                        List<Vector2> waterBorder = GetWaterAreaByPoint(mouseWorldPos);
+                        if (waterBorder != null ? waterBorder.Count > 0 : false)
+                            ReduceWaterLevel(waterBorder);
+                        else
+                            break;
+                    }
                 }
             }
         }
@@ -1186,8 +1319,8 @@ public class LevelEditor : EditorWindow
     {
         EditorGUILayout.BeginHorizontal(textureStyleAct);
         {
-            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon };
-            for (int i = 0; i < 3; i++)
+            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon, spikesIcon,usualDrawIcon };
+            for (int i = 0; i < 6; i++)
             {
                 Sprite currentDrawSprite = drawIconSprites[i];
                 if (drawMod == (DrawModEnum)i)
@@ -1232,6 +1365,18 @@ public class LevelEditor : EditorWindow
             case DrawModEnum.water:
                 {
                     WaterDrawGUI();
+                    break;
+                }
+            case DrawModEnum.ladder:
+                {
+                    break;
+                }
+            case DrawModEnum.spikes:
+                {
+                    break;
+                }
+            case DrawModEnum.usual:
+                {
                     break;
                 }
         }
@@ -1598,6 +1743,134 @@ public class LevelEditor : EditorWindow
 
     #endregion //waterGUI
 
+    #region ladderGUI
+
+    /// <summary>
+    /// Меню отрисовки лестниц
+    /// </summary>
+    void LadderDrawGUI()
+    {
+
+        tagName = EditorGUILayout.TagField("tag", tagName);
+        ladderLayer = EditorGUILayout.LayerField("ladder layer",  ladderLayer);
+        groundLayer = EditorGUILayout.LayerField("ground layer", groundLayer);
+
+        EditorGUILayout.BeginHorizontal();
+        if (sLayerIndex >= sortingLayers.Length)
+        {
+            sLayerIndex = 0;
+        }
+        EditorGUILayout.LabelField("sorting layer");
+        sLayerIndex = EditorGUILayout.Popup(sLayerIndex, sortingLayers);
+        sortingLayer = sortingLayers[sLayerIndex];
+        EditorGUILayout.EndHorizontal();
+
+        zPosition = EditorGUILayout.FloatField("z-position", zPosition);
+        ladderParentObjName = EditorGUILayout.TextField("parent name", ladderParentObjName);
+        if (ladderParentObjName != string.Empty && (parentObj != null ? parentObj.name != ladderParentObjName : true))
+        {
+            parentObj = GameObject.Find(ladderParentObjName);
+        }
+
+        isLiana = EditorGUILayout.Toggle("is liana?", isLiana);
+
+        drawScrollPos = EditorGUILayout.BeginScrollView(drawScrollPos);
+        EditorGUILayout.BeginHorizontal();
+        float ctr = maxCtr;
+        if (ladderBase.ladders == null)
+        {
+            ladderBase.ladders = new List<GameObject>();
+        }
+        foreach (GameObject ladder in ladderBase.ladders)
+        {
+            if (ladder.GetComponent<Sprite>() == null)
+                continue;
+            Sprite ladderSprite = ladder.GetComponent<Sprite>();
+            Rect textRect = ladderSprite.textureRect;
+            Texture2D texture = ladderSprite.texture;
+            if (ctr < ladderSprite.textureRect.x)
+            {
+                GUILayout.EndHorizontal();
+                EditorGUILayout.Space();
+                GUILayout.BeginHorizontal();
+                ctr = maxCtr;
+            }
+            ctr -= ladderSprite.textureRect.x;
+            if (currentLadder==ladder)
+            {
+                if (GUILayout.Button("", textureStyleAct, GUILayout.Width(textRect.width + 6), GUILayout.Height(textRect.height + 4)))
+                { }
+                GUI.DrawTextureWithTexCoords(new Rect(GUILayoutUtility.GetLastRect().x + 3f,
+                                                      GUILayoutUtility.GetLastRect().y + 2f,
+                                                      GUILayoutUtility.GetLastRect().width - 6f,
+                                                      GUILayoutUtility.GetLastRect().height - 4f),
+                                             texture,
+                                             new Rect(textRect.x / (float)texture.width,
+                                                        textRect.y / (float)texture.height,
+                                                        textRect.width / texture.width,
+                                                        textRect.height / texture.height));
+            }
+            else
+            {
+                if (GUILayout.Button("", textureStyle, GUILayout.Width(textRect.width + 2), GUILayout.Height(textRect.height + 2)))
+                    currentLadder=ladder;
+                GUI.DrawTextureWithTexCoords(GUILayoutUtility.GetLastRect(), texture,
+                                             new Rect(textRect.x / (float)texture.width,
+                                                         textRect.y / (float)texture.height,
+                                                         textRect.width / (float)texture.width,
+                                                         textRect.height / (float)texture.height));
+            }
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.EndScrollView();
+
+        EditorGUILayout.BeginHorizontal();
+        {
+            nextLadder = (GameObject)EditorGUILayout.ObjectField("new ladder", nextLadder, typeof(GameObject));
+
+            EditorGUILayout.BeginVertical();
+            {
+                if (GUILayout.Button("Add"))
+                {
+                    if (nextLadder != null? nextLadder.GetComponent<Collider2D>()!=null:false)
+                        if (!ladderBase.ladders.Contains(nextLadder))
+                        {
+                            ladderBase.ladders.Add(nextLadder);
+                            currentLadder=nextLadder;
+                            nextLadder = null;
+                        }
+                }
+                if (GUILayout.Button("Delete"))
+                {
+                    if (currentLadder != null)
+                        ladderBase.ladders.Remove(currentLadder);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+        }
+        EditorGUILayout.EndHorizontal();
+        ladderBase.SetDirty();
+    }
+
+    #endregion //ladderGUI
+
+    /// <summary>
+    /// Меню отрисовки шипов и прочих препятствий
+    /// </summary>
+    void SpikesDrawGUI()
+    {
+
+    }
+
+    /// <summary>
+    /// Меню отрисовки по узлам сетки
+    /// </summary>
+    void UsualDrawGUI()
+    {
+
+    }
+
     #endregion //drawGUI
 
     /// <summary>
@@ -1654,10 +1927,12 @@ public class LevelEditor : EditorWindow
                 }
             case DrawModEnum.plant:
                 {
+                    eraseLayer = EditorGUILayout.LayerField("erase Mask", eraseLayer);
                     break;
                 }
             case DrawModEnum.water:
                 {
+                    eraseLayer = EditorGUILayout.LayerField("erase Mask", eraseLayer);
                     break;
                 }
         }

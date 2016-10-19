@@ -46,5 +46,14 @@ public class ItemCreator : EditorWindow
             EditorUtility.FocusProjectWindow();
             Selection.activeObject = asset;
         }
+        else if (itemType == "heart")
+        {
+            HeartClass asset = ScriptableObject.CreateInstance<HeartClass>();
+            asset.itemName = itemName;
+            AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
+            AssetDatabase.SaveAssets();
+            EditorUtility.FocusProjectWindow();
+            Selection.activeObject = asset;
+        }
     }
 }

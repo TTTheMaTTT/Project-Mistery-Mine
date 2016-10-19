@@ -47,7 +47,7 @@ public class Interactor : MonoBehaviour {
                 IInteractive interaction = interactions[0].GetComponent<IInteractive>();
                 interaction.Interact();
             }
-            if (interactions[0] == null)
+            if (interactions[0] == null ? true : interactions[0].GetComponent<IInteractive>() == null)
             {
                 interactions.RemoveAt(0);
             }
