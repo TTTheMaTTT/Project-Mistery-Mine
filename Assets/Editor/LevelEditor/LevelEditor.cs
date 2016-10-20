@@ -92,11 +92,44 @@ public class LevelEditor : EditorWindow
     private static GameObject currentLadder;//Какая лестница используется в данный момент
 
     private static int ladderLayer = LayerMask.NameToLayer("ladder");
+    private static string ladderTag = "ladder";
     private static GameObject nextLadder;
     private static string ladderParentObjName;//Имя объекта, который станет родительским по отношению к создаваемым объектам.
     private static bool isLiana = false;//Мы рисуем лиану или лестницу?
 
     #endregion //ladderBrush
+
+    #region spikesBrush
+
+    private static string obstacleName;//Как называется создаваемое препятствие
+    private static string obstacleParentName;//Как называется родительский по отношению к создаваемому препятствию объект?
+    private static ObstacleBase obstacleBase;//База данных по препятствиям
+    private static GameObject currentObstacle;//Какой вид препятствия используется в данный момент
+
+    private static float obstacleDamage;//Какой урон наносит данный вид препятствия
+    private static float damageBoxSize=.16f;//Размер области атаки по оси Y
+    private static float damageBoxOffset = 0f;//Насколько сдвинут хитбокс по оси Y
+    private static float obstacleOffset;//Смещение по вертикальной оси при расположении препятствий
+
+    private static int obstacleLayer = LayerMask.NameToLayer("obstacle");
+    private static GameObject nextObstacle;
+    private static ObstacleEnum obstacleType;//Тип создаваемого препятствия
+
+    #endregion //spikesBrush
+
+    #region usualBrush
+    
+    private static SpriteBase spriteBase;//База данных по спрайтам
+    private static List<Sprite> currentSprites = new List<Sprite>();//Выборка из спрайтов которыми мы будем рисовать уровень, взятая из базы данных
+
+    private static bool hasCollider=true, isTrigger=false;//Определяем твёрдость объектов
+    private static bool overpaint = false;//Есть ли возможность перерисовывать объекты?
+
+    private static int spriteLayer = LayerMask.NameToLayer("ground");
+    private static Sprite nextSprite;
+    private static string spriteParentObjName;//Имя объекта, который станет родительским по отношению к создаваемым объектам.
+
+    #endregion //usualBrush
 
     private Sprite[] sprites;
     private static Sprite activeSprite;//Спрайт, что мы используем для отрисовки
@@ -196,6 +229,24 @@ public class LevelEditor : EditorWindow
         }
         ladderBase = AssetDatabase.LoadAssetAtPath<LadderBase>(databasePath + "LadderBase.asset");
 
+        if (!File.Exists(databasePath + "ObstacleBase.asset"))
+        {
+            ObstacleBase _obstacleBase = new ObstacleBase();
+            AssetDatabase.CreateAsset(_obstacleBase, databasePath + "ObstacleBase" + ".asset");
+            AssetDatabase.SaveAssets();
+            _obstacleBase.obstacles = new List<GameObject>();
+        }
+        obstacleBase = AssetDatabase.LoadAssetAtPath<ObstacleBase>(databasePath + "ObstacleBase.asset");
+
+        if (!File.Exists(databasePath + "SpriteBase.asset"))
+        {
+            SpriteBase _spriteBase = new SpriteBase();
+            AssetDatabase.CreateAsset(_spriteBase, databasePath + "SpriteBase" + ".asset");
+            AssetDatabase.SaveAssets();
+            _spriteBase.sprites = new List<Sprite>();
+        }
+        spriteBase = AssetDatabase.LoadAssetAtPath<SpriteBase>(databasePath + "SpriteBase.asset");
+
         System.Type internalEditorUtilityType = typeof(InternalEditorUtility);
         PropertyInfo sortingLayersProperty = internalEditorUtilityType.GetProperty("sortingLayerNames", BindingFlags.Static | BindingFlags.NonPublic);
 
@@ -294,10 +345,12 @@ public class LevelEditor : EditorWindow
                         }
                     case DrawModEnum.spikes:
                         {
+                            ObstacleHandler();
                             break;
                         }
                     case DrawModEnum.usual:
                         {
+                            UsualHandler();
                             break;
                         }
                 }
@@ -1075,11 +1128,66 @@ public class LevelEditor : EditorWindow
 
         #region ladder
 
+        /// <summary>
+        /// Функция, создающая лестницы при нажатии на кнопку мыши
+        /// </summary>
         static void LadderHandler()
         {
             Event e = Event.current;
             HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
-            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && (currentPlants != null))
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && currentLadder != null)
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                mouseWorldPos.z = zPosition;
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                string glName = LayerMask.LayerToName(groundLayer), llName = LayerMask.LayerToName(ladderLayer);
+
+                float step = Mathf.Min(gridSize.x, gridSize.y);
+
+                if (!Physics2D.Raycast(mouseWorldPos,Vector2.down, gridSize.y*.45f, LayerMask.GetMask(glName, llName)) && 
+                    (!isLiana || Physics2D.Raycast(mouseWorldPos+Vector3.up*gridSize.y*.5f,Vector2.up,gridSize.y*.05f,LayerMask.GetMask(glName,llName))))
+                {
+                    if (parentObj == null && ladderParentObjName != string.Empty)
+                    {
+                        parentObj = new GameObject(ladderParentObjName);
+                        parentObj.transform.position = mouseWorldPos;
+                    }
+                    string ladderName = (parentObj != null) ? parentObj.name + "0" : (isLiana? "liana" : "ladder");
+                    GameObject newLadder = GameObject.Instantiate(currentLadder,mouseWorldPos,Quaternion.identity) as GameObject;
+                    newLadder.transform.position = mouseWorldPos;
+                    newLadder.tag = ladderTag;
+                    newLadder.layer = ladderLayer;
+                    newLadder.name = ladderName;
+                    newLadder.GetComponent<SpriteRenderer>().sortingLayerName=sortingLayer;
+                    
+                    if (parentObj != null)
+                        newLadder.transform.parent = parentObj.transform;
+                }
+            }
+        }
+
+        #endregion //ladder
+
+        #region obstacles
+
+        /// <summary>
+        /// Функция, создающая препятствия при нажатии кнопки мыши
+        /// </summary>
+        static void ObstacleHandler()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && (currentObstacle != null))
             {
                 Camera camera = SceneView.currentDrawingSceneView.camera;
 
@@ -1092,30 +1200,239 @@ public class LevelEditor : EditorWindow
                     mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
                 }
                 Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+                mouseWorldPos.z = zPosition;
 
-                string glName = LayerMask.LayerToName(groundLayer), llName = LayerMask.LayerToName(ladderLayer);
+                string glName = LayerMask.LayerToName(groundLayer), olName = LayerMask.LayerToName(obstacleLayer);
 
-                float step = Mathf.Min(gridSize.x, gridSize.y);
-
-                if (!Physics2D.Raycast(mouseWorldPos,Vector2.down, gridSize.y*.45f, LayerMask.GetMask(glName, llName)) && 
-                    (!isLiana || Physics2D.Raycast(mouseWorldPos+Vector3.up*gridSize.y*.5f,Vector2.up,gridSize.y*.05f,LayerMask.GetMask(glName,llName))))
+                if (!Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y * .45f, LayerMask.GetMask(glName, olName)) &&
+                    Physics2D.Raycast(mouseWorldPos + Vector3.down * gridSize.y * .5f, Vector2.down, gridSize.y * .05f, LayerMask.GetMask(glName)))
                 {
-                    if (parentObj == null && ladderParentObjName != string.Empty)
-                        parentObj = new GameObject(ladderParentObjName);
-                    string ladderName = (parentObj != null) ? parentObj.name + "0" : (isLiana? "liana" : "ladder");
-                    GameObject newLadder = Instantiate(currentLadder, mouseWorldPos, Quaternion.identity) as GameObject;
-                    newLadder.tag = tagName;
-                    newLadder.layer = ladderLayer;
-                    newLadder.name = ladderName;
-                    newLadder.GetComponent<SpriteRenderer>().sortingLayerName=sortingLayer;
-                    
-                    if (parentObj != null)
-                        newLadder.transform.parent = parentObj.transform;
+                    GameObject obstacle = null;
+                    if (Physics2D.Raycast(mouseWorldPos + Vector3.up*(obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.left * gridSize.x * .55f, 
+                        Vector2.left, gridSize.x * .15f, LayerMask.GetMask(olName)))
+                    {
+                        obstacle = Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.left * gridSize.x * .55f,
+                                                    Vector2.left, gridSize.x * .15f, LayerMask.GetMask(olName)).collider.gameObject;
+                        if (!((obstacleType == ObstacleEnum.plants && obstacle.GetComponent<ObstacleScript>() != null) ||
+                             ((obstacleType == ObstacleEnum.spikes && obstacle.GetComponent<SpikesScript>() != null))))
+                            obstacle = null;
+                    }
+                    if ((obstacle == null) && Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset +  (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f, 
+                                                                Vector2.right, gridSize.x * .15f, LayerMask.GetMask(olName)))
+                    {
+                        obstacle = Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f,
+                                                     Vector2.right, gridSize.x * .15f, LayerMask.GetMask(olName)).collider.gameObject;
+                        if (!((obstacleType == ObstacleEnum.plants && obstacle.GetComponent<ObstacleScript>() != null) ||
+                             ((obstacleType == ObstacleEnum.spikes && obstacle.GetComponent<SpikesScript>() != null))))
+                            obstacle = null;
+                    }
+                    if (obstacle == null)
+                    {
+                        obstacle = new GameObject(obstacleName);
+                        obstacle.transform.position = mouseWorldPos+Vector3.up*obstacleOffset;
+                        BoxCollider2D col = obstacle.AddComponent<BoxCollider2D>();
+                        col.size = new Vector2(gridSize.x, damageBoxSize);
+                        col.offset = new Vector2(0f, (damageBoxSize-gridSize.y) / 2f + damageBoxOffset);
+                        col.isTrigger = true;
+                        if (obstacleType == ObstacleEnum.plants)
+                        {
+                            ObstacleScript obScript = obstacle.AddComponent<ObstacleScript>();
+                            obScript.HitData = new HitClass(obstacleDamage, -1f, col.size, col.offset,0f);
+                            obScript.HitData.damage = obstacleDamage;
+                            obScript.HitData.hitSize = col.size;
+                            obScript.HitData.hitPosition = col.offset;
+                            obScript.Enemies = new List<string>() { "player" };
+                            obstacle.AddComponent<HitBox>();
+                        }
+                        else if (obstacleType == ObstacleEnum.spikes)
+                        {
+                            SpikesScript spikeScript = obstacle.AddComponent<SpikesScript>();
+                            spikeScript.Damage = obstacleDamage;
+                            spikeScript.Enemies = new List<string>() { "player" };
+                        }
+                        obstacle.layer = obstacleLayer;
+                        obstacle.tag = tagName;
+                        if (obstacleParentName != string.Empty)
+                        {
+                            if (parentObj == null)
+                            {
+                                parentObj = new GameObject(obstacleParentName);
+                                parentObj.transform.position = mouseWorldPos;
+                            }
+                            obstacle.transform.parent = parentObj.transform;
+                        }
+                    }
+                    GameObject newObstacle = Instantiate(currentObstacle, mouseWorldPos+obstacleOffset*Vector3.up, Quaternion.identity) as GameObject;
+                    newObstacle.tag = tagName;
+                    newObstacle.layer = obstacleLayer;
+                    newObstacle.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+
+                    if (obstacle != null)
+                    {
+                        newObstacle.transform.parent = obstacle.transform;
+                        CorrectObstacle(obstacle);
+                    }
+                    if (Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f,
+                                                                Vector2.right, gridSize.x * .15f, LayerMask.GetMask(olName)) &&
+                        Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.left * gridSize.x * .55f,
+                        Vector2.left, gridSize.x * .15f, LayerMask.GetMask(olName)))
+                    {
+                        GameObject obstacle1 = Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f,
+                                                                Vector2.right, gridSize.x * .15f, LayerMask.GetMask(olName)).collider.gameObject;
+                        if (((obstacleType == ObstacleEnum.plants)&&(obstacle1.GetComponent<ObstacleScript>()!=null)||
+                            (obstacleType==ObstacleEnum.spikes)&&(obstacle1.GetComponent<SpikesScript>()!=null)))
+                            CombineObstacles(obstacle, obstacle1);
+                    }
+                        
                 }
             }
         }
 
-        #endregion //ladder
+        /// <summary>
+        /// Функция, которая учитывает расположение и содержимое препятствия и правильно настраивает его
+        /// </summary>
+        static void CorrectObstacle(GameObject _obstacle)
+        {
+            //Сначала вытащим все дочерние объекты из объекта
+            List<GameObject> obChildren = new List<GameObject>();
+            for (int i=_obstacle.transform.childCount-1;i>=0;i--)
+            {
+                obChildren.Add(_obstacle.transform.GetChild(i).gameObject);
+            }
+            _obstacle.transform.DetachChildren();
+
+            //Настроим само препятствие
+            obChildren.Sort((x, y) => { return x.transform.position.x.CompareTo(y.transform.position.x); });
+            Vector3 pos = _obstacle.transform.position;
+            _obstacle.transform.position = new Vector3(obChildren[0].transform.position.x+(obChildren[obChildren.Count - 1].transform.position.x - obChildren[0].transform.position.x) / 2f, 
+                                                        pos.y, pos.z);
+            BoxCollider2D col = _obstacle.GetComponent<BoxCollider2D>();
+            col.size = new Vector2((obChildren[obChildren.Count - 1].transform.position - obChildren[0].transform.position).x + gridSize.x, col.size.y);
+            ObstacleScript obstacleScript = _obstacle.GetComponent<ObstacleScript>();
+            if (obstacleScript != null)
+            {
+                obstacleScript.HitData.hitSize = new Vector2(col.size.x, col.size.y);
+            }
+
+            //И засунем в объект дочерние объекты обратно
+            foreach (GameObject obj in obChildren)
+            {
+                obj.transform.parent = _obstacle.transform;
+            }
+        }
+
+        /// <summary>
+        /// Разделить препятствие на два
+        /// </summary>
+        static void SeparateObstacle(GameObject _obstacle, GameObject separator)
+        {
+            //Сначала вытащим все дочерние объекты из объекта
+            List<GameObject> obChildren = new List<GameObject>();
+            for (int i = _obstacle.transform.childCount - 1; i >= 0; i--)
+            {
+                obChildren.Add(_obstacle.transform.GetChild(i).gameObject);
+            }
+            _obstacle.transform.DetachChildren();
+            GameObject obstacle1 = Instantiate(_obstacle,_obstacle.transform.position,_obstacle.transform.rotation) as GameObject;
+            obstacle1.transform.parent = _obstacle.transform.parent;
+
+            foreach (GameObject obj in obChildren)
+            {
+                if (obj.transform.position.x < separator.transform.position.x)
+                    obj.transform.parent = _obstacle.transform;
+                else if (obj.transform.position.x > separator.transform.position.x)
+                    obj.transform.parent = obstacle1.transform;
+            }
+            CorrectObstacle(_obstacle);
+            CorrectObstacle(obstacle1);
+            DestroyImmediate(separator);
+        }
+
+        /// <summary>
+        /// Объединить два препятствия
+        /// </summary>
+        static void CombineObstacles(GameObject obstacle1, GameObject obstacle2)
+        {
+            //Сначала вытащим все дочерние объекты из объектов
+            List<GameObject> obChildren = new List<GameObject>();
+            for (int i = obstacle1.transform.childCount - 1; i >= 0; i--)
+            {
+                obChildren.Add(obstacle1.transform.GetChild(i).gameObject);
+            }
+            for (int i = obstacle2.transform.childCount - 1; i >= 0; i--)
+            {
+                obChildren.Add(obstacle2.transform.GetChild(i).gameObject);
+            }
+            obstacle1.transform.DetachChildren();
+            obstacle2.transform.DetachChildren();
+            foreach (GameObject obj in obChildren)
+            {
+                obj.transform.parent = obstacle1.transform;
+            }
+            CorrectObstacle(obstacle1);
+            DestroyImmediate(obstacle2);
+        }
+
+        #endregion //obstacles
+
+        #region usualMod
+
+        /// <summary>
+        /// Обычная отрисовка
+        /// </summary>
+        static void UsualHandler()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && (currentSprites != null))
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                mouseWorldPos.z = zPosition;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                Vector2 pos = gridSize;
+                string spName = LayerMask.LayerToName(spriteLayer);
+
+                if (overpaint || !Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y * .45f, LayerMask.GetMask(spName)))
+                {
+                    if (overpaint && Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y * .45f, LayerMask.GetMask(spName)))
+                    {
+                        GameObject dObject = Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y * .45f, LayerMask.GetMask(spName)).collider.gameObject;
+                        DestroyImmediate(dObject);
+                    }
+                    Sprite loadedSprite = currentSprites[Random.Range(0, currentSprites.Count)];
+                    if (spriteParentObjName != string.Empty ? parentObj == null : false)
+                    {
+                        parentObj = new GameObject(spriteParentObjName);
+                        parentObj.transform.position = mouseWorldPos;
+                    }
+                    string spriteName = (parentObj != null) ? parentObj.name + "0" : "sprite";
+                    GameObject newSprite = new GameObject(spriteName, typeof(SpriteRenderer));
+                    newSprite.transform.position = mouseWorldPos;
+                    newSprite.GetComponent<SpriteRenderer>().sprite = loadedSprite;
+                    newSprite.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                    newSprite.tag = tagName;
+                    newSprite.layer = spriteLayer;
+                    if (parentObj != null)
+                        newSprite.transform.parent = parentObj.transform;
+                    BoxCollider2D col = newSprite.AddComponent<BoxCollider2D>();
+                    if (!hasCollider)
+                        newSprite.AddComponent<EditorCollider>();
+                    col.isTrigger = isTrigger;
+                }
+            }
+        }
+
+        #endregion //usualMod
 
         #endregion //draw
 
@@ -1147,7 +1464,7 @@ public class LevelEditor : EditorWindow
                         }
                     case DrawModEnum.plant:
                         {
-                            GroundErase();
+                            UsualErase();
                             break;
                         }
                     case DrawModEnum.water:
@@ -1157,15 +1474,17 @@ public class LevelEditor : EditorWindow
                         }
                     case DrawModEnum.ladder:
                         {
-                            GroundErase();
+                            UsualErase();
                             break;
                         }
                     case DrawModEnum.spikes:
                         {
+                            ObstacleErase();
                             break;
                         }
                     case DrawModEnum.usual:
                         {
+                            UsualErase();
                             break;
                         }
                 }
@@ -1219,6 +1538,9 @@ public class LevelEditor : EditorWindow
             }
         }
 
+        /// <summary>
+        /// Функция, стирания уровня воды
+        /// </summary>
         static void WaterErase()
         {
             Event e = Event.current;
@@ -1257,6 +1579,105 @@ public class LevelEditor : EditorWindow
                         else
                             break;
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Функция стирания препятствия
+        /// </summary>
+        static void ObstacleErase()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0)
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                mouseWorldPos.z = zPosition;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                Vector2 pos = gridSize;
+
+                GameObject obstacle = null;
+
+                Collider2D col = null;
+                string elName = LayerMask.LayerToName(eraseLayer);
+                if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y*.45f, LayerMask.GetMask(elName)).collider) != null)
+                {
+                    obstacle = col.gameObject;
+                }
+                else if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.up, gridSize.y*.45f, LayerMask.GetMask(elName)).collider) != null)
+                {
+                    obstacle = col.gameObject;
+                }
+                if (obstacle!= null)
+                {
+                    List<GameObject> obChildren=new List<GameObject>();
+                    for (int i = 0; i < obstacle.transform.childCount; i++)
+                    {
+                        obChildren.Add(obstacle.transform.GetChild(i).gameObject);
+                    }
+                    for (int i = 0; i < obChildren.Count; i++)
+                    {
+                        if (Mathf.Approximately(mouseWorldPos.x, obChildren[i].transform.position.x))
+                        {
+                            if ((i != 0) && (i != obChildren.Count - 1))
+                            {
+                                SeparateObstacle(obstacle, obChildren[i]);
+                            }
+                            else
+                                DestroyImmediate(obChildren[i]);
+                            CorrectObstacle(obstacle);
+                            obChildren.RemoveAt(i);
+                            break;
+                        }
+                    }
+                    if (obChildren.Count == 0)
+                    {
+                        DestroyImmediate(obstacle);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Функция стирания спрайтов
+        /// </summary>
+        static void UsualErase()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0)
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                mouseWorldPos.z = zPosition;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                Vector2 pos = gridSize;
+
+                Collider2D col = null;
+                if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.down, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(LayerMask.LayerToName(eraseLayer))).collider) != null)
+                {
+                    GameObject eraseGround = col.gameObject;
+                    DestroyImmediate(eraseGround);
                 }
             }
         }
@@ -1433,10 +1854,12 @@ public class LevelEditor : EditorWindow
                 }
             case DrawModEnum.spikes:
                 {
+                    ObstaclesDrawGUI();
                     break;
                 }
             case DrawModEnum.usual:
                 {
+                    UsualDrawGUI();
                     break;
                 }
         }
@@ -1589,7 +2012,7 @@ public class LevelEditor : EditorWindow
         EditorGUILayout.EndHorizontal();
 
         zPosition = EditorGUILayout.FloatField("z-position", zPosition);
-        grParentObjName = EditorGUILayout.TextField("parent name", grParentObjName);
+        plantParentObjName = EditorGUILayout.TextField("parent name", plantParentObjName);
         if (plantParentObjName != string.Empty && (parentObj != null ? parentObj.name != plantParentObjName : true))
         {
             parentObj = GameObject.Find(plantParentObjName);
@@ -1811,7 +2234,7 @@ public class LevelEditor : EditorWindow
     void LadderDrawGUI()
     {
 
-        tagName = EditorGUILayout.TagField("tag", tagName);
+        ladderTag = EditorGUILayout.TagField("tag", ladderTag);
         ladderLayer = EditorGUILayout.LayerField("ladder layer",  ladderLayer);
         groundLayer = EditorGUILayout.LayerField("ground layer", groundLayer);
 
@@ -1914,23 +2337,237 @@ public class LevelEditor : EditorWindow
         ladderBase.SetDirty();
     }
 
-    #endregion //ladderGUI
-
     /// <summary>
-    /// Меню отрисовки шипов и прочих препятствий
+    /// Меню отрисовки препятствий
     /// </summary>
-    void SpikesDrawGUI()
+    void ObstaclesDrawGUI()
     {
 
+        tagName = EditorGUILayout.TagField("tag", tagName);
+        obstacleLayer = EditorGUILayout.LayerField("ladder layer", obstacleLayer);
+        groundLayer = EditorGUILayout.LayerField("ground layer", groundLayer);
+
+        EditorGUILayout.BeginHorizontal();
+        if (sLayerIndex >= sortingLayers.Length)
+        {
+            sLayerIndex = 0;
+        }
+        EditorGUILayout.LabelField("sorting layer");
+        sLayerIndex = EditorGUILayout.Popup(sLayerIndex, sortingLayers);
+        sortingLayer = sortingLayers[sLayerIndex];
+        EditorGUILayout.EndHorizontal();
+
+        zPosition = EditorGUILayout.FloatField("z-position", zPosition);
+
+        obstacleName = EditorGUILayout.TextField("obstacle name", obstacleName);
+
+        obstacleParentName = EditorGUILayout.TextField("obstacle parent name", obstacleParentName);
+        if (obstacleParentName != string.Empty && (parentObj != null ? parentObj.name != obstacleParentName : true))
+        {
+            parentObj = GameObject.Find(obstacleParentName);
+        }
+
+        obstacleOffset = EditorGUILayout.FloatField("obstacle offset", obstacleOffset);
+
+        obstacleDamage = EditorGUILayout.FloatField("obstacle damage", obstacleDamage);
+        damageBoxSize = EditorGUILayout.FloatField("damage size", damageBoxSize);
+        damageBoxOffset= EditorGUILayout.FloatField("damage offset", damageBoxOffset);
+
+        obstacleType = (ObstacleEnum)EditorGUILayout.EnumPopup("obstacle type", obstacleType);
+
+        drawScrollPos = EditorGUILayout.BeginScrollView(drawScrollPos);
+        EditorGUILayout.BeginHorizontal();
+
+        float ctr = maxCtr;
+        if (obstacleBase.obstacles == null)
+        {
+            obstacleBase.obstacles = new List<GameObject>();
+        }
+        foreach (GameObject obstacle in obstacleBase.obstacles)
+        {
+            if (obstacle.GetComponent<SpriteRenderer>() == null)
+                continue;
+            Sprite obstacleSprite = obstacle.GetComponent<SpriteRenderer>().sprite;
+            Rect textRect = obstacleSprite.textureRect;
+            Texture2D texture = obstacleSprite.texture;
+            if (ctr < obstacleSprite.textureRect.x)
+            {
+               GUILayout.EndHorizontal();
+                EditorGUILayout.Space();
+                GUILayout.BeginHorizontal();
+                ctr = maxCtr;
+            }
+            ctr -= obstacleSprite.textureRect.x;
+            if (currentObstacle == obstacle)
+            {
+                if (GUILayout.Button("", textureStyleAct, GUILayout.Width(textRect.width + 6), GUILayout.Height(textRect.height + 4)))
+                { }
+                GUI.DrawTextureWithTexCoords(new Rect(GUILayoutUtility.GetLastRect().x + 3f,
+                                                      GUILayoutUtility.GetLastRect().y + 2f,
+                                                      GUILayoutUtility.GetLastRect().width - 6f,
+                                                      GUILayoutUtility.GetLastRect().height - 4f),
+                                             texture,
+                                             new Rect(textRect.x / (float)texture.width,
+                                                        textRect.y / (float)texture.height,
+                                                        textRect.width / texture.width,
+                                                        textRect.height / texture.height));
+            }
+            else
+            {
+                if (GUILayout.Button("", textureStyle, GUILayout.Width(textRect.width + 2), GUILayout.Height(textRect.height + 2)))
+                    currentObstacle = obstacle;
+                GUI.DrawTextureWithTexCoords(GUILayoutUtility.GetLastRect(), texture,
+                                             new Rect(textRect.x / (float)texture.width,
+                                                         textRect.y / (float)texture.height,
+                                                         textRect.width / (float)texture.width,
+                                                         textRect.height / (float)texture.height));
+            }
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.EndScrollView();
+
+        EditorGUILayout.BeginHorizontal();
+        {
+            EditorGUILayout.LabelField("new obstacle", GUILayout.Width(75f));
+            nextObstacle = (GameObject)EditorGUILayout.ObjectField(nextObstacle, typeof(GameObject), GUILayout.Width(150f));
+
+            EditorGUILayout.BeginVertical();
+            {
+                if (GUILayout.Button("Add"))
+                {
+                    if (nextObstacle != null ? nextObstacle.GetComponent<SpriteRenderer>() != null : false)
+                        if (!obstacleBase.obstacles.Contains(nextObstacle))
+                        {
+                            obstacleBase.obstacles.Add(nextObstacle);
+                            currentObstacle = nextObstacle;
+                            nextObstacle = null;
+                        }
+                }
+                if (GUILayout.Button("Delete"))
+                {
+                    if (currentObstacle != null)
+                        obstacleBase.obstacles.Remove(currentObstacle);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+        }
+        EditorGUILayout.EndHorizontal();
+        obstacleBase.SetDirty();
     }
 
     /// <summary>
-    /// Меню отрисовки по узлам сетки
+    /// Меню обычной отрисовки
     /// </summary>
     void UsualDrawGUI()
     {
+        if (currentSprites == null)
+        {
+            currentSprites = new List<Sprite>();
+        }
 
+        tagName = EditorGUILayout.TagField("tag", tagName);
+        spriteLayer = EditorGUILayout.LayerField("sprite layer", spriteLayer);
+
+        EditorGUILayout.BeginHorizontal();
+        if (sLayerIndex >= sortingLayers.Length)
+        {
+            sLayerIndex = 0;
+        }
+        EditorGUILayout.LabelField("sorting layer");
+        sLayerIndex = EditorGUILayout.Popup(sLayerIndex, sortingLayers);
+        sortingLayer = sortingLayers[sLayerIndex];
+        EditorGUILayout.EndHorizontal();
+
+        zPosition = EditorGUILayout.FloatField("z-position", zPosition);
+        spriteParentObjName = EditorGUILayout.TextField("parent name", spriteParentObjName);
+        if (spriteParentObjName != string.Empty && (parentObj != null ? parentObj.name != spriteParentObjName : true))
+        {
+            parentObj = GameObject.Find(spriteParentObjName);
+        }
+
+        hasCollider = EditorGUILayout.Toggle("has collider?", hasCollider);
+        isTrigger = EditorGUILayout.Toggle("is trigger?", isTrigger);
+        overpaint = EditorGUILayout.Toggle("overpaint", overpaint);
+
+        drawScrollPos = EditorGUILayout.BeginScrollView(drawScrollPos);
+        EditorGUILayout.BeginHorizontal();
+        float ctr = maxCtr;
+        if (spriteBase.sprites == null)
+        {
+            spriteBase.sprites = new List<Sprite>();
+        }
+        foreach (Sprite sprite1 in spriteBase.sprites)
+        {
+            if (ctr < sprite1.textureRect.x)
+            {
+                GUILayout.EndHorizontal();
+                EditorGUILayout.Space();
+                GUILayout.BeginHorizontal();
+                ctr = maxCtr;
+            }
+            ctr -= sprite1.textureRect.x;
+            if (currentSprites.Contains(sprite1))
+            {
+                if (GUILayout.Button("", textureStyleAct, GUILayout.Width(sprite1.textureRect.width + 6), GUILayout.Height(sprite1.texture.height + 4)))
+                    currentSprites.Remove(sprite1);
+                GUI.DrawTextureWithTexCoords(new Rect(GUILayoutUtility.GetLastRect().x + 3f,
+                                                      GUILayoutUtility.GetLastRect().y + 2f,
+                                                      GUILayoutUtility.GetLastRect().width - 6f,
+                                                      GUILayoutUtility.GetLastRect().height - 4f),
+                                             sprite1.texture,
+                                             new Rect(sprite1.textureRect.x / (float)sprite1.texture.width,
+                                                        sprite1.textureRect.y / (float)sprite1.texture.height,
+                                                        sprite1.textureRect.width / (float)sprite1.texture.width,
+                                                        sprite1.textureRect.height / (float)sprite1.texture.height));
+            }
+            else
+            {
+                if (GUILayout.Button("", textureStyle, GUILayout.Width(sprite1.textureRect.width + 2), GUILayout.Height(sprite1.textureRect.height + 2)))
+                    currentSprites.Add(sprite1);
+                GUI.DrawTextureWithTexCoords(GUILayoutUtility.GetLastRect(), sprite1.texture,
+                                             new Rect(sprite1.textureRect.x / (float)sprite1.texture.width,
+                                                         sprite1.textureRect.y / (float)sprite1.texture.height,
+                                                         sprite1.textureRect.width / (float)sprite1.texture.width,
+                                                         sprite1.textureRect.height / (float)sprite1.texture.height));
+            }
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.EndScrollView();
+
+        EditorGUILayout.BeginHorizontal();
+        {
+            nextSprite = (Sprite)EditorGUILayout.ObjectField("new sprite", nextSprite, typeof(Sprite));
+
+            EditorGUILayout.BeginVertical();
+            {
+                if (GUILayout.Button("Add"))
+                {
+                    if (nextSprite != null)
+                        if (!spriteBase.sprites.Contains(nextSprite))
+                        {
+                            spriteBase.sprites.Add(nextSprite);
+                            currentSprites.Add(nextSprite);
+                            nextSprite = null;
+                        }
+                }
+                if (GUILayout.Button("Delete"))
+                {
+                    for (int i = currentSprites.Count - 1; i >= 0; i--)
+                    {
+                        spriteBase.sprites.Remove(currentSprites[i]);
+                        currentSprites.RemoveAt(i);
+                    }
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+        }
+        EditorGUILayout.EndHorizontal();
+        spriteBase.SetDirty();
     }
+
+    #endregion //ladderGUI
 
     #endregion //drawGUI
 
@@ -1948,8 +2585,8 @@ public class LevelEditor : EditorWindow
     {
         EditorGUILayout.BeginHorizontal(textureStyleAct);
         {
-            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon };
-            for (int i = 0; i < 3; i++)
+            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon,spikesIcon,usualDrawIcon };
+            for (int i = 0; i < 6; i++)
             {
                 Sprite currentDrawSprite = drawIconSprites[i];
                 if (drawMod == (DrawModEnum)i)
@@ -1994,6 +2631,21 @@ public class LevelEditor : EditorWindow
             case DrawModEnum.water:
                 {
                     eraseLayer = EditorGUILayout.LayerField("erase Mask", eraseLayer);
+                    break;
+                }
+            case DrawModEnum.ladder:
+                {
+                    eraseLayer = EditorGUILayout.LayerField("erase mask", eraseLayer);
+                    break;
+                }
+            case DrawModEnum.spikes:
+                {
+                    eraseLayer = EditorGUILayout.LayerField("erase mask", eraseLayer);
+                    break;
+                }
+            case DrawModEnum.usual:
+                {
+                    eraseLayer = EditorGUILayout.LayerField("erase mask", eraseLayer);
                     break;
                 }
         }

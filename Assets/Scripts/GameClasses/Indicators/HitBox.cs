@@ -27,6 +27,8 @@ public class HitBox : MonoBehaviour
     #region parametres
 
     protected bool activated;
+    protected bool immobile;//Запрет на перемещение хитбокса
+    public bool Immobile { set { immobile = value; } }
 
     protected int k=1;
 
@@ -67,7 +69,8 @@ public class HitBox : MonoBehaviour
     {
         activated = true;
         hitData = _hitData;
-        transform.localPosition = hitData.hitPosition;
+        if (!immobile)
+            transform.localPosition = hitData.hitPosition;
         col.size = hitData.hitSize;
         if (hitData.actTime != -1f)
         {

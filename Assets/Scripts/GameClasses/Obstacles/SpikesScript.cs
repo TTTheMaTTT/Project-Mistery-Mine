@@ -11,10 +11,12 @@ public class SpikesScript : MonoBehaviour
     #region fields
 
     [SerializeField] private List<string> enemies;//По каким тегам искать врагов?
+    public List<string> Enemies { set { enemies = value; } }
 
     protected List<GameObject> list = new List<GameObject>();//Список всех атакованных противников. (чтобы один удар не отнимал hp дважды)
 
     [SerializeField]protected float damage;
+    public float Damage { set { damage = value; } }
 
     #endregion //fields
 
