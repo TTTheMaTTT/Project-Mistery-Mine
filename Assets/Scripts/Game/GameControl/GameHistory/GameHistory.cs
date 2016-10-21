@@ -164,7 +164,16 @@ public class History
                 {
                     string s = _action.actionName;
                     _action.storyAction = npc.StoryActionBase[s].Invoke;
-                }      
+                }
+            }
+            else if (obj.GetComponent<CharacterController>() != null)
+            {
+                CharacterController character = obj.GetComponent<CharacterController>();
+                if (character.StoryActionBase.ContainsKey(_action.actionName))
+                {
+                    string s = _action.actionName;
+                    _action.storyAction = character.StoryActionBase[s].Invoke;
+                }
             }
         }
 

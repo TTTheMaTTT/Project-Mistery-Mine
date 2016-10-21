@@ -6,5 +6,6 @@ using System.Collections;
 /// </summary>
 public class BowClass : WeaponClass
 {
-    public GameObject arrow;
+    public GameObject arrow;//Чем выстреливаем
+    public float shootDistance;//Дальность выстрела
 }

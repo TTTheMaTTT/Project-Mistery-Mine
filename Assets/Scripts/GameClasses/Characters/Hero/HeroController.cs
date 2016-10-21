@@ -17,10 +17,6 @@ public class HeroController : CharacterController
 
     protected const float invulTime = 1f;
 
-    protected const float attackTime = .5f;
-    protected const float shootTime = .65f;
-    protected const float shootDistance = 15f;
-
     protected const float ladderCheckOffset = .05f, ladderStep = .01f;
 
     protected const float minDamageFallSpeed = 5.5f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
@@ -74,8 +70,6 @@ public class HeroController : CharacterController
     protected bool underWater;
 
     protected bool invul;//Если true, то персонаж невосприимчив к урону
-
-    protected bool immobile;//Можно ли управлять персонажем
 
     protected string fightingMode;
 
@@ -410,40 +404,13 @@ public class HeroController : CharacterController
     {
         if (fightingMode == "melee")
         {
-            SwordClass sword = (SwordClass)currentWeapon;
-            hitBox.SetHitBox(new HitClass(sword.damage, attackTime, sword.attackSize, sword.attackPosition, sword.attackForce));
-            Animate(new AnimationEventArgs("attack"));
+            Animate(new AnimationEventArgs("attack",currentWeapon.itemName,Mathf.RoundToInt(10*(currentWeapon.preAttackTime+currentWeapon.attackTime))));
             StartCoroutine(AttackProcess());
         }
         else if (fightingMode == "range")
         {
-            BowClass bow = (BowClass)currentWeapon;
             StopMoving();
-            RaycastHit2D hit = Physics2D.Raycast(transform.position + (int)orientation * transform.right * .1f, (int)orientation * transform.right, shootDistance, whatIsAim);
-            Vector2 endPoint = transform.position + (int)orientation * transform.right * (shootDistance + .1f);
-            if (hit)
-            {
-                IDamageable target;
-                if ((target = hit.collider.gameObject.GetComponent<IDamageable>()) != null)
-                {
-                    target.TakeDamage(bow.damage);
-                }
-                else
-                {
-                    GameObject _bullet = GameObject.Instantiate(bow.arrow, new Vector3(hit.point.x, hit.point.y, transform.position.z), transform.rotation) as GameObject;
-                    Vector3 vect = _bullet.transform.localScale;
-                    _bullet.transform.localScale = new Vector3((int)orientation * vect.x, vect.y, vect.z);
-                }
-                endPoint = hit.point;
-            }
-            Animate(new AnimationEventArgs("shoot"));
-            line = gameObject.AddComponent<LineRenderer>();
-            line.material = arrowMaterial;
-            line.SetWidth(.02f, .02f);
-            line.SetVertexCount(2);
-            line.SetPosition(0, transform.position + (int)orientation * transform.right * .1f);
-            line.SetPosition(1, new Vector3(endPoint.x, endPoint.y, transform.position.z));
-            Destroy(line, .1f);
+            Animate(new AnimationEventArgs("shoot",currentWeapon.name, Mathf.RoundToInt(10*(currentWeapon.preAttackTime+currentWeapon.attackTime))));
             StartCoroutine(ShootProcess());
         }
     }
@@ -453,11 +420,14 @@ public class HeroController : CharacterController
     /// </summary>
     protected override IEnumerator AttackProcess()
     {
-        GameObject _attackParticles = Instantiate(attackParticles, hitBox.transform.position, hitBox.transform.rotation) as GameObject;
-        _attackParticles.transform.parent = transform;
-        Destroy(_attackParticles, attackTime);
         employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
-        yield return new WaitForSeconds(attackTime);
+        SwordClass sword = (SwordClass)currentWeapon;
+        yield return new WaitForSeconds(sword.preAttackTime);
+        hitBox.SetHitBox(new HitClass(sword.damage, sword.attackTime, sword.attackSize, sword.attackPosition, sword.attackForce));
+        //GameObject _attackParticles = Instantiate(attackParticles, hitBox.transform.position, hitBox.transform.rotation) as GameObject;
+        //_attackParticles.transform.parent = transform;
+        //Destroy(_attackParticles, sword.attackTime);
+        yield return new WaitForSeconds(sword.attackTime);
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
@@ -467,7 +437,35 @@ public class HeroController : CharacterController
     protected virtual IEnumerator ShootProcess()
     {
         employment = Mathf.Clamp(employment - 5, 0, maxEmployment);
-        yield return new WaitForSeconds(shootTime);
+        yield return new WaitForSeconds(currentWeapon.preAttackTime);
+
+        BowClass bow = (BowClass)currentWeapon;
+        RaycastHit2D hit = Physics2D.Raycast(transform.position + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim);
+        Vector2 endPoint = transform.position + (int)orientation * transform.right * (bow.shootDistance + .1f);
+        if (hit)
+        {
+            IDamageable target;
+            if ((target = hit.collider.gameObject.GetComponent<IDamageable>()) != null)
+            {
+                target.TakeDamage(bow.damage);
+            }
+            else
+            {
+                GameObject _bullet = GameObject.Instantiate(bow.arrow, new Vector3(hit.point.x, hit.point.y, transform.position.z), transform.rotation) as GameObject;
+                Vector3 vect = _bullet.transform.localScale;
+                _bullet.transform.localScale = new Vector3((int)orientation * vect.x, vect.y, vect.z);
+            }
+            endPoint = hit.point;
+        }
+        line = gameObject.AddComponent<LineRenderer>();
+        line.material = arrowMaterial;
+        line.SetWidth(.02f, .02f);
+        line.SetVertexCount(2);
+        line.SetPosition(0, transform.position + (int)orientation * transform.right * .1f);
+        line.SetPosition(1, new Vector3(endPoint.x, endPoint.y, transform.position.z));
+        Destroy(line, .1f);
+        yield return new WaitForSeconds(currentWeapon.attackTime);
+
         employment = Mathf.Clamp(employment + 5, 0, maxEmployment);
     }
 
@@ -525,14 +523,6 @@ public class HeroController : CharacterController
     protected override void Death()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);   
-    }
-
-    /// <summary>
-    /// Задать персонажу управляемость
-    /// </summary>
-    public void SetImmobile(bool _immobile)
-    {
-        immobile = _immobile;
     }
 
     /// <summary>
