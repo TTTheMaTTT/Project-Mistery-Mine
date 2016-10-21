@@ -2,6 +2,7 @@
 using UnityEngine.SceneManagement;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Контроллер, управляющий ГГ
@@ -44,6 +45,8 @@ public class HeroController : CharacterController
 
     [SerializeField]
     protected WeaponClass currentWeapon;//Оружие, которое используется персонажем в данный момент
+    protected List<ItemClass> bag = new List<ItemClass>();//Рюкзак игрока.
+    public List<ItemClass> Bag { get { return bag; } }
     public GameObject dropPrefab;
 
     #endregion //fields
@@ -198,6 +201,7 @@ public class HeroController : CharacterController
         {
             fightingMode = (currentWeapon is SwordClass) ? "melee" : "range";
         }
+        bag = new List<ItemClass>();
 
         Collider2D[] cols = new Collider2D[2];
         cols = GetComponents<Collider2D>();
@@ -231,7 +235,7 @@ public class HeroController : CharacterController
 
             if (fallSpeed > minDamageFallSpeed)
             {
-                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed));
+                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed),true);
             }
             fallSpeed = 0f;
         }
@@ -519,7 +523,7 @@ public class HeroController : CharacterController
 
     /// <summary>
     /// Функция, описывающая процессы при смерти персонажа
-    /// </summary>
+    /// <fA/summary>
     protected override void Death()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);   
@@ -541,6 +545,10 @@ public class HeroController : CharacterController
         else if (item is HeartClass)
         {
             Health = Mathf.Clamp(Health + ((HeartClass)item).hp, 0f, maxHealth);
+        }
+        else
+        {
+            bag.Add(item);
         }
             
     }

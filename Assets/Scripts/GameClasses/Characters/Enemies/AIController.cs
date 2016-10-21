@@ -11,6 +11,7 @@ public class AIController : CharacterController
     #region consts
 
     protected const float sightRadius = 5f, sightOffset = 0.1f;
+    protected const float microStun = .1f;
 
     #endregion //consts
 
@@ -65,6 +66,8 @@ public class AIController : CharacterController
     public override void TakeDamage(float damage)
     {
         base.TakeDamage(damage);
+        StopMoving();
+        StartCoroutine(Microstun());
     }
 
     /// <summary>
@@ -75,6 +78,13 @@ public class AIController : CharacterController
         base.Death();
         SpecialFunctions.statistics.ConsiderStatistics(this);
         Destroy(gameObject);
+    }
+
+    protected virtual IEnumerator Microstun()
+    {
+        immobile = true;
+        yield return new WaitForSeconds(microStun);
+        immobile = false;
     }
 
 }

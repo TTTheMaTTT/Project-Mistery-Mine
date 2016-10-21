@@ -275,6 +275,16 @@ public class LevelEditor : EditorWindow
         /// </summary>
         static void OnSceneGUI(SceneView sView)
         {
+            Event e = Event.current;
+            if (e.type == EventType.keyDown)
+            {
+                if (e.keyCode == KeyCode.V)
+                    editorMod = EditorModEnum.select;
+                else if (e.keyCode == KeyCode.B)
+                    editorMod = EditorModEnum.draw;
+                else if (e.keyCode == KeyCode.C)
+                    editorMod = EditorModEnum.erase;
+            }
             switch (editorMod)
             {
                 case EditorModEnum.select:

@@ -57,8 +57,8 @@ public class SpiderController : AIController
                     Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(waypoint.x - transform.position.x)));
                 }
             }
+            Animate(new AnimationEventArgs("groundMove"));
         }
-        Animate(new AnimationEventArgs("groundMove"));
     }
 
     /// <summary>
@@ -142,6 +142,14 @@ public class SpiderController : AIController
     {
         Animator spAnim = GetComponent<Animator>();
         spAnim.Play("MoveForward");
+        Animate(new AnimationEventArgs("moveForward"));
+        StartCoroutine(MoveForwardProcess());
+    }
+
+    IEnumerator MoveForwardProcess()
+    {
+        yield return new WaitForSeconds(1f);
+        Destroy(GetComponent<Animator>());
     }
 
     #endregion //storyActions

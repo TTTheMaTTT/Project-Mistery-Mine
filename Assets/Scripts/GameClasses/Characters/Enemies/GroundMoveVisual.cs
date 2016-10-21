@@ -33,6 +33,7 @@ public class GroundMoveVisual : CharacterVisual
     {
         base.FormDictionaries();
         visualFunctions.Add("groundMove", GroundMove);
+        visualFunctions.Add("moveForward", MoveForward);
         visualFunctions.Add("attack", Attack);
     }
 
@@ -53,6 +54,11 @@ public class GroundMoveVisual : CharacterVisual
         {
             anim.Play("Idle");
         }
+    }
+
+    protected virtual void MoveForward(string id, int argument)
+    {
+        anim.Play("Run");
     }
 
     /// <summary>

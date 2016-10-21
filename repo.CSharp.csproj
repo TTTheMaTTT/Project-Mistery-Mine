@@ -102,6 +102,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\NPCController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\ChestController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\DropClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Hearing.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\HitBox.cs" />
@@ -110,6 +111,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Indicators\WallChecker.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\WaterIndicator.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\BowClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Items\HeartClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\ItemClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\SwordClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\WeaponClass.cs" />

@@ -118,7 +118,9 @@ public class CharacterController : MonoBehaviour, IDamageable
     /// Прекратить перемещение
     /// </summary>
     protected virtual void StopMoving()
-    {}
+    {
+        rigid.velocity = new Vector2(0f, rigid.velocity.y);
+    }
 
     /// <summary>
     /// Поворот

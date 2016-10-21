@@ -121,8 +121,12 @@
     <Compile Include="Assets\Editor\ImageEffects\VignetteAndChromaticAberrationEditor.cs" />
     <Compile Include="Assets\Editor\ItemCreator.cs" />
     <Compile Include="Assets\Editor\LevelEditor\GroundBrush.cs" />
+    <Compile Include="Assets\Editor\LevelEditor\LadderBase.cs" />
     <Compile Include="Assets\Editor\LevelEditor\LevelEditor.cs" />
+    <Compile Include="Assets\Editor\LevelEditor\ObstacleBase.cs" />
     <Compile Include="Assets\Editor\LevelEditor\PlantBase.cs" />
+    <Compile Include="Assets\Editor\LevelEditor\SpriteBase.cs" />
+    <Compile Include="Assets\Editor\LevelEditor\WaterBrush.cs" />
     <Compile Include="Assets\Editor\MisteryCaveEditor.cs" />
     <Compile Include="Assets\Editor\SpeechCreator\DialogCreateWindow.cs" />
     <Compile Include="Assets\Editor\StoryCreator\QuestCreator.cs" />
