@@ -27,7 +27,7 @@ public class LevelEditor : EditorWindow
     #region fields
 
     private static Sprite selectIcon, drawIcon, dragIcon, eraseIcon;//Иконки, используемые при отрисовки меню редактора
-    private static Sprite groundIcon, waterIcon, plantIcon;//Иконки, используемые в меню рисования
+    private static Sprite groundIcon, waterIcon, plantIcon, ladderIcon, spikesIcon, usualDrawIcon;//Иконки, используемые в меню рисования
 
     #endregion //fields
 
@@ -86,6 +86,51 @@ public class LevelEditor : EditorWindow
 
     #endregion //waterBrush
 
+    #region ladderBrush
+
+    private static LadderBase ladderBase;//База данных по лестницам
+    private static GameObject currentLadder;//Какая лестница используется в данный момент
+
+    private static int ladderLayer = LayerMask.NameToLayer("ladder");
+    private static string ladderTag = "ladder";
+    private static GameObject nextLadder;
+    private static string ladderParentObjName;//Имя объекта, который станет родительским по отношению к создаваемым объектам.
+    private static bool isLiana = false;//Мы рисуем лиану или лестницу?
+
+    #endregion //ladderBrush
+
+    #region spikesBrush
+
+    private static string obstacleName;//Как называется создаваемое препятствие
+    private static string obstacleParentName;//Как называется родительский по отношению к создаваемому препятствию объект?
+    private static ObstacleBase obstacleBase;//База данных по препятствиям
+    private static GameObject currentObstacle;//Какой вид препятствия используется в данный момент
+
+    private static float obstacleDamage;//Какой урон наносит данный вид препятствия
+    private static float damageBoxSize=.16f;//Размер области атаки по оси Y
+    private static float damageBoxOffset = 0f;//Насколько сдвинут хитбокс по оси Y
+    private static float obstacleOffset;//Смещение по вертикальной оси при расположении препятствий
+
+    private static int obstacleLayer = LayerMask.NameToLayer("obstacle");
+    private static GameObject nextObstacle;
+    private static ObstacleEnum obstacleType;//Тип создаваемого препятствия
+
+    #endregion //spikesBrush
+
+    #region usualBrush
+    
+    private static SpriteBase spriteBase;//База данных по спрайтам
+    private static List<Sprite> currentSprites = new List<Sprite>();//Выборка из спрайтов которыми мы будем рисовать уровень, взятая из базы данных
+
+    private static bool hasCollider=true, isTrigger=false;//Определяем твёрдость объектов
+    private static bool overpaint = false;//Есть ли возможность перерисовывать объекты?
+
+    private static int spriteLayer = LayerMask.NameToLayer("ground");
+    private static Sprite nextSprite;
+    private static string spriteParentObjName;//Имя объекта, который станет родительским по отношению к создаваемым объектам.
+
+    #endregion //usualBrush
+
     private Sprite[] sprites;
     private static Sprite activeSprite;//Спрайт, что мы используем для отрисовки
 
@@ -135,6 +180,9 @@ public class LevelEditor : EditorWindow
         groundIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "rockIcon.png");
         plantIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "plantIcon.png");
         waterIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "waterIcon.png");
+        ladderIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "ladderIcon.png");
+        spikesIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "spikeIcon.png");
+        usualDrawIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "brushIcon.png");
 
         if (!Directory.Exists(groundBrushesPath))
         {
@@ -171,6 +219,33 @@ public class LevelEditor : EditorWindow
             _plantBase.plants = new List<Sprite>();  
         }
         plantBase = AssetDatabase.LoadAssetAtPath<PlantBase>(databasePath + "PlantBase.asset");
+
+        if (!File.Exists(databasePath + "LadderBase.asset"))
+        {
+            LadderBase _ladderBase = new LadderBase();
+            AssetDatabase.CreateAsset(_ladderBase, databasePath + "LadderBase" + ".asset");
+            AssetDatabase.SaveAssets();
+            _ladderBase.ladders = new List<GameObject>();
+        }
+        ladderBase = AssetDatabase.LoadAssetAtPath<LadderBase>(databasePath + "LadderBase.asset");
+
+        if (!File.Exists(databasePath + "ObstacleBase.asset"))
+        {
+            ObstacleBase _obstacleBase = new ObstacleBase();
+            AssetDatabase.CreateAsset(_obstacleBase, databasePath + "ObstacleBase" + ".asset");
+            AssetDatabase.SaveAssets();
+            _obstacleBase.obstacles = new List<GameObject>();
+        }
+        obstacleBase = AssetDatabase.LoadAssetAtPath<ObstacleBase>(databasePath + "ObstacleBase.asset");
+
+        if (!File.Exists(databasePath + "SpriteBase.asset"))
+        {
+            SpriteBase _spriteBase = new SpriteBase();
+            AssetDatabase.CreateAsset(_spriteBase, databasePath + "SpriteBase" + ".asset");
+            AssetDatabase.SaveAssets();
+            _spriteBase.sprites = new List<Sprite>();
+        }
+        spriteBase = AssetDatabase.LoadAssetAtPath<SpriteBase>(databasePath + "SpriteBase.asset");
 
         System.Type internalEditorUtilityType = typeof(InternalEditorUtility);
         PropertyInfo sortingLayersProperty = internalEditorUtilityType.GetProperty("sortingLayerNames", BindingFlags.Static | BindingFlags.NonPublic);
@@ -261,6 +336,21 @@ public class LevelEditor : EditorWindow
                     case DrawModEnum.water:
                         {
                             WaterHandler(false);
+                            break;
+                        }
+                    case DrawModEnum.ladder:
+                        {
+                            LadderHandler();
+                            break;
+                        }
+                    case DrawModEnum.spikes:
+                        {
+                            ObstacleHandler();
+                            break;
+                        }
+                    case DrawModEnum.usual:
+                        {
+                            UsualHandler();
                             break;
                         }
                 }
@@ -576,7 +666,7 @@ public class LevelEditor : EditorWindow
                     !Physics2D.Raycast(mouseWorldPos-new Vector3(plantUp.x,plantUp.y)*step/4f,plantUp,plantOffset + step / 4f, LayerMask.GetMask(plName))))
                 {
                     Sprite loadedPlant = currentPlants[Random.Range(0, currentPlants.Count)];
-                    string plantName = (parentObj != null) ? parentObj.name + "0" : grBrush.outGround.name;
+                    string plantName = (parentObj != null) ? parentObj.name + "0" :"plant";
                     GameObject newPlant = new GameObject(plantName, typeof(SpriteRenderer));
                     newPlant.transform.position = mouseWorldPos + ((b1&&b2&&b3&&b4)? (offsetVect / 2f):Vector3.zero) +new Vector3(plantUp.x,plantUp.y) * plantOffset;
                     newPlant.transform.eulerAngles=new Vector3(0f,0f,plantUp.x<0? Vector2.Angle(Vector2.up,plantUp): 360f-Vector2.Angle(Vector2.up, plantUp));
@@ -599,7 +689,7 @@ public class LevelEditor : EditorWindow
         #region water
 
         /// <summary>
-        /// Отрисовка воды
+        /// Отрисовка воды 
         /// </summary>
         static void WaterHandler(bool wErase)
         {
@@ -665,9 +755,11 @@ public class LevelEditor : EditorWindow
             float step = Mathf.Abs(gridSize.x * movVect.x + gridSize.y * movVect.y);
             string glName = LayerMask.LayerToName(groundLayer), wlName = LayerMask.LayerToName(waterLayer);
             Vector2 leftPoint = beginPoint;
-            Vector2 rightPoint = leftPoint;
-            while ((rightPoint.y < leftPoint.y+gridSize.y/10f))
+            Vector2 rightPoint = leftPoint+Vector2.up*gridSize.y;
+            while (!((Mathf.Abs(rightPoint.y - leftPoint.y)<gridSize.y/10f)&&(Physics2D.Raycast(rightPoint+Vector2.right*gridSize.x*.1f,Vector2.right,gridSize.x*.7f,LayerMask.GetMask(glName)))))
             {
+                if (rightPoint.y - leftPoint.y > gridSize.y / 10f)
+                    rightPoint = leftPoint;
                 if (!Physics2D.Raycast(leftPoint + gridSize.x * .1f * Vector2.right, Vector2.left, gridSize.x * .7f, LayerMask.GetMask(glName)))
                 {
                     while (!Physics2D.Raycast(leftPoint + gridSize.x * .1f * Vector2.right, Vector2.left, gridSize.x * .7f, LayerMask.GetMask(glName)))
@@ -716,7 +808,7 @@ public class LevelEditor : EditorWindow
                     border = new List<Vector2>();
                     movVect = new Vector2(0f, -1f);
                     colVect = new Vector2(-1f, 0f);
-                    rightPoint = leftPoint;
+                    rightPoint = leftPoint + Vector2.up * gridSize.y;
                     if (Physics2D.Raycast(leftPoint + gridSize.x * .1f * Vector2.right, Vector2.left, gridSize.x * .7f, LayerMask.GetMask(glName)))
                     {
                         movVect = Vector2.down;
@@ -724,6 +816,8 @@ public class LevelEditor : EditorWindow
                         step = Mathf.Abs(gridSize.x * movVect.x + gridSize.y * movVect.y);
                     }
                 }
+                else if (Mathf.Approximately(rightPoint.y, leftPoint.y))
+                    border.Add(rightPoint);
             }
             // Учтём внутренние контуры и замыкнём нужный нам
             bool onBorder = false;
@@ -736,17 +830,25 @@ public class LevelEditor : EditorWindow
                 int turnCount = 0;
                 if (onBorder)
                 {
-                    if (!(Mathf.Abs(leftPoint.y - rightPoint.y) <= gridSize.y / 10f) && (!Physics2D.Raycast(rightPoint+Vector2.left*step*.1f, Vector2.left, .7f * gridSize.x, LayerMask.GetMask(glName))))
+                    if ((Mathf.Abs(leftPoint.y - rightPoint.y) <= gridSize.y / 10f) &&
+                        (!Physics2D.Raycast(rightPoint+Vector2.left*step*.1f, Vector2.left, .7f * gridSize.x, LayerMask.GetMask(glName)))&&
+                        (Physics2D.Raycast(rightPoint + Vector2.right * step * .1f, Vector2.right, .7f * gridSize.x, LayerMask.GetMask(glName))))
                     {
-                        onBorder = true;
+                        onBorder = false;
                         movVect = Vector2.left;
                         colVect = Vector2.up;
-                        step = gridSize.y;
+                        step = gridSize.x;
                     }
                 }
                 else
                 {
-                    onBorder = Physics2D.Raycast(rightPoint+Vector2.left*step*.1f, Vector2.left, .7f * gridSize.x, LayerMask.GetMask(glName));
+                    if (Physics2D.Raycast(rightPoint + Vector2.left * step * .1f, Vector2.left, .7f * gridSize.x, LayerMask.GetMask(glName)))
+                    {
+                        onBorder = true;
+                        movVect = Vector2.down;
+                        colVect = Vector2.left;
+                        step = gridSize.y;
+                    }
                 }
                 if (onBorder)
                 {
@@ -774,6 +876,13 @@ public class LevelEditor : EditorWindow
                 else
                 {
                     return border;
+                }
+                if (Mathf.Approximately(rightPoint.y, leftPoint.y) && Physics2D.Raycast(rightPoint+Vector2.right*gridSize.x*.1f,Vector2.right,gridSize.x*.7f,LayerMask.GetMask(glName)))
+                {
+                    onBorder = false;
+                    movVect = Vector2.left;
+                    colVect = Vector2.up;
+                    step = gridSize.x;
                 }
             }
             return border;
@@ -803,16 +912,16 @@ public class LevelEditor : EditorWindow
                 for (int i=0;i< border.Count;i++)
                 {
                     leftPos = border[i].x;
-                    if (i < border.Count-1 ? !Physics2D.Raycast(border[i], border[i + 1] - border[i], gridSize.x * .7f, LayerMask.GetMask(glName)) : false)
+                    if (i < border.Count - 1 ? !(Physics2D.Raycast(border[i] + Vector2.right*gridSize.x/10f, border[i + 1] - border[i], gridSize.x * .7f, LayerMask.GetMask(glName)) && 
+                                                (Physics2D.Raycast(border[i+1] + Vector2.left * gridSize.x / 10f, Vector2.left, gridSize.x * .7f, LayerMask.GetMask(glName)))): false)
                     {
                         rightPos = border[i + 1].x;
-                        while (leftPos < rightPos || Mathf.Abs(leftPos - rightPos) < gridSize.x / 10f)
+                        while (leftPos < rightPos)
                         {
                             Vector2 cellPosition = new Vector2(leftPos, depth);
                             FillCellWithWater(cellPosition, (Mathf.Abs(depth - areaBorder[0].y) < gridSize.y / 10f));
                             leftPos += gridSize.x;
                         }
-                        i++;
                     }
                     else
                     {
@@ -887,48 +996,66 @@ public class LevelEditor : EditorWindow
         }
 
         /// <summary>
+        /// Убрать всю воду из клетки
+        /// </summary>
+        static void RemoveWaterFromCell(Vector2 cellPosition)
+        {
+            string wlName = LayerMask.LayerToName(waterLayer);
+            GameObject destrWater = null;
+            if (Physics2D.Raycast(cellPosition + Vector2.left * gridSize.x * .1f, Vector2.left, gridSize.x * .35f, LayerMask.GetMask(wlName)))
+            {
+                destrWater = Physics2D.Raycast(cellPosition + Vector2.left * gridSize.x * .1f, Vector2.left, gridSize.x * .35f, LayerMask.GetMask(wlName)).collider.gameObject;
+            }
+            if ((destrWater == null) && (Physics2D.Raycast(cellPosition + Vector2.right * gridSize.x * .1f, Vector2.right, gridSize.x * .35f, LayerMask.GetMask(wlName))))
+                destrWater = Physics2D.Raycast(cellPosition + Vector2.right * gridSize.x * .1f, Vector2.right, gridSize.x * .35f, LayerMask.GetMask(wlName)).collider.gameObject;
+            if (destrWater != null)
+                DestroyImmediate(destrWater);
+
+            GameObject newWaterObj = null;
+            Vector2 downCellPosition = new Vector2(cellPosition.x, cellPosition.y - gridSize.y);
+            if (Physics2D.Raycast(downCellPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.x * .35f, LayerMask.GetMask(wlName)))
+                newWaterObj = Physics2D.Raycast(downCellPosition+ Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y * .35f, LayerMask.GetMask(wlName)).collider.gameObject;
+            if (newWaterObj != null && wBrush != null ? wBrush.waterObjects.Count > 0 : false)
+            {
+                GameObject wObject = GameObject.Instantiate(wBrush.waterObjects[Random.Range(0, wBrush.waterObjects.Count - 1)], newWaterObj.transform.position + Vector3.up * gridSize.y / 2f, Quaternion.identity) as GameObject;
+                wObject.transform.parent = newWaterObj.transform;
+                if (wObject.GetComponent<SpriteRenderer>() != null)
+                    wObject.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+            }
+
+        }
+
+        /// <summary>
         /// Уменьшить уровень воды на размер сетки
         /// </summary>
         static void ReduceWaterLevel(List<Vector2> areaBorder)
         {
-            if (areaBorder != null ? areaBorder.Count > 0 : false)
+            if (areaBorder != null ? areaBorder.Count == 0 : true)
                 return;
-            List<Vector2> border1 = areaBorder.FindAll(x => Mathf.Approximately(x.y, areaBorder[0].y-gridSize.y));
-            float x1 = areaBorder[0].x;
-            float maxX = Mathf.NegativeInfinity;
-            foreach (Vector2 vect in border1) if (vect.x > maxX) maxX = vect.x;
+            List<Vector2> border1 = areaBorder.FindAll(x => Mathf.Approximately(x.y, areaBorder[0].y));
+            border1.Sort((x, y) => { return x.x.CompareTo(y.x); });
+            float leftPos = areaBorder[0].x;
             float y1 = areaBorder[0].y;
             string wlName = LayerMask.LayerToName(waterLayer);
-            while (x1<maxX || Mathf.Abs(maxX-x1)<gridSize.x/10f)
+            string glName = LayerMask.LayerToName(groundLayer);
+            for (int i = 0; i < border1.Count; i++)
             {
-                GameObject destrWater = Physics2D.Raycast(new Vector2(x1, y1) + Vector2.left * .1f, Vector2.right, gridSize.x * .45f, LayerMask.GetMask(wlName)).collider.gameObject;
-                if (destrWater==null)
-                    destrWater = Physics2D.Raycast(new Vector2(x1, y1) + Vector2.right * .1f, Vector2.left, gridSize.x * .45f, LayerMask.GetMask(wlName)).collider.gameObject;
-                if (destrWater != null)
-                    DestroyImmediate(destrWater);
-                x1 += gridSize.x;
-            }
-            y1 = areaBorder[0].y - gridSize.y;
-            float xMax = Mathf.NegativeInfinity;
-            x1 = Mathf.Infinity;
-            foreach(Vector2 vect in border1)
-            {
-                if (vect.x < x1)
-                    x1 = vect.x;
-                if (vect.x > xMax)
-                    xMax = vect.x;
-            }
-            while (x1 <= xMax)
-            {
-                GameObject newWaterObj = Physics2D.Raycast(new Vector2(x1, y1) + Vector2.left * .1f, Vector2.right, gridSize.x * .45f, LayerMask.GetMask(wlName)).collider.gameObject;
-                if (newWaterObj==null)
-                    newWaterObj = Physics2D.Raycast(new Vector2(x1, y1) + Vector2.right * .1f, Vector2.left, gridSize.x * .45f, LayerMask.GetMask(wlName)).collider.gameObject;
-                if (newWaterObj!=null && wBrush!=null? wBrush.waterObjects.Count>0:false)
+                leftPos = border1[i].x;
+                if (i < border1.Count - 1 ? !(Physics2D.Raycast(new Vector2(leftPos, y1), Vector2.right, gridSize.x * .75f, LayerMask.GetMask(glName))&&
+                                              (Physics2D.Raycast(new Vector2(border1[i+1].x, y1), Vector2.left, gridSize.x * .75f, LayerMask.GetMask(glName)))) : false)
                 {
-                    GameObject wObject = GameObject.Instantiate(wBrush.waterObjects[Random.Range(0, wBrush.waterObjects.Count - 1)], newWaterObj.transform.position + Vector3.up * gridSize.y / 2f, Quaternion.identity) as GameObject;
-                    wObject.transform.parent = newWaterObj.transform;
-                    if (wObject.GetComponent<SpriteRenderer>() != null)
-                        wObject.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                    float rightPos = border1[i + 1].x;
+                    while (leftPos < rightPos || Mathf.Abs(rightPos - leftPos) < gridSize.x / 10f)
+                    {
+                        Vector2 cellPosition = new Vector2(leftPos, y1);
+                        RemoveWaterFromCell(cellPosition);
+                        leftPos += gridSize.x;
+                    }
+                }
+                else
+                {
+                    Vector2 cellPosition = new Vector2(leftPos, y1);
+                    RemoveWaterFromCell(cellPosition);
                 }
             }
         }
@@ -942,45 +1069,370 @@ public class LevelEditor : EditorWindow
             bool findBorder = false;
             Vector2 currentPosition = waterPoint;
             Vector2 movVect = Vector2.up;
+            Vector2 colVect = Vector2.right;
             Vector2 rightPoint = currentPosition;
             float step = gridSize.y;
             string glName = LayerMask.LayerToName(groundLayer), wlName=LayerMask.LayerToName(waterLayer);
-            while (!(findBorder && rightPoint==currentPosition) && (Physics2D.Raycast(currentPosition+Vector2.up*gridSize.y*.55f,Vector2.up,gridSize.y/2f,LayerMask.GetMask(glName,wlName))))
+            while (!(findBorder && Mathf.Approximately(rightPoint.y,currentPosition.y) && Mathf.Approximately(rightPoint.x, currentPosition.x)) && 
+                   (Physics2D.Raycast(currentPosition+Vector2.up*gridSize.y*.55f,Vector2.up,gridSize.y*.3f,LayerMask.GetMask(glName,wlName))))
             {
                 int turnCount = 0;
                 if (!findBorder)
                 {
-                    findBorder = Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .55f, Vector2.up, gridSize.y / 2f, LayerMask.GetMask(glName));
-                    rightPoint = currentPosition;
+                    if (Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y*.7f, LayerMask.GetMask(glName)))
+                    {
+                        findBorder = true;
+                        rightPoint = currentPosition;
+                        movVect = Vector2.left;
+                        colVect = Vector2.up;
+                        step = gridSize.x;
+                    }
                 }
-                else if (!Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .55f, Vector2.up, gridSize.y / 2f, LayerMask.GetMask(glName)) && currentPosition.y >= rightPoint.y)
+                else if (!Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y*.7f, LayerMask.GetMask(glName)) && currentPosition.y >= rightPoint.y)
                 {
                     findBorder = false;
                     step = gridSize.y;
                     movVect = Vector2.up;
+                    colVect = Vector2.right;
                 }
-                else if (currentPosition.y >= rightPoint.y)
+                if (currentPosition.y > rightPoint.y)
                     rightPoint = currentPosition;
                 if (findBorder)
                 {
-                    while (turnCount<4 && Physics2D.Raycast(currentPosition+movVect*step*.55f,movVect,step/2f,LayerMask.GetMask(glName)))
+                    if (!Physics2D.Raycast(currentPosition + colVect * step * .1f, colVect, step * .7f, LayerMask.GetMask(glName)))
                     {
-                        float a = movVect.x;
-                        movVect.x = movVect.y;
-                        movVect.y = -a;
-                        step = movVect.x * gridSize.x + movVect.y * gridSize.y;
+                        Vector2 vect = -movVect;
+                        movVect = colVect;
+                        colVect=vect;
+                        step = movVect.x != 0 ? gridSize.x : gridSize.y;
+                    }
+                    while (turnCount<4 && Physics2D.Raycast(currentPosition+movVect*step*.1f,movVect,step*.7f,LayerMask.GetMask(glName)))
+                    {
+                        Vector2 vect= -colVect;
+                        colVect = movVect;
+                        movVect = vect;
+                        step = movVect.x!=0? gridSize.x : gridSize.y;
                         turnCount++;
                     }
                 }
                 if (turnCount < 4)
                     currentPosition += movVect * step;
             }
+            bool k = Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .55f, Vector2.up, gridSize.y * .3f, LayerMask.GetMask(glName, wlName));
             rightPoint = currentPosition;
             List<Vector2> border = FormWaterPoints(rightPoint);
             return border;
         }
 
         #endregion //water
+
+        #region ladder
+
+        /// <summary>
+        /// Функция, создающая лестницы при нажатии на кнопку мыши
+        /// </summary>
+        static void LadderHandler()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && currentLadder != null)
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                mouseWorldPos.z = zPosition;
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                string glName = LayerMask.LayerToName(groundLayer), llName = LayerMask.LayerToName(ladderLayer);
+
+                float step = Mathf.Min(gridSize.x, gridSize.y);
+
+                if (!Physics2D.Raycast(mouseWorldPos,Vector2.down, gridSize.y*.45f, LayerMask.GetMask(glName, llName)) && 
+                    (!isLiana || Physics2D.Raycast(mouseWorldPos+Vector3.up*gridSize.y*.5f,Vector2.up,gridSize.y*.05f,LayerMask.GetMask(glName,llName))))
+                {
+                    if (parentObj == null && ladderParentObjName != string.Empty)
+                    {
+                        parentObj = new GameObject(ladderParentObjName);
+                        parentObj.transform.position = mouseWorldPos;
+                    }
+                    string ladderName = (parentObj != null) ? parentObj.name + "0" : (isLiana? "liana" : "ladder");
+                    GameObject newLadder = GameObject.Instantiate(currentLadder,mouseWorldPos,Quaternion.identity) as GameObject;
+                    newLadder.transform.position = mouseWorldPos;
+                    newLadder.tag = ladderTag;
+                    newLadder.layer = ladderLayer;
+                    newLadder.name = ladderName;
+                    newLadder.GetComponent<SpriteRenderer>().sortingLayerName=sortingLayer;
+                    
+                    if (parentObj != null)
+                        newLadder.transform.parent = parentObj.transform;
+                }
+            }
+        }
+
+        #endregion //ladder
+
+        #region obstacles
+
+        /// <summary>
+        /// Функция, создающая препятствия при нажатии кнопки мыши
+        /// </summary>
+        static void ObstacleHandler()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && (currentObstacle != null))
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+                mouseWorldPos.z = zPosition;
+
+                string glName = LayerMask.LayerToName(groundLayer), olName = LayerMask.LayerToName(obstacleLayer);
+
+                if (!Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y * .45f, LayerMask.GetMask(glName, olName)) &&
+                    Physics2D.Raycast(mouseWorldPos + Vector3.down * gridSize.y * .5f, Vector2.down, gridSize.y * .05f, LayerMask.GetMask(glName)))
+                {
+                    GameObject obstacle = null;
+                    if (Physics2D.Raycast(mouseWorldPos + Vector3.up*(obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.left * gridSize.x * .55f, 
+                        Vector2.left, gridSize.x * .15f, LayerMask.GetMask(olName)))
+                    {
+                        obstacle = Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.left * gridSize.x * .55f,
+                                                    Vector2.left, gridSize.x * .15f, LayerMask.GetMask(olName)).collider.gameObject;
+                        if (!((obstacleType == ObstacleEnum.plants && obstacle.GetComponent<ObstacleScript>() != null) ||
+                             ((obstacleType == ObstacleEnum.spikes && obstacle.GetComponent<SpikesScript>() != null))))
+                            obstacle = null;
+                    }
+                    if ((obstacle == null) && Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset +  (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f, 
+                                                                Vector2.right, gridSize.x * .15f, LayerMask.GetMask(olName)))
+                    {
+                        obstacle = Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f,
+                                                     Vector2.right, gridSize.x * .15f, LayerMask.GetMask(olName)).collider.gameObject;
+                        if (!((obstacleType == ObstacleEnum.plants && obstacle.GetComponent<ObstacleScript>() != null) ||
+                             ((obstacleType == ObstacleEnum.spikes && obstacle.GetComponent<SpikesScript>() != null))))
+                            obstacle = null;
+                    }
+                    if (obstacle == null)
+                    {
+                        obstacle = new GameObject(obstacleName);
+                        obstacle.transform.position = mouseWorldPos+Vector3.up*obstacleOffset;
+                        BoxCollider2D col = obstacle.AddComponent<BoxCollider2D>();
+                        col.size = new Vector2(gridSize.x, damageBoxSize);
+                        col.offset = new Vector2(0f, (damageBoxSize-gridSize.y) / 2f + damageBoxOffset);
+                        col.isTrigger = true;
+                        if (obstacleType == ObstacleEnum.plants)
+                        {
+                            ObstacleScript obScript = obstacle.AddComponent<ObstacleScript>();
+                            obScript.HitData = new HitClass(obstacleDamage, -1f, col.size, col.offset,0f);
+                            obScript.HitData.damage = obstacleDamage;
+                            obScript.HitData.hitSize = col.size;
+                            obScript.HitData.hitPosition = col.offset;
+                            obScript.Enemies = new List<string>() { "player" };
+                            obstacle.AddComponent<HitBox>();
+                        }
+                        else if (obstacleType == ObstacleEnum.spikes)
+                        {
+                            SpikesScript spikeScript = obstacle.AddComponent<SpikesScript>();
+                            spikeScript.Damage = obstacleDamage;
+                            spikeScript.Enemies = new List<string>() { "player" };
+                        }
+                        obstacle.layer = obstacleLayer;
+                        obstacle.tag = tagName;
+                        if (obstacleParentName != string.Empty)
+                        {
+                            if (parentObj == null)
+                            {
+                                parentObj = new GameObject(obstacleParentName);
+                                parentObj.transform.position = mouseWorldPos;
+                            }
+                            obstacle.transform.parent = parentObj.transform;
+                        }
+                    }
+                    GameObject newObstacle = Instantiate(currentObstacle, mouseWorldPos+obstacleOffset*Vector3.up, Quaternion.identity) as GameObject;
+                    newObstacle.tag = tagName;
+                    newObstacle.layer = obstacleLayer;
+                    newObstacle.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+
+                    if (obstacle != null)
+                    {
+                        newObstacle.transform.parent = obstacle.transform;
+                        CorrectObstacle(obstacle);
+                    }
+                    if (Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f,
+                                                                Vector2.right, gridSize.x * .15f, LayerMask.GetMask(olName)) &&
+                        Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.left * gridSize.x * .55f,
+                        Vector2.left, gridSize.x * .15f, LayerMask.GetMask(olName)))
+                    {
+                        GameObject obstacle1 = Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f,
+                                                                Vector2.right, gridSize.x * .15f, LayerMask.GetMask(olName)).collider.gameObject;
+                        if (((obstacleType == ObstacleEnum.plants)&&(obstacle1.GetComponent<ObstacleScript>()!=null)||
+                            (obstacleType==ObstacleEnum.spikes)&&(obstacle1.GetComponent<SpikesScript>()!=null)))
+                            CombineObstacles(obstacle, obstacle1);
+                    }
+                        
+                }
+            }
+        }
+
+        /// <summary>
+        /// Функция, которая учитывает расположение и содержимое препятствия и правильно настраивает его
+        /// </summary>
+        static void CorrectObstacle(GameObject _obstacle)
+        {
+            //Сначала вытащим все дочерние объекты из объекта
+            List<GameObject> obChildren = new List<GameObject>();
+            for (int i=_obstacle.transform.childCount-1;i>=0;i--)
+            {
+                obChildren.Add(_obstacle.transform.GetChild(i).gameObject);
+            }
+            _obstacle.transform.DetachChildren();
+
+            //Настроим само препятствие
+            obChildren.Sort((x, y) => { return x.transform.position.x.CompareTo(y.transform.position.x); });
+            Vector3 pos = _obstacle.transform.position;
+            _obstacle.transform.position = new Vector3(obChildren[0].transform.position.x+(obChildren[obChildren.Count - 1].transform.position.x - obChildren[0].transform.position.x) / 2f, 
+                                                        pos.y, pos.z);
+            BoxCollider2D col = _obstacle.GetComponent<BoxCollider2D>();
+            col.size = new Vector2((obChildren[obChildren.Count - 1].transform.position - obChildren[0].transform.position).x + gridSize.x, col.size.y);
+            ObstacleScript obstacleScript = _obstacle.GetComponent<ObstacleScript>();
+            if (obstacleScript != null)
+            {
+                obstacleScript.HitData.hitSize = new Vector2(col.size.x, col.size.y);
+            }
+
+            //И засунем в объект дочерние объекты обратно
+            foreach (GameObject obj in obChildren)
+            {
+                obj.transform.parent = _obstacle.transform;
+            }
+        }
+
+        /// <summary>
+        /// Разделить препятствие на два
+        /// </summary>
+        static void SeparateObstacle(GameObject _obstacle, GameObject separator)
+        {
+            //Сначала вытащим все дочерние объекты из объекта
+            List<GameObject> obChildren = new List<GameObject>();
+            for (int i = _obstacle.transform.childCount - 1; i >= 0; i--)
+            {
+                obChildren.Add(_obstacle.transform.GetChild(i).gameObject);
+            }
+            _obstacle.transform.DetachChildren();
+            GameObject obstacle1 = Instantiate(_obstacle,_obstacle.transform.position,_obstacle.transform.rotation) as GameObject;
+            obstacle1.transform.parent = _obstacle.transform.parent;
+
+            foreach (GameObject obj in obChildren)
+            {
+                if (obj.transform.position.x < separator.transform.position.x)
+                    obj.transform.parent = _obstacle.transform;
+                else if (obj.transform.position.x > separator.transform.position.x)
+                    obj.transform.parent = obstacle1.transform;
+            }
+            CorrectObstacle(_obstacle);
+            CorrectObstacle(obstacle1);
+            DestroyImmediate(separator);
+        }
+
+        /// <summary>
+        /// Объединить два препятствия
+        /// </summary>
+        static void CombineObstacles(GameObject obstacle1, GameObject obstacle2)
+        {
+            //Сначала вытащим все дочерние объекты из объектов
+            List<GameObject> obChildren = new List<GameObject>();
+            for (int i = obstacle1.transform.childCount - 1; i >= 0; i--)
+            {
+                obChildren.Add(obstacle1.transform.GetChild(i).gameObject);
+            }
+            for (int i = obstacle2.transform.childCount - 1; i >= 0; i--)
+            {
+                obChildren.Add(obstacle2.transform.GetChild(i).gameObject);
+            }
+            obstacle1.transform.DetachChildren();
+            obstacle2.transform.DetachChildren();
+            foreach (GameObject obj in obChildren)
+            {
+                obj.transform.parent = obstacle1.transform;
+            }
+            CorrectObstacle(obstacle1);
+            DestroyImmediate(obstacle2);
+        }
+
+        #endregion //obstacles
+
+        #region usualMod
+
+        /// <summary>
+        /// Обычная отрисовка
+        /// </summary>
+        static void UsualHandler()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && (currentSprites != null))
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                mouseWorldPos.z = zPosition;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                Vector2 pos = gridSize;
+                string spName = LayerMask.LayerToName(spriteLayer);
+
+                if (overpaint || !Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y * .45f, LayerMask.GetMask(spName)))
+                {
+                    if (overpaint && Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y * .45f, LayerMask.GetMask(spName)))
+                    {
+                        GameObject dObject = Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y * .45f, LayerMask.GetMask(spName)).collider.gameObject;
+                        DestroyImmediate(dObject);
+                    }
+                    Sprite loadedSprite = currentSprites[Random.Range(0, currentSprites.Count)];
+                    if (spriteParentObjName != string.Empty ? parentObj == null : false)
+                    {
+                        parentObj = new GameObject(spriteParentObjName);
+                        parentObj.transform.position = mouseWorldPos;
+                    }
+                    string spriteName = (parentObj != null) ? parentObj.name + "0" : "sprite";
+                    GameObject newSprite = new GameObject(spriteName, typeof(SpriteRenderer));
+                    newSprite.transform.position = mouseWorldPos;
+                    newSprite.GetComponent<SpriteRenderer>().sprite = loadedSprite;
+                    newSprite.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                    newSprite.tag = tagName;
+                    newSprite.layer = spriteLayer;
+                    if (parentObj != null)
+                        newSprite.transform.parent = parentObj.transform;
+                    BoxCollider2D col = newSprite.AddComponent<BoxCollider2D>();
+                    if (!hasCollider)
+                        newSprite.AddComponent<EditorCollider>();
+                    col.isTrigger = isTrigger;
+                }
+            }
+        }
+
+        #endregion //usualMod
 
         #endregion //draw
 
@@ -1012,10 +1464,27 @@ public class LevelEditor : EditorWindow
                         }
                     case DrawModEnum.plant:
                         {
+                            UsualErase();
                             break;
                         }
                     case DrawModEnum.water:
                         {
+                            WaterErase();
+                            break;
+                        }
+                    case DrawModEnum.ladder:
+                        {
+                            UsualErase();
+                            break;
+                        }
+                    case DrawModEnum.spikes:
+                        {
+                            ObstacleErase();
+                            break;
+                        }
+                    case DrawModEnum.usual:
+                        {
+                            UsualErase();
                             break;
                         }
                 }
@@ -1065,6 +1534,150 @@ public class LevelEditor : EditorWindow
                     for (int i = 0; i < 8; i++)
                         if (groundBlocks[i] != null)
                             CorrectGround(groundBlocks[i]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Функция, стирания уровня воды
+        /// </summary>
+        static void WaterErase()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && (wBrush != null ? !wBrush.Incomplete : false))
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                mouseWorldPos.z = zPosition;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                Vector2 pos = gridSize;
+                int wLayer = waterLayer;
+                string wlName = LayerMask.LayerToName(eraseLayer);
+
+                bool b1 = (!Physics2D.Raycast(mouseWorldPos + Vector3.up * gridSize.y / 10f, Vector2.up, gridSize.y / 4f, LayerMask.GetMask(wlName)));
+                bool b2 = (!Physics2D.Raycast(mouseWorldPos + Vector3.right * gridSize.x / 10f, Vector2.right, gridSize.x / 4f, LayerMask.GetMask(wlName)));
+                bool b3 = (!Physics2D.Raycast(mouseWorldPos + Vector3.down * gridSize.y / 10f, Vector2.down, gridSize.y / 4f, LayerMask.GetMask(wlName)));
+                bool b4 = (!Physics2D.Raycast(mouseWorldPos + Vector3.left * gridSize.x / 10f, Vector2.left, gridSize.x / 4f, LayerMask.GetMask(wlName)));
+
+                if (!b1 || !b2 || !b3 || !b4)
+                {
+                    while (Physics2D.Raycast(mouseWorldPos + Vector3.up * gridSize.y * 0.1f, Vector2.down, gridSize.y / 2f, LayerMask.GetMask(wlName)))
+                    {
+                        List<Vector2> waterBorder = GetWaterAreaByPoint(mouseWorldPos);
+                        if (waterBorder != null ? waterBorder.Count > 0 : false)
+                            ReduceWaterLevel(waterBorder);
+                        else
+                            break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Функция стирания препятствия
+        /// </summary>
+        static void ObstacleErase()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0)
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                mouseWorldPos.z = zPosition;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                Vector2 pos = gridSize;
+
+                GameObject obstacle = null;
+
+                Collider2D col = null;
+                string elName = LayerMask.LayerToName(eraseLayer);
+                if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y*.45f, LayerMask.GetMask(elName)).collider) != null)
+                {
+                    obstacle = col.gameObject;
+                }
+                else if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.up, gridSize.y*.45f, LayerMask.GetMask(elName)).collider) != null)
+                {
+                    obstacle = col.gameObject;
+                }
+                if (obstacle!= null)
+                {
+                    List<GameObject> obChildren=new List<GameObject>();
+                    for (int i = 0; i < obstacle.transform.childCount; i++)
+                    {
+                        obChildren.Add(obstacle.transform.GetChild(i).gameObject);
+                    }
+                    for (int i = 0; i < obChildren.Count; i++)
+                    {
+                        if (Mathf.Approximately(mouseWorldPos.x, obChildren[i].transform.position.x))
+                        {
+                            if ((i != 0) && (i != obChildren.Count - 1))
+                            {
+                                SeparateObstacle(obstacle, obChildren[i]);
+                            }
+                            else
+                                DestroyImmediate(obChildren[i]);
+                            CorrectObstacle(obstacle);
+                            obChildren.RemoveAt(i);
+                            break;
+                        }
+                    }
+                    if (obChildren.Count == 0)
+                    {
+                        DestroyImmediate(obstacle);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Функция стирания спрайтов
+        /// </summary>
+        static void UsualErase()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0)
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                mouseWorldPos.z = zPosition;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                Vector2 pos = gridSize;
+
+                Collider2D col = null;
+                if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.down, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(LayerMask.LayerToName(eraseLayer))).collider) != null)
+                {
+                    GameObject eraseGround = col.gameObject;
+                    DestroyImmediate(eraseGround);
                 }
             }
         }
@@ -1186,8 +1799,8 @@ public class LevelEditor : EditorWindow
     {
         EditorGUILayout.BeginHorizontal(textureStyleAct);
         {
-            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon };
-            for (int i = 0; i < 3; i++)
+            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon, spikesIcon,usualDrawIcon };
+            for (int i = 0; i < 6; i++)
             {
                 Sprite currentDrawSprite = drawIconSprites[i];
                 if (drawMod == (DrawModEnum)i)
@@ -1232,6 +1845,21 @@ public class LevelEditor : EditorWindow
             case DrawModEnum.water:
                 {
                     WaterDrawGUI();
+                    break;
+                }
+            case DrawModEnum.ladder:
+                {
+                    LadderDrawGUI();
+                    break;
+                }
+            case DrawModEnum.spikes:
+                {
+                    ObstaclesDrawGUI();
+                    break;
+                }
+            case DrawModEnum.usual:
+                {
+                    UsualDrawGUI();
                     break;
                 }
         }
@@ -1384,7 +2012,7 @@ public class LevelEditor : EditorWindow
         EditorGUILayout.EndHorizontal();
 
         zPosition = EditorGUILayout.FloatField("z-position", zPosition);
-        grParentObjName = EditorGUILayout.TextField("parent name", grParentObjName);
+        plantParentObjName = EditorGUILayout.TextField("parent name", plantParentObjName);
         if (plantParentObjName != string.Empty && (parentObj != null ? parentObj.name != plantParentObjName : true))
         {
             parentObj = GameObject.Find(plantParentObjName);
@@ -1598,6 +2226,349 @@ public class LevelEditor : EditorWindow
 
     #endregion //waterGUI
 
+    #region ladderGUI
+
+    /// <summary>
+    /// Меню отрисовки лестниц
+    /// </summary>
+    void LadderDrawGUI()
+    {
+
+        ladderTag = EditorGUILayout.TagField("tag", ladderTag);
+        ladderLayer = EditorGUILayout.LayerField("ladder layer",  ladderLayer);
+        groundLayer = EditorGUILayout.LayerField("ground layer", groundLayer);
+
+        EditorGUILayout.BeginHorizontal();
+        if (sLayerIndex >= sortingLayers.Length)
+        {
+            sLayerIndex = 0;
+        }
+        EditorGUILayout.LabelField("sorting layer");
+        sLayerIndex = EditorGUILayout.Popup(sLayerIndex, sortingLayers);
+        sortingLayer = sortingLayers[sLayerIndex];
+        EditorGUILayout.EndHorizontal();
+
+        zPosition = EditorGUILayout.FloatField("z-position", zPosition);
+        ladderParentObjName = EditorGUILayout.TextField("parent name", ladderParentObjName);
+        if (ladderParentObjName != string.Empty && (parentObj != null ? parentObj.name != ladderParentObjName : true))
+        {
+            parentObj = GameObject.Find(ladderParentObjName);
+        }
+
+        isLiana = EditorGUILayout.Toggle("is liana?", isLiana);
+
+        drawScrollPos = EditorGUILayout.BeginScrollView(drawScrollPos);
+        EditorGUILayout.BeginHorizontal();
+        float ctr = maxCtr;
+        if (ladderBase.ladders == null)
+        {
+            ladderBase.ladders = new List<GameObject>();
+        }
+        foreach (GameObject ladder in ladderBase.ladders)
+        {
+            if (ladder.GetComponent<SpriteRenderer>() == null)
+                continue;
+            Sprite ladderSprite = ladder.GetComponent<SpriteRenderer>().sprite;
+            Rect textRect = ladderSprite.textureRect;
+            Texture2D texture = ladderSprite.texture;
+            if (ctr < ladderSprite.textureRect.x)
+            {
+                GUILayout.EndHorizontal();
+                EditorGUILayout.Space();
+                GUILayout.BeginHorizontal();
+                ctr = maxCtr;
+            }
+            ctr -= ladderSprite.textureRect.x;
+            if (currentLadder==ladder)
+            {
+                if (GUILayout.Button("", textureStyleAct, GUILayout.Width(textRect.width + 6), GUILayout.Height(textRect.height + 4)))
+                { }
+                GUI.DrawTextureWithTexCoords(new Rect(GUILayoutUtility.GetLastRect().x + 3f,
+                                                      GUILayoutUtility.GetLastRect().y + 2f,
+                                                      GUILayoutUtility.GetLastRect().width - 6f,
+                                                      GUILayoutUtility.GetLastRect().height - 4f),
+                                             texture,
+                                             new Rect(textRect.x / (float)texture.width,
+                                                        textRect.y / (float)texture.height,
+                                                        textRect.width / texture.width,
+                                                        textRect.height / texture.height));
+            }
+            else
+            {
+                if (GUILayout.Button("", textureStyle, GUILayout.Width(textRect.width + 2), GUILayout.Height(textRect.height + 2)))
+                    currentLadder=ladder;
+                GUI.DrawTextureWithTexCoords(GUILayoutUtility.GetLastRect(), texture,
+                                             new Rect(textRect.x / (float)texture.width,
+                                                         textRect.y / (float)texture.height,
+                                                         textRect.width / (float)texture.width,
+                                                         textRect.height / (float)texture.height));
+            }
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.EndScrollView();
+
+        EditorGUILayout.BeginHorizontal();
+        {
+            EditorGUILayout.LabelField("new ladder", GUILayout.Width(75f));
+            nextLadder = (GameObject)EditorGUILayout.ObjectField(nextLadder,typeof(GameObject), GUILayout.Width(150f));
+
+            EditorGUILayout.BeginVertical();
+            {
+                if (GUILayout.Button("Add"))
+                {
+                    if (nextLadder != null? nextLadder.GetComponent<Collider2D>()!=null && nextLadder.GetComponent<SpriteRenderer>() != null : false)
+                        if (!ladderBase.ladders.Contains(nextLadder))
+                        {
+                            ladderBase.ladders.Add(nextLadder);
+                            currentLadder=nextLadder;
+                            nextLadder = null;
+                        }
+                }
+                if (GUILayout.Button("Delete"))
+                {
+                    if (currentLadder != null)
+                        ladderBase.ladders.Remove(currentLadder);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+        }
+        EditorGUILayout.EndHorizontal();
+        ladderBase.SetDirty();
+    }
+
+    /// <summary>
+    /// Меню отрисовки препятствий
+    /// </summary>
+    void ObstaclesDrawGUI()
+    {
+
+        tagName = EditorGUILayout.TagField("tag", tagName);
+        obstacleLayer = EditorGUILayout.LayerField("ladder layer", obstacleLayer);
+        groundLayer = EditorGUILayout.LayerField("ground layer", groundLayer);
+
+        EditorGUILayout.BeginHorizontal();
+        if (sLayerIndex >= sortingLayers.Length)
+        {
+            sLayerIndex = 0;
+        }
+        EditorGUILayout.LabelField("sorting layer");
+        sLayerIndex = EditorGUILayout.Popup(sLayerIndex, sortingLayers);
+        sortingLayer = sortingLayers[sLayerIndex];
+        EditorGUILayout.EndHorizontal();
+
+        zPosition = EditorGUILayout.FloatField("z-position", zPosition);
+
+        obstacleName = EditorGUILayout.TextField("obstacle name", obstacleName);
+
+        obstacleParentName = EditorGUILayout.TextField("obstacle parent name", obstacleParentName);
+        if (obstacleParentName != string.Empty && (parentObj != null ? parentObj.name != obstacleParentName : true))
+        {
+            parentObj = GameObject.Find(obstacleParentName);
+        }
+
+        obstacleOffset = EditorGUILayout.FloatField("obstacle offset", obstacleOffset);
+
+        obstacleDamage = EditorGUILayout.FloatField("obstacle damage", obstacleDamage);
+        damageBoxSize = EditorGUILayout.FloatField("damage size", damageBoxSize);
+        damageBoxOffset= EditorGUILayout.FloatField("damage offset", damageBoxOffset);
+
+        obstacleType = (ObstacleEnum)EditorGUILayout.EnumPopup("obstacle type", obstacleType);
+
+        drawScrollPos = EditorGUILayout.BeginScrollView(drawScrollPos);
+        EditorGUILayout.BeginHorizontal();
+
+        float ctr = maxCtr;
+        if (obstacleBase.obstacles == null)
+        {
+            obstacleBase.obstacles = new List<GameObject>();
+        }
+        foreach (GameObject obstacle in obstacleBase.obstacles)
+        {
+            if (obstacle.GetComponent<SpriteRenderer>() == null)
+                continue;
+            Sprite obstacleSprite = obstacle.GetComponent<SpriteRenderer>().sprite;
+            Rect textRect = obstacleSprite.textureRect;
+            Texture2D texture = obstacleSprite.texture;
+            if (ctr < obstacleSprite.textureRect.x)
+            {
+               GUILayout.EndHorizontal();
+                EditorGUILayout.Space();
+                GUILayout.BeginHorizontal();
+                ctr = maxCtr;
+            }
+            ctr -= obstacleSprite.textureRect.x;
+            if (currentObstacle == obstacle)
+            {
+                if (GUILayout.Button("", textureStyleAct, GUILayout.Width(textRect.width + 6), GUILayout.Height(textRect.height + 4)))
+                { }
+                GUI.DrawTextureWithTexCoords(new Rect(GUILayoutUtility.GetLastRect().x + 3f,
+                                                      GUILayoutUtility.GetLastRect().y + 2f,
+                                                      GUILayoutUtility.GetLastRect().width - 6f,
+                                                      GUILayoutUtility.GetLastRect().height - 4f),
+                                             texture,
+                                             new Rect(textRect.x / (float)texture.width,
+                                                        textRect.y / (float)texture.height,
+                                                        textRect.width / texture.width,
+                                                        textRect.height / texture.height));
+            }
+            else
+            {
+                if (GUILayout.Button("", textureStyle, GUILayout.Width(textRect.width + 2), GUILayout.Height(textRect.height + 2)))
+                    currentObstacle = obstacle;
+                GUI.DrawTextureWithTexCoords(GUILayoutUtility.GetLastRect(), texture,
+                                             new Rect(textRect.x / (float)texture.width,
+                                                         textRect.y / (float)texture.height,
+                                                         textRect.width / (float)texture.width,
+                                                         textRect.height / (float)texture.height));
+            }
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.EndScrollView();
+
+        EditorGUILayout.BeginHorizontal();
+        {
+            EditorGUILayout.LabelField("new obstacle", GUILayout.Width(75f));
+            nextObstacle = (GameObject)EditorGUILayout.ObjectField(nextObstacle, typeof(GameObject), GUILayout.Width(150f));
+
+            EditorGUILayout.BeginVertical();
+            {
+                if (GUILayout.Button("Add"))
+                {
+                    if (nextObstacle != null ? nextObstacle.GetComponent<SpriteRenderer>() != null : false)
+                        if (!obstacleBase.obstacles.Contains(nextObstacle))
+                        {
+                            obstacleBase.obstacles.Add(nextObstacle);
+                            currentObstacle = nextObstacle;
+                            nextObstacle = null;
+                        }
+                }
+                if (GUILayout.Button("Delete"))
+                {
+                    if (currentObstacle != null)
+                        obstacleBase.obstacles.Remove(currentObstacle);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+        }
+        EditorGUILayout.EndHorizontal();
+        obstacleBase.SetDirty();
+    }
+
+    /// <summary>
+    /// Меню обычной отрисовки
+    /// </summary>
+    void UsualDrawGUI()
+    {
+        if (currentSprites == null)
+        {
+            currentSprites = new List<Sprite>();
+        }
+
+        tagName = EditorGUILayout.TagField("tag", tagName);
+        spriteLayer = EditorGUILayout.LayerField("sprite layer", spriteLayer);
+
+        EditorGUILayout.BeginHorizontal();
+        if (sLayerIndex >= sortingLayers.Length)
+        {
+            sLayerIndex = 0;
+        }
+        EditorGUILayout.LabelField("sorting layer");
+        sLayerIndex = EditorGUILayout.Popup(sLayerIndex, sortingLayers);
+        sortingLayer = sortingLayers[sLayerIndex];
+        EditorGUILayout.EndHorizontal();
+
+        zPosition = EditorGUILayout.FloatField("z-position", zPosition);
+        spriteParentObjName = EditorGUILayout.TextField("parent name", spriteParentObjName);
+        if (spriteParentObjName != string.Empty && (parentObj != null ? parentObj.name != spriteParentObjName : true))
+        {
+            parentObj = GameObject.Find(spriteParentObjName);
+        }
+
+        hasCollider = EditorGUILayout.Toggle("has collider?", hasCollider);
+        isTrigger = EditorGUILayout.Toggle("is trigger?", isTrigger);
+        overpaint = EditorGUILayout.Toggle("overpaint", overpaint);
+
+        drawScrollPos = EditorGUILayout.BeginScrollView(drawScrollPos);
+        EditorGUILayout.BeginHorizontal();
+        float ctr = maxCtr;
+        if (spriteBase.sprites == null)
+        {
+            spriteBase.sprites = new List<Sprite>();
+        }
+        foreach (Sprite sprite1 in spriteBase.sprites)
+        {
+            if (ctr < sprite1.textureRect.x)
+            {
+                GUILayout.EndHorizontal();
+                EditorGUILayout.Space();
+                GUILayout.BeginHorizontal();
+                ctr = maxCtr;
+            }
+            ctr -= sprite1.textureRect.x;
+            if (currentSprites.Contains(sprite1))
+            {
+                if (GUILayout.Button("", textureStyleAct, GUILayout.Width(sprite1.textureRect.width + 6), GUILayout.Height(sprite1.texture.height + 4)))
+                    currentSprites.Remove(sprite1);
+                GUI.DrawTextureWithTexCoords(new Rect(GUILayoutUtility.GetLastRect().x + 3f,
+                                                      GUILayoutUtility.GetLastRect().y + 2f,
+                                                      GUILayoutUtility.GetLastRect().width - 6f,
+                                                      GUILayoutUtility.GetLastRect().height - 4f),
+                                             sprite1.texture,
+                                             new Rect(sprite1.textureRect.x / (float)sprite1.texture.width,
+                                                        sprite1.textureRect.y / (float)sprite1.texture.height,
+                                                        sprite1.textureRect.width / (float)sprite1.texture.width,
+                                                        sprite1.textureRect.height / (float)sprite1.texture.height));
+            }
+            else
+            {
+                if (GUILayout.Button("", textureStyle, GUILayout.Width(sprite1.textureRect.width + 2), GUILayout.Height(sprite1.textureRect.height + 2)))
+                    currentSprites.Add(sprite1);
+                GUI.DrawTextureWithTexCoords(GUILayoutUtility.GetLastRect(), sprite1.texture,
+                                             new Rect(sprite1.textureRect.x / (float)sprite1.texture.width,
+                                                         sprite1.textureRect.y / (float)sprite1.texture.height,
+                                                         sprite1.textureRect.width / (float)sprite1.texture.width,
+                                                         sprite1.textureRect.height / (float)sprite1.texture.height));
+            }
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.EndScrollView();
+
+        EditorGUILayout.BeginHorizontal();
+        {
+            nextSprite = (Sprite)EditorGUILayout.ObjectField("new sprite", nextSprite, typeof(Sprite));
+
+            EditorGUILayout.BeginVertical();
+            {
+                if (GUILayout.Button("Add"))
+                {
+                    if (nextSprite != null)
+                        if (!spriteBase.sprites.Contains(nextSprite))
+                        {
+                            spriteBase.sprites.Add(nextSprite);
+                            currentSprites.Add(nextSprite);
+                            nextSprite = null;
+                        }
+                }
+                if (GUILayout.Button("Delete"))
+                {
+                    for (int i = currentSprites.Count - 1; i >= 0; i--)
+                    {
+                        spriteBase.sprites.Remove(currentSprites[i]);
+                        currentSprites.RemoveAt(i);
+                    }
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+        }
+        EditorGUILayout.EndHorizontal();
+        spriteBase.SetDirty();
+    }
+
+    #endregion //ladderGUI
+
     #endregion //drawGUI
 
     /// <summary>
@@ -1614,8 +2585,8 @@ public class LevelEditor : EditorWindow
     {
         EditorGUILayout.BeginHorizontal(textureStyleAct);
         {
-            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon };
-            for (int i = 0; i < 3; i++)
+            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon,spikesIcon,usualDrawIcon };
+            for (int i = 0; i < 6; i++)
             {
                 Sprite currentDrawSprite = drawIconSprites[i];
                 if (drawMod == (DrawModEnum)i)
@@ -1654,10 +2625,27 @@ public class LevelEditor : EditorWindow
                 }
             case DrawModEnum.plant:
                 {
+                    eraseLayer = EditorGUILayout.LayerField("erase Mask", eraseLayer);
                     break;
                 }
             case DrawModEnum.water:
                 {
+                    eraseLayer = EditorGUILayout.LayerField("erase Mask", eraseLayer);
+                    break;
+                }
+            case DrawModEnum.ladder:
+                {
+                    eraseLayer = EditorGUILayout.LayerField("erase mask", eraseLayer);
+                    break;
+                }
+            case DrawModEnum.spikes:
+                {
+                    eraseLayer = EditorGUILayout.LayerField("erase mask", eraseLayer);
+                    break;
+                }
+            case DrawModEnum.usual:
+                {
+                    eraseLayer = EditorGUILayout.LayerField("erase mask", eraseLayer);
                     break;
                 }
         }

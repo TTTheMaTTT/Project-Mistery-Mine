@@ -48,4 +48,23 @@ public class DropClass : MonoBehaviour, IInteractive
         SpecialFunctions.player.GetComponent<HeroController>().SetItem(item);
         Destroy(gameObject);
     }
+
+    /// <summary>
+    /// Функция, что превращает обычный игровой объект в дроп
+    /// </summary>
+    public static void AddDrop(GameObject obj, DropClass drop)
+    {
+        obj.tag = "drop";
+        Sprite sprite = drop.item.itemImage;
+        BoxCollider2D col = obj.AddComponent<BoxCollider2D>();
+        col.size = sprite.textureRect.size/sprite.pixelsPerUnit;
+        obj.AddComponent<Rigidbody2D>();
+        obj.AddComponent<SpriteRenderer>().sprite = sprite;
+        GameObject groundCheck = new GameObject("GroundCheck");
+        groundCheck.transform.parent = obj.transform;
+        groundCheck.transform.localPosition = new Vector3(0f, -1 * col.size.y / 2f - .002f, 0f);
+        DropClass _drop=obj.AddComponent<DropClass>();
+        _drop.item = drop.item;
+    }
+
 }

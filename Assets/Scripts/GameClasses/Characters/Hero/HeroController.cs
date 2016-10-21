@@ -548,6 +548,11 @@ public class HeroController : CharacterController
             fightingMode = (currentWeapon is SwordClass) ? "melee" : "range";
             OnEquipmentChanged(new EquipmentEventArgs(currentWeapon));
         }
+        else if (item is HeartClass)
+        {
+            Health = Mathf.Clamp(Health + ((HeartClass)item).hp, 0f, maxHealth);
+        }
+            
     }
 
     /// <summary>
