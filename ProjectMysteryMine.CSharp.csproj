@@ -103,8 +103,10 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\NPCController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\ChestController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DropClass.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Environment\LeverScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\LeverRiddle.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\DoorClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\GhostPlatform.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\LeverScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\TwoStagesLeverScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\MushroomScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Hearing.cs" />
