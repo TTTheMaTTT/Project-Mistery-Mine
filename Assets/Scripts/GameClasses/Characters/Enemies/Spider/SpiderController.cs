@@ -31,33 +31,34 @@ public class SpiderController : AIController
 
     protected virtual void FixedUpdate()
     {
-        if (agressive && mainTarget != null && employment > 2)
+        if (!immobile)
         {
-            Vector3 targetPosition = mainTarget.transform.position;
-            if (Vector2.Distance(targetPosition, transform.position) > attackDistance)
+            if (agressive && mainTarget != null && employment > 2)
             {
-                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
+                Vector3 targetPosition = mainTarget.transform.position;
+                if (Vector2.Distance(targetPosition, transform.position) > attackDistance)
+                {
+                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
+                }
+                else
+                {
+                    Attack();
+                }
             }
-            else
+            else if (!agressive)
             {
-                Attack();
+                if ((Vector2.Distance(waypoint, transform.position) < attackDistance) || (wallCheck.WallInFront()))
+                {
+                    Turn((OrientationEnum)(-1 * (int)orientation));
+                    Patrol();
+                }
+                else
+                {
+                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(waypoint.x - transform.position.x)));
+                }
             }
+            Animate(new AnimationEventArgs("groundMove"));
         }
-        else if (!agressive)
-        {
-            if ((Vector2.Distance(waypoint, transform.position) < attackDistance) || (wallCheck.WallInFront()))
-            {
-                Turn((OrientationEnum)(-1 * (int)orientation));
-                Patrol();
-            }
-            else
-            {
-                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(waypoint.x - transform.position.x)));
-            }
-        }
-
-        Animate(new AnimationEventArgs("groundMove"));
-
     }
 
     /// <summary>
@@ -73,6 +74,11 @@ public class SpiderController : AIController
             wallCheck = indicators.GetComponentInChildren<WallChecker>();
         }
         Patrol();
+    }
+
+    protected override void FormDictionaries()
+    {
+        storyActionBase.Add("moveForward", MoveForwardAction);
     }
 
     /// <summary>
@@ -126,5 +132,26 @@ public class SpiderController : AIController
         base.TakeDamage(damage);
         BecomeAgressive();
     }
+
+    #region storyActions
+
+    /// <summary>
+    /// Выйти вперёд
+    /// </summary>
+    public void MoveForwardAction(StoryAction _action)
+    {
+        Animator spAnim = GetComponent<Animator>();
+        spAnim.Play("MoveForward");
+        Animate(new AnimationEventArgs("moveForward"));
+        StartCoroutine(MoveForwardProcess());
+    }
+
+    IEnumerator MoveForwardProcess()
+    {
+        yield return new WaitForSeconds(1f);
+        Destroy(GetComponent<Animator>());
+    }
+
+    #endregion //storyActions
 
 }

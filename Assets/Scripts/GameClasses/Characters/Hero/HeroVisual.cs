@@ -82,6 +82,21 @@ public class HeroVisual : GroundMoveVisual
         }
     }
 
+    /// <summary>
+    /// Анимировать атаку
+    /// </summary>
+    protected override void Attack(string id, int argument)
+    {
+        if (employment < 8)
+        {
+            return;
+        }
+        if (id == string.Empty)
+            anim.Play("Attack");
+        else
+            anim.Play(id + "Attack");
+        StartCoroutine(VisualRoutine(5, argument/10f));
+    }
 
     /// <summary>
     /// Анимировть выстрел
@@ -92,8 +107,11 @@ public class HeroVisual : GroundMoveVisual
         {
             return;
         }
-        anim.Play("Shoot");
-        StartCoroutine(VisualRoutine(5, shootTime));
+        if (id == string.Empty)
+            anim.Play("Shoot");
+        else
+            anim.Play(id + "Shoot");
+        StartCoroutine(VisualRoutine(5, argument/10f));
     }
 
     /// <summary>

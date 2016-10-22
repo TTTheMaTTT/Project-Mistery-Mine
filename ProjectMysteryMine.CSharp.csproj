@@ -101,8 +101,14 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\NPCController.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\ChestController.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\DropClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\ChestController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\DropClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\LeverRiddle.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\DoorClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\GhostPlatform.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\LeverScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\TwoStagesLeverScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\MushroomScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Hearing.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\HitBox.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Interactor.cs" />
@@ -114,7 +120,6 @@
     <Compile Include="Assets\Scripts\GameClasses\Items\ItemClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\SwordClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\WeaponClass.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\MushroomScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Obstacles\ObstacleScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Obstacles\SpikesScript.cs" />
     <Compile Include="Assets\Scripts\Interfaces\interfaces.cs" />

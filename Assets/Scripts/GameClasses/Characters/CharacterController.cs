@@ -9,6 +9,19 @@ using System.Collections.Generic;
 public class CharacterController : MonoBehaviour, IDamageable
 {
 
+    #region delegates
+
+    public delegate void storyActionDelegate(StoryAction _action);
+
+    #endregion //delegates
+
+    #region dictionaries
+
+    protected Dictionary<string, storyActionDelegate> storyActionBase = new Dictionary<string, storyActionDelegate>(); //Словарь сюжетных действий
+    public Dictionary<string, storyActionDelegate> StoryActionBase { get { return storyActionBase; } }
+
+    #endregion //dictionaries
+
     #region consts
 
     protected const int maxEmployment = 10;
@@ -38,6 +51,9 @@ public class CharacterController : MonoBehaviour, IDamageable
     protected OrientationEnum orientation; //В какую сторону повёрнут персонаж
 
     protected int employment = maxEmployment;
+
+    [SerializeField]
+    protected bool immobile;//Можно ли управлять персонажем
 
     #endregion //parametres
 
@@ -74,8 +90,17 @@ public class CharacterController : MonoBehaviour, IDamageable
 
         employment = maxEmployment;
 
+        FormDictionaries();
+
     }
 
+    /// <summary>
+    /// Сформировать словари стори-действий
+    /// </summary>
+    protected virtual void FormDictionaries()
+    {
+        storyActionBase = new Dictionary<string, storyActionDelegate>();
+    }
 
     /// <summary>
     /// Функция, ответственная за анализ окружающей обстановки
@@ -93,7 +118,9 @@ public class CharacterController : MonoBehaviour, IDamageable
     /// Прекратить перемещение
     /// </summary>
     protected virtual void StopMoving()
-    {}
+    {
+        rigid.velocity = new Vector2(0f, rigid.velocity.y);
+    }
 
     /// <summary>
     /// Поворот
@@ -149,6 +176,14 @@ public class CharacterController : MonoBehaviour, IDamageable
     protected virtual void Death()
     {
         SpecialFunctions.StartStoryEvent(this, CharacterDeathEvent, new StoryEventArgs());
+    }
+
+    /// <summary>
+    /// Задать персонажу управляемость
+    /// </summary>
+    public void SetImmobile(bool _immobile)
+    {
+        immobile = _immobile;
     }
 
     #region events

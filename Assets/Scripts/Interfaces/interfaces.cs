@@ -19,3 +19,10 @@ public interface IInteractive
     void Interact();
 }
 
+/// <summary>
+/// Интерфейс игрового механизма (двери, движущиеся платформы)
+/// </summary>
+public interface IMechanism
+{
+    void ActivateMechanism();
+}

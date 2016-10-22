@@ -97,6 +97,7 @@ public class History
     {
 
         storyActionBase.Add("changeQuestData", ChangeQuestData);
+        storyActionBase.Add("removeObject", RemoveHistoryObject);
 
         storyConditionBase.Clear();
         storyConditionBase.Add("compare", Compare);
@@ -164,7 +165,16 @@ public class History
                 {
                     string s = _action.actionName;
                     _action.storyAction = npc.StoryActionBase[s].Invoke;
-                }      
+                }
+            }
+            else if (obj.GetComponent<CharacterController>() != null)
+            {
+                CharacterController character = obj.GetComponent<CharacterController>();
+                if (character.StoryActionBase.ContainsKey(_action.actionName))
+                {
+                    string s = _action.actionName;
+                    _action.storyAction = character.StoryActionBase[s].Invoke;
+                }
             }
         }
 
@@ -314,6 +324,16 @@ public class History
             SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<string>(x => x.questLine[x.stage]));
             HandleStatisticCountEvent(this, new StoryEventArgs("", 0));
         }
+    }
+
+    /// <summary>
+    /// Убрать объект
+    /// </summary>
+    public void RemoveHistoryObject(StoryAction _action)
+    {
+        GameObject dObj = GameObject.Find(_action.id1);
+        if (dObj!=null)
+            dObj.SetActive(false);
     }
 
     #endregion //storyActions
