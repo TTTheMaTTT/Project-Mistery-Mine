@@ -39,6 +39,7 @@ public class ChestController : MonoBehaviour, IInteractive
             rigid.AddForce(new Vector2(Random.RandomRange(-pushForceX, pushForceX), pushForceY));*/
         }
         gameObject.tag = "Untagged";
+        SpecialFunctions.statistics.ConsiderStatistics(this);
         Animator anim = GetComponent<Animator>();
         if (anim != null)
             anim.Play("Opened");

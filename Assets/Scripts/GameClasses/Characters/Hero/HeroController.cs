@@ -54,6 +54,7 @@ public class HeroController : CharacterController
     #region parametres
 
     public override float Health { get { return base.Health; } set{base.Health = value; OnHealthChanged(new HealthEventArgs(value));}}
+    public float MaxHealth { get { return base.maxHealth; } }
 
     protected int airSupply = 10;//Запас воздуха
     public int AirSupply { get { return airSupply; }  set { airSupply = value; OnSuffocate(new SuffocateEventArgs(airSupply)); } }

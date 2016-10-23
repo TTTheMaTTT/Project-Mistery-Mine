@@ -20,6 +20,8 @@ public class LeverScript : MonoBehaviour, IInteractive
     [SerializeField]protected List<GameObject> mechanisms = new List<GameObject>();//Список механизмов, активируемых рычагом
     protected Animator anim;
 
+    protected bool once = false;//Взаимодействовал ли уже игрок с рычагом
+
     #endregion //fields
 
     #region parametres
@@ -40,6 +42,7 @@ public class LeverScript : MonoBehaviour, IInteractive
         {
             anim.Play(activated ? "Active" : "Inactive");
         }
+        once = false;
     }
 
     /// <summary>
@@ -59,6 +62,11 @@ public class LeverScript : MonoBehaviour, IInteractive
             if (anim != null)
             {
                 anim.Play(activated ? "Active" : "Inactive");
+            }
+            if (!once)
+            {
+                once = true;
+                SpecialFunctions.statistics.ConsiderStatistics(this);
             }
         }
     }

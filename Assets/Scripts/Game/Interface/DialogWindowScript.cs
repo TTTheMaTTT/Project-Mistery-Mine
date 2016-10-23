@@ -42,7 +42,8 @@ public class DialogWindowScript : MonoBehaviour
     {
         if (canvas.enabled)
         {
-            if (Input.GetButtonDown("Attack"))
+            Event e = Event.current;
+            if (Input.anyKeyDown)
                 NextSpeech();
         }
     }
