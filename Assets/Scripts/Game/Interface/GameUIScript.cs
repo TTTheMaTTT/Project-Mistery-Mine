@@ -10,6 +10,13 @@ using System.Collections.Generic;
 public class GameUIScript : MonoBehaviour
 {
 
+    #region consts
+
+    protected const float fadeSpeed = 1f;//Скорость затухания
+    protected const float fadeTime = 2f;//Время, за которое происходит затухание или проявление экрана
+
+    #endregion //consts
+
     #region fields
 
     [SerializeField]
@@ -23,11 +30,30 @@ public class GameUIScript : MonoBehaviour
     
     protected Image weaponImage;
 
+    protected GameObject textPanel;//В этом окошечке будет выводится информация о процессе игры
+    protected Text infoText;
+
+    protected Image fadeScreen;//Объект, ответственный за затемнение, происходящее в переходах между уровнями
+
     #endregion //fields
+
+    #region parametres
+
+    protected int fadeDirection;
+    protected float fadeTextTime=0f;
+
+    #endregion //parametres
 
     void Awake()
     {
         Initialize();
+    }
+
+    void FixedUpdate()
+    {
+        fadeScreen.color=Color.Lerp(fadeScreen.color,new Color(0f,0f,0f,fadeDirection==1? 0f: 
+                                                                        fadeDirection==-1? 1f: 
+                                                                        fadeScreen.color.a),Time.fixedDeltaTime*fadeSpeed);
     }
 
     void Initialize()
@@ -49,6 +75,13 @@ public class GameUIScript : MonoBehaviour
         questTexts[0] = questsPanel.GetChild(0).GetComponent<Text>();
         questTexts[1] = questsPanel.GetChild(1).GetComponent<Text>();
         questTexts[2] = questsPanel.GetChild(2).GetComponent<Text>();
+
+        fadeScreen = transform.FindChild("FadeScreen").GetComponent<Image>();
+
+        textPanel = transform.FindChild("TextPanel").gameObject;
+        infoText = textPanel.transform.FindChild("InfoText").GetComponent<Text>();
+        infoText.text = "";
+        textPanel.SetActive(false);
 
         breathPanel = transform.FindChild("BreathPanel");
         player.suffocateEvent += HandleSuffocate;
@@ -124,6 +157,63 @@ public class GameUIScript : MonoBehaviour
             else
                 questTexts[i].text = activeQuests[i];
         }
+    }
+
+    /// <summary>
+    /// выставить текст на экран
+    /// </summary>
+    public void SetText(string _info, float textTime)
+    {
+        infoText.text = _info;
+        StopCoroutine(TextProcess(fadeTextTime));
+        fadeTextTime = textTime;
+        StartCoroutine(TextProcess(fadeTextTime));
+    }
+
+    /// <summary>
+    /// Процесс появления и исчезания текста
+    /// </summary>
+    IEnumerator TextProcess(float textTime)
+    {
+        textPanel.SetActive(true);
+        yield return new WaitForSeconds(textTime);
+        textPanel.SetActive(false);
+    }
+
+    /// <summary>
+    /// Начать затухание экрана
+    /// </summary>
+    public void FadeIn()
+    {
+        fadeDirection = -1;
+        StartCoroutine(FadeProcess());
+    }
+
+    /// <summary>
+    /// Начать проявление экрана
+    /// </summary>
+    public void FadeOut()
+    {
+        fadeDirection = 1;
+        StartCoroutine(FadeProcess());
+    }
+
+    /// <summary>
+    /// Мгновенно сделать игровой экран тёмным
+    /// </summary>
+    public void SetDark()
+    {
+        fadeScreen.color = Color.black;
+    }
+
+    /// <summary>
+    /// Процесс затухания или проявления экрана
+    /// </summary>
+    IEnumerator FadeProcess()
+    {
+        yield return new WaitForSeconds(fadeTime);
+        fadeScreen.color = new Color(0f, 0f, 0f, fadeDirection == -1 ? 1f : 0f);
+        fadeDirection = 0;
     }
 
     #region eventHandlers

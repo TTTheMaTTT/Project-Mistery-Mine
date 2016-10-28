@@ -12,14 +12,20 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
 
     [SerializeField]protected string keyID;//Название ключа, что откроет эту дверь
     [SerializeField][TextArea]protected string closedDoorMessage = 
-                                               "Для того чтоб открыть эту дверь тебе нужен ключ - найди его!";//Какое сообщение должно выводится при неудачной попытке открыть дверь
+                                               "Для того чтобы открыть эту дверь тебе нужен ключ - найди его!",
+                                               openedDoorMessage =
+                                               "Дверь открыта";//Какое сообщение должно выводится при различных попытках открыть дверь
+
     protected Collider2D col;
+    protected Animator anim;
+
 
     #endregion //fields
 
     void Awake()
     {
         col = GetComponent<Collider2D>();
+        anim = GetComponent<Animator>();
     }
 
     /// <summary>
@@ -32,16 +38,23 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
             Open();
         else if (player.Bag.Find(x => x.itemName == keyID))
             Open();
+        else
+            SpecialFunctions.SetText(closedDoorMessage, 2.5f);
 
     }
 
     /// <summary>
     /// Открыть дверь
     /// </summary>
-    public void Open()
+    public virtual void Open()
     {
         if (col != null)
             col.enabled = false;
+        SpecialFunctions.SetText(openedDoorMessage, 1.5f);
+        if (anim != null)
+        {
+            anim.Play("Opened");
+        }
     }
 
     /// <summary>

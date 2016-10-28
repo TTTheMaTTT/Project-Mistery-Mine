@@ -54,6 +54,33 @@ public static class SpecialFunctions
         {
             handler(sender, e);
         }
-    } 
+    }
+
+    /// <summary>
+    /// Функция, выводящая заданный текст на экран на заданное время
+    /// </summary>
+    public static void SetText(string _info, float textTime)
+    {
+        gameUI.SetText(_info, textTime);
+    }
+
+    /// <summary>
+    /// Функция, вызывающая либо затухание, либо проявление экрана
+    /// </summary>
+    public static void SetFade(bool fadeIn)
+    {
+        if (fadeIn)
+            gameUI.FadeIn();
+        else
+            gameUI.FadeOut();
+    }
+
+    /// <summary>
+    /// Сделать игровой экран тёмным
+    /// </summary>
+    public static void SetDark()
+    {
+        gameUI.SetDark();
+    }
 
 }

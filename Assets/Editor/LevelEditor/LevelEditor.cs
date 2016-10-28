@@ -79,6 +79,7 @@ public class LevelEditor : EditorWindow
     private static List<WaterBrush> waterBrushes = new List<WaterBrush>();
     private static WaterBrush wBrush;//Водная кисть
     private static string waterBrushName;
+    private static Material waterMaterial;
 
     private static int waterLayer = LayerMask.NameToLayer("Water");
     private static float maxWaterHeight = 100f, maxWaterWidth = 100f;//Максимальные размеры водной области
@@ -967,6 +968,8 @@ public class LevelEditor : EditorWindow
                 GameObject newWater = new GameObject(objName, typeof(SpriteRenderer));
                 newWater.transform.position = new Vector3(cellPosition.x, cellPosition.y, zPosition);
                 newWater.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                if (waterMaterial != null)
+                    newWater.GetComponent<SpriteRenderer>().material = waterMaterial;
                 newWater.tag = tagName;
                 newWater.layer = waterLayer;
                 if (parentObj != null)
@@ -2137,6 +2140,8 @@ public class LevelEditor : EditorWindow
         {
             parentObj = GameObject.Find(waterParentObjName);
         }
+
+        waterMaterial = (Material)EditorGUILayout.ObjectField(waterMaterial, typeof(Material));
 
         EditorGUILayout.Space();
 
