@@ -23,6 +23,12 @@ public class DropClass : MonoBehaviour, IInteractive
 
     #endregion //fields
 
+    #region parametres
+
+    public bool autoPick;//Будет ли дроп автоматически подбираться, когда будет в зоне доступа персонажа?
+
+    #endregion //parametres
+
     void Awake()
     {
         rigid = GetComponentInChildren<Rigidbody2D>();
@@ -65,6 +71,15 @@ public class DropClass : MonoBehaviour, IInteractive
         groundCheck.transform.localPosition = new Vector3(0f, -1 * col.size.y / 2f - .002f, 0f);
         DropClass _drop=obj.AddComponent<DropClass>();
         _drop.item = drop.item;
+    }
+
+    public virtual void OnTriggerEnter2D(Collider2D other)
+    {
+        if (autoPick)
+        if (other.gameObject == SpecialFunctions.player)
+        {
+            Interact();
+        }
     }
 
 }

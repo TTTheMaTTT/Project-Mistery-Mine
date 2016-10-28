@@ -78,8 +78,10 @@
     <Compile Include="Assets\Scripts\Game\GameControl\GameHistory\GameHistory.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameHistory\Quest.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameHistory\Story.cs" />
+    <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\ChestOpenStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\DatabaseClass.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\GameStatistics.cs" />
+    <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\MechanismInteractionStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\MonsterDeathStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\NPCTalkStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\Statistics.cs" />
@@ -103,10 +105,12 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\NPCController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\ChestController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DropClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\HeartDropClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\LeverRiddle.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\DoorClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\GhostPlatform.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\LeverScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\PushPlateScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\TwoStagesLeverScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\MushroomScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Hearing.cs" />
@@ -129,6 +133,7 @@
     <Compile Include="Assets\Scripts\Other\SpecialFunctions.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Scripts\Shaders\Experiments\Red.shader" />
     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />
     <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\BlendModesOverlay.shader" />

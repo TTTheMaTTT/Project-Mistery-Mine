@@ -46,6 +46,7 @@ public class Interactor : MonoBehaviour {
             {
                 IInteractive interaction = interactions[0].GetComponent<IInteractive>();
                 interaction.Interact();
+                StartCoroutine(InteractionProcess());
             }
             if (interactions[0] == null ? true : interactions[0].GetComponent<IInteractive>() == null)
             {
@@ -61,7 +62,7 @@ public class Interactor : MonoBehaviour {
             IInteractive interaction = other.gameObject.GetComponent<IInteractive>();
             if (interaction != null ? !interactions.Contains(other.gameObject) : false)
             {
-                interactions.Add(other.gameObject);
+               interactions.Add(other.gameObject);
             }
         }
     }
@@ -100,6 +101,15 @@ public class Interactor : MonoBehaviour {
     public bool ReadyForInteraction()
     {
         return (interactions.Count > 0);
+    }
+
+    protected IEnumerator InteractionProcess()
+    {
+        yield return new WaitForSeconds(0.1f);
+        if (interactions.Count > 0 ? interactions[0] == null : false)
+        {
+            interactions.RemoveAt(0);
+        }
     }
 
 }

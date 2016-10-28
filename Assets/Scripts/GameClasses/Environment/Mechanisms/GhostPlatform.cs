@@ -25,6 +25,8 @@ public class GhostPlatform : MonoBehaviour, IMechanism
         anim = GetComponent<Animator>();
         if (anim)
         {
+            StopAllCoroutines();
+            StartCoroutine(AppearProcess());
             anim.Play(activated ? "Appear" : "Disappear");
         }
     }
@@ -35,6 +37,13 @@ public class GhostPlatform : MonoBehaviour, IMechanism
     public void ActivateMechanism()
     {
         activated = !activated;
+        StopAllCoroutines();
+        StartCoroutine(AppearProcess());
+    }
+
+    IEnumerator AppearProcess()
+    {
+        yield return new WaitForSeconds(.1f);
         if (anim)
         {
             anim.Play(activated ? "Appear" : "Disappear");
