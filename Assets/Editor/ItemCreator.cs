@@ -15,7 +15,7 @@ public class ItemCreator : EditorWindow
 
     void OnGUI()
     {
-        itemName = EditorGUILayout.TextField(itemName);
+        itemName = EditorGUILayout.TextField(itemName); 
         itemPath = EditorGUILayout.TextField(itemPath);
         itemType = EditorGUILayout.TextField(itemType);
 
@@ -49,6 +49,15 @@ public class ItemCreator : EditorWindow
         else if (itemType == "heart")
         {
             HeartClass asset = ScriptableObject.CreateInstance<HeartClass>();
+            asset.itemName = itemName;
+            AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
+            AssetDatabase.SaveAssets();
+            EditorUtility.FocusProjectWindow();
+            Selection.activeObject = asset;
+        }
+        else if (itemType == "key")
+        {
+            KeyClass asset = ScriptableObject.CreateInstance<KeyClass>();
             asset.itemName = itemName;
             AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
             AssetDatabase.SaveAssets();

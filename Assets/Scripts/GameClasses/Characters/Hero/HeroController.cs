@@ -15,6 +15,9 @@ public class HeroController : CharacterController
     protected const float groundRadius = .01f;
     protected const float jumpTime = .2f, jumpInputTime=.2f ;
     protected const float flipTime = .6f;
+    protected const float deathTime = 2.1f;
+
+    protected const int maxJumpInput = 10;
 
     protected const float invulTime = 1f;
 
@@ -25,6 +28,8 @@ public class HeroController : CharacterController
 
     protected const float suffocateTime = .3f;//Сколько времени должно пройти, чтобы запас воздуха уменьшился на 1 или здоровье ГГ на .5
     protected const int maxAirSupply = 10;
+
+    protected const float highWallCheckPosition = -0.0239f, lowWallCheclPosition = -0.0744f;
 
     #endregion //consts
 
@@ -67,7 +72,8 @@ public class HeroController : CharacterController
 
     [SerializeField] protected LayerMask whatIsGround, whatIsAim;
 
-    protected bool jumping, jumpInput=false;
+    protected bool jumping;
+    protected int jumpInput = 0;
     protected GroundStateEnum groundState;
     protected float fallSpeed=0f;
     protected bool onLadder;
@@ -105,6 +111,7 @@ public class HeroController : CharacterController
 
                     if (Input.GetButtonDown("Jump"))
                     {
+                        jumpInput = 0;
                         if (groundState==GroundStateEnum.grounded && !jumping)
                         {
                             rigid.AddForce(new Vector2(0f, jumpForce * (underWater ? waterCoof : 1f)));
@@ -114,8 +121,13 @@ public class HeroController : CharacterController
 
                     if (Input.GetButton("Jump"))
                     {
-                        if (jumpInput)
-                            rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
+                        //if (jumpInput)
+                            //rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
+                    }
+
+                    if (Input.GetButtonUp("Jump"))
+                    {
+                        jumpInput = 0;
                     }
 
                     if (Input.GetButtonDown("Up"))
@@ -123,7 +135,7 @@ public class HeroController : CharacterController
                         LadderOn();
                     }
 
-                    if (employment > 8)
+                    if (employment > 7)
                     {
                         if (Input.GetButtonDown("Attack"))
                         {
@@ -135,8 +147,9 @@ public class HeroController : CharacterController
                                     Attack();
                             }
                         }
-                        else if (Input.GetButtonDown("Flip") && (rigid.velocity.x * (int)orientation > .1f) && (groundState==GroundStateEnum.grounded))
-                            Flip();
+                        else if (Input.GetButtonDown("Flip"))
+                            if ((rigid.velocity.x * (int)orientation > .1f) && (groundState == GroundStateEnum.grounded) && (employment > 8))
+                                Flip();
                     }
                 }
             }
@@ -180,6 +193,15 @@ public class HeroController : CharacterController
             Animate(new AnimationEventArgs("groundMove"));
         }
 	}
+
+    protected virtual void FixedUpdate()
+    {
+        if (jumpInput > 0 && jumpInput <= maxJumpInput)
+        {
+            rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
+            jumpInput++;
+        }
+    }
 
     /// <summary>
     /// Инициализация
@@ -277,10 +299,10 @@ public class HeroController : CharacterController
     /// </summary>
     protected IEnumerator JumpProcess()
     {
-        employment = Mathf.Clamp(employment - 1, 0, maxEmployment);
-        jumpInput = true;
+        employment = Mathf.Clamp(employment - 2, 0, maxEmployment);
+        jumpInput = 1;
         yield return new WaitForSeconds(jumpInputTime);
-        jumpInput = false;
+        jumpInput = 0;
         jumping = true;
         yield return new WaitForSeconds(jumpTime);
         employment = Mathf.Clamp(employment + 2, 0, maxEmployment);
@@ -294,6 +316,8 @@ public class HeroController : CharacterController
     {
         col1.enabled = !crouching;
         col2.enabled = crouching;
+        Vector3 pos = wallCheck.transform.localPosition;
+        wallCheck.transform.localPosition = new Vector2(pos.x, crouching ? lowWallCheclPosition : highWallCheckPosition);
     }
 
     /// <summary>
@@ -524,10 +548,21 @@ public class HeroController : CharacterController
 
     /// <summary>
     /// Функция, описывающая процессы при смерти персонажа
-    /// <fA/summary>
+    /// </summary>
     protected override void Death()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);   
+        StartCoroutine(DeathProcess());
+    }
+
+    /// <summary>
+    /// Процесс смерти
+    /// </summary>
+    protected virtual IEnumerator DeathProcess()
+    {
+        immobile = true;
+        SpecialFunctions.SetFade(true);
+        yield return new WaitForSeconds(deathTime);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     /// <summary>

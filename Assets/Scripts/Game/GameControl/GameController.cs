@@ -26,6 +26,12 @@ public class GameController : MonoBehaviour
         Initialize();
     }
 
+    protected void Start()
+    {
+        SpecialFunctions.SetDark();
+        SpecialFunctions.SetFade(false);
+    }
+
     protected void Initialize()
     {
         Transform interfaceWindows = SpecialFunctions.gameInterface.transform;
