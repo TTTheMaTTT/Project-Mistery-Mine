@@ -1,8 +1,4 @@
 sceneSetups:
-<<<<<<< HEAD
-- path: Assets/Scenes/cave_lvl5.unity
-=======
-- path: Assets/Scenes/cave_lvl1.unity
->>>>>>> master
+- path: Assets/Scenes/cave_lvl3.unity
   isLoaded: 1
   isActive: 1
