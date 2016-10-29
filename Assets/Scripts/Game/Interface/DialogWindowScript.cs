@@ -43,7 +43,7 @@ public class DialogWindowScript : MonoBehaviour
         if (canvas.enabled)
         {
             Event e = Event.current;
-            if (Input.anyKeyDown)
+            if (Input.anyKeyDown && !Input.GetButtonDown("Horizontal") && !Input.GetButtonDown("Vertical"))
                 NextSpeech();
         }
     }

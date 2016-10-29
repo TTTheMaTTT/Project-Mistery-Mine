@@ -159,8 +159,6 @@ public class CustomGameStatistics_Editor : Editor
             {
                 var fields = _stat.GetType().GetFields();
 
-                EditorGUILayout.BeginVertical();
-
                 EditorGUILayout.Space();
 
                 foreach (FieldInfo fieldInfo in fields)
