@@ -132,16 +132,16 @@
     <Compile Include="Assets\Editor\StoryCreator\StoryCreator.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Scripts\Shaders\CharacterShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Blue.shader" />
-    <None Include="Assets\Scripts\Shaders\Experiments\CharacterShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\CharacterUnderWater.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Glass.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Green.shader" />
-    <None Include="Assets\Scripts\Shaders\Experiments\Outline.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\OutlineShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Red.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Sulhouette.shader" />
-    <None Include="Assets\Scripts\Shaders\Experiments\WaterShader.shader" />
+    <None Include="Assets\Scripts\Shaders\Outline.shader" />
+    <None Include="Assets\Scripts\Shaders\WaterShader.shader" />
     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />
     <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\BlendModesOverlay.shader" />

@@ -17,7 +17,7 @@ public class SpiderController : AIController
 
     #region fields
 
-    protected WallChecker wallCheck;
+    protected WallChecker wallCheck, precipiceCheck;
 
     #endregion //fields
 
@@ -47,7 +47,7 @@ public class SpiderController : AIController
             }
             else if (!agressive)
             {
-                if ((Vector2.Distance(waypoint, transform.position) < attackDistance) || (wallCheck.WallInFront()))
+                if ((Vector2.Distance(waypoint, transform.position) < attackDistance) || (wallCheck.WallInFront() || !(precipiceCheck.WallInFront())))
                 {
                     Turn((OrientationEnum)(-1 * (int)orientation));
                     Patrol();
@@ -71,7 +71,8 @@ public class SpiderController : AIController
         Transform indicators = transform.FindChild("Indicators");
         if (indicators != null)
         {
-            wallCheck = indicators.GetComponentInChildren<WallChecker>();
+            wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
+            precipiceCheck = indicators.FindChild("PrecipiceCheck").GetComponent<WallChecker>();
         }
         Patrol();
     }

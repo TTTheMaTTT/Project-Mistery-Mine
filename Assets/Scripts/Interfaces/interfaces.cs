@@ -6,9 +6,12 @@ using System.Collections;
 /// </summary>
 public interface IDamageable
 {
+
     void TakeDamage(float damage);
 
     void TakeDamage(float damage, bool ignoreInvul);
+
+    float GetHealth();
 }
 
 /// <summary>

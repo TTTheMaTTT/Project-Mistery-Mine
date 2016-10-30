@@ -13,7 +13,7 @@ public class HeroController : CharacterController
     #region consts
 
     protected const float groundRadius = .01f;
-    protected const float jumpTime = .2f, jumpInputTime=.2f ;
+    protected const float jumpTime = .2f, jumpInputTime = .2f;
     protected const float flipTime = .6f;
     protected const float deathTime = 2.1f;
 
@@ -29,7 +29,10 @@ public class HeroController : CharacterController
     protected const float suffocateTime = .3f;//Сколько времени должно пройти, чтобы запас воздуха уменьшился на 1 или здоровье ГГ на .5
     protected const int maxAirSupply = 10;
 
-    protected const float highWallCheckPosition = -0.0239f, lowWallCheclPosition = -0.0744f;
+    protected const float highWallCheckPosition = -0.02f, lowWallCheclPosition = -0.0544f;
+    protected const float highWallCheckSize = .08f, lowWallCheckSize = .05f;
+
+    protected const float shootDelta = .03f;
 
     #endregion //consts
 
@@ -41,7 +44,7 @@ public class HeroController : CharacterController
     protected WallChecker wallCheck;//Индикатор, необходимый для отсутствия зависаний в стене
     protected Interactor interactor;//Индикатор, ответственный за обнаружение и взаимодействие со всеми интерактивными объектами
 
-    protected Collider2D col1,col2;
+    protected Collider2D col1, col2;
 
     [SerializeField] protected GameObject attackParticles; //Чем атакует герой
 
@@ -50,6 +53,8 @@ public class HeroController : CharacterController
 
     [SerializeField]
     protected WeaponClass currentWeapon;//Оружие, которое используется персонажем в данный момент
+    public WeaponClass CurrentWeapon { get { return currentWeapon; } }
+
     protected List<ItemClass> bag = new List<ItemClass>();//Рюкзак игрока.
     public List<ItemClass> Bag { get { return bag; } }
     public GameObject dropPrefab;
@@ -58,26 +63,27 @@ public class HeroController : CharacterController
 
     #region parametres
 
-    public override float Health { get { return base.Health; } set{base.Health = value; OnHealthChanged(new HealthEventArgs(value));}}
+    public override float Health { get { return base.Health; } set { base.Health = value; OnHealthChanged(new HealthEventArgs(value)); } }
     public float MaxHealth { get { return base.maxHealth; } }
 
     protected int airSupply = 10;//Запас воздуха
-    public int AirSupply { get { return airSupply; }  set { airSupply = value; OnSuffocate(new SuffocateEventArgs(airSupply)); } }
+    public int AirSupply { get { return airSupply; } set { airSupply = value; OnSuffocate(new SuffocateEventArgs(airSupply)); } }
 
     [SerializeField] protected float jumpForce = 200f,
                                      jumpAdd = 20f,//Добавление к силе прыжка при зажимании
-                                     flipForce= 150f,
-                                     ladderSpeed=.8f,
-                                     waterCoof=.7f;
+                                     flipForce = 150f,
+                                     ladderSpeed = .8f,
+                                     waterCoof = .7f;
 
     [SerializeField] protected LayerMask whatIsGround, whatIsAim;
 
     protected bool jumping;
     protected int jumpInput = 0;
     protected GroundStateEnum groundState;
-    protected float fallSpeed=0f;
+    protected float fallSpeed = 0f;
     protected bool onLadder;
     protected bool underWater;
+    protected bool dontShoot = false;
 
     protected bool invul;//Если true, то персонаж невосприимчив к урону
 
@@ -112,7 +118,7 @@ public class HeroController : CharacterController
                     if (Input.GetButtonDown("Jump"))
                     {
                         jumpInput = 0;
-                        if (groundState==GroundStateEnum.grounded && !jumping)
+                        if (groundState == GroundStateEnum.grounded && !jumping)
                         {
                             rigid.AddForce(new Vector2(0f, jumpForce * (underWater ? waterCoof : 1f)));
                             StartCoroutine(JumpProcess());
@@ -122,7 +128,7 @@ public class HeroController : CharacterController
                     if (Input.GetButton("Jump"))
                     {
                         //if (jumpInput)
-                            //rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
+                        //rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
                     }
 
                     if (Input.GetButtonUp("Jump"))
@@ -184,15 +190,15 @@ public class HeroController : CharacterController
         {
             Animate(new AnimationEventArgs("ladderMove"));
         }
-        else if (groundState==GroundStateEnum.inAir)
+        else if (groundState == GroundStateEnum.inAir)
         {
             Animate(new AnimationEventArgs("airMove"));
         }
         else
         {
-            Animate(new AnimationEventArgs("groundMove"));
+            Animate(new AnimationEventArgs("groundMove", groundState == GroundStateEnum.crouching ? "crouching" : "", 0));
         }
-	}
+    }
 
     protected virtual void FixedUpdate()
     {
@@ -243,9 +249,9 @@ public class HeroController : CharacterController
         else
             groundState = GroundStateEnum.inAir;
 
-        if ((groundState==GroundStateEnum.grounded))
+        if ((groundState == GroundStateEnum.grounded))
         {
-            bool crouching=false;
+            bool crouching = false;
             if (Physics2D.OverlapCircle(wallAboveCheck.position, groundRadius, whatIsGround) || Input.GetButton("Flip"))
             {
                 groundState = GroundStateEnum.crouching;
@@ -258,8 +264,10 @@ public class HeroController : CharacterController
 
             if (fallSpeed > minDamageFallSpeed)
             {
-                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed),true);
+                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed), true);
             }
+            if (fallSpeed > minDamageFallSpeed / 10f)
+                Animate(new AnimationEventArgs("fall"));
             fallSpeed = 0f;
         }
         else
@@ -268,7 +276,7 @@ public class HeroController : CharacterController
             fallSpeed = -rigid.velocity.y;
         }
 
-        bool _underWater=Physics2D.OverlapCircle(waterCheck.position, groundRadius, LayerMask.GetMask("Water"));
+        bool _underWater = Physics2D.OverlapCircle(waterCheck.position, groundRadius, LayerMask.GetMask("Water"));
         if (underWater != _underWater)
         {
             underWater = _underWater;
@@ -284,6 +292,7 @@ public class HeroController : CharacterController
                 waterIndicator.StopAllCoroutines();
                 AirSupply = maxAirSupply;
             }
+            Animate(new AnimationEventArgs("waterSplash"));
         }
 
         if (onLadder)
@@ -316,8 +325,11 @@ public class HeroController : CharacterController
     {
         col1.enabled = !crouching;
         col2.enabled = crouching;
+        BoxCollider2D wCheckCol = wallCheck.GetComponent<BoxCollider2D>();
+        Vector2 size = wCheckCol.size;
         Vector3 pos = wallCheck.transform.localPosition;
         wallCheck.transform.localPosition = new Vector2(pos.x, crouching ? lowWallCheclPosition : highWallCheckPosition);
+        wCheckCol.size = new Vector2(size.x, crouching ? lowWallCheckSize : highWallCheckSize);
     }
 
     /// <summary>
@@ -327,7 +339,7 @@ public class HeroController : CharacterController
     {
         //Сначала заканчивается запас здоровья
         int _airSupply = airSupply;
-        for (int i =0;i< _airSupply;i++)
+        for (int i = 0; i < _airSupply; i++)
         {
             yield return new WaitForSeconds(suffocateTime);
             AirSupply--;
@@ -346,8 +358,8 @@ public class HeroController : CharacterController
     protected override void Move(OrientationEnum _orientation)
     {
         bool crouching = (groundState == GroundStateEnum.crouching);
-        float currentSpeed = speed * ((underWater || crouching) ? waterCoof : 1f); 
-        rigid.velocity = new Vector3((wallCheck.WallInFront() && !crouching) ? 0f : Input.GetAxis("Horizontal") * currentSpeed, rigid.velocity.y);
+        float currentSpeed = speed * ((underWater || crouching) ? waterCoof : 1f);
+        rigid.velocity = new Vector3((wallCheck.WallInFront()) ? 0f : Input.GetAxis("Horizontal") * currentSpeed, rigid.velocity.y);
         if (orientation != _orientation)
         {
             Turn(_orientation);
@@ -391,8 +403,8 @@ public class HeroController : CharacterController
         onLadder = false;
         rigid.gravityScale = 1f;
         Animate(new AnimationEventArgs("setLadderMove", "", 0));
-            rigid.AddForce(new Vector2(0f, jumpForce / 2));
-            StartCoroutine(JumpProcess());
+        rigid.AddForce(new Vector2(0f, jumpForce / 2));
+        StartCoroutine(JumpProcess());
         //if (Input.GetAxis("Vertical")>0f)
         //{
         //  rigid.AddForce(new Vector2(0f, jumpForce / 2));
@@ -406,7 +418,7 @@ public class HeroController : CharacterController
     protected virtual void LadderMove()
     {
         float value = Input.GetAxis("Vertical");
-        rigid.velocity = new Vector3(0f, 
+        rigid.velocity = new Vector3(0f,
                                      Physics2D.OverlapCircle(transform.position + Mathf.Sign(value) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? value * ladderSpeed : 0f);
     }
 
@@ -420,7 +432,7 @@ public class HeroController : CharacterController
 
     protected override void Turn(OrientationEnum _orientation)
     {
-        if (employment >=8)
+        if (employment >= 8)
         {
             base.Turn(_orientation);
         }
@@ -433,14 +445,17 @@ public class HeroController : CharacterController
     {
         if (fightingMode == "melee")
         {
-            Animate(new AnimationEventArgs("attack",currentWeapon.itemName,Mathf.RoundToInt(10*(currentWeapon.preAttackTime+currentWeapon.attackTime))));
+            Animate(new AnimationEventArgs("attack", currentWeapon.itemName, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime))));
             StartCoroutine(AttackProcess());
         }
         else if (fightingMode == "range")
         {
-            StopMoving();
-            Animate(new AnimationEventArgs("shoot",currentWeapon.name, Mathf.RoundToInt(10*(currentWeapon.preAttackTime+currentWeapon.attackTime))));
-            StartCoroutine(ShootProcess());
+            if (!dontShoot)
+            {
+                StopMoving();
+                Animate(new AnimationEventArgs("shoot", currentWeapon.name, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime))));
+                StartCoroutine(ShootProcess());
+            }
         }
     }
 
@@ -466,25 +481,39 @@ public class HeroController : CharacterController
     protected virtual IEnumerator ShootProcess()
     {
         employment = Mathf.Clamp(employment - 5, 0, maxEmployment);
+        BowClass bow = (BowClass)currentWeapon;
+        StartCoroutine(ShootRateProcess(bow.shootRate));
         yield return new WaitForSeconds(currentWeapon.preAttackTime);
 
-        BowClass bow = (BowClass)currentWeapon;
-        RaycastHit2D hit = Physics2D.Raycast(transform.position + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim);
+        RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(transform.position + Vector3.up*shootDelta + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(transform.position + Vector3.up*shootDelta/2f + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(transform.position + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(transform.position - Vector3.up*shootDelta/2f + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(transform.position - Vector3.up*shootDelta + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(transform.position - 1.5f*Vector3.up*shootDelta + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim)};
         Vector2 endPoint = transform.position + (int)orientation * transform.right * (bow.shootDistance + .1f);
-        if (hit)
+        if (hits[0] || hits[1] || hits[2] || hits[3] || hits[4] || hits[5])
         {
-            IDamageable target;
-            if ((target = hit.collider.gameObject.GetComponent<IDamageable>()) != null)
+            IDamageable target = null;
+            int hitIndex = -1;
+            for (int i = 0; i < 5; i++)
             {
-                target.TakeDamage(bow.damage);
+                if (hits[i].collider != null ? (target = hits[i].collider.gameObject.GetComponent<IDamageable>()) != null : false)
+                {
+                    hitIndex = i;
+                    target.TakeDamage(bow.damage);
+                    break;
+                }
             }
-            else
+            if (hitIndex == -1 && hits[2])
             {
-                GameObject _bullet = GameObject.Instantiate(bow.arrow, new Vector3(hit.point.x, hit.point.y, transform.position.z), transform.rotation) as GameObject;
+                hitIndex = 1;
+                GameObject _bullet = GameObject.Instantiate(bow.arrow, new Vector3(hits[1].point.x, hits[1].point.y, transform.position.z), transform.rotation) as GameObject;
                 Vector3 vect = _bullet.transform.localScale;
                 _bullet.transform.localScale = new Vector3((int)orientation * vect.x, vect.y, vect.z);
             }
-            endPoint = hit.point;
+            if (hitIndex != -1)
+                endPoint = hits[hitIndex].point;
         }
         line = gameObject.AddComponent<LineRenderer>();
         line.material = arrowMaterial;
@@ -496,6 +525,16 @@ public class HeroController : CharacterController
         yield return new WaitForSeconds(currentWeapon.attackTime);
 
         employment = Mathf.Clamp(employment + 5, 0, maxEmployment);
+    }
+
+    /// <summary>
+    /// Процесс, учитывающий конечную скорострельность дальнобойного оружия
+    /// </summary>
+    protected virtual IEnumerator ShootRateProcess(float shootRateTime)
+    {
+        dontShoot = true;
+        yield return new WaitForSeconds(shootRateTime);
+        dontShoot = false;
     }
 
     /// <summary>
@@ -531,6 +570,7 @@ public class HeroController : CharacterController
         if (!invul)
         {
             base.TakeDamage(damage);
+            dontShoot = false;
             StartCoroutine(InvulProcess(invulTime, true));
         }
     }
@@ -543,6 +583,7 @@ public class HeroController : CharacterController
         base.TakeDamage(damage, ignoreInvul);
         SpriteRenderer sprite = GetComponentInChildren<SpriteRenderer>();
         if (sprite != null) sprite.enabled = true;
+        dontShoot = false;
         StartCoroutine(InvulProcess(invulTime, true));
     }
 

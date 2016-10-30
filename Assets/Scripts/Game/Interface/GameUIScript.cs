@@ -15,6 +15,8 @@ public class GameUIScript : MonoBehaviour
     protected const float fadeSpeed = 1f;//Скорость затухания
     protected const float fadeTime = 2f;//Время, за которое происходит затухание или проявление экрана
 
+    protected const float bossHPMaxWidth = 430f;//Максимальная длина полоски хп босса
+
     #endregion //consts
 
     #region fields
@@ -34,6 +36,10 @@ public class GameUIScript : MonoBehaviour
     protected Text infoText;
 
     protected Image fadeScreen;//Объект, ответственный за затемнение, происходящее в переходах между уровнями
+
+    protected GameObject bossHealthPanel;
+    protected Image bossHP;
+    protected Text bossNameText;
 
     #endregion //fields
 
@@ -70,6 +76,7 @@ public class GameUIScript : MonoBehaviour
 
         weaponImage = transform.FindChild("WeaponPanel").FindChild("WeaponImage").GetComponent<Image>();
         player.equipmentChangedEvent += HandleEquipmentChanges;
+        weaponImage.sprite = player.CurrentWeapon.itemImage;
 
         Transform questsPanel = transform.FindChild("QuestsPanel");
         questTexts[0] = questsPanel.GetChild(0).GetComponent<Text>();
@@ -88,6 +95,12 @@ public class GameUIScript : MonoBehaviour
         ConsiderBreath(10);
 
         ConsiderHealth(player.Health);
+
+        bossHealthPanel = transform.FindChild("BossHealthPanel").gameObject;
+        bossHP = bossHealthPanel.transform.FindChild("BossHP").GetComponent<Image>();
+        bossNameText = bossHealthPanel.GetComponentInChildren<Text>();
+        bossHealthPanel.SetActive(false);
+
     }
 
     /// <summary>
@@ -216,6 +229,20 @@ public class GameUIScript : MonoBehaviour
         fadeDirection = 0;
     }
 
+    /// <summary>
+    /// Выключить панель с хп босса
+    /// </summary>
+    public void SetInactiveBossPanel()
+    {
+        StartCoroutine(BossPanelInactiveProcess());
+    }
+
+    protected IEnumerator BossPanelInactiveProcess()
+    {
+        yield return new WaitForSeconds(1f);
+        bossHealthPanel.SetActive(false);
+    }
+
     #region eventHandlers
 
     /// <summary>
@@ -241,6 +268,17 @@ public class GameUIScript : MonoBehaviour
     protected virtual void HandleSuffocate(object sender, SuffocateEventArgs e)
     {
         ConsiderBreath(e.AirSupply);
+    }
+
+    /// <summary>
+    /// Обработать событие "Здоровье босса изменилось"
+    /// </summary>
+    public virtual void HandleBossHealthChanges(object sender, BossHealthEventArgs e)
+    {
+        bossHealthPanel.SetActive(true);
+        Vector2 size = bossHP.GetComponent<RectTransform>().sizeDelta;
+        bossHP.GetComponent<RectTransform>().sizeDelta = new Vector2(bossHPMaxWidth * e.HP / e.MaxHP,size.y);
+        bossNameText.text = e.BossName;
     }
 
     #endregion //eventHandlers

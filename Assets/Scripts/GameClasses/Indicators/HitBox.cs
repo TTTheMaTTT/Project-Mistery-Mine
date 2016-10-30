@@ -36,7 +36,7 @@ public class HitBox : MonoBehaviour
 
     #region eventHandlers
 
-    public EventHandler<EventArgs> AttackEventHandler;//Хэндлер события о визуализации действия
+    public EventHandler<HitEventArgs> AttackEventHandler;//Хэндлер события о визуализации действия
 
     #endregion //eventHandlers
 
@@ -102,6 +102,7 @@ public class HitBox : MonoBehaviour
                 IDamageable target = other.gameObject.GetComponent<IDamageable>();
                 if (target != null)
                 {
+                    float prevHP = target.GetHealth();
                     if (hitData.actTime == -1f)
                     {
                         target.TakeDamage(hitData.damage);
@@ -110,7 +111,7 @@ public class HitBox : MonoBehaviour
                         {
                             rigid.AddForce((new Vector2(transform.lossyScale.x,0f)).normalized * hitData.hitForce);//Атака всегда толкает вперёд
                         }
-                        OnAttack(new EventArgs());
+                        OnAttack(new HitEventArgs(target.GetHealth()-prevHP));
                         return;
                     }
                     if (!list.Contains(other.gameObject))
@@ -120,9 +121,10 @@ public class HitBox : MonoBehaviour
                         Rigidbody2D rigid;
                         if ((rigid = other.GetComponent<Rigidbody2D>()) != null)
                         {
+                            rigid.velocity = Vector2.zero;
                             rigid.AddForce((other.transform.position - transform.position).normalized * hitData.hitForce);
                         }
-                        OnAttack(new EventArgs());
+                        OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
                     }
                 }
             }
@@ -142,9 +144,9 @@ public class HitBox : MonoBehaviour
     /// <summary>
     /// Событие, вызываемое при совершении атаки
     /// </summary>
-    public void OnAttack(EventArgs e)
+    public void OnAttack(HitEventArgs e)
     {
-        EventHandler<EventArgs> handler = AttackEventHandler;
+        EventHandler<HitEventArgs> handler = AttackEventHandler;
         if (handler != null)
         {
             handler(this, e);

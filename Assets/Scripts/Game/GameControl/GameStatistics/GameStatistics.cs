@@ -43,6 +43,10 @@ public class GameStatistics : MonoBehaviour
     {
         SpecialFunctions.history.Initialize();
         SpecialFunctions.StartStoryEvent(this, StartGameEvent, new StoryEventArgs());
+        foreach (Statistics stat in statistics)
+        {
+            stat.value = 0;//Стоит пока обнулять значения статистик в самом начале игры.
+        }
     }
 
     /// <summary>
