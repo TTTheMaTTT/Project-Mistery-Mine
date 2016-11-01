@@ -21,13 +21,17 @@ public class PushPlateScript : LeverScript
     {
         if (!activated)
         {
-            activated = true;
-            anim.Play("Active");
-            foreach (GameObject obj in mechanisms)
+            if (other.gameObject == SpecialFunctions.player)
             {
-                IMechanism mech = obj.GetComponent<IMechanism>();
-                if (mech != null)
-                    mech.ActivateMechanism();
+                activated = true;
+                if (anim != null)
+                    anim.Play("Active");
+                foreach (GameObject obj in mechanisms)
+                {
+                    IMechanism mech = obj.GetComponent<IMechanism>();
+                    if (mech != null)
+                        mech.ActivateMechanism();
+                }
             }
         }
     }
@@ -39,7 +43,8 @@ public class PushPlateScript : LeverScript
             if (other.gameObject == SpecialFunctions.player)
             {
                 activated = false;
-                anim.Play("Inactive");
+                if (anim!=null)
+                    anim.Play("Inactive");
             }
         }
     }

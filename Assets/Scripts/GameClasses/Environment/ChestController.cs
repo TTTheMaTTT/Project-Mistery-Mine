@@ -10,7 +10,7 @@ public class ChestController : MonoBehaviour, IInteractive
 
     #region consts
 
-    private const float pushForceY = 30f, pushForceX = 70f;//С какой силой выбрасывается содержимое сундука при его открытии?
+    private const float pushForceY = 30f, pushForceX = 50f;//С какой силой выбрасывается содержимое сундука при его открытии?
 
     #endregion //consts
 
