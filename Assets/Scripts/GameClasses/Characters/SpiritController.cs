@@ -19,5 +19,6 @@ public class SpiritController : CharacterController
         hero = SpecialFunctions.player.GetComponent<HeroController>();
         transform.SetParent(hero.transform);
         transform.localPosition = Vector3.zero;
+
     }
 }
