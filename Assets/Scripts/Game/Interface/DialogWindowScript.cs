@@ -8,6 +8,12 @@ using System.Collections;
 public class DialogWindowScript : MonoBehaviour
 {
 
+    #region consts
+
+    protected const int maxNoInput = 30;//сколько кадров нельзя будет ввести пропуск диалога
+
+    #endregion //consts
+
     #region fields
 
     protected Canvas canvas;
@@ -30,6 +36,7 @@ public class DialogWindowScript : MonoBehaviour
     #region parametres
 
     protected float prevScale1, prevScale2;
+    protected int noInput = -1;//Если true, то диалог пропустить нельзя
 
     #endregion //parametres
 
@@ -43,9 +50,13 @@ public class DialogWindowScript : MonoBehaviour
         if (canvas.enabled)
         {
             Event e = Event.current;
-            if (Input.anyKeyDown)
+            if (Input.anyKeyDown && !Input.GetButtonDown("Horizontal") && !Input.GetButtonDown("Vertical") && !Input.GetButtonDown("Cancel") && noInput==-1)
                 NextSpeech();
         }
+        if (noInput > -1)
+            noInput++;
+        if (noInput == maxNoInput)
+            noInput = -1;
     }
 
     /// <summary>
@@ -81,6 +92,7 @@ public class DialogWindowScript : MonoBehaviour
         {
             SpecialFunctions.PauseGame();
         }
+        noInput = 0;
     }
 
     /// <summary>

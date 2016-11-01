@@ -43,6 +43,10 @@ public class GameStatistics : MonoBehaviour
     {
         SpecialFunctions.history.Initialize();
         SpecialFunctions.StartStoryEvent(this, StartGameEvent, new StoryEventArgs());
+        foreach (Statistics stat in statistics)
+        {
+            stat.value = 0;//Стоит пока обнулять значения статистик в самом начале игры.
+        }
     }
 
     /// <summary>
@@ -158,8 +162,6 @@ public class CustomGameStatistics_Editor : Editor
             if (foldouts[i])
             {
                 var fields = _stat.GetType().GetFields();
-
-                EditorGUILayout.BeginVertical();
 
                 EditorGUILayout.Space();
 

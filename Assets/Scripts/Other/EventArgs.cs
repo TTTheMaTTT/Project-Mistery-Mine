@@ -49,6 +49,43 @@ public class HealthEventArgs : EventArgs
 }
 
 /// <summary>
+/// Данные о событии, связанном с изменением уровня хп босса
+/// </summary>
+public class BossHealthEventArgs : EventArgs
+{
+    private float hp;
+    private float maxHP;
+    private string bossName;
+
+    public float HP { get { return hp; } }
+    public float MaxHP { get { return maxHP; } }
+    public string BossName { get { return bossName; } }
+
+    public BossHealthEventArgs(float _hp, float _maxHP, string _bossName)
+    {
+        hp = _hp;
+        maxHP = _maxHP;
+        bossName = _bossName;
+    }
+
+}
+
+/// <summary>
+/// Данные о событии, связанном с нанесением урона
+/// </summary>
+public class HitEventArgs : EventArgs
+{
+    private float hpDif;//Насколько изменилось хп персонажа
+
+    public float HPDif { get { return hpDif; } }
+
+    public HitEventArgs(float _hpDif)
+    {
+        hpDif = _hpDif;
+    }
+}
+
+/// <summary>
 /// Данные о событии, связанном с задыханием персонажа
 /// </summary>
 public class SuffocateEventArgs : EventArgs

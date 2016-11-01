@@ -29,6 +29,8 @@ public class HeroVisual : GroundMoveVisual
         visualFunctions.Add("setLadderMove", SetLadderMove);
         visualFunctions.Add("shoot", Shoot);
         visualFunctions.Add("flip", Flip);
+        visualFunctions.Add("fall", Fall);
+        visualFunctions.Add("waterSplash", WaterSplash);
     }
 
     /// <summary>
@@ -79,6 +81,29 @@ public class HeroVisual : GroundMoveVisual
         else
         {
             anim.Play("Fall");
+        }
+    }
+
+    protected override void GroundMove(string id, int argument)
+    {
+        if (id == "crouching")
+        {
+            if (employment <= 6)
+            {
+                return;
+            }
+            if (Mathf.Abs(rigid.velocity.x) > minSpeed)
+            {
+                anim.Play("CrouchMove");
+            }
+            else
+            {
+                anim.Play("Crouch");
+            }
+        }
+        else
+        {
+            base.GroundMove(id, argument);
         }
     }
 
@@ -155,6 +180,27 @@ public class HeroVisual : GroundMoveVisual
             sprite.enabled = false;
             yield return new WaitForSeconds(invulBlinkTime/2);
             sprite.enabled = true;
+        }
+    }
+
+    /// <summary>
+    /// Отобразить брызги воды
+    /// </summary>
+    protected virtual void WaterSplash(string id, int argument)
+    {
+        if (effectSystem != null)
+            effectSystem.SpawnEffect("water splash");
+    }
+
+    /// <summary>
+    /// Отобразить падение
+    /// </summary>
+    protected virtual void Fall(string id, int argument)
+    {
+        if (effectSystem != null)
+        {
+            effectSystem.SpawnEffect("dust");
+            effectSystem.FallEffect();
         }
     }
 

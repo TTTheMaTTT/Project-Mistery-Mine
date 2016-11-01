@@ -78,7 +78,9 @@ public class CharacterController : MonoBehaviour, IDamageable
         rigid = GetComponent<Rigidbody2D>();
 
         hitBox = GetComponentInChildren<HitBox>();
-        hitBox.SetEnemies(enemies);
+
+        if (hitBox!=null)
+            hitBox.SetEnemies(enemies);
 
         orientation = (OrientationEnum)Mathf.RoundToInt(Mathf.Sign(transform.localScale.x));
 
@@ -151,7 +153,7 @@ public class CharacterController : MonoBehaviour, IDamageable
     /// </summary>
     public virtual void TakeDamage(float damage)
     {
-        Health = Mathf.Clamp(Health - damage, 0f, 100f);
+        Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
         if (health <= 0f)
             Death();
         else
@@ -163,7 +165,7 @@ public class CharacterController : MonoBehaviour, IDamageable
     /// </summary>
     public virtual void TakeDamage(float damage, bool ignoreInvul)
     {
-        Health = Mathf.Clamp(Health - damage, 0f, 100f);
+        Health = Mathf.Clamp(Health - damage, 0f,maxHealth);
         if (health <= 0f)
             Death();
         else
@@ -184,6 +186,11 @@ public class CharacterController : MonoBehaviour, IDamageable
     public void SetImmobile(bool _immobile)
     {
         immobile = _immobile;
+    }
+
+    public float GetHealth()
+    {
+        return health;
     }
 
     #region events

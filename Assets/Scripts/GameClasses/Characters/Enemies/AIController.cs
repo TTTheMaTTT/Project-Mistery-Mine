@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 
 
@@ -32,6 +33,8 @@ public class AIController : CharacterController
     [SerializeField] protected float hitForce = 0f;
     [SerializeField] protected Vector2 attackSize = new Vector2(.07f, .07f);
     [SerializeField] protected Vector2 attackPosition = new Vector2(0f, 0f);
+
+    protected bool dead=false;
 
     #endregion //parametres
 
@@ -75,9 +78,14 @@ public class AIController : CharacterController
     /// </summary>
     protected override void Death()
     {
-        base.Death();
-        SpecialFunctions.statistics.ConsiderStatistics(this);
-        Destroy(gameObject);
+        if (!dead)
+        {
+            dead = true;
+            base.Death();
+            SpecialFunctions.statistics.ConsiderStatistics(this);
+            Animate(new AnimationEventArgs("death"));
+            Destroy(gameObject);
+        }
     }
 
     protected virtual IEnumerator Microstun()

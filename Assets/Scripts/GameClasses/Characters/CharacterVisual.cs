@@ -32,6 +32,7 @@ public class CharacterVisual : MonoBehaviour
     #region fields
 
     protected Animator anim;
+    protected CharacterEffectSystem effectSystem;//Система событий, воспроизводящая эффекты при проигрывании анимаций
 
     #endregion //fields
 
@@ -49,6 +50,7 @@ public class CharacterVisual : MonoBehaviour
     protected virtual void Initialize()
     {
         anim = GetComponent<Animator>();
+        effectSystem = GetComponent<CharacterEffectSystem>();
         employment = maxEmployment;
         FormDictionaries();
     }
@@ -60,6 +62,7 @@ public class CharacterVisual : MonoBehaviour
     {
         visualFunctions = new Dictionary<string, AnimatorDelegate>();
         visualFunctions.Add("hitted", Hitted);
+        visualFunctions.Add("death", Death);
     }
 
     /// <summary>
@@ -71,6 +74,15 @@ public class CharacterVisual : MonoBehaviour
         employment = maxEmployment;
         anim.Play("Hitted");
         StartCoroutine(VisualRoutine(5, hittedTime));
+    }
+
+    /// <summary>
+    /// Визуализировать смерть
+    /// </summary>
+    protected virtual void Death(string id, int argument)
+    {
+        if (effectSystem != null)
+            effectSystem.SpawnEffect("death dust");
     }
 
     protected virtual IEnumerator VisualRoutine(int _employment, float _time)

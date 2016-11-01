@@ -17,8 +17,6 @@ public class DropClass : MonoBehaviour, IInteractive
 
     public ItemClass item;
 
-    private Rigidbody2D rigid;
-    private Transform groundCheck;
 
 
     #endregion //fields
@@ -31,19 +29,6 @@ public class DropClass : MonoBehaviour, IInteractive
 
     void Awake()
     {
-        rigid = GetComponentInChildren<Rigidbody2D>();
-        groundCheck = transform.FindChild("GroundCheck");
-    }
-
-    void FixedUpdate()
-    {
-        if (!rigid.isKinematic)
-        {
-            if (Physics2D.OverlapCircle(groundCheck.position, groundRadius, LayerMask.GetMask("ground")))
-            {
-                rigid.isKinematic = true;
-            }
-        }
     }
 
     /// <summary>
@@ -66,9 +51,6 @@ public class DropClass : MonoBehaviour, IInteractive
         col.size = sprite.textureRect.size/sprite.pixelsPerUnit;
         obj.AddComponent<Rigidbody2D>();
         obj.AddComponent<SpriteRenderer>().sprite = sprite;
-        GameObject groundCheck = new GameObject("GroundCheck");
-        groundCheck.transform.parent = obj.transform;
-        groundCheck.transform.localPosition = new Vector3(0f, -1 * col.size.y / 2f - .002f, 0f);
         DropClass _drop=obj.AddComponent<DropClass>();
         _drop.item = drop.item;
     }

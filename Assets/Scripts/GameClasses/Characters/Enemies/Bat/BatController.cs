@@ -202,7 +202,7 @@ public class BatController : AIController
     /// <summary>
     ///  Обработка события "произошла атака"
     /// </summary>
-    protected void HandleAttackProcess(object sender, EventArgs e)
+    protected void HandleAttackProcess(object sender, HitEventArgs e)
     {
         rigid.velocity = Vector2.zero;
         rigid.AddForce((transform.position - mainTarget.transform.position).normalized * pushBackForce);//При столкновении с врагом летучая мышь отталкивается назад
