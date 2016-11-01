@@ -1,6 +1,11 @@
 fileFormatVersion: 2
+<<<<<<< HEAD:Assets/Scenes/mine_lvl1.unity.meta
 guid: de96cd2bf88220c40b03970960471436
 timeCreated: 1477818504
+=======
+guid: eb36bb89f9be2a2428ba98510e959ab8
+timeCreated: 1478032234
+>>>>>>> master:Assets/Scenes/LevelEditor.unity.meta
 licenseType: Free
 DefaultImporter:
   userData: 
