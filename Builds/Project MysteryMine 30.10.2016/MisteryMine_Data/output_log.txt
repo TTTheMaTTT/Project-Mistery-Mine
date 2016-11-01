@@ -6,21 +6,221 @@ Direct3D:
     Vendor:   Intel
     VRAM:     1639 MB
 Begin MonoManager ReloadAssembly
-Platform assembly: C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.dll (this message is harmless)
-Loading C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.dll into Unity Child Domain
-Platform assembly: C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\Assembly-CSharp-firstpass.dll (this message is harmless)
-Loading C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\Assembly-CSharp-firstpass.dll into Unity Child Domain
-Platform assembly: C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\Assembly-CSharp.dll (this message is harmless)
-Loading C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\Assembly-CSharp.dll into Unity Child Domain
-Platform assembly: C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.UI.dll (this message is harmless)
-Loading C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.UI.dll into Unity Child Domain
-Platform assembly: C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.Networking.dll (this message is harmless)
-Loading C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.Networking.dll into Unity Child Domain
-Platform assembly: C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.Analytics.dll (this message is harmless)
-Loading C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.Analytics.dll into Unity Child Domain
-- Completed reload, in  0.851 seconds
-Platform assembly: C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\System.Core.dll (this message is harmless)
-Platform assembly: C:\Users\Матвей\Desktop\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\System.dll (this message is harmless)
+Platform assembly: D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.dll (this message is harmless)
+Loading D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.dll into Unity Child Domain
+Platform assembly: D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\Assembly-CSharp-firstpass.dll (this message is harmless)
+Loading D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\Assembly-CSharp-firstpass.dll into Unity Child Domain
+Platform assembly: D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\Assembly-CSharp.dll (this message is harmless)
+Loading D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\Assembly-CSharp.dll into Unity Child Domain
+Platform assembly: D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.UI.dll (this message is harmless)
+Loading D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.UI.dll into Unity Child Domain
+Platform assembly: D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.Networking.dll (this message is harmless)
+Loading D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.Networking.dll into Unity Child Domain
+Platform assembly: D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.Analytics.dll (this message is harmless)
+Loading D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\UnityEngine.Analytics.dll into Unity Child Domain
+- Completed reload, in  1.321 seconds
+Platform assembly: D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\System.Core.dll (this message is harmless)
+Platform assembly: D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\Project MysteryMine 30.10.2016\MisteryMine_Data\Managed\System.dll (this message is harmless)
 desktop: 1920x1080 60Hz; virtual: 1920x1080 at 0,0
 <RI> Initializing input.
 <RI> Input initialized.
+<RI> Initialized touch support.
+UnloadTime: 2.428297 ms
+Unloading 5 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 16.947699 ms
+
+Unloading 21 unused Assets to reduce memory usage. Loaded Objects now: 2431.
+Total: 2.357384 ms (FindLiveObjects: 0.346166 ms CreateObjectMapping: 0.230933 ms MarkObjects: 1.614199 ms  DeleteObjects: 0.164219 ms)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Unloading 5 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 8.997997 ms
+
+Unloading 30 unused Assets to reduce memory usage. Loaded Objects now: 6287.
+Total: 4.661118 ms (FindLiveObjects: 0.676470 ms CreateObjectMapping: 0.274787 ms MarkObjects: 2.524869 ms  DeleteObjects: 1.183590 ms)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Unloading 6 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 12.235727 ms
+
+Unloading 25 unused Assets to reduce memory usage. Loaded Objects now: 10648.
+Total: 6.345297 ms (FindLiveObjects: 1.223246 ms CreateObjectMapping: 0.552840 ms MarkObjects: 4.464241 ms  DeleteObjects: 0.103103 ms)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Unloading 6 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 31.192310 ms
+
+Unloading 2 unused Assets to reduce memory usage. Loaded Objects now: 10648.
+Total: 6.236595 ms (FindLiveObjects: 1.152333 ms CreateObjectMapping: 0.551907 ms MarkObjects: 4.473572 ms  DeleteObjects: 0.056916 ms)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Unloading 7 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 32.736996 ms
+
+Unloading 34 unused Assets to reduce memory usage. Loaded Objects now: 14274.
+Total: 8.041607 ms (FindLiveObjects: 1.473307 ms CreateObjectMapping: 0.581765 ms MarkObjects: 5.853573 ms  DeleteObjects: 0.131095 ms)
+
+Unloading 7 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 114.135582 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 14274.
+Total: 7.723432 ms (FindLiveObjects: 1.445315 ms CreateObjectMapping: 0.630284 ms MarkObjects: 5.571788 ms  DeleteObjects: 0.074178 ms)
+
+Unloading 7 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 108.357590 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 14274.
+Total: 7.649720 ms (FindLiveObjects: 1.453712 ms CreateObjectMapping: 0.497789 ms MarkObjects: 5.630571 ms  DeleteObjects: 0.066247 ms)
+
+Unloading 7 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 107.342880 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 14274.
+Total: 8.444690 ms (FindLiveObjects: 1.538155 ms CreateObjectMapping: 0.527647 ms MarkObjects: 6.308441 ms  DeleteObjects: 0.068580 ms)
+
+Unloading 7 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 107.479568 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 14274.
+Total: 11.800919 ms (FindLiveObjects: 1.648256 ms CreateObjectMapping: 0.791704 ms MarkObjects: 9.282580 ms  DeleteObjects: 0.075578 ms)
+
+Unloading 7 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 102.481621 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 14274.
+Total: 8.524467 ms (FindLiveObjects: 1.473307 ms CreateObjectMapping: 0.562170 ms MarkObjects: 6.419009 ms  DeleteObjects: 0.069046 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 67.005150 ms
+
+Unloading 115 unused Assets to reduce memory usage. Loaded Objects now: 9192.
+Total: 7.346941 ms (FindLiveObjects: 1.013773 ms CreateObjectMapping: 0.550973 ms MarkObjects: 4.377933 ms  DeleteObjects: 1.402860 ms)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 133.186401 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 9193.
+Total: 5.650632 ms (FindLiveObjects: 0.977850 ms CreateObjectMapping: 0.481927 ms MarkObjects: 4.137203 ms  DeleteObjects: 0.051785 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 121.321106 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 9193.
+Total: 6.352762 ms (FindLiveObjects: 0.989980 ms CreateObjectMapping: 0.530446 ms MarkObjects: 4.777284 ms  DeleteObjects: 0.052718 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 134.741348 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 9193.
+Total: 5.609577 ms (FindLiveObjects: 0.995578 ms CreateObjectMapping: 0.545842 ms MarkObjects: 4.007040 ms  DeleteObjects: 0.059716 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 129.080002 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 9193.
+Total: 5.790591 ms (FindLiveObjects: 1.258236 ms CreateObjectMapping: 0.568702 ms MarkObjects: 3.910935 ms  DeleteObjects: 0.050851 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 119.872528 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 9193.
+Total: 5.277873 ms (FindLiveObjects: 0.981582 ms CreateObjectMapping: 0.474462 ms MarkObjects: 3.770509 ms  DeleteObjects: 0.049918 ms)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 131.291367 ms
+
+Unloading 2 unused Assets to reduce memory usage. Loaded Objects now: 9193.
+Total: 5.306331 ms (FindLiveObjects: 0.978317 ms CreateObjectMapping: 0.544442 ms MarkObjects: 3.724789 ms  DeleteObjects: 0.056916 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 131.456512 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 9193.
+Total: 5.467751 ms (FindLiveObjects: 1.065558 ms CreateObjectMapping: 0.495456 ms MarkObjects: 3.845154 ms  DeleteObjects: 0.059716 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 130.160950 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 9193.
+Total: 5.448623 ms (FindLiveObjects: 0.995112 ms CreateObjectMapping: 0.493590 ms MarkObjects: 3.908136 ms  DeleteObjects: 0.048985 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 123.776466 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 9193.
+Total: 5.964607 ms (FindLiveObjects: 1.110812 ms CreateObjectMapping: 0.596694 ms MarkObjects: 4.203450 ms  DeleteObjects: 0.051318 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 129.427567 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 9193.
+Total: 5.668360 ms (FindLiveObjects: 1.077688 ms CreateObjectMapping: 0.492657 ms MarkObjects: 4.045296 ms  DeleteObjects: 0.050851 ms)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 131.182175 ms
+
+Unloading 1 unused Assets to reduce memory usage. Loaded Objects now: 9193.
+Total: 5.873167 ms (FindLiveObjects: 0.994179 ms CreateObjectMapping: 0.538844 ms MarkObjects: 4.285560 ms  DeleteObjects: 0.053184 ms)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Unloading 8 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 34.319473 ms
+
+Unloading 3 unused Assets to reduce memory usage. Loaded Objects now: 9192.
+Total: 6.972783 ms (FindLiveObjects: 1.324950 ms CreateObjectMapping: 0.843022 ms MarkObjects: 4.738562 ms  DeleteObjects: 0.064381 ms)
+
+Quest must be instantiated using the ScriptableObject.CreateInstance method instead of new Quest.
+ 
+(Filename:  Line: 624)
+
+Unloading 3 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 143.461761 ms
+
+Unloading 335 unused Assets to reduce memory usage. Loaded Objects now: 442.
+Total: 2.493612 ms (FindLiveObjects: 0.137160 ms CreateObjectMapping: 0.201541 ms MarkObjects: 0.647546 ms  DeleteObjects: 1.505031 ms)
+
+Setting up 1 worker threads for Enlighten.
+  Thread -> id: 2bf8 -> priority: 1 

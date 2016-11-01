@@ -108,6 +108,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\NPCController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\SpiritController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\BoxController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\ChestController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DeathTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DropClass.cs" />
@@ -116,6 +117,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\DoorClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\GhostPlatform.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\LeverScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\MovingPlatform.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\NextLevelDoor.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\PushPlateScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\TwoStagesLeverScript.cs" />
@@ -149,6 +151,7 @@
     <None Include="Assets\Scripts\Shaders\Experiments\OutlineShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Red.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Sulhouette.shader" />
+    <None Include="Assets\Scripts\Shaders\LineSpriteShader.shader" />
     <None Include="Assets\Scripts\Shaders\Outline.shader" />
     <None Include="Assets\Scripts\Shaders\WaterShader.shader" />
     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
