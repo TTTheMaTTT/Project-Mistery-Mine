@@ -1,8 +1,4 @@
 sceneSetups:
-<<<<<<< HEAD
 - path: Assets/Scenes/cave_lvl5.unity
-=======
-- path: Assets/Scenes/LightSystem.unity
->>>>>>> 21e145a49b8bf951e2634bc8589a7158c3076be1
   isLoaded: 1
   isActive: 1
