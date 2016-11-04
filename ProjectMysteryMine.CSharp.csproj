@@ -112,6 +112,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Environment\ChestController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DeathTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DropClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Explosion.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\HeartDropClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\LeverRiddle.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\DoorClass.cs" />
