@@ -41,6 +41,9 @@ public class NPCController : MonoBehaviour, IInteractive
 
     protected bool spoken=false;
 
+    [SerializeField]protected DialogModEnum speechMod;
+    [SerializeField]protected int dialogArgument1, dialogArgument2;
+
     #endregion //parametres
 
     protected virtual void Awake ()
@@ -83,7 +86,29 @@ public class NPCController : MonoBehaviour, IInteractive
         {
             if (anim!=null)
                 anim.Play("Talk");
-            SpecialFunctions.gameController.StartDialog(this, dialogs[0]);
+            Dialog dialog=null;
+            switch (speechMod)
+            {
+                case DialogModEnum.one:
+                    {
+                        dialog = dialogs[dialogArgument1];
+                        break;
+                    }
+                case DialogModEnum.random:
+                    {
+                        if (dialogArgument1 == 0 || dialogArgument2 == 0)
+                            dialog = dialogs[UnityEngine.Random.Range(0,dialogs.Count-1)];
+                        else
+                            dialog = dialogs[UnityEngine.Random.Range(dialogArgument1,dialogArgument2)];
+                        break;
+                    }
+                case DialogModEnum.usual:
+                    {
+                        dialog = dialogs[0];
+                        break;
+                    }
+            }
+            SpecialFunctions.gameController.StartDialog(this, dialog);
         }
         if (!spoken)
         {

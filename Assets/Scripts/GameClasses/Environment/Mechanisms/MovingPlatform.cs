@@ -123,24 +123,24 @@ public class MovingPlatform : MonoBehaviour, IMechanism
     {
         moving = true;
         if (changeableDirection)
-        { 
+        {
             orientation *= -1;
-            if (currentPosition>0 && orientation==1 || currentPosition<platformPositions.Count-1 && orientation==-1)
+            bool a1 = Mathf.Approximately(Vector2.Distance(platformPositions[0], transform.position), 0f);
+            bool a2 = Mathf.Approximately(Vector2.Distance(platformPositions[platformPositions.Count - 1], transform.position), 0f);
+            if (a1 && orientation == -1)
+                    
+            {
+                orientation = 1;
+                currentPosition = 0;
+            }
+            else if (a2 && orientation == 1)
+            {
+                orientation = -1;
+                currentPosition = platformPositions.Count - 1;
+            }
+            else if (!a1 && !a2)
             {
                 currentPosition -= orientation;
-            }
-        }
-        if (platformPositions.Count != 1)
-        {
-            if ((currentPosition == platformPositions.Count-1 && orientation == 1) ||
-                (currentPosition == 0 && orientation == -1))
-            {
-                orientation *= -1;
-                if (Mathf.Approximately(Vector2.Distance(platformPositions[0], platformPositions[platformPositions.Count - 1]), 0) && nonStop)
-                {
-                    orientation *= -1;
-                    currentPosition = orientation == 1 ? 0 : platformPositions.Count - 1;
-                }
             }
         }
         Vector2 nextPoint = platformPositions[currentPosition + orientation];

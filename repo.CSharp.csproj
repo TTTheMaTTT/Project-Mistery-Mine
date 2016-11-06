@@ -94,10 +94,13 @@
     <Compile Include="Assets\Scripts\Game\Interface\MainMenuScript.cs" />
     <Compile Include="Assets\Scripts\Game\LevelEndController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterEffectSystem.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\AIController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Bat\BatController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Bat\BatVisual.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Bosses\Bat-Boss\BatBossController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Bosses\BossController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Ghost\GhostController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\GroundMoveVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\MinerGhost\MinerGhostController.cs" />
@@ -105,6 +108,8 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\NPCController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\SpiritController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\BoxController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\ChestController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DeathTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DropClass.cs" />
@@ -113,6 +118,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\DoorClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\GhostPlatform.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\LeverScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\MovingPlatform.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\NextLevelDoor.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\PushPlateScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\TwoStagesLeverScript.cs" />
@@ -138,16 +144,17 @@
     <Compile Include="Assets\Scripts\Other\SpecialFunctions.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Scripts\Shaders\CharacterShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Blue.shader" />
-    <None Include="Assets\Scripts\Shaders\Experiments\CharacterShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\CharacterUnderWater.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Glass.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Green.shader" />
-    <None Include="Assets\Scripts\Shaders\Experiments\Outline.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\OutlineShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Red.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Sulhouette.shader" />
-    <None Include="Assets\Scripts\Shaders\Experiments\WaterShader.shader" />
+    <None Include="Assets\Scripts\Shaders\LineSpriteShader.shader" />
+    <None Include="Assets\Scripts\Shaders\Outline.shader" />
+    <None Include="Assets\Scripts\Shaders\WaterShader.shader" />
     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />
     <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\BlendModesOverlay.shader" />

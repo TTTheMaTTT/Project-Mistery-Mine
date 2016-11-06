@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 41c91fe3d53570a47a460813ef0565d7
+timeCreated: 1478009063
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontNames:
+  - douchepac
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 75ae765713809a045be6ac20c99d3274, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

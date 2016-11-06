@@ -131,6 +131,12 @@ public class CustomGameStatistics_Editor : Editor
 
             var selectIndex = EditorGUILayout.Popup(-1, m_statisticsNames.ToArray());
 
+            for (int i = gStats.statistics.Count - 1; i >= 0; i--)
+            {
+                if (gStats.statistics[i] == null)
+                    gStats.statistics.RemoveAt(i);
+            }
+                
             bool k = (gStats.statistics.Find(x => (x.statisticName == statisticsName)) == null);
 
             if (selectIndex >= 0 && k)
@@ -159,7 +165,7 @@ public class CustomGameStatistics_Editor : Editor
             Statistics _stat = gStats.statistics[i];
             
             foldouts[i]=EditorGUILayout.Foldout(foldouts[i], _stat.statisticName);
-            if (foldouts[i])
+            if (foldouts[i])    
             {
                 var fields = _stat.GetType().GetFields();
 

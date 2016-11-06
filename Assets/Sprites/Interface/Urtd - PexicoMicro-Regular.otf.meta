@@ -1,0 +1,25 @@
+fileFormatVersion: 2
+<<<<<<< HEAD
+guid: e0278d7506ddc70468224896f718dd02
+timeCreated: 1478020616
+=======
+guid: e0299378531e6dc49b3ef9c11820d6e8
+timeCreated: 1478033076
+>>>>>>> master
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontNames:
+  - Pexico Micro
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
