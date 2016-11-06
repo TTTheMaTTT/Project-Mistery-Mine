@@ -143,6 +143,8 @@
     <None Include="Assets\Scripts\Shaders\Experiments\Sulhouette.shader" />
     <None Include="Assets\Scripts\Shaders\LineSpriteShader.shader" />
     <None Include="Assets\Scripts\Shaders\Outline.shader" />
+    <None Include="Assets\Scripts\Shaders\SpriteLight.shader" />
+    <None Include="Assets\Scripts\Shaders\SpriteLightKit-BlendImageEffect.shader" />
     <None Include="Assets\Scripts\Shaders\WaterShader.shader" />
     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />
