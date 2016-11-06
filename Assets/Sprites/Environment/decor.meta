@@ -1,5 +1,16 @@
 fileFormatVersion: 2
 <<<<<<< HEAD
+<<<<<<< HEAD:Assets/Sprites/Environment/decor.meta
+guid: 15be80f500da6b846acce9d7bf9d50be
+folderAsset: yes
+timeCreated: 1478032410
+=======
+guid: ae0fb61e05cf8d848a4b58c69440f6e9
+folderAsset: yes
+timeCreated: 1478274300
+>>>>>>> b944fd2841250c2616884b05f242f262fd1cda00:Assets/Sprites/Interface/Icons.meta
+=======
+<<<<<<< HEAD
 guid: c2a153a4a45138445ba29d0e749454e5
 folderAsset: yes
 timeCreated: 1478005264
@@ -8,6 +19,7 @@ guid: 15be80f500da6b846acce9d7bf9d50be
 folderAsset: yes
 timeCreated: 1478032410
 >>>>>>> master
+>>>>>>> b944fd2841250c2616884b05f242f262fd1cda00
 licenseType: Free
 DefaultImporter:
   userData: 

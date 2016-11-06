@@ -72,6 +72,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Experiment\SpriteOutline.cs" />
+    <Compile Include="Assets\Scripts\Game\AutoLineRender.cs" />
     <Compile Include="Assets\Scripts\Game\CameraController.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\DialogSystem\Dialog.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\DialogSystem\Speech.cs" />
@@ -92,6 +93,8 @@
     <Compile Include="Assets\Scripts\Game\Interface\GameUIScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\MainMenuScript.cs" />
     <Compile Include="Assets\Scripts\Game\LevelEndController.cs" />
+    <Compile Include="Assets\Scripts\Game\Light\SpriteLightKit.cs" />
+    <Compile Include="Assets\Scripts\Game\Light\SpriteLightKitImageEffect.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterEffectSystem.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterVisual.cs" />
@@ -107,11 +110,14 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\NPCController.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Characters\SpiritController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\Spirit\SpiritController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\Spirit\SpiritVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\BoxController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\ChestController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DeathTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DropClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Explosion.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\ExplosionScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\HeartDropClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\LeverRiddle.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\DoorClass.cs" />
@@ -122,6 +128,8 @@
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\PushPlateScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\TwoStagesLeverScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\MushroomScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\WaterDrops\WaterdropScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\WaterDrops\WaterdropSpawner.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Hearing.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\HitBox.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Interactor.cs" />
@@ -153,6 +161,8 @@
     <None Include="Assets\Scripts\Shaders\Experiments\Sulhouette.shader" />
     <None Include="Assets\Scripts\Shaders\LineSpriteShader.shader" />
     <None Include="Assets\Scripts\Shaders\Outline.shader" />
+    <None Include="Assets\Scripts\Shaders\SpriteLight.shader" />
+    <None Include="Assets\Scripts\Shaders\SpriteLightKit-BlendImageEffect.shader" />
     <None Include="Assets\Scripts\Shaders\WaterShader.shader" />
     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />

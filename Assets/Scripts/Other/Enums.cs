@@ -24,6 +24,11 @@ public enum EditorModEnum {select=0, draw=1, drag=2, erase=3 }
 public enum DrawModEnum { ground = 0, plant = 1, water = 2, ladder=3, spikes=4,usual=5 }
 
 /// <summary>
+/// Режим диалога
+/// </summary>
+public enum DialogModEnum {usual=0, random=1, one=2 }
+
+/// <summary>
 /// Енам, связанный с видами игровых препятствий
 /// </summary>
 public enum ObstacleEnum {plants=0, spikes=1 }

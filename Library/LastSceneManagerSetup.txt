@@ -1,4 +1,12 @@
 sceneSetups:
-- path: Assets/Scenes/mine_lvl3.unity
+<<<<<<< HEAD
+<<<<<<< HEAD
+- path: Assets/Scenes/cave_lvl5.unity
+=======
+- path: Assets/Scenes/LevelEditor.unity
+>>>>>>> b944fd2841250c2616884b05f242f262fd1cda00
+=======
+- path: Assets/Scenes/LevelEditor.unity
+>>>>>>> b944fd2841250c2616884b05f242f262fd1cda00
   isLoaded: 1
   isActive: 1
