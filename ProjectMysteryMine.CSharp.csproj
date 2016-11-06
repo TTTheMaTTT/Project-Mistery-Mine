@@ -72,6 +72,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Experiment\SpriteOutline.cs" />
+    <Compile Include="Assets\Scripts\Game\AutoLineRender.cs" />
     <Compile Include="Assets\Scripts\Game\CameraController.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\DialogSystem\Dialog.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\DialogSystem\Speech.cs" />

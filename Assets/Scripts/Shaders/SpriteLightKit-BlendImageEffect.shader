@@ -1,10 +1,11 @@
-Shader "Hidden/Blend Image Effect"
+Shader "MysteryMine/Sprite Light Kit/Blend Image Effect"
 {
 	Properties
 	{
 		_MainTex ( "Base (RGB)", 2D ) = "white" {}
 		_LightsTex ( "Lights (RGB)", 2D ) = "white" {}
-		_MultiplicativeFactor ( "Multiplier", float ) = 1.0
+		_MultiplicativeFactor("Multiplier", float) = 1.0
+		_HDRRatio("HDRRatio", float) = 10.0
 	}
 	
 	SubShader
@@ -37,7 +38,7 @@ sampler2D _MainTex;
 uniform float4 _MainTex_ST;
 sampler2D _LightsTex;
 float _MultiplicativeFactor;
-
+float _HDRRatio;
 
 struct vertexInput
 {
@@ -78,7 +79,7 @@ half4 frag( fragmentInput i ) : COLOR
 
 	half4 amb = (1, 1, 1, 1)*_MultiplicativeFactor;
 
-	return  main * (lights + amb);
+	return  main * (lights*_HDRRatio*lights.a + amb);
 }
 
 ENDCG

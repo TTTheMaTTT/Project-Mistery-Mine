@@ -1,4 +1,4 @@
-Shader "prime[31]/Sprite Light Kit/Sprite Light"
+Shader "MysteryMine/Sprite Light Kit/Sprite Light"
 {
 	Properties
 	{

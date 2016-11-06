@@ -2,6 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif //UNITY_EDITOR
+
 /// <summary>
 /// Движущаяся платформа
 /// </summary>
@@ -17,8 +21,12 @@ public class MovingPlatform : MonoBehaviour, IMechanism
     #region fields
 
     [SerializeField] protected List<Vector2> platformPositions = new List<Vector2>();
+    public List<Vector2> PlatformPositions { get { return platformPositions; } }
 
     protected Animator anim;
+    public Material lineMaterial;//Какой материал используется для отрисовки линии
+
+    [SerializeField][HideInInspector]protected List<LineRenderer> lines=new List<LineRenderer>();//Линии, отображающие маршрут платормы
 
     #endregion //fields
 
@@ -28,6 +36,11 @@ public class MovingPlatform : MonoBehaviour, IMechanism
     [SerializeField]protected int orientation=1;//Направление движения
     [SerializeField]protected bool nonStop;//Останавливаается ли платформа впринципе
     [SerializeField]protected bool changeableDirection = true;//При взаимодействии с платформой, поменяется ли направление движения?
+
+    [SerializeField] protected float lineWidth = .02f;
+    public float LineWidth { get { return lineWidth; } }
+    [SerializeField] protected float lineRatio = .1f;
+    public float LineRatio { get { return lineRatio; } }
 
     protected bool moving = false;//Движется ли платформа или нет
     protected int currentPosition=0;//Текущая позиция
@@ -164,4 +177,66 @@ public class MovingPlatform : MonoBehaviour, IMechanism
         }
     }
 
+    public List<LineRenderer> GetLines()
+    {
+        return lines;
+    }
+
+    public void SetLines(List<LineRenderer> _lines)
+    {
+        lines = _lines;
+    }
+
 }
+
+/// <summary>
+/// Редактор движущихся платформ
+/// </summary>
+#if UNITY_EDITOR
+[CustomEditor(typeof(MovingPlatform))]
+public class MovingPlatformEditor : Editor
+{
+
+    List<LineRenderer> lines;
+
+    public override void OnInspectorGUI()
+    {
+        base.OnInspectorGUI();
+        MovingPlatform mov = (MovingPlatform)target;
+        lines = mov.GetLines();
+        if (lines == null)
+            mov.SetLines(new List<LineRenderer>());
+        if (GUILayout.Button("DeleteLines"))
+        {
+            mov.SetLines(new List<LineRenderer>());
+            foreach (LineRenderer line in lines)
+                DestroyImmediate(line.gameObject);
+        }
+        if (GUILayout.Button("CreateLines"))
+        {
+            foreach (LineRenderer line in lines)
+                DestroyImmediate(line.gameObject);
+            lines.Clear();
+            for (int i = 1; i < mov.PlatformPositions.Count; i++)
+            {
+                GameObject gLine = new GameObject("line" + (i - 1).ToString());
+                GameObject gLines = GameObject.Find("PlatformLines");
+                if (gLines != null)
+                    gLine.transform.SetParent(gLines.transform);
+                LineRenderer line = gLine.AddComponent<LineRenderer>();
+                line.sharedMaterial = mov.lineMaterial;
+                Vector3 pos1 = mov.PlatformPositions[i - 1], pos2=mov.PlatformPositions[i];
+                pos1.z = mov.transform.position.z;
+                pos2.z = mov.transform.position.z;
+                line.SetPositions(new Vector3[] { pos1, pos2 });
+                line.SetWidth(mov.LineWidth, mov.LineWidth);
+                AutoLineRender rLine=gLine.AddComponent<AutoLineRender>();
+                rLine.SetPoints(mov.LineRatio, pos1, pos2);
+                rLine.AutoTile();
+                lines.Add(line);
+            }
+            mov.SetLines(lines);
+        }
+    }
+}
+#endif

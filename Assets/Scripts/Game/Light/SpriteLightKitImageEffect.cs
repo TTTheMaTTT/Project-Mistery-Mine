@@ -10,6 +10,7 @@ namespace Prime31
 		public Shader shader;
 		public RenderTexture spriteLightRT;
 		[Range(0.0f, 2.0f)] public float intensity = 1.0f;
+        public float HDRRatio = 10f;
 		Material _material;
 
 
@@ -46,6 +47,7 @@ namespace Prime31
 		
 			material.SetTexture( "_LightsTex", spriteLightRT );
 			material.SetFloat( "_MultiplicativeFactor", intensity );
+            material.SetFloat("_HDRRatio", HDRRatio);
 			Graphics.Blit( source, destination, material );
 		}
 	}
