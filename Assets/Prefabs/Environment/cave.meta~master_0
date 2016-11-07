@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+<<<<<<< HEAD
+<<<<<<< HEAD:Assets/Prefabs/Environment/cave.meta
+guid: 922d79144e6706a468176d6ac7c08848
+folderAsset: yes
+timeCreated: 1478032676
+=======
+guid: 5cd232bf141b557479f33aa492489170
+folderAsset: yes
+timeCreated: 1478274298
+>>>>>>> b944fd2841250c2616884b05f242f262fd1cda00:Assets/Editor/LevelEditor/Tilemaps.meta
+=======
+guid: dadfc493a7a4a404383a31d4c8c0f0c5
+folderAsset: yes
+timeCreated: 1478006644
+>>>>>>> b944fd2841250c2616884b05f242f262fd1cda00
+licenseType: Free
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/Scenes/cave_lvl5.unity
+- path: Assets/Scenes/mine_lvl1.unity
   isLoaded: 1
   isActive: 1

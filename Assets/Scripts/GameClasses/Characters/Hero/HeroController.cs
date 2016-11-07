@@ -23,7 +23,7 @@ public class HeroController : CharacterController
 
     protected const float ladderCheckOffset = .05f, ladderStep = .01f;
 
-    protected const float minDamageFallSpeed = 5.5f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
+    protected const float minDamageFallSpeed = 4.2f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
     protected const float damagePerFallSpeed = 2f;
 
     protected const float suffocateTime = .3f;//Сколько времени должно пройти, чтобы запас воздуха уменьшился на 1 или здоровье ГГ на .5
@@ -517,10 +517,11 @@ public class HeroController : CharacterController
         }
         line = gameObject.AddComponent<LineRenderer>();
         line.material = arrowMaterial;
-        line.SetWidth(.02f, .02f);
+        line.SetWidth(.01f, .01f);
         line.SetVertexCount(2);
         line.SetPosition(0, transform.position + (int)orientation * transform.right * .1f);
         line.SetPosition(1, new Vector3(endPoint.x, endPoint.y, transform.position.z));
+        line.SetColors(new Color(1f, 1f, 1f, .5f), new Color(1f, 1f, 1f, .5f));
         Destroy(line, .1f);
         yield return new WaitForSeconds(currentWeapon.attackTime);
 
