@@ -56,11 +56,8 @@ public class SpriteLightKit : MonoBehaviour
 	int _lastScreenWidth = -1;
 	int _lastScreenHeight = -1;
 
-    public static List<SpriteLightSource> lightSources=new List<SpriteLightSource>();//Список источников света
-    public static RenderTexture obstacleTexture;//Текстура препятствий
-
-    SpriteLightKitImageEffect _slkImageEffect;
-
+	SpriteLightKitImageEffect _slkImageEffect;
+    public static List<SpriteLightSource> lightSources = new List<SpriteLightSource>();
 
 	void OnEnable()
 	{
@@ -184,13 +181,10 @@ public class SpriteLightKit : MonoBehaviour
 		}
 	}
 
-    /// <summary>
-    /// Установить тектсуру препятствий
-    /// </summary>
-    public static void SetObstacleTexture(RenderTexture obstTex)
+    public static void SetObstacleTexture(RenderTexture obstTexture)
     {
         foreach (SpriteLightSource light in lightSources)
-            light.material.SetTexture("_ObstacleTex", obstTex);
+            light.material.SetTexture("_ObstacleTexture", obstTexture);
     }
 
 }

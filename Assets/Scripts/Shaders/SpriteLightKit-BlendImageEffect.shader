@@ -11,7 +11,7 @@ Shader "MysteryMine/Sprite Light Kit/Blend Image Effect"
 	SubShader
 	{
 
-		Tags { "Queue" = "Transparent+2" }
+		Tags { "Queue" = "Transparent+1" }
 
 		ZWrite Off
 		ZTest Always

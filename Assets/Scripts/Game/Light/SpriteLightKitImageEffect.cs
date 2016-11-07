@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+
 [ExecuteInEditMode]
 public class SpriteLightKitImageEffect : MonoBehaviour
 {
@@ -10,7 +11,6 @@ public class SpriteLightKitImageEffect : MonoBehaviour
     public float HDRRatio = 10f;
 	Material _material;
 
-    public RenderTexture tex;
 
 	protected Material material
 	{
@@ -36,6 +36,7 @@ public class SpriteLightKitImageEffect : MonoBehaviour
 		}
 	}
 
+
 	void OnRenderImage( RenderTexture source, RenderTexture destination )
 	{
 		// if SpriteLightKit is disabled this RT will no longer be valid
@@ -45,6 +46,6 @@ public class SpriteLightKitImageEffect : MonoBehaviour
 		material.SetTexture( "_LightsTex", spriteLightRT );
 		material.SetFloat( "_MultiplicativeFactor", intensity );
         material.SetFloat("_HDRRatio", HDRRatio);
-        Graphics.Blit( source, destination, material );
-    }
+		Graphics.Blit( source, destination, material );
+	}
 }
