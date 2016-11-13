@@ -57,7 +57,7 @@ public class SpriteLightKit : MonoBehaviour
 	int _lastScreenHeight = -1;
 
 	SpriteLightKitImageEffect _slkImageEffect;
-    public static List<SpriteLightSource> lightSources = new List<SpriteLightSource>();
+    public List<SpriteLightSource> lightSources = new List<SpriteLightSource>();
 
 	void OnEnable()
 	{
@@ -101,6 +101,21 @@ public class SpriteLightKit : MonoBehaviour
 			updateTexture();
 		}
 	}
+
+    void Start()
+    {
+        if (mainCamera == null)
+            mainCamera = Camera.main;
+
+        // ensure the SpriteLightKitPostProcessor is on the Camera
+        _slkImageEffect = mainCamera.GetComponent<SpriteLightKitImageEffect>();
+        if (_slkImageEffect == null)
+            _slkImageEffect = mainCamera.gameObject.AddComponent<SpriteLightKitImageEffect>();
+
+        prepareCamera();
+        updateTexture();
+        transform.localPosition = Vector3.zero;
+    }
 
 
 	void prepareCamera()
@@ -181,10 +196,10 @@ public class SpriteLightKit : MonoBehaviour
 		}
 	}
 
-    public static void SetObstacleTexture(RenderTexture obstTexture)
+    public void SetObstacleTexture(RenderTexture obstTexture)
     {
         foreach (SpriteLightSource light in lightSources)
-            light.material.SetTexture("_ObstacleTexture", obstTexture);
+            light.material.SetTexture("_ObstacleTex", obstTexture);
     }
 
 }

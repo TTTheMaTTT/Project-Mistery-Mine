@@ -21,7 +21,7 @@ public enum EditorModEnum {select=0, draw=1, drag=2, erase=3 }
 /// <summary>
 /// Енам, связанный с режимом рисования
 /// </summary>
-public enum DrawModEnum { ground = 0, plant = 1, water = 2, ladder=3, spikes=4,usual=5 }
+public enum DrawModEnum { ground = 0, plant = 1, water = 2, ladder=3, spikes=4,usual=5, lightObstacle=6 }
 
 /// <summary>
 /// Режим диалога

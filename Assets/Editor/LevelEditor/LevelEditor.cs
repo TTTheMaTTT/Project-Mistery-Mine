@@ -27,7 +27,7 @@ public class LevelEditor : EditorWindow
     #region fields
 
     private static Sprite selectIcon, drawIcon, dragIcon, eraseIcon;//Иконки, используемые при отрисовки меню редактора
-    private static Sprite groundIcon, waterIcon, plantIcon, ladderIcon, spikesIcon, usualDrawIcon;//Иконки, используемые в меню рисования
+    private static Sprite groundIcon, waterIcon, plantIcon, ladderIcon, spikesIcon, usualDrawIcon, lightPointIcon;//Иконки, используемые в меню рисования
 
     #endregion //fields
 
@@ -132,6 +132,20 @@ public class LevelEditor : EditorWindow
 
     #endregion //usualBrush
 
+    #region lightObstaclePointer
+
+    private static string lightObstacleName;//Название для препятствия света
+
+    private static int lightObstacleLayer = LayerMask.NameToLayer("lightObstacle");
+    private static string lightObstacleParentObjName;//Имя объекта, который станет родительским по отношению к создаваемым объектам.
+
+    private static float lightMarginOffset=0.05f;//Ширина края твёрдого объекта (препятствия света), который ещё освещается 
+    private static Vector2 maxLightObstacleSize = new Vector2(2f, 2f);//Максимальный рзме прямоугольника, что должен обрамлять препятствие
+
+    private static List<GameObject> obstacles = new List<GameObject>();//Список последних созданных препятствий света
+
+    #endregion //lightObstaclePointer
+
     private Sprite[] sprites;
     private static Sprite activeSprite;//Спрайт, что мы используем для отрисовки
 
@@ -184,6 +198,7 @@ public class LevelEditor : EditorWindow
         ladderIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "ladderIcon.png");
         spikesIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "spikeIcon.png");
         usualDrawIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "brushIcon.png");
+        lightPointIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "lightObstacleIcon.png");
 
         if (!Directory.Exists(groundBrushesPath))
         {
@@ -247,6 +262,8 @@ public class LevelEditor : EditorWindow
             _spriteBase.sprites = new List<Sprite>();
         }
         spriteBase = AssetDatabase.LoadAssetAtPath<SpriteBase>(databasePath + "SpriteBase.asset");
+
+        obstacles = new List<GameObject>();
 
         System.Type internalEditorUtilityType = typeof(InternalEditorUtility);
         PropertyInfo sortingLayersProperty = internalEditorUtilityType.GetProperty("sortingLayerNames", BindingFlags.Static | BindingFlags.NonPublic);
@@ -1447,6 +1464,90 @@ public class LevelEditor : EditorWindow
 
         #endregion //usualMod
 
+        #region lightObstacle
+
+        /// <summary>
+        /// Определение коллайдеров препятствий света по нажатию кнопкой мыши на коллайдер земли
+        /// </summary>
+        static void LightPointHandler()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if (e.type == EventType.keyDown)
+            {
+                if (e.keyCode == KeyCode.R)//Удалить последние созданные препятствия света
+                {
+                    foreach (GameObject obj in obstacles)
+                        DestroyImmediate(obj);
+                    obstacles.Clear();
+                }
+            }
+            if (e.type == EventType.MouseDown && e.button == 0)
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                mouseWorldPos.z = zPosition;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / gridSize.x) * gridSize.x + gridSize.x / 2.0f;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / gridSize.y) * gridSize.y - gridSize.y / 2.0f;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                Vector2 pos = gridSize;
+                string lName = LayerMask.LayerToName(groundLayer), olName=LayerMask.LayerToName(lightObstacleLayer);
+
+                if (!Physics2D.Raycast(mouseWorldPos, Vector2.down, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(lName)))
+                {
+                    string objName = (parentObj != null) ? parentObj.name + "0" : grBrush.outGround.name;
+                    GameObject newGround = new GameObject(objName, typeof(SpriteRenderer));
+                    newGround.transform.position = mouseWorldPos;
+                    newGround.GetComponent<SpriteRenderer>().sprite = groundAngle ? grBrush.angleGround : grBrush.outGround;
+                    newGround.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                    newGround.tag = tagName;
+                    newGround.layer = groundLayer;
+                    if (parentObj != null)
+                        newGround.transform.parent = parentObj.transform;
+                    if (groundAngle)
+                    {
+                        Sprite gSprite = newGround.GetComponent<SpriteRenderer>().sprite;
+                        Vector2 texSize = gSprite.textureRect.size;
+                        PolygonCollider2D col = newGround.AddComponent<PolygonCollider2D>();
+                        col.points = new Vector2[3];
+                        col.points = new Vector2[]{new Vector2(texSize.x, texSize.y) / 2f / gSprite.pixelsPerUnit,
+                                        new Vector2(-texSize.x, -texSize.y) / 2f / gSprite.pixelsPerUnit,
+                                        new Vector2(texSize.x, -texSize.y) / 2f / gSprite.pixelsPerUnit};
+                        col.isTrigger = !groundCollider;
+                    }
+                    else
+                    {
+                        newGround.AddComponent<BoxCollider2D>();
+                        newGround.GetComponent<BoxCollider2D>().isTrigger = !groundCollider;
+                    }
+                    GameObject[] groundBlocks = new GameObject[9];
+                    groundBlocks[4] = newGround;
+                    RaycastHit2D hit = new RaycastHit2D();
+                    groundBlocks[0] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(-gridSize.x, gridSize.y * 1.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
+                    groundBlocks[1] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(0f, gridSize.y * 1.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
+                    groundBlocks[2] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(gridSize.x, gridSize.y * 1.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
+                    groundBlocks[3] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(-gridSize.x, gridSize.y * 0.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
+                    groundBlocks[5] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(gridSize.x, gridSize.y * 0.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
+                    groundBlocks[6] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(-gridSize.x, gridSize.y * -0.9f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
+                    groundBlocks[7] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(0f, gridSize.y * -0.9f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
+                    groundBlocks[8] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(gridSize.x, gridSize.y * -0.9f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
+
+                    for (int i = 0; i < 9; i++)
+                        if (groundBlocks[i] != null)
+                            CorrectGround(groundBlocks[i]);
+                }
+            }
+        }
+
+        #endregion //lightObstacle
+
         #endregion //draw
 
         /// <summary>
@@ -1812,8 +1913,8 @@ public class LevelEditor : EditorWindow
     {
         EditorGUILayout.BeginHorizontal(textureStyleAct);
         {
-            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon, spikesIcon,usualDrawIcon };
-            for (int i = 0; i < 6; i++)
+            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon, spikesIcon,usualDrawIcon, lightPointIcon };
+            for (int i = 0; i < 7; i++)
             {
                 Sprite currentDrawSprite = drawIconSprites[i];
                 if (drawMod == (DrawModEnum)i)
@@ -1873,6 +1974,11 @@ public class LevelEditor : EditorWindow
             case DrawModEnum.usual:
                 {
                     UsualDrawGUI();
+                    break;
+                }
+            case DrawModEnum.lightObstacle:
+                {
+                    LightPointGUI();
                     break;
                 }
         }
@@ -2217,7 +2323,7 @@ public class LevelEditor : EditorWindow
     /// </summary>
     void CreateNewWaterBrushWindow()
     {
-        GameObject newWaterObject=null;
+        GameObject newWaterObject = null;
         wBrush.waterSprite = (Sprite)EditorGUILayout.ObjectField("Water sprite", wBrush.waterSprite, typeof(Sprite));
         wBrush.waterAngleSprite = (Sprite)EditorGUILayout.ObjectField("Water angle sprite", wBrush.waterAngleSprite, typeof(Sprite));
 
@@ -2240,6 +2346,32 @@ public class LevelEditor : EditorWindow
     }
 
     #endregion //waterGUI
+
+    #region lightPoint
+
+    /// <summary>
+    /// Меню cоздания коллайдеров препятствий для света
+    /// </summary>
+    void LightPointGUI()
+    {
+        tagName = EditorGUILayout.TagField("tag", tagName);
+        groundLayer = EditorGUILayout.LayerField("ground layer", groundLayer);
+        lightObstacleLayer = EditorGUILayout.LayerField("light obstacle layer", lightObstacleLayer);
+
+        zPosition = EditorGUILayout.FloatField("z-position", zPosition);
+
+        lightMarginOffset = EditorGUILayout.FloatField("light obstacle margin", lightMarginOffset);
+        maxLightObstacleSize = EditorGUILayout.Vector2Field("light obstacle max size", maxLightObstacleSize);
+
+        lightObstacleParentObjName = EditorGUILayout.TextField("parent name", lightObstacleParentObjName);
+        if (lightObstacleParentObjName != string.Empty && (parentObj != null ? parentObj.name != lightObstacleParentObjName : true))
+        {
+            parentObj = GameObject.Find(lightObstacleParentObjName);
+        }       
+        SceneView.RepaintAll();
+    }
+
+    #endregion //lightPoint
 
     #region ladderGUI
 
