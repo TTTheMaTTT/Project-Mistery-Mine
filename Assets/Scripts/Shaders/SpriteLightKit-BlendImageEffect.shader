@@ -50,7 +50,7 @@ struct vertexInput
 struct fragmentInput
 {
 	float4 pos : SV_POSITION;
-    float4 color : COLOR0;
+    //float4 color : COLOR0;
     half2 uv : TEXCOORD0;
 };
 
@@ -60,7 +60,6 @@ fragmentInput vert( vertexInput i )
 	fragmentInput o;
 	o.pos = mul( UNITY_MATRIX_MVP, i.vertex );
 	o.uv = TRANSFORM_TEX( i.texcoord, _MainTex );
-    
 	return o;
 }
 

@@ -145,6 +145,8 @@
     <None Include="Assets\Scripts\Shaders\Experiments\OutlineShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Red.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Sulhouette.shader" />
+    <None Include="Assets\Scripts\Shaders\Experiments\TexCoordShader.shader" />
+    <None Include="Assets\Scripts\Shaders\Gradient-ZFighting.shader" />
     <None Include="Assets\Scripts\Shaders\LineSpriteShader.shader" />
     <None Include="Assets\Scripts\Shaders\Outline.shader" />
     <None Include="Assets\Scripts\Shaders\SpriteLight.shader" />

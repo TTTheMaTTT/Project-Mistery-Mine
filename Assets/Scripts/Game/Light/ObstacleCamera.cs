@@ -7,19 +7,30 @@ using System.Collections;
 [ExecuteInEditMode]
 public class ObstacleCamera : MonoBehaviour
 {
+
+    #region fields
+
     public Camera mainCamera;//Главная камера
     Material m1;
     public LayerMask obstacleLayer;//Слои, соответствующие препятствиям
 
     public Shader shader;//Шейдер, преобразующий изображения препятствий в текстуру препятствий
     public Shader disableShader;//Шейдер, используемый при выключении камеры, т.е при прекращении учёта препятствий
-    protected RenderTexture spriteObstacleRT;//Текстура, в которую заносятся все препятствия
-    protected RenderTexture finalSpriteObstacleRT;//преобразованная текстура
-    public RenderTexture FinalSpriteObstacleRT { get { return finalSpriteObstacleRT; } set { finalSpriteObstacleRT = value; } }
+    public RenderTexture spriteObstacleRT;//Текстура, в которую заносятся все препятствия
+    public RenderTexture finalSpriteObstacleRT;//преобразованная текстура
 
     [SerializeField]
     [HideInInspector]
     protected Camera spriteObstacleCamera;
+
+    protected ObstacleTextureCreator OTCreator;//Функция, что создаёт финальную текстуру
+
+    SpriteLightKit lKit;
+
+    #endregion //fields
+
+    #region parametres
+
     int lastScreenWidth = -1;
     int lastScreenHeight = -1;
     float previousCameraOrthoSize;
@@ -42,6 +53,30 @@ public class ObstacleCamera : MonoBehaviour
         }
     }
 
+    #endregion //parametres
+
+    /// <summary>
+    /// При включении камеры
+    /// </summary>
+    void Start()
+    {
+        if (mainCamera == null)
+            mainCamera = Camera.main;
+
+        if (OTCreator == null)
+            OTCreator = GetComponentInChildren<ObstacleTextureCreator>();
+
+        if (lKit == null)
+            lKit=transform.parent.GetComponentInChildren<SpriteLightKit>();
+
+        PrepareCamera();
+        lastScreenHeight = Screen.height;
+        lastScreenWidth = Screen.width;
+        OTCreator.PrepareCamera(lastScreenWidth, lastScreenHeight, previousCameraOrthoSize);
+        UpdateTexture();
+        transform.localPosition = Vector3.zero;
+    }
+
     /// <summary>
     /// При включении камеры
     /// </summary>
@@ -50,8 +85,16 @@ public class ObstacleCamera : MonoBehaviour
         if (mainCamera == null)
             mainCamera = Camera.main;
 
-        m1 = transform.FindChild("Quad").GetComponent<MeshRenderer>().material;
+        if (OTCreator == null)
+            OTCreator = GetComponentInChildren<ObstacleTextureCreator>();
+
+        if (lKit == null)
+            lKit = transform.parent.GetComponentInChildren<SpriteLightKit>();
+
         PrepareCamera();
+        lastScreenHeight = Screen.height;
+        lastScreenWidth = Screen.width;
+        OTCreator.PrepareCamera(lastScreenWidth, lastScreenHeight, previousCameraOrthoSize);
         UpdateTexture();
         transform.localPosition = Vector3.zero;
     }
@@ -62,16 +105,22 @@ public class ObstacleCamera : MonoBehaviour
     public void OnDisable()
     {
 
-            if (spriteObstacleCamera != null)
+        if (spriteObstacleCamera != null)
             spriteObstacleCamera.targetTexture = null;
 
-        Graphics.Blit(spriteObstacleRT, finalSpriteObstacleRT, new Material(disableShader));
-        SpriteLightKit.SetObstacleTexture(finalSpriteObstacleRT);
-
-        if (spriteObstacleRT != null)
+        if ((OTCreator != null)&& (spriteObstacleRT != null))
         {
+            finalSpriteObstacleRT = OTCreator.Capture(spriteObstacleRT, new Material(disableShader));
+            lKit.SetObstacleTexture(finalSpriteObstacleRT);
             spriteObstacleRT.Release();
             DestroyImmediate(spriteObstacleRT);
+        }
+
+        if (finalSpriteObstacleRT != null)
+        {
+            OTCreator.ResetTargetTexture();
+            finalSpriteObstacleRT.Release();
+            DestroyImmediate(finalSpriteObstacleRT);
         }
 
         if (_material)
@@ -92,9 +141,12 @@ public class ObstacleCamera : MonoBehaviour
         {
             spriteObstacleCamera.orthographicSize = mainCamera.orthographicSize;
             previousCameraOrthoSize = mainCamera.orthographicSize;
-
+            OTCreator.PrepareCamera(Screen.width, Screen.height, mainCamera.orthographicSize);
+            lastScreenWidth = Screen.width;
+            lastScreenHeight = Screen.height;
             UpdateTexture();
         }
+        CreateObstacleTexture();
     }
 
     /// <summary>
@@ -143,11 +195,6 @@ public class ObstacleCamera : MonoBehaviour
                 DestroyImmediate(spriteObstacleRT);
             }
 
-            // Учесть изменения в разрешении
-            lastScreenWidth = Screen.width;
-            lastScreenHeight = Screen.height;
-
-
             // Ширина и высота рисуемой текстуры препятствий
             var rtWidth = Mathf.RoundToInt(spriteObstacleCamera.pixelWidth);
             var rtHeight = Mathf.RoundToInt(spriteObstacleCamera.pixelHeight);
@@ -162,14 +209,32 @@ public class ObstacleCamera : MonoBehaviour
 
             spriteObstacleRT = new RenderTexture(rtWidth, rtHeight, 0, format);
             finalSpriteObstacleRT = new RenderTexture(rtWidth, rtHeight, 0, format);
-            m1.SetTexture("_MainTex", spriteObstacleRT);
             spriteObstacleRT.name = "Sprite Obstacle RT";
             spriteObstacleRT.Create();
-            Graphics.Blit(spriteObstacleRT, finalSpriteObstacleRT, material);
+            //Graphics.Blit(spriteObstacleRT, finalSpriteObstacleRT, material);
             //finalSpriteObstacleRT = (RenderTexture)m1.mainTexture;
-            SpriteLightKit.SetObstacleTexture(finalSpriteObstacleRT);
-            spriteObstacleCamera.targetTexture = finalSpriteObstacleRT;
+            spriteObstacleCamera.targetTexture = spriteObstacleRT;
+            CreateObstacleTexture();
         }
+    }
+
+
+    /// <summary>
+    /// Создать текстуру препятствий света
+    /// </summary>
+    void CreateObstacleTexture()
+    {
+
+        if (finalSpriteObstacleRT != null)
+        {
+            OTCreator.ResetTargetTexture();
+            finalSpriteObstacleRT.Release();
+            DestroyImmediate(finalSpriteObstacleRT);
+        }
+
+        finalSpriteObstacleRT = OTCreator.Capture(spriteObstacleRT, material);
+        lKit.SetObstacleTexture(finalSpriteObstacleRT);
+
     }
 
 }

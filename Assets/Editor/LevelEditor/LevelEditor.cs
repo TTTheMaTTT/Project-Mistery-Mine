@@ -2,7 +2,7 @@
 using UnityEditor;
 using UnityEditorInternal;
 using System.IO;
-using System.Linq;
+//using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -27,7 +27,7 @@ public class LevelEditor : EditorWindow
     #region fields
 
     private static Sprite selectIcon, drawIcon, dragIcon, eraseIcon;//Иконки, используемые при отрисовки меню редактора
-    private static Sprite groundIcon, waterIcon, plantIcon, ladderIcon, spikesIcon, usualDrawIcon;//Иконки, используемые в меню рисования
+    private static Sprite groundIcon, waterIcon, plantIcon, ladderIcon, spikesIcon, usualDrawIcon, lightPointIcon;//Иконки, используемые в меню рисования
 
     #endregion //fields
 
@@ -132,6 +132,25 @@ public class LevelEditor : EditorWindow
 
     #endregion //usualBrush
 
+    #region lightObstaclePointer
+
+    private static string lightObstacleName;//Название для препятствия света
+
+    private static int lightObstacleLayer = LayerMask.NameToLayer("lightObstacle");
+    private static string lightObstacleParentObjName;//Имя объекта, который станет родительским по отношению к создаваемым объектам.
+
+    private static bool createMargin = true;//Если true, то препятствие будет создано с неким отступом с целью созданию эффекта подсвеченного края
+    private static float lightMarginOffset=0.05f;//Ширина края твёрдого объекта (препятствия света), который ещё освещается
+
+    private static float lightPointerPrecision = 0.02f;//Точность определения границ коллайдеров твёрдых объектов 
+
+    private static bool sliceObstacle = true;//Если true, то препятствие света разделяется прямоуголниками
+    private static Vector2 maxLightObstacleSize = new Vector2(2f, 2f);//Максимальный рзме прямоугольника, что должен обрамлять препятствие
+
+    private static List<GameObject> lightObstacles = new List<GameObject>();//Список последних созданных препятствий света
+
+    #endregion //lightObstaclePointer
+
     private Sprite[] sprites;
     private static Sprite activeSprite;//Спрайт, что мы используем для отрисовки
 
@@ -184,6 +203,7 @@ public class LevelEditor : EditorWindow
         ladderIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "ladderIcon.png");
         spikesIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "spikeIcon.png");
         usualDrawIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "brushIcon.png");
+        lightPointIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "lightObstacleIcon.png");
 
         if (!Directory.Exists(groundBrushesPath))
         {
@@ -247,6 +267,8 @@ public class LevelEditor : EditorWindow
             _spriteBase.sprites = new List<Sprite>();
         }
         spriteBase = AssetDatabase.LoadAssetAtPath<SpriteBase>(databasePath + "SpriteBase.asset");
+
+        lightObstacles = new List<GameObject>();
 
         System.Type internalEditorUtilityType = typeof(InternalEditorUtility);
         PropertyInfo sortingLayersProperty = internalEditorUtilityType.GetProperty("sortingLayerNames", BindingFlags.Static | BindingFlags.NonPublic);
@@ -362,6 +384,11 @@ public class LevelEditor : EditorWindow
                     case DrawModEnum.usual:
                         {
                             UsualHandler();
+                            break;
+                        }
+                    case DrawModEnum.lightObstacle:
+                        {
+                            LightPointHandler();
                             break;
                         }
                 }
@@ -1447,6 +1474,538 @@ public class LevelEditor : EditorWindow
 
         #endregion //usualMod
 
+        #region lightObstacles
+
+        /// <summary>
+        /// Определение коллайдеров препятствий света по нажатию кнопкой мыши на коллайдер земли
+        /// </summary>
+        static void LightPointHandler()
+        {
+            Event e = Event.current;
+            HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+            if (e.type == EventType.keyDown)
+            {
+                if (e.keyCode == KeyCode.R)//Удалить последние созданные препятствия света
+                {
+                    foreach (GameObject obj in lightObstacles)
+                        DestroyImmediate(obj);
+                    lightObstacles.Clear();
+                }
+            }
+            if (e.type == EventType.MouseDown && e.button == 0)
+            {
+                Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                //Шаг 1: укажем на твёрдый объект (находящийся на слое ground) 
+
+                Vector2 mousePos = Event.current.mousePosition;
+                mousePos.y = camera.pixelHeight - mousePos.y;
+                Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                mouseWorldPos.z = zPosition;
+                if (gridSize.x > 0.05f && gridSize.y > 0.05f)
+                {
+                    mouseWorldPos.x = Mathf.Floor(mouseWorldPos.x / lightPointerPrecision) * lightPointerPrecision;
+                    mouseWorldPos.y = Mathf.Ceil(mouseWorldPos.y / lightPointerPrecision) * lightPointerPrecision;
+                }
+                Ray ray = camera.ScreenPointToRay(mouseWorldPos);
+
+                string lName = LayerMask.LayerToName(groundLayer), olName = LayerMask.LayerToName(lightObstacleLayer);
+
+                if (Physics2D.Raycast(mouseWorldPos, Vector2.right, lightPointerPrecision, LayerMask.GetMask(lName)) &&
+                    !Physics2D.Raycast(mouseWorldPos, Vector2.right, lightPointerPrecision, LayerMask.GetMask(olName)))
+                {
+
+                    lightObstacles.Clear();
+                    //Шаг 2: Поймём откуда и в какую сторону начать обход
+
+                    Vector3 currentPoint = mouseWorldPos;
+                    while (Physics2D.Raycast(currentPoint, Vector2.right, lightPointerPrecision, LayerMask.GetMask(lName)))
+                        currentPoint += Vector3.right * lightPointerPrecision;
+                    Collider2D col = Physics2D.Raycast(currentPoint + Vector3.left * lightPointerPrecision / 2f,
+                        Vector2.left, lightPointerPrecision, LayerMask.GetMask(lName)).collider;
+                    Vector2[] colPoints = GetColliderPoints(col);
+                    if (colPoints == null)
+                        return;
+                    float colDistance = Mathf.Infinity;
+                    int index = 0;
+                    Vector3 nextPoint = Vector3.zero;
+                    for (int i = 0; i < colPoints.Length; i++)
+                    {
+                        Vector2 colPoint = colPoints[i];
+                        if (Vector2.Distance(colPoint, currentPoint) < colDistance && 
+                            !Physics2D.Raycast(currentPoint, (colPoint-(Vector2)currentPoint).normalized,
+                            Mathf.Clamp(Vector2.Distance(colPoint,currentPoint)-lightPointerPrecision,0f, Mathf.Infinity), LayerMask.GetMask(lName)))
+                        {
+                            colDistance = Vector2.Distance(colPoint, currentPoint);
+                            nextPoint = colPoint;
+                            index = i;
+                        }
+                    }
+                    currentPoint = new Vector3(nextPoint.x, nextPoint.y, currentPoint.z);
+                    Vector2 endPoint = colPoints[index < colPoints.Length - 1 ? index + 1 : 0];
+                    Vector2 movingDirection = (endPoint - (Vector2)currentPoint).normalized;
+                    Vector2 colDirection = new Vector2(1, 0);
+                    if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(colDirection, movingDirection)), 1f))
+                        colDirection = new Vector2(0, 1);
+                    else
+                        colDirection = (colDirection - Vector2.Dot(colDirection, movingDirection) * movingDirection).normalized;
+                    if (colDirection.x * movingDirection.y - colDirection.y * movingDirection.x > 0f)
+                        colDirection *= -1;
+                    if (Vector2.Dot(colDirection, Vector2.left) <= 0)
+                    {
+                        colDirection *= -1;
+                        movingDirection *= -1;
+                    }
+                    if (Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f,
+                        movingDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
+                        !Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f,
+                        colDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
+                        Vector2.Dot(colDirection, Vector2.left) <= 0)
+                    {
+                        endPoint = colPoints[index > 0 ? index - 1 : colPoints.Length - 1];
+                        movingDirection = (endPoint - (Vector2)currentPoint).normalized;
+                        colDirection = new Vector2(1, 0);
+                        if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(colDirection, movingDirection)), 1f))
+                            colDirection = new Vector2(0, 1);
+                        else
+                            colDirection = (colDirection - Vector2.Dot(colDirection, movingDirection) * movingDirection).normalized;
+                        if (colDirection.x * movingDirection.y - colDirection.y * movingDirection.x > 0f)
+                            colDirection *= -1;
+                        if (Vector2.Dot(colDirection, Vector2.left) <= 0)
+                        {
+                            movingDirection *= -1;
+                        }
+                    }
+
+                    //Шаг 3: Получим контур, что обрамляет указанный твёрдый объект
+                    List<Vector3> allPoints = new List<Vector3>();
+                    allPoints.Add(GetNextLightObstaclePoint(currentPoint,ref movingDirection));
+                    while (allPoints.Count == 1 || Mathf.Abs(Vector3.Distance(allPoints[allPoints.Count - 1],allPoints[0]))>lightPointerPrecision)
+                        allPoints.Add(GetNextLightObstaclePoint(allPoints[allPoints.Count - 1], ref movingDirection));
+                    allPoints.RemoveAt(allPoints.Count - 1);//Удалим последнюю точку, замыкающую контур
+
+                    //Шаг 4: Обработаем этот контур для некоторых световых эффектов
+                    if (createMargin)
+                        allPoints = GetContourWithMargin(allPoints);//Добавить контуру некоторый отступ от края
+
+                    //Шаг 5: рарежем контур на более мелкие части и создадим из мелких контуров коллайдеры
+                    if (sliceObstacle)
+                        SliceAndCreateLightObstacles(allPoints, mouseWorldPos);
+                    else
+                    {
+                        CreateLightObstacle(allPoints, mouseWorldPos);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Функция, что возвращает следующую точку контура, обрамляющую твёрдый объект 
+        /// </summary>
+        /// <returns>Точка, составляющая контур твёрдого объекта</returns>
+        static Vector3 GetNextLightObstaclePoint(Vector3 currentPoint , ref Vector2 movingDirection)
+        {
+
+            string lName = LayerMask.LayerToName(groundLayer);
+
+            //Определить вектор, что направлен в сторону препятствий (считаем, что обход происходит в положительном направлении)
+            Vector2 colDirection = new Vector2(1, 0);
+            if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(colDirection, movingDirection)), 1f))
+                colDirection = new Vector2(0, 1);
+            else
+                colDirection = (colDirection - Vector2.Dot(colDirection, movingDirection) * movingDirection).normalized;
+            if (colDirection.x * movingDirection.y - colDirection.y * movingDirection.x > 0f)
+                colDirection *= -1;
+
+            currentPoint += (Vector3)movingDirection * lightPointerPrecision;
+            while (!Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f, movingDirection, lightPointerPrecision, LayerMask.GetMask(lName)) &&
+                Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f, colDirection, lightPointerPrecision, LayerMask.GetMask(lName)))
+            {
+                currentPoint += (Vector3)movingDirection * lightPointerPrecision;
+            }
+            //Если во время обхода дошли до препятствия или возможности обхода, то рассматриваем все коллайдеры, расположенные рядом и щем в них точку, 
+            //направляясь к которой можно продолжать обход
+            Collider2D[] cols = Physics2D.OverlapAreaAll((Vector2)currentPoint + new Vector2(-1, 1) * lightPointerPrecision,
+                                                        (Vector2)currentPoint + new Vector2(1, -1) * lightPointerPrecision, LayerMask.GetMask(lName));
+            Vector2 newDirection = Vector2.zero;
+            int colIndex = 0;
+            Vector2 prevDirection = movingDirection;
+            while ((colIndex < cols.Length) && (newDirection == Vector2.zero))
+            { 
+                Vector2[] colPoints = GetColliderPoints(cols[colIndex]);
+                if (colPoints != null)
+                {
+                    Vector2 nextPoint = Vector2.zero;
+                    float distance = Mathf.Infinity;
+                    int index = 0;
+                    for (int i = 0; i < colPoints.Length; i++)
+                    {
+                        Vector2 colPoint = colPoints[i];
+                        if (Vector2.Distance(colPoint, currentPoint) < distance)
+                        {
+                            distance = Vector2.Distance(colPoint, currentPoint);
+                            nextPoint = colPoint;
+                            index = i;
+                        }
+                    }
+                    //Проверим следующую точку коллайдера и возможность перемещения в её сторону
+                    if (Mathf.Approximately(Mathf.Abs(Vector2.Dot((nextPoint - (Vector2)currentPoint).normalized, movingDirection)), 1f))
+                        currentPoint = nextPoint;
+                    Vector2 endPoint = colPoints[index < colPoints.Length - 1 ? index + 1 : 0];
+                    newDirection = (endPoint - (Vector2)currentPoint).normalized;
+                    colDirection = new Vector2(1, 0);
+                    if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(colDirection, newDirection)), 1f))
+                        colDirection = new Vector2(0, 1);
+                    else
+                        colDirection = (colDirection - Vector2.Dot(colDirection, newDirection) * newDirection).normalized;
+                    if (colDirection.x * newDirection.y - colDirection.y * newDirection.x > 0f)
+                        colDirection *= -1;
+                    if (Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f+(Vector3)newDirection*lightPointerPrecision/5f,
+                        newDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
+                        !Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f + (Vector3)newDirection * lightPointerPrecision / 5f,
+                        colDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
+                        (Mathf.Approximately(Mathf.Abs(Vector2.Dot(prevDirection, newDirection)), 1f)))
+                    {
+                        //Проверим, возможно ли перемещение к другой точке коллайдера
+                        //Если невозможно, то рассматривам другой коллайдер
+                        endPoint = colPoints[index > 0 ? index - 1 : colPoints.Length - 1];
+                        newDirection = (endPoint - (Vector2)currentPoint).normalized;
+                        colDirection = new Vector2(1, 0);
+                        if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(colDirection, newDirection)), 1f))
+                            colDirection = new Vector2(0, 1);
+                        else
+                            colDirection = (colDirection - Vector2.Dot(colDirection, newDirection) * newDirection).normalized;
+                        if (colDirection.x * newDirection.y - colDirection.y * newDirection.x > 0f)
+                            colDirection *= -1;
+                        if (Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f + (Vector3)newDirection * lightPointerPrecision / 5f,
+                            newDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
+                            !Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f + (Vector3)newDirection * lightPointerPrecision / 5f,
+                            colDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
+                            (Mathf.Approximately(Mathf.Abs(Vector2.Dot(prevDirection, newDirection)), 1f)))
+                        {
+                            newDirection = Vector2.zero;
+                        }
+                    }
+                }
+                colIndex++;
+            }
+            if (newDirection != Vector2.zero)
+            {
+                movingDirection = newDirection;
+                return currentPoint;
+            }
+            movingDirection = Vector2.zero;
+            return Vector3.zero;
+        }
+
+        /// <summary>
+        /// Функция, возвращающая граничный точки простого коллайдера
+        /// </summary>
+        /// <param name="коллайдер"></param>
+        /// <returns></returns>
+        static Vector2[] GetColliderPoints(Collider2D col)
+        {
+            if (col is PolygonCollider2D)
+            {
+                Vector2[] points = ((PolygonCollider2D)col).points;
+                for (int i = 0; i < points.Length; i++)
+                    points[i] = (Vector2)col.transform.TransformPoint((Vector3)points[i]);
+                return points;
+            }
+            else if (col is BoxCollider2D)
+            {
+                BoxCollider2D bCol = (BoxCollider2D)col;
+                float angle = Mathf.Repeat(bCol.transform.eulerAngles.z, 90f) * Mathf.PI / 180f;
+
+                Vector2 e = bCol.bounds.extents;
+                float cos = Mathf.Cos(angle);
+                float sin = Mathf.Sin(angle);
+                float cos2 = Mathf.Cos(2 * angle);
+                float b = 2 * (e.x * sin - e.y * cos) / -cos2;
+
+                Vector3 b1 = new Vector3(e.x - b * sin, e.y),
+                        b2 = new Vector3(e.x, e.y - b * cos);
+
+                Transform bTrans = bCol.transform;
+                Vector3 vect = bCol.transform.position;
+                Vector2[] points = new Vector2[] {vect+b1, vect+b2,vect-b1,vect-b2};
+                return points;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Вернуть уменьшенный контур
+        /// </summary>
+        /// <param name="Контур, который нужно изменить"></param>
+        /// <returns></returns>
+        static List<Vector3> GetContourWithMargin(List<Vector3> contour)
+        {
+            List<Vector3> contourWithMargin = new List<Vector3>();
+            string lName = LayerMask.LayerToName(groundLayer);
+
+            for (int i = 0; i < contour.Count; i++)
+            {
+                bool vertical = false;//Булева переменная на случай вертикальной прямой
+                Vector2 beginPoint = Vector2.zero;
+                float verticalX = 0f;
+
+                //Сдвинем одну прямую
+                int prevIndex = i >0 ? i - 1 : contour.Count-1;
+                Vector2 direction = ((Vector2)(contour[i] - contour[prevIndex])).normalized;
+                Vector2 normalDirection = new Vector2(1, 0);
+                if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(normalDirection, direction)), 1f))
+                    normalDirection = new Vector2(0, 1);
+                else
+                    normalDirection = (normalDirection - Vector2.Dot(normalDirection, direction) * direction).normalized;
+                if (normalDirection.x * direction.y - normalDirection.y * direction.x > 0f)
+                    normalDirection *= -1;
+                Vector2 a0 = (Vector2)contour[prevIndex] + normalDirection * lightMarginOffset;
+                Vector2 a1 = (Vector2)contour[i] + normalDirection * lightMarginOffset;
+                if (Mathf.Approximately(a1.x, a0.x))
+                {
+                    vertical = true;
+                    verticalX = a1.x;
+                }
+
+                //А потом вторую
+                int nextIndex = i < contour.Count-1 ? i + 1 : 0;
+                direction = ((Vector2)(contour[nextIndex] - contour[i])).normalized;
+                normalDirection = new Vector2(1, 0);
+                if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(normalDirection, direction)), 1f))
+                    normalDirection = new Vector2(0, 1);
+                else
+                    normalDirection = (normalDirection - Vector2.Dot(normalDirection, direction) * direction).normalized;
+                if (normalDirection.x * direction.y - normalDirection.y * direction.x > 0f)
+                    normalDirection *= -1;
+                Vector2 a2 = (Vector2)contour[i] + normalDirection * lightMarginOffset;
+                Vector2 a3 = (Vector2)contour[nextIndex] + normalDirection * lightMarginOffset;
+                if (vertical)//Первая прямая вертикальна (тогда 2-я нет (из=за устройства программы линии не могут быть параллельны))
+                {
+                    contourWithMargin.Add(new Vector3(verticalX, a3.y + (a2.y - a3.y) / (a2.x - a3.x) * (verticalX - a3.x), zPosition));
+                    continue;
+                }
+                else if (Mathf.Approximately(a2.x, a3.x))//Если же вторая прямая вертикальна
+                {
+                    contourWithMargin.Add(new Vector3(a2.x, a0.y + (a1.y - a0.y) / (a1.x - a0.x) * (a2.x - a0.x), zPosition));
+                    continue;
+                }
+
+                else //Найдём пересечение этих прямых и добавим в новый контур
+                {
+                    float intersectionX = (a2.y - a0.y - (a3.y - a2.y) / (a3.x - a2.x) * a2.x + (a1.y - a0.y) /
+                                                            (a1.x - a0.x) * a0.x) / ((a1.y - a0.y) / (a1.x - a0.x) - (a3.y - a2.y) / (a3.x - a2.x));
+                    float intersectionY = a0.y + (a1.y - a0.y) / (a1.x - a0.x) * (intersectionX - a0.x);
+                    contourWithMargin.Add(new Vector3(intersectionX, intersectionY, zPosition));
+                }
+            }
+
+            return contourWithMargin;
+        }
+
+        /// <summary>
+        /// Разрезать прямоугольниками весь контур и создать новые объекты с коллайдерами
+        /// </summary>
+        static void SliceAndCreateLightObstacles(List<Vector3> contour, Vector3 lPosition)
+        {
+            //Найдём прямоугольник, что вмещает в себя данный контур
+            float minX = Mathf.Infinity, minY = Mathf.Infinity, maxX = Mathf.NegativeInfinity, maxY = Mathf.NegativeInfinity;
+            foreach (Vector3 cPoint in contour)
+            {
+                if (cPoint.x < minX) minX = cPoint.x;
+                if (cPoint.x > maxX) maxX = cPoint.x;
+                if (cPoint.y < minY) minY = cPoint.y;
+                if (cPoint.y > maxY) maxY = cPoint.y;
+            }
+
+            int hLinesCount = Mathf.CeilToInt((maxY - minY) / maxLightObstacleSize.x);
+            int vLinesCount = Mathf.CeilToInt((maxX - minX) / maxLightObstacleSize.y);
+
+            //Найдём пересечения с горизонтальными линиями
+            for (int i = 1; i <= hLinesCount; i++)
+            {
+                float offsetY = minY + i * maxLightObstacleSize.y;
+                for (int j = 0; j < contour.Count; j++)
+                {
+                    int nextIndex = j < contour.Count - 1 ? j + 1 : 0;
+                    Vector3 beginPoint = contour[j], endPoint = contour[nextIndex];
+                    if ((beginPoint.y - offsetY) * (endPoint.y - offsetY) < 0f)
+                    {
+                        contour.Insert(j, new Vector3(beginPoint.x +
+                                                (endPoint.x - beginPoint.x) / (endPoint.y - beginPoint.y) * (endPoint.y - offsetY),
+                                                offsetY, beginPoint.z));
+                        j++;
+                    }
+                }
+            }
+
+            //Затем найдём пересечения с вертикальными линиями
+            for (int i = 1; i <= vLinesCount; i++)
+            {
+                float offsetX = minX + i * maxLightObstacleSize.x;
+                for (int j = 0; j < contour.Count; j++)
+                {
+                    int nextIndex = j < contour.Count - 1 ? j + 1 : 0;
+                    Vector3 beginPoint = contour[j], endPoint = contour[nextIndex];
+                    if ((beginPoint.x - offsetX) * (endPoint.x - offsetX) < 0f)
+                    {
+                        contour.Insert(j, new Vector3(offsetX,
+                                                beginPoint.y + (endPoint.y - beginPoint.y) / (endPoint.x - beginPoint.x) * (endPoint.x - offsetX),
+                                                beginPoint.z));
+                        j++;
+                    }
+                }
+            }
+
+            //Список всех разрезанных контуров
+            List<List<List<LightObstacleSlicePoint>>> allSlicedContours = new List<List<List<LightObstacleSlicePoint>>>();
+            for (int i = 0; i <= vLinesCount; i++)
+            {
+                List<List<LightObstacleSlicePoint>> columnSlicedContours = new List<List<LightObstacleSlicePoint>>();
+                for (int j = 0; j <= hLinesCount; j++)
+                    columnSlicedContours.Add(new List<LightObstacleSlicePoint>());
+                allSlicedContours.Add(columnSlicedContours);
+            }
+            for (int i = 0; i < contour.Count; i++)
+            {
+                float deltaX = (contour[i].x - minX);
+                float deltaY = (contour[i].y - minY);
+                //Находится ли точка на вертикальной линии разреза
+                bool onBorderX = Mathf.Approximately(deltaX - Mathf.RoundToInt(deltaX / maxLightObstacleSize.x) * maxLightObstacleSize.x, 0);
+                //Находится ли точка на горизонтальной линии разреза
+                bool onBorderY = Mathf.Approximately(deltaY - Mathf.RoundToInt(deltaY / maxLightObstacleSize.y) * maxLightObstacleSize.y, 0);
+
+                // Случай, когда точка находится на одной из границ
+                bool onBorder = onBorderX || onBorderY;
+
+                if (!onBorder)
+                    allSlicedContours[Mathf.CeilToInt(deltaX / maxLightObstacleSize.x)][Mathf.CeilToInt(deltaY / maxLightObstacleSize.y)].Add(
+                        new LightObstacleSlicePoint(contour[i], i));
+                else
+                {
+                    int prevIndexX = -1;
+                    int prevIndexY = -1;
+
+                    #region downLeft
+
+                    int indexX = Mathf.CeilToInt(deltaX - maxLightObstacleSize.x / 10f);
+                    int indexY = Mathf.CeilToInt(deltaY - maxLightObstacleSize.y / 10f);
+                    if (indexX != -1 && indexX != vLinesCount && indexY != -1 && indexY != hLinesCount)
+                    {
+                        if (indexX != prevIndexX || indexY != prevIndexY)
+                        {
+                            allSlicedContours[indexX][indexY].Add(new LightObstacleSlicePoint(contour[i], i));
+                            prevIndexX = indexX;
+                            prevIndexY = indexY;
+                        }
+                    }
+
+                    #endregion //downLeft
+
+                    #region downRight
+
+                    indexX = Mathf.CeilToInt(deltaX + maxLightObstacleSize.x / 10f);
+                    if (indexX != -1 && indexX != vLinesCount && indexY != -1 && indexY != hLinesCount)
+                    {
+                        if (indexX != prevIndexX || indexY != prevIndexY)
+                        {
+                            allSlicedContours[indexX][indexY].Add(new LightObstacleSlicePoint(contour[i], i));
+                            prevIndexX = indexX;
+                            prevIndexY = indexY;
+                        }
+                    }
+
+                    #endregion //downRight
+
+                    #region upRight
+
+                    indexY = Mathf.CeilToInt(deltaY + maxLightObstacleSize.y / 10f);
+                    if (indexX != -1 && indexX != vLinesCount && indexY != -1 && indexY != hLinesCount)
+                    {
+                        if (indexX != prevIndexX || indexY != prevIndexY)
+                        {
+                            allSlicedContours[indexX][indexY].Add(new LightObstacleSlicePoint(contour[i], i));
+                            prevIndexX = indexX;
+                            prevIndexY = indexY;
+                        }
+                    }
+
+                    #endregion //upRight
+
+                    #region upLeft
+
+                    indexX = Mathf.CeilToInt(deltaX + maxLightObstacleSize.x / 10f);
+                    if (indexX != -1 && indexX != vLinesCount && indexY != -1 && indexY != hLinesCount)
+                    {
+                        if (indexX != prevIndexX || indexY != prevIndexY)
+                        {
+                            allSlicedContours[indexX][indexY].Add(new LightObstacleSlicePoint(contour[i], i));
+                            prevIndexX = indexX;
+                            prevIndexY = indexY;
+                        }
+                    }
+
+                    #endregion //upLeft
+
+                }
+            }
+
+            //Постобработка разрезанных контуров и создание коллайдеров
+            for (int i = 0; i <= vLinesCount; i++)
+                for (int j = 0; j <= hLinesCount; j++)
+                {
+                    List<LightObstacleSlicePoint> slicedContour = allSlicedContours[i][j];
+                    for (int k = 0; k < slicedContour.Count; k++)
+                    {
+                        LightObstacleSlicePoint beginPoint = slicedContour[k];
+                        LightObstacleSlicePoint endPoint = slicedContour[k < slicedContour.Count - 1 ? k + 1 : 0];
+                        int index = beginPoint.index;
+                        int nextIndex = index < contour.Count - 1 ? index + 1 : 0;
+                        if (!(nextIndex == endPoint.index || beginPoint.position.x == endPoint.position.x || beginPoint.position.y == endPoint.position.y))
+                        {
+                            slicedContour.Insert(k+1, new LightObstacleSlicePoint(new Vector3(Mathf.Max(beginPoint.position.x, endPoint.position.x),
+                                                                          Mathf.Max(beginPoint.position.y, endPoint.position.y),
+                                                                          zPosition)));
+                            k++;
+                        }
+                        if (slicedContour.Count>0)
+                            CreateLightObstacle(slicedContour.ConvertAll<Vector3>(x => x.position), lPosition);
+                    }
+                }
+
+        }
+
+        /// <summary>
+        /// Создать препятствие света по контуру
+        /// </summary>
+        static void CreateLightObstacle(List<Vector3> contour, Vector3 lPosition)
+        {
+            GameObject newLObstacle = new GameObject(lightObstacleName);
+            newLObstacle.transform.position = lPosition;
+            newLObstacle.tag = tagName;
+            newLObstacle.layer = lightObstacleLayer;
+
+            List<Vector3> newContour = new List<Vector3>();
+            for (int i = 0; i < contour.Count; i++)
+            {
+                newContour.Add(newLObstacle.transform.InverseTransformPoint(contour[i]));
+            }
+            PolygonCollider2D col = newLObstacle.AddComponent<PolygonCollider2D>();
+            col.isTrigger = true;
+            col.points = newContour.ConvertAll(x=>(Vector2)x).ToArray();
+
+            if (parentObj == null && lightObstacleParentObjName != string.Empty)
+            {
+                parentObj = new GameObject(lightObstacleParentObjName);
+                parentObj.transform.position = lPosition;
+            }
+            if (parentObj != null)
+                newLObstacle.transform.parent = parentObj.transform;
+            lightObstacles.Add(newLObstacle);
+        }
+
+        #endregion //lightObstacles
+
         #endregion //draw
 
         /// <summary>
@@ -1812,8 +2371,8 @@ public class LevelEditor : EditorWindow
     {
         EditorGUILayout.BeginHorizontal(textureStyleAct);
         {
-            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon, spikesIcon,usualDrawIcon };
-            for (int i = 0; i < 6; i++)
+            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon, spikesIcon,usualDrawIcon, lightPointIcon };
+            for (int i = 0; i < 7; i++)
             {
                 Sprite currentDrawSprite = drawIconSprites[i];
                 if (drawMod == (DrawModEnum)i)
@@ -1873,6 +2432,11 @@ public class LevelEditor : EditorWindow
             case DrawModEnum.usual:
                 {
                     UsualDrawGUI();
+                    break;
+                }
+            case DrawModEnum.lightObstacle:
+                {
+                    LightPointGUI();
                     break;
                 }
         }
@@ -2217,7 +2781,7 @@ public class LevelEditor : EditorWindow
     /// </summary>
     void CreateNewWaterBrushWindow()
     {
-        GameObject newWaterObject=null;
+        GameObject newWaterObject = null;
         wBrush.waterSprite = (Sprite)EditorGUILayout.ObjectField("Water sprite", wBrush.waterSprite, typeof(Sprite));
         wBrush.waterAngleSprite = (Sprite)EditorGUILayout.ObjectField("Water angle sprite", wBrush.waterAngleSprite, typeof(Sprite));
 
@@ -2240,6 +2804,43 @@ public class LevelEditor : EditorWindow
     }
 
     #endregion //waterGUI
+
+    #region lightPoint
+
+    /// <summary>
+    /// Меню cоздания коллайдеров препятствий для света
+    /// </summary>
+    void LightPointGUI()
+    {
+        tagName = EditorGUILayout.TagField("tag", tagName);
+        groundLayer = EditorGUILayout.LayerField("ground layer", groundLayer);
+        lightObstacleLayer = EditorGUILayout.LayerField("light obstacle layer", lightObstacleLayer);
+
+        zPosition = EditorGUILayout.FloatField("z-position", zPosition);
+
+        EditorGUILayout.BeginHorizontal();
+        createMargin = EditorGUILayout.Toggle("Create margin", createMargin);
+        lightMarginOffset = EditorGUILayout.FloatField("light obstacle margin", lightMarginOffset);
+        EditorGUILayout.EndHorizontal();
+
+        lightPointerPrecision = EditorGUILayout.FloatField("pointer precision", lightPointerPrecision);
+        if (lightPointerPrecision > lightMarginOffset)
+            lightPointerPrecision = lightMarginOffset;
+
+        sliceObstacle = EditorGUILayout.Toggle("Slice Obstacle?", sliceObstacle);
+        maxLightObstacleSize = EditorGUILayout.Vector2Field("light obstacle max size", maxLightObstacleSize);
+
+        lightObstacleName = EditorGUILayout.TextField("light obstacle name", lightObstacleName);
+        lightObstacleParentObjName = EditorGUILayout.TextField("parent name", lightObstacleParentObjName);
+        if (lightObstacleParentObjName != string.Empty && (parentObj != null ? parentObj.name != lightObstacleParentObjName : true))
+        {
+            parentObj = GameObject.Find(lightObstacleParentObjName);
+        }       
+        SceneView.RepaintAll();
+
+    }
+
+    #endregion //lightPoint
 
     #region ladderGUI
 
@@ -2664,6 +3265,28 @@ public class LevelEditor : EditorWindow
                     break;
                 }
         }
+    }
+
+}
+
+/// <summary>
+/// точка линии разреза для создания более мелкого коллайдера препятствия света
+/// </summary>
+public class LightObstacleSlicePoint
+{
+    public Vector3 position;//Где находится точка
+    public int index;//Какой точке основного контура соответствует данная точка
+
+    public LightObstacleSlicePoint(Vector3 _position)
+    {
+        position = _position;
+        index = -1;
+    }
+
+    public LightObstacleSlicePoint(Vector3 _position, int _index)
+    {
+        position = _position;
+        index = _index;
     }
 
 }
