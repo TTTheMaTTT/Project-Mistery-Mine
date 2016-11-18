@@ -20,30 +20,39 @@ public class MovingPlatform : MonoBehaviour, IMechanism
 
     #region fields
 
-    [SerializeField] protected List<Vector2> platformPositions = new List<Vector2>();
+    [SerializeField]
+    protected List<Vector2> platformPositions = new List<Vector2>();
     public List<Vector2> PlatformPositions { get { return platformPositions; } }
 
     protected Animator anim;
     public Material lineMaterial;//Какой материал используется для отрисовки линии
 
-    [SerializeField][HideInInspector]protected List<LineRenderer> lines=new List<LineRenderer>();//Линии, отображающие маршрут платормы
+    [SerializeField]
+    [HideInInspector]
+    protected List<LineRenderer> lines = new List<LineRenderer>();//Линии, отображающие маршрут платормы
 
     #endregion //fields
 
     #region parametres
 
-    [SerializeField]protected float speed=0.1f;//Скорость платформы    
-    [SerializeField]protected int orientation=1;//Направление движения
-    [SerializeField]protected bool nonStop;//Останавливаается ли платформа впринципе
-    [SerializeField]protected bool changeableDirection = true;//При взаимодействии с платформой, поменяется ли направление движения?
+    [SerializeField]
+    protected float speed = 0.1f;//Скорость платформы    
+    [SerializeField]
+    protected int orientation = 1;//Направление движения
+    [SerializeField]
+    protected bool nonStop;//Останавливаается ли платформа впринципе
+    [SerializeField]
+    protected bool changeableDirection = true;//При взаимодействии с платформой, поменяется ли направление движения?
 
-    [SerializeField] protected float lineWidth = .02f;
+    [SerializeField]
+    protected float lineWidth = .02f;
     public float LineWidth { get { return lineWidth; } }
-    [SerializeField] protected float lineRatio = .1f;
+    [SerializeField]
+    protected float lineRatio = .1f;
     public float LineRatio { get { return lineRatio; } }
 
-    protected bool moving = false;//Движется ли платформа или нет
-    protected int currentPosition=0;//Текущая позиция
+    public bool moving = true;//Движется ли платформа или нет
+    protected int currentPosition = 0;//Текущая позиция
     protected Vector2 direction = Vector2.zero;//Направление движения платформа
 
     #endregion //parametres
@@ -55,11 +64,11 @@ public class MovingPlatform : MonoBehaviour, IMechanism
 
     protected void FixedUpdate()
     {
-        if (moving && platformPositions.Count>1)
+        if (moving && platformPositions.Count > 1)
         {
             Vector2 nextPoint = platformPositions[currentPosition + orientation];
             float distance = Mathf.Pow((nextPoint.x - transform.position.x), 2) + Mathf.Pow((nextPoint.y - transform.position.y), 2);
-            if (distance < Mathf.Pow(speed * Time.fixedDeltaTime + movEps,2))
+            if (distance < Mathf.Pow(speed * Time.fixedDeltaTime + movEps, 2))
             {
                 transform.position = nextPoint;
                 currentPosition += orientation;
@@ -83,9 +92,9 @@ public class MovingPlatform : MonoBehaviour, IMechanism
                 }
             }
             else
-                transform.position += new Vector3(direction.x,direction.y,0f) * Time.fixedDeltaTime * speed;
+                transform.position += new Vector3(direction.x, direction.y, 0f) * Time.fixedDeltaTime * speed;
             if (anim != null)
-                anim.Play(orientation>0?"MoveForward":"MoveBackward");
+                anim.Play(orientation > 0 ? "MoveForward" : "MoveBackward");
         }
         else if (anim != null)
             anim.Play("Idle");
@@ -108,7 +117,7 @@ public class MovingPlatform : MonoBehaviour, IMechanism
         transform.position = platformPositions[currentPosition];
         if (platformPositions.Count != 1)
         {
-            if ((currentPosition == platformPositions.Count-1 && orientation == 1) ||
+            if ((currentPosition == platformPositions.Count - 1 && orientation == 1) ||
                 (currentPosition == 0 && orientation == -1))
             {
                 orientation *= -1;
@@ -119,11 +128,8 @@ public class MovingPlatform : MonoBehaviour, IMechanism
                 }
             }
             Vector2 nextPoint = platformPositions[currentPosition + orientation];
-            direction = (nextPoint-platformPositions[currentPosition]).normalized;
+            direction = (nextPoint - platformPositions[currentPosition]).normalized;
         }
-
-        if (nonStop)
-            moving = true;
 
         anim = GetComponent<Animator>();
 
@@ -141,7 +147,6 @@ public class MovingPlatform : MonoBehaviour, IMechanism
             bool a1 = Mathf.Approximately(Vector2.Distance(platformPositions[0], transform.position), 0f);
             bool a2 = Mathf.Approximately(Vector2.Distance(platformPositions[platformPositions.Count - 1], transform.position), 0f);
             if (a1 && orientation == -1)
-                    
             {
                 orientation = 1;
                 currentPosition = 0;
@@ -173,7 +178,7 @@ public class MovingPlatform : MonoBehaviour, IMechanism
     {
         if (other.GetComponent<Rigidbody2D>() != null)
         {
-            other.transform.parent=null;
+            other.transform.parent = null;
         }
     }
 
@@ -225,12 +230,12 @@ public class MovingPlatformEditor : Editor
                     gLine.transform.SetParent(gLines.transform);
                 LineRenderer line = gLine.AddComponent<LineRenderer>();
                 line.sharedMaterial = mov.lineMaterial;
-                Vector3 pos1 = mov.PlatformPositions[i - 1], pos2=mov.PlatformPositions[i];
+                Vector3 pos1 = mov.PlatformPositions[i - 1], pos2 = mov.PlatformPositions[i];
                 pos1.z = mov.transform.position.z;
                 pos2.z = mov.transform.position.z;
                 line.SetPositions(new Vector3[] { pos1, pos2 });
                 line.SetWidth(mov.LineWidth, mov.LineWidth);
-                AutoLineRender rLine=gLine.AddComponent<AutoLineRender>();
+                AutoLineRender rLine = gLine.AddComponent<AutoLineRender>();
                 rLine.SetPoints(mov.LineRatio, pos1, pos2);
                 rLine.AutoTile();
                 lines.Add(line);
