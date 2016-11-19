@@ -57,6 +57,8 @@ public class DynamicLight : MonoBehaviour
 
     public bool staticLight=false;//Является ли этот свет статичным? Если да, то меш строится в самом начале игры
     bool staticLight1;
+    [SerializeField]float reloadTime = 0.1f;
+    int renderStage = 0;
 
     #endregion //parametres
 
@@ -80,23 +82,28 @@ public class DynamicLight : MonoBehaviour
 		lightMesh.name = "Light Mesh";
 		lightMesh.MarkDynamic ();
 
+        renderStage = 0;
+
 	}
 	
 	void LateUpdate()
     {
-        if (!staticLight1 && ((Vector2)transform.position - (Vector2)cam.transform.position).sqrMagnitude < lightRadius * lightRadius/4f)
+        if (!staticLight1 && ((Vector2)transform.position - (Vector2)cam.transform.position).sqrMagnitude < lightRadius * lightRadius/4f && renderStage==1)
         {
             RenderLightMesh();
             ResetBounds();
+            renderStage++;
+            StartCoroutine(ReloadLight());
         }
 	}
 
 	void FixedUpdate()
 	{
-        if (!staticLight1 && ((Vector2)transform.position - (Vector2)cam.transform.position).sqrMagnitude < lightRadius * lightRadius/4f)
+        if (!staticLight1 && ((Vector2)transform.position - (Vector2)cam.transform.position).sqrMagnitude < lightRadius * lightRadius/4f && renderStage==0)
         {
             GetAllMeshes();
             SetLight();
+            renderStage++;
         }
 	}
 
@@ -520,6 +527,15 @@ public class DynamicLight : MonoBehaviour
         staticLight = true;
         Start();
         staticLight = static1;
+    }
+
+    /// <summary>
+    /// Функция, обеспечивающая рендер света через определённые промежутки времени
+    /// </summary>
+    IEnumerator ReloadLight()
+    {
+        yield return new WaitForSeconds(reloadTime);
+        renderStage = 0;
     }
 
 }
