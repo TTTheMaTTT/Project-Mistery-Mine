@@ -26,7 +26,11 @@ public class LeverScript : MonoBehaviour, IInteractive
 
     #region parametres
 
-    [SerializeField]protected bool activated;
+    [SerializeField]protected bool activated;//Активирован ли рычаг?
+    public bool Activated { get { return activated; } }
+
+    [SerializeField]
+    protected int id;
 
     #endregion //parametres
 
@@ -86,5 +90,49 @@ public class LeverScript : MonoBehaviour, IInteractive
     }
 
     #endregion //events
+
+    /// <summary>
+    /// Вернуть id
+    /// </summary>
+    public int GetID()
+    {
+        return id;
+    }
+
+    /// <summary>
+    /// Выставить id объекту
+    /// </summary>
+    public void SetID(int _id)
+    {
+        id = _id;
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(this);
+#endif //UNITY_EDITOR
+    }
+
+    /// <summary>
+    /// Загрузить данные о механизме
+    /// </summary>
+    public virtual void SetData(InterObjData _intObjData)
+    {
+        MechData mData = (MechData)_intObjData;
+        if (mData != null)
+        {
+            activated = mData.activated;
+            if (anim != null)
+            {
+                anim.Play(activated ? "Active" : "Inactive");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Сохранить данные о механизме
+    /// </summary>
+    public virtual InterObjData GetData()
+    {
+        MechData mData = new MechData(id, activated, transform.position);
+        return mData;
+    }
 
 }

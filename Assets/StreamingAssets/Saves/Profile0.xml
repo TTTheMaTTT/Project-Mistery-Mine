@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Game_x0020_Data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Level_x0020_Data Active="false">
+    <Checkpoint>0</Checkpoint>
+    <Enemies_x0020_Info />
+    <Interactive_x0020_Objects_x0020_Info />
+    <NPCs_x0020_Data />
+  </Level_x0020_Data>
+  <General_x0020_Game_x0020_Data>
+    <First_x0020_Checkpoint>0</First_x0020_Checkpoint>
+    <Equipment_x0020_Info>
+      <Weapon>Knife</Weapon>
+      <Bag_x0020_Items />
+    </Equipment_x0020_Info>
+  </General_x0020_Game_x0020_Data>
+</Game_x0020_Data>

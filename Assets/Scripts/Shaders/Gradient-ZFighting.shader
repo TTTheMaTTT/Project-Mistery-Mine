@@ -1,4 +1,4 @@
-Shader "MysteryMine/Gradient/ZFighting" 
+Shader "MysteryMine/Sprite Light Kit/ZFighting" 
 {
 
 	//Set up the shader to receive external inputs from Unity

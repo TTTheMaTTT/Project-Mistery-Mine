@@ -7,6 +7,7 @@ using System.Collections;
 /// </summary>
 public class BossController : AIController
 {
+
     #region eventHandlers
 
     public EventHandler<BossHealthEventArgs> bossHealthEvent;

@@ -14,20 +14,21 @@ public class MinerGhostController : SpiderController
             Vector3 targetPosition = mainTarget.transform.position;
             if (Vector2.Distance(targetPosition, transform.position) > attackDistance)
             {
-                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
+                if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront()))
+                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
+                else if ((targetPosition - transform.position).x * (int)orientation < 0f)
+                    Turn();
             }
             else
             {
+                if ((targetPosition - transform.position).x * (int)orientation < 0f)
+                    Turn();
                 Attack();
             }
         }
 
-        else if (!agressive)
-        {
-            Analyse();
-        }
-
         Animate(new AnimationEventArgs("groundMove"));
+        Analyse();
 
     }
 
@@ -36,15 +37,19 @@ public class MinerGhostController : SpiderController
     /// </summary>
     protected override void Analyse()
     {
-        base.Analyse();
-        RaycastHit2D hit = Physics2D.Raycast(transform.position + (int)orientation * transform.right * sightOffset, (int)orientation * transform.right, sightRadius, LayerMask.GetMask("character"));
-        if (hit)
+        if (!agressive)
         {
-            if (hit.collider.gameObject.tag == "player")
+            RaycastHit2D hit = Physics2D.Raycast(transform.position + (int)orientation * transform.right * sightOffset, (int)orientation * transform.right, sightRadius, LayerMask.GetMask("character"));
+            if (hit)
             {
-                BecomeAgressive();
+                if (hit.collider.gameObject.tag == "player")
+                {
+                    BecomeAgressive();
+                }
             }
         }
+        else
+            base.Analyse();
     }
 
 }

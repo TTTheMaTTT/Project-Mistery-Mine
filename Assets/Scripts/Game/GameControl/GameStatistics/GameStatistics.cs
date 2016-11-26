@@ -16,9 +16,22 @@ using UnityEditor;
 public class GameStatistics : MonoBehaviour
 {
 
+    #region dictionaries
+
+    //Эти словари нужны для удобства
+    Dictionary<string, WeaponClass> weaponDict = new Dictionary<string, WeaponClass>();//Словарь оружий
+    public Dictionary<string, WeaponClass> WeaponDict { get { return weaponDict; } }
+
+    Dictionary<string, ItemClass> itemDict = new Dictionary<string, ItemClass>();//Словарь предметов
+    public Dictionary<string, ItemClass> ItemDict { get { return itemDict; } }
+
+    Dictionary<string, GameObject> dropDict = new Dictionary<string, GameObject>();//Словарь дропа
+    public Dictionary<string, GameObject> DropDict { get { return dropDict; } }
+
+    #endregion //dictionaries
+
     #region eventHandlers
 
-    public EventHandler<StoryEventArgs> StartGameEvent;
     public EventHandler<StoryEventArgs> StatisticCountEvent;
 
     #endregion //eventHandlers
@@ -29,6 +42,7 @@ public class GameStatistics : MonoBehaviour
     public List<Statistics> statistics=new List<Statistics>();//Здесь задаётся, подсчёт каких игровых параметров нас интересует
 
     public DatabaseClass database;//База данных в игре
+    public ItemBaseClass itemBase;//База предметов в игре
 
     #endregion //fields
 
@@ -38,11 +52,43 @@ public class GameStatistics : MonoBehaviour
     public string statisticsPath = "Assets/Database/Stories/Statistics/";
 
     #endregion //parametres
-    
+
+    void Awake()
+    {
+        weaponDict = new Dictionary<string, WeaponClass>();
+        foreach (WeaponClass weapon in itemBase.weapons)
+        {
+            if (!weaponDict.ContainsKey(weapon.itemName))
+                weaponDict.Add(weapon.itemName, weapon);
+        }
+
+        itemDict = new Dictionary<string, ItemClass>();
+        foreach (ItemClass item in itemBase.items)
+        {
+            if (!itemDict.ContainsKey(item.itemName))
+                itemDict.Add(item.itemName, item);
+        }
+
+        dropDict = new Dictionary<string, GameObject>();
+        foreach (GameObject dropObj in itemBase.drops)
+        {
+            DropClass drop = dropObj.GetComponent<DropClass>();
+            if (drop != null ? drop.item != null ? !dropDict.ContainsKey(drop.item.itemName) : false : false)
+                dropDict.Add(drop.item.itemName, dropObj);
+        }
+
+    }
+
     void Start()
     {
-        SpecialFunctions.history.Initialize();
-        SpecialFunctions.StartStoryEvent(this, StartGameEvent, new StoryEventArgs());
+        //foreach (Statistics stat in statistics)
+        //{
+            //stat.value = 0;//Стоит пока обнулять значения статистик в самом начале игры.
+        //}
+    }
+
+    public void ResetStatistics()
+    {
         foreach (Statistics stat in statistics)
         {
             stat.value = 0;//Стоит пока обнулять значения статистик в самом начале игры.
@@ -73,8 +119,31 @@ public class GameStatistics : MonoBehaviour
             currentStatistics.Compare(obj);
             SpecialFunctions.StartStoryEvent(this, StatisticCountEvent, new StoryEventArgs(currentStatistics.statisticName,currentStatistics.value));
         }
+    }
 
+    /// <summary>
+    /// Загрузить данные о игровой статистике уровня
+    /// </summary>
+    /// <param name="lStats"></param>
+    public void LoadStaticstics(LevelStatsData lStats)
+    {
+        foreach (LevelStatisticsInfo lStatsInfo in lStats.statistics)
+        {
+            Statistics statsElement = statistics.Find(x => x.statisticName == lStatsInfo.statisticsName);
+            if (statsElement != null)
+                statsElement.value = lStatsInfo.statisticsValue;
+        }
+    }
 
+    /// <summary>
+    /// Обновить данные по всем статистикам (нужно для корректной загрузки списка квестов)
+    /// </summary>
+    public void InitializeAllStatistics()
+    {
+        foreach (Statistics stat in statistics)
+        {
+            SpecialFunctions.StartStoryEvent(this, StatisticCountEvent, new StoryEventArgs(stat.statisticName, stat.value));
+        }
     }
 
 }

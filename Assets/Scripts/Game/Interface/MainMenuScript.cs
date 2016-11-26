@@ -2,6 +2,9 @@
 using UnityEngine.SceneManagement;
 using System.Collections;
 
+/// <summary>
+/// Скрипт, управляющий окном главного меню игры 
+/// </summary>
 public class MainMenuScript : MonoBehaviour
 {
 
@@ -10,8 +13,20 @@ public class MainMenuScript : MonoBehaviour
         SpecialFunctions.PlayGame();
     }
 
+    /// <summary>
+    /// Продолжить игру с последнего сохранения (если такое имеется)
+    /// </summary>
+    public void ContinueGame()
+    {
+        SpecialFunctions.loadMenu.Continue();
+    }
+
+    /// <summary>
+    /// Начать игру в одном из профилей (открыть меню загрузки)
+    /// </summary>
     public void StartGame()
     {
-        SceneManager.LoadScene("cave_lvl1");
+        SpecialFunctions.loadMenu.OpenLoadMenu();
     }
+
 }

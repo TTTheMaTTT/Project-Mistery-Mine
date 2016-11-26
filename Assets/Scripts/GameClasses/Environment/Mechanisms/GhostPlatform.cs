@@ -18,6 +18,10 @@ public class GhostPlatform : MonoBehaviour, IMechanism
     [SerializeField]
     protected bool activated = true;
 
+    [SerializeField]
+    [HideInInspector]
+    protected int id;
+
     #endregion //parametres
 
     public void Awake()
@@ -49,4 +53,47 @@ public class GhostPlatform : MonoBehaviour, IMechanism
             anim.Play(activated ? "Appear" : "Disappear");
         }
     }
+
+        /// <summary>
+    /// Вернуть id
+    /// </summary>
+    public int GetID()
+    {
+        return id;
+    }
+
+    /// <summary>
+    /// Выставить id объекту
+    /// </summary>
+    public void SetID(int _id)
+    {
+        id = _id;
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(this);
+#endif //UNITY_EDITOR
+    }
+
+    /// <summary>
+    /// Загрузить данные о механизме
+    /// </summary>
+    public void SetData(InterObjData _intObjData)
+    {
+        MechData mData = (MechData)_intObjData;
+        if (mData != null)
+        {
+            activated = mData.activated;
+            StopAllCoroutines();
+            StartCoroutine(AppearProcess());
+        }
+    }
+
+    /// <summary>
+    /// Сохранить данные о механизме
+    /// </summary>
+    public InterObjData GetData()
+    {
+        MechData mData = new MechData(id, activated,transform.position);
+        return mData;
+    }
+
 }

@@ -19,6 +19,8 @@ public static class SpecialFunctions
 
     public static GameUIScript gameUI { get { return gameInterface.GetComponentInChildren<GameUIScript>(); } }
 
+    public static LoadMenuScript loadMenu { get { return GameObject.Find("SaveScreen").GetComponent<LoadMenuScript>(); } }
+
     /// <summary>
     /// Функция, которая позволяет использовать ComparativeClass и по сути ей можно заменять 
     /// простейшие операции сравнения int c int'ом.
@@ -81,6 +83,15 @@ public static class SpecialFunctions
     public static void SetDark()
     {
         gameUI.SetDark();
+    }
+
+    /// <summary>
+    /// Переместить главного героя к чекпоинту
+    /// </summary>
+    public static void MoveToCheckpoint(CheckpointController checkpoint)
+    {
+        Vector3 cPos = checkpoint.transform.position, pPos = player.transform.position;
+        player.transform.position = new Vector3(cPos.x, cPos.y, pPos.z);
     }
 
 }

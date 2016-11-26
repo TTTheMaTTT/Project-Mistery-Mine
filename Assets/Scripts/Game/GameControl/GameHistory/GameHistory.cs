@@ -17,7 +17,7 @@ public class GameHistory : MonoBehaviour
 
     public void Awake()
     {
-        history.FormJournalBase();
+        history.PreInitialize();
     }
 
     public void Start()
@@ -65,10 +65,17 @@ public class History
     [Space(10)]
     [SerializeField]
     protected List<Quest> activeQuests = new List<Quest>();
-
+    public List<Quest> ActiveQuests { get { return activeQuests; } }
+      
     #endregion fields
 
     #region interface
+
+    public void PreInitialize()
+    {
+        FormStoryBase();
+        SpecialFunctions.statistics.StatisticCountEvent += HandleStatisticCountEvent;
+    }
 
     //то, что вызывается в самом начале
     public void Initialize()
@@ -78,8 +85,6 @@ public class History
         {
             InitializeScript(_story);
         }
-
-        SpecialFunctions.statistics.StatisticCountEvent += HandleStatisticCountEvent;
     }
 
     /// <summary>
@@ -91,9 +96,17 @@ public class History
     }
 
     /// <summary>
+    /// Найти инициализатор, соответствующий данному названию истории
+    /// </summary>
+    public StoryInitializer FindInitializer(string storyName)
+    {
+        return initList.Find(x => (x.story.storyName == storyName));
+    }
+
+    /// <summary>
     /// Сформировать базы данных
     /// </summary>
-    public void FormJournalBase()
+    public void FormStoryBase()
     {
 
         storyActionBase.Add("changeQuestData", ChangeQuestData);
@@ -104,13 +117,13 @@ public class History
         storyConditionBase.Add("compareSpeech", CompareSpeech);
         storyConditionBase.Add("compareStatistics", CompareStatistics);
 
-        storyInitBase.Add("startGame", (x,y)=> { if(y.GetComponent<GameStatistics>()!=null) y.GetComponent<GameStatistics>().StartGameEvent += x.HandleStoryEvent; });
+        storyInitBase.Add("startGame", (x,y)=> { if(y.GetComponent<GameStatistics>()!=null) y.GetComponent<GameController>().StartGameEvent += x.HandleStoryEvent; });
         storyInitBase.Add("statisticCount", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameStatistics>().StatisticCountEvent += x.HandleStoryEvent; });
         storyInitBase.Add("characterDeath", (x, y) => { if (y.GetComponent<CharacterController>()!=null) y.GetComponent<CharacterController>().CharacterDeathEvent += x.HandleStoryEvent; });
         storyInitBase.Add("triggerEvent", (x, y) => { if (y.GetComponent<StoryTrigger>() != null) y.GetComponent<StoryTrigger>().TriggerEvent += x.HandleStoryEvent; });
         storyInitBase.Add("speech", (x, y) => { if (y.GetComponent<NPCController>() != null) y.GetComponent<NPCController>().SpeechSaidEvent += x.HandleStoryEvent; });
 
-        storyDeInitBase.Add("startGame", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameStatistics>().StartGameEvent -= x.HandleStoryEvent; });
+        storyDeInitBase.Add("startGame", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameController>().StartGameEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("statisticCount", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameStatistics>().StatisticCountEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("characterDeath", (x, y) => { if (y.GetComponent<CharacterController>() != null) y.GetComponent<CharacterController>().CharacterDeathEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("triggerEvent", (x, y) => { if (y.GetComponent<StoryTrigger>() != null) y.GetComponent<StoryTrigger>().TriggerEvent -= x.HandleStoryEvent; });
@@ -398,6 +411,44 @@ public class History
     }
 
     #endregion //events
+
+    #region saveSystem
+
+    public void LoadHistory(StoryInfo sInfo, QuestInfo qInfo)
+    {
+        if (sInfo!=null)
+        {
+            storyList = new List<Story>();
+            foreach (string _storyName in sInfo.stories)
+            {
+                StoryInitializer init = FindInitializer(_storyName);
+                if (init != null)
+                    storyList.Add(init.story);
+            }
+
+            foreach (string _storyName in sInfo.completedStories)
+            {
+                StoryInitializer init = FindInitializer(_storyName);
+                if (init != null)
+                    init.completed = true;
+            }
+        }
+
+        if (qInfo != null)
+        {
+            activeQuests = new List<Quest>();
+            foreach (string questName in qInfo.quests)
+            {
+                Quest _quest = null;
+                if ((_quest = SpecialFunctions.statistics.GetQuest(questName)) != null)
+                    activeQuests.Add(new Quest(_quest));
+                SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<string>(x => x.questLine[x.stage]));
+            }
+        }
+
+    }
+
+    #endregion //saveSystem
 
 }
 

@@ -1580,7 +1580,8 @@ public class LevelEditor : EditorWindow
                     //Шаг 3: Получим контур, что обрамляет указанный твёрдый объект
                     List<Vector3> allPoints = new List<Vector3>();
                     allPoints.Add(GetNextLightObstaclePoint(currentPoint,ref movingDirection));
-                    while (allPoints.Count == 1 || Mathf.Abs(Vector3.Distance(allPoints[allPoints.Count - 1],allPoints[0]))>lightPointerPrecision)
+                    while ((allPoints.Count == 1 || Mathf.Abs(Vector3.Distance(allPoints[allPoints.Count - 1],allPoints[0]))>lightPointerPrecision) && 
+                                                                                                                                    movingDirection!=Vector2.zero)
                         allPoints.Add(GetNextLightObstaclePoint(allPoints[allPoints.Count - 1], ref movingDirection));
                     allPoints.RemoveAt(allPoints.Count - 1);//Удалим последнюю точку, замыкающую контур
 
@@ -1618,15 +1619,31 @@ public class LevelEditor : EditorWindow
                 colDirection *= -1;
 
             currentPoint += (Vector3)movingDirection * lightPointerPrecision;
-            while (!Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f, movingDirection, lightPointerPrecision, LayerMask.GetMask(lName)) &&
-                Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f, colDirection, lightPointerPrecision, LayerMask.GetMask(lName)))
+            bool a1 = !Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f, 
+                                                                                        movingDirection, lightPointerPrecision, LayerMask.GetMask(lName));
+            bool a2 = Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f + (Vector3)movingDirection * lightPointerPrecision / 2f,
+                                                                                            colDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
+                      Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f - (Vector3)movingDirection * lightPointerPrecision / 2f,
+                                                                                            colDirection, lightPointerPrecision, LayerMask.GetMask(lName));
+            while (a1 && a2)
             {
                 currentPoint += (Vector3)movingDirection * lightPointerPrecision;
+                //a1 = !Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f, 
+                //                                                                          movingDirection, lightPointerPrecision, LayerMask.GetMask(lName));
+                //a2 = Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f,
+                //                                                          colDirection, lightPointerPrecision, LayerMask.GetMask(lName));
+                a1 = !Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f,
+                                                                                        movingDirection, lightPointerPrecision, LayerMask.GetMask(lName));
+                a2 = Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f + (Vector3)movingDirection*lightPointerPrecision/2f,
+                                                                                            colDirection, lightPointerPrecision, LayerMask.GetMask(lName))||
+                     Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f - (Vector3)movingDirection * lightPointerPrecision / 2f,
+                                                                                            colDirection, lightPointerPrecision, LayerMask.GetMask(lName));
             }
+
             //Если во время обхода дошли до препятствия или возможности обхода, то рассматриваем все коллайдеры, расположенные рядом и щем в них точку, 
             //направляясь к которой можно продолжать обход
             Collider2D[] cols = Physics2D.OverlapAreaAll((Vector2)currentPoint + new Vector2(-1, 1) * lightPointerPrecision,
-                                                        (Vector2)currentPoint + new Vector2(1, -1) * lightPointerPrecision, LayerMask.GetMask(lName));
+                                                         (Vector2)currentPoint + new Vector2(1, -1) * lightPointerPrecision, LayerMask.GetMask(lName));
             Vector2 newDirection = Vector2.zero;
             int colIndex = 0;
             Vector2 prevDirection = movingDirection;
@@ -1659,10 +1676,12 @@ public class LevelEditor : EditorWindow
                         colDirection = (colDirection - Vector2.Dot(colDirection, newDirection) * newDirection).normalized;
                     if (colDirection.x * newDirection.y - colDirection.y * newDirection.x > 0f)
                         colDirection *= -1;
-                    if (Physics2D.Raycast((Vector3)nextPoint - (Vector3)colDirection * lightPointerPrecision / 2f+(Vector3)newDirection*lightPointerPrecision/5f,
-                        newDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
-                        !Physics2D.Raycast((Vector3)nextPoint - (Vector3)colDirection * lightPointerPrecision / 2f + (Vector3)newDirection * lightPointerPrecision / 5f,
-                        colDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
+
+                    a1 = Physics2D.Raycast(nextPoint - colDirection * lightPointerPrecision / 2f + newDirection * lightPointerPrecision / 5f,
+                                                                                        newDirection, lightPointerPrecision, LayerMask.GetMask(lName));
+                    a2 = !Physics2D.Raycast(nextPoint - colDirection * lightPointerPrecision / 2f + newDirection * lightPointerPrecision / 5f,
+                                                                                                colDirection, lightPointerPrecision, LayerMask.GetMask(lName));
+                    if (a1 ||a2||
                         (Mathf.Approximately(Mathf.Abs(Vector2.Dot(prevDirection, newDirection)), 1f)))
                     {
                         //Проверим, возможно ли перемещение к другой точке коллайдера
@@ -1676,10 +1695,11 @@ public class LevelEditor : EditorWindow
                             colDirection = (colDirection - Vector2.Dot(colDirection, newDirection) * newDirection).normalized;
                         if (colDirection.x * newDirection.y - colDirection.y * newDirection.x > 0f)
                             colDirection *= -1;
-                        if (Physics2D.Raycast((Vector3)nextPoint - (Vector3)colDirection * lightPointerPrecision / 2f + (Vector3)newDirection * lightPointerPrecision / 5f,
-                            newDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
-                            !Physics2D.Raycast((Vector3)nextPoint - (Vector3)colDirection * lightPointerPrecision / 2f + (Vector3)newDirection * lightPointerPrecision / 5f,
-                            colDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
+                        a1 = Physics2D.Raycast(nextPoint - colDirection * lightPointerPrecision / 2f + newDirection * lightPointerPrecision / 5f,
+                                                                                        newDirection, lightPointerPrecision, LayerMask.GetMask(lName));
+                        a2 = !Physics2D.Raycast(nextPoint - colDirection * lightPointerPrecision / 2f + newDirection * lightPointerPrecision / 5f,
+                                                                                                colDirection, lightPointerPrecision, LayerMask.GetMask(lName));
+                        if (a1||a2||
                             (Mathf.Approximately(Mathf.Abs(Vector2.Dot(prevDirection, newDirection)), 1f)))
                         {
                             newDirection = Vector2.zero;
@@ -1815,12 +1835,12 @@ public class LevelEditor : EditorWindow
             {
                 if (point.x < minX)
                     minX = point.x;
-                else if (point.x > maxX)
+                if (point.x > maxX)
                     maxX = point.x;
 
                 if (point.y < minY)
                     minY = point.y;
-                else if (point.y > maxY)
+                if (point.y > maxY)
                     maxY = point.y;
             }
 
@@ -1855,10 +1875,41 @@ public class LevelEditor : EditorWindow
                     int nextIndex = j < allPoints.Count - 1 ? j + 1 : 0;
                     Vector3 beginPoint = allPoints[j].position;
                     Vector3 endPoint = allPoints[nextIndex].position;
+                    string lName = "ground";
 
                     if (Mathf.Approximately(beginPoint.x, posX))
                     {
-                        vLine.Add(new LightObstaclePointWithTarget(allPoints[j], null));
+                        if (Mathf.Approximately(endPoint.x, posX))
+                        {
+                            Vector3 movVector = (endPoint - beginPoint).normalized;
+                            Vector3 colVector = new Vector2(1, 0);
+                            if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(colVector, movVector)), 1f))
+                                colVector = new Vector2(0, 1);
+                            else
+                                colVector = (colVector - Vector2.Dot(colVector, movVector) * movVector).normalized;
+                            for (int i1 = 1; i1 > -2; i1 -= 2)
+                                for (int i2 = 1; i2 > -1; i2 -= 2)
+                                    if (Physics2D.Raycast(beginPoint + lightPointerPrecision * i2 * colVector / 2f,
+                                        i1 * movVector, lightPointerPrecision, LayerMask.GetMask(lName)) &&
+                                    !Physics2D.Raycast(endPoint + lightPointerPrecision * i2 * colVector / 2f,
+                                        i1 * movVector, lightPointerPrecision, LayerMask.GetMask(lName)))
+                                    {
+                                        vLine.Add(new LightObstaclePointWithTarget(allPoints[j], null));
+                                        break;
+                                    }
+                                    else if (!Physics2D.Raycast(beginPoint + lightPointerPrecision * i2 * colVector / 2f,
+                                        i1 * movVector, lightPointerPrecision, LayerMask.GetMask(lName)) &&
+                                    Physics2D.Raycast(endPoint + lightPointerPrecision * i2 * colVector / 2f,
+                                        i1 * movVector, lightPointerPrecision, LayerMask.GetMask(lName)))
+                                    {
+                                        vLine.Add(new LightObstaclePointWithTarget(allPoints[nextIndex], null));
+                                        break;
+                                    }
+                        }
+                        else if (!Mathf.Approximately(allPoints[j > 0 ? j - 1 : allPoints.Count - 1].position.x, posX))
+                        {
+                            vLine.Add(new LightObstaclePointWithTarget(allPoints[j], null));
+                        }
                     }
                     else if ((endPoint.x - posX) * (beginPoint.x - posX) < 0)//Если вертикальная линия пересекается с одной из сторон фигуры
                     {
@@ -1886,20 +1937,42 @@ public class LevelEditor : EditorWindow
                     int nextIndex = j < allPoints.Count - 1 ? j + 1 : 0;
                     Vector3 beginPoint = allPoints[j].position;
                     Vector3 endPoint = allPoints[nextIndex].position;
+                    string lName = "ground";
 
                     if (Mathf.Approximately(beginPoint.y, posY))
                     {
-                        Vector3 correctPoint = new Vector3(0f,0f,1000f);
-                        int prevIndex = j > 0 ? j - 1 : allPoints.Count-1;
                         if (Mathf.Approximately(endPoint.y, posY))
                         {
-                            correctPoint =endPoint;
+                            Vector3 movVector = (endPoint - beginPoint).normalized;
+                            Vector3 colVector = new Vector2(1, 0);
+                            if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(colVector, movVector)), 1f))
+                                colVector = new Vector2(0, 1);
+                            else
+                                colVector = (colVector - Vector2.Dot(colVector, movVector) * movVector).normalized;
+                            for (int i1 = 1; i1 > -2; i1 -= 2)
+                                for (int i2 = 1; i2 > -1; i2 -= 2)
+                                    if (Physics2D.Raycast(beginPoint + lightPointerPrecision * i2 * colVector / 2f,
+                                        i1 * movVector, lightPointerPrecision, LayerMask.GetMask(lName)) &&
+                                    !Physics2D.Raycast(endPoint + lightPointerPrecision * i2 * colVector / 2f,
+                                        i1 * movVector, lightPointerPrecision, LayerMask.GetMask(lName)))
+                                    {
+                                        hLine.Add(new LightObstaclePointWithTarget(allPoints[j], null));
+                                        break;
+                                    }
+                                    else if (!Physics2D.Raycast(beginPoint + lightPointerPrecision * i2 * colVector / 2f,
+                                        i1 * movVector, lightPointerPrecision, LayerMask.GetMask(lName)) &&
+                                    Physics2D.Raycast(endPoint + lightPointerPrecision * i2 * colVector / 2f,
+                                        i1 * movVector, lightPointerPrecision, LayerMask.GetMask(lName)))
+                                    {
+                                        hLine.Add(new LightObstaclePointWithTarget(allPoints[nextIndex], null));
+                                        break;
+                                    }
                         }
-                        if (correctPoint.z != 1000f)
+                        else if (!Mathf.Approximately(allPoints[j > 0 ? j - 1 : allPoints.Count - 1].position.x, posY))
                         {
                             hLine.Add(new LightObstaclePointWithTarget(allPoints[j], null));
                         }
-                        
+
                     }
                     else if ((endPoint.y - posY) * (beginPoint.y - posY) < 0)//Если горизонтальная линия пересекается с одной из сторон фигуры
                     {
@@ -1925,8 +1998,8 @@ public class LevelEditor : EditorWindow
                 vLine.Sort((x, y) => { return x.point.position.y.CompareTo(y.point.position.y); });
                 for (int i = 0; i < vLine.Count / 2; i++)
                 {
-                    vLine[i].nextPoint = vLine[i+1];
-                    vLine[i + 1].nextPoint = vLine[i];
+                    vLine[i*2].nextPoint = vLine[i*2+1];
+                    vLine[i*2 + 1].nextPoint = vLine[i*2];
                 }
                 int lineIndex = 0, hLinesIndex = 1;
                 while ((lineIndex < vLine.Count - 1) && (hLinesIndex <= hLinesCount))
@@ -1938,7 +2011,12 @@ public class LevelEditor : EditorWindow
                                                                                                             posY, zPosition)), null));
                         lineIndex++;
                     }
-                    hLinesIndex++;
+                    if ((vLine[lineIndex + 1].point.position.y - posY) <=0)
+                    {
+                        lineIndex+=2;
+                    }
+                    else
+                        hLinesIndex++;
                 }
             }
 
@@ -1947,8 +2025,8 @@ public class LevelEditor : EditorWindow
                 hLine.Sort((x, y) => { return x.point.position.x.CompareTo(y.point.position.x); });
                 for (int i = 0; i < hLine.Count / 2; i++)
                 {
-                    hLine[i].nextPoint = hLine[i + 1];
-                    hLine[i + 1].nextPoint = hLine[i];
+                    hLine[i*2].nextPoint = hLine[i*2 + 1];
+                    hLine[i*2 + 1].nextPoint = hLine[i*2];
                 }
                 int lineIndex = 0, vLinesIndex = 1;
                 while ((lineIndex < hLine.Count - 1) && (vLinesIndex <= vLinesCount))
@@ -1960,7 +2038,10 @@ public class LevelEditor : EditorWindow
                                                                                         hLine[lineIndex].point.position.y, zPosition)), null));
                         lineIndex++;
                     }
-                    vLinesIndex++;
+                    if ((hLine[lineIndex + 1].point.position.x - posX) <=0)
+                        lineIndex += 2;
+                    else
+                        vLinesIndex++;
                 }
             }
 
@@ -1995,42 +2076,64 @@ public class LevelEditor : EditorWindow
                         nextIndex = nextIndex < segmentPoints.Count - 1? nextIndex+1:0;
                         while (collPoints.Count<2 || Vector3.SqrMagnitude(beginPoint-endPoint)>lightPointerPrecision*lightPointerPrecision)
                         {
+                            if (collPoints.Count > segmentPoints.Count * 2)
+                                break;
                             endPoint = segmentPoints[nextIndex].position;
                             if (Vector3.SqrMagnitude(beginPoint - endPoint) < lightPointerPrecision * lightPointerPrecision)
                                 break;
                             nextIndex = nextIndex < segmentPoints.Count - 1 ? nextIndex + 1 : 0;
 
-                            bool onBorderX = Mathf.Approximately(endPoint.x, leftX) && !Mathf.Approximately(leftX, minX) ||
-                                                        Mathf.Approximately(endPoint.x, rightX) && !Mathf.Approximately(rightX, maxX);
-                            bool onBorderY = Mathf.Approximately(endPoint.y, downY) && !Mathf.Approximately(downY, minY) ||
-                                                Mathf.Approximately(endPoint.y, upY) && !Mathf.Approximately(upY, maxY);
+                            List<LightObstaclePointWithTarget> vSliceLine = vLines.Find(y => y.Find(x=>(Vector3.Distance(endPoint,x.point.position)<
+                                                                                                                            lightPointerPrecision))!=null);
+                            List<LightObstaclePointWithTarget> hSliceLine = hLines.Find(y => y.Find(x => (Vector3.Distance(endPoint, x.point.position) <
+                                                                                                lightPointerPrecision)) != null);
+                            bool onBorderX = (Mathf.Approximately(endPoint.x, leftX) && !Mathf.Approximately(leftX, minX) ||
+                                                        Mathf.Approximately(endPoint.x, rightX) && !Mathf.Approximately(rightX, maxX)) &&
+                                                        vSliceLine!=null;
+                            bool onBorderY = (Mathf.Approximately(endPoint.y, downY) && !Mathf.Approximately(downY, minY) ||
+                                                Mathf.Approximately(endPoint.y, upY) && !Mathf.Approximately(upY, maxY))&&
+                                                hSliceLine!=null;
                             bool onBorder = onBorderX||onBorderY;
                             if (onBorder)
                             {
                                 while (Vector3.SqrMagnitude(beginPoint - endPoint) > lightPointerPrecision * lightPointerPrecision && onBorder)
                                 {
                                     Vector3 prevDirection = (endPoint - collPoints[collPoints.Count - 1]).normalized;
-                                    collPoints.Add(endPoint);
                                     List<LightObstaclePointWithTarget> sliceLine = new List<LightObstaclePointWithTarget>();
                                     if (onBorderX && !Mathf.Approximately(Mathf.Abs(Vector3.Dot(prevDirection, Vector3.up)), 1f))
-                                        sliceLine = vLines.Find(x => (Mathf.Approximately(endPoint.x, x[0].point.position.x)));
+                                        sliceLine = vSliceLine;
                                     else if (onBorderY && !Mathf.Approximately(Mathf.Abs(Vector3.Dot(prevDirection, Vector3.right)), 1f))
-                                        sliceLine = hLines.Find(x => (Mathf.Approximately(endPoint.y, x[0].point.position.y)));
-                                    LightObstaclePointWithTarget currentObstPoint = sliceLine.Find(x => (Vector3.SqrMagnitude(endPoint - x.point.position) <
-                                                                                                                    lightPointerPrecision * lightPointerPrecision));
+                                        sliceLine = hSliceLine;
+                                    LightObstaclePointWithTarget currentObstPoint = null;
+                                    if (sliceLine.Count > 0)
+                                        currentObstPoint = sliceLine.Find(x => (Vector3.Distance(endPoint, x.point.position) <
+                                                                                          lightPointerPrecision));
+                                    else
+                                        break; 
+                                    collPoints.Add(endPoint);
+                                    if (collPoints.Count > segmentPoints.Count * 2)
+                                    {
+                                        break;
+                                        onBorder = false;
+                                    }
                                     int currentIndex = sliceLine.IndexOf(currentObstPoint);
                                     if (currentObstPoint.nextPoint == null)
                                     {
-                                        if (BelongToRect(new Vector2(leftX, downY), new Vector2(rightX, upY), sliceLine[currentIndex - 1].point.position))
+                                        if (currentIndex > 0 ?
+                                            BelongToRect(new Vector2(leftX, downY), new Vector2(rightX, upY), sliceLine[currentIndex - 1].point.position) : false)
                                         {
                                             currentObstPoint = sliceLine[currentIndex - 1];
                                             endPoint = currentObstPoint.point.position;
                                         }
-                                        else if (BelongToRect(new Vector2(leftX, downY), new Vector2(rightX, upY), sliceLine[currentIndex + 1].point.position))
+                                        else if (currentIndex < sliceLine.Count - 1 ?
+                                            BelongToRect(new Vector2(leftX, downY), new Vector2(rightX, upY), sliceLine[currentIndex + 1].point.position) :
+                                            false)
                                         {
                                             currentObstPoint = sliceLine[currentIndex + 1];
                                             endPoint = currentObstPoint.point.position;
                                         }
+                                        else
+                                            break;
                                     }
                                     else
                                     {
@@ -2038,10 +2141,18 @@ public class LevelEditor : EditorWindow
                                         currentObstPoint = sliceLine[currentIndex + increment];
                                         endPoint = currentObstPoint.point.position;
                                     }
-                                    onBorderX = Mathf.Approximately(endPoint.x, leftX) && !Mathf.Approximately(leftX, minX) ||
-                                                     Mathf.Approximately(endPoint.x, rightX) && !Mathf.Approximately(rightX, maxX);
-                                    onBorderY = Mathf.Approximately(endPoint.y, downY) && !Mathf.Approximately(downY, minY) ||
-                                                        Mathf.Approximately(endPoint.y, upY) && !Mathf.Approximately(upY, maxY);
+                                    vSliceLine = null;
+                                    hSliceLine = null;
+                                    vSliceLine = vLines.Find(y => y.Find(x => (Vector3.Distance(endPoint, x.point.position) <
+                                                                                                                            lightPointerPrecision)) != null);
+                                    hSliceLine = hLines.Find(y => y.Find(x => (Vector3.Distance(endPoint, x.point.position) <
+                                                                                                        lightPointerPrecision)) != null);
+                                    onBorderX = (Mathf.Approximately(endPoint.x, leftX) && !Mathf.Approximately(leftX, minX) ||
+                                                     Mathf.Approximately(endPoint.x, rightX) && !Mathf.Approximately(rightX, maxX))&&
+                                                     vSliceLine!=null;
+                                    onBorderY = (Mathf.Approximately(endPoint.y, downY) && !Mathf.Approximately(downY, minY) ||
+                                                     Mathf.Approximately(endPoint.y, upY) && !Mathf.Approximately(upY, maxY)) && 
+                                                     hSliceLine!=null;
                                     if (segmentPoints.Contains(currentObstPoint.point))
                                     {
                                         onBorder = false;

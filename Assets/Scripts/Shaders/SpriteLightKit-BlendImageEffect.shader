@@ -60,6 +60,7 @@ fragmentInput vert( vertexInput i )
 	fragmentInput o;
 	o.pos = mul( UNITY_MATRIX_MVP, i.vertex );
 	o.uv = TRANSFORM_TEX( i.texcoord, _MainTex );
+    
 	return o;
 }
 

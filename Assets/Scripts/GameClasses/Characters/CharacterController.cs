@@ -129,8 +129,21 @@ public class CharacterController : MonoBehaviour, IDamageable
     /// </summary>
     protected virtual void Turn(OrientationEnum _orientation)
     {
+        if (orientation != _orientation)
+        {
+            Vector3 vect = transform.localScale;
+            orientation = _orientation;
+            transform.localScale = new Vector3(-1 * vect.x, vect.y, vect.z);
+        }
+    }
+
+    /// <summary>
+    /// Поворот
+    /// </summary>
+    protected virtual void Turn()
+    {
         Vector3 vect = transform.localScale;
-        orientation = _orientation;
+        orientation = (OrientationEnum)(-1*(int)orientation);
         transform.localScale = new Vector3(-1 * vect.x, vect.y, vect.z);
     }
 
@@ -193,6 +206,11 @@ public class CharacterController : MonoBehaviour, IDamageable
         return health;
     }
 
+    public virtual bool InInvul()
+    {
+        return false;
+    }
+
     #region events
 
     /// <summary>
@@ -208,5 +226,35 @@ public class CharacterController : MonoBehaviour, IDamageable
     }
 
     #endregion //events
+
+    /// <summary>
+    /// Вернуть id персонажа
+    /// </summary>
+    public int GetID()
+    {
+        return -1;
+    }
+
+    /// <summary>
+    /// Установить заданное id
+    /// </summary>
+    public void SetID(int _id)
+    {
+    }
+
+    /// <summary>
+    /// Настроить персонажа в соответствии с сохранёнными данными
+    /// </summary>
+    public void SetData(InterObjData _intObjData)
+    {
+    }
+
+    /// <summary>
+    /// Вернуть сохраняемые данные персонажа
+    /// </summary>
+    public InterObjData GetData()
+    {
+        return null;
+    }
 
 }

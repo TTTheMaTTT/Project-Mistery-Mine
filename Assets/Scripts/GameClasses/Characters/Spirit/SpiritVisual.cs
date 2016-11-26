@@ -27,7 +27,7 @@ public class SpiritVisual: CharacterVisual
 
     /// <summary>
     /// Здесь описано перемещение духа
-    /// </summary>
+    /// </summary>  
     protected virtual void FixedUpdate()
     {
         pivot = parent.transform.position + new Vector3(xOffset * Mathf.Sign(parent.lossyScale.x), yOffset) + 
@@ -41,8 +41,8 @@ public class SpiritVisual: CharacterVisual
         parent = transform.parent;
         transform.SetParent(null);
 
-        spiritLight = transform.FindChild("Light").gameObject;
-        spiritLight.SetActive(true);
+        //spiritLight = transform.FindChild("Light").gameObject;
+        //spiritLight.SetActive(true);
 
     }
 

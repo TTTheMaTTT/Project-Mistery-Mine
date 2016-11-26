@@ -13,6 +13,8 @@ public class SpiderController : AIController
 
     protected const float patrolDistance = 2f;//По таким дистанциям паук будет патрулировать
 
+    protected const float beCalmTime = 4f;//Время через которое пауки перестают преследовать игрока, если он ушёл из их поля зрения
+
     #endregion //consts
 
     #region fields
@@ -27,6 +29,10 @@ public class SpiderController : AIController
 
     protected Vector2 waypoint;//Пункт назначения, к которому стремится ИИ
 
+    protected bool moveOut = false;
+
+    protected bool calmDown = false;//Успокаивается ли персонаж
+
     #endregion //parametres
 
     protected virtual void FixedUpdate()
@@ -38,10 +44,15 @@ public class SpiderController : AIController
                 Vector3 targetPosition = mainTarget.transform.position;
                 if (Vector2.Distance(targetPosition, transform.position) > attackDistance)
                 {
-                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
+                    if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront()))
+                        Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
+                    else if ((targetPosition - transform.position).x * (int)orientation < 0f)
+                        Turn();
                 }
                 else
                 {
+                    if ((targetPosition - transform.position).x * (int)orientation < 0f)
+                        Turn();
                     Attack();
                 }
             }
@@ -49,7 +60,7 @@ public class SpiderController : AIController
             {
                 if ((Vector2.Distance(waypoint, transform.position) < attackDistance) || (wallCheck.WallInFront() || !(precipiceCheck.WallInFront())))
                 {
-                    Turn((OrientationEnum)(-1 * (int)orientation));
+                    Turn();
                     Patrol();
                 }
                 else
@@ -57,8 +68,13 @@ public class SpiderController : AIController
                     Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(waypoint.x - transform.position.x)));
                 }
             }
-            Animate(new AnimationEventArgs("groundMove"));
         }
+        else if (moveOut)
+        {
+            MoveOut();
+        }
+        Animate(new AnimationEventArgs("groundMove"));
+        Analyse();
     }
 
     /// <summary>
@@ -126,12 +142,54 @@ public class SpiderController : AIController
     }
 
     /// <summary>
+    /// Провести анализ окружающей обстановки
+    /// </summary>
+    protected override void Analyse()
+    {
+        base.Analyse();
+        
+        //Определяем степень агрессивности
+        if (agressive)
+        {
+            float targetDistance = Vector3.Distance(currentTarget.transform.position, transform.position);
+            if (calmDown)
+            {
+                if (targetDistance<=sightRadius)
+                {
+                    StopCoroutine(BecomeCalmProcess());
+                    calmDown = false;
+                }
+            }
+            else
+            {
+                if (targetDistance > sightRadius)
+                {
+                    StartCoroutine(BecomeCalmProcess());
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// Функция получения урона
     /// </summary>
     public override void TakeDamage(float damage)
     {
         base.TakeDamage(damage);
         BecomeAgressive();
+    }
+
+    /// <summary>
+    /// Процесс успокаивания персонажа
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IEnumerator BecomeCalmProcess()
+    {
+        calmDown = true;
+        yield return new WaitForSeconds(beCalmTime);
+        agressive = false;
+        mainTarget = null;
+        currentTarget = null;
     }
 
     #region storyActions
@@ -141,16 +199,30 @@ public class SpiderController : AIController
     /// </summary>
     public void MoveForwardAction(StoryAction _action)
     {
-        Animator spAnim = GetComponent<Animator>();
-        spAnim.Play("MoveForward");
-        Animate(new AnimationEventArgs("moveForward"));
+        //Animate(new AnimationEventArgs("moveForward"));
         StartCoroutine(MoveForwardProcess());
     }
 
+    /// <summary>
+    /// Процесс нападения из засады
+    /// </summary>
     IEnumerator MoveForwardProcess()
     {
+        moveOut = true;
+        rigid.isKinematic = true;
+        immobile = true;
         yield return new WaitForSeconds(1f);
-        Destroy(GetComponent<Animator>());
+        moveOut = false;
+        rigid.isKinematic = false;
+        immobile = false;
+    }
+
+    /// <summary>
+    /// Выдвинуться вперёд (из некоторого препятствия)
+    /// </summary>
+    protected void MoveOut()
+    {
+        transform.position += new Vector3(speed * Time.fixedDeltaTime*(int)orientation, 0f, 0f);
     }
 
     #endregion //storyActions

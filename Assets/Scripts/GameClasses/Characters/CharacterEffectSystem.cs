@@ -14,6 +14,18 @@ public class CharacterEffectSystem : MonoBehaviour
 
     #endregion //fields
 
+    #region parametres
+
+    protected Vector3 pos, scal;
+
+    #endregion //parametres
+
+    public void Initialize()
+    {
+        pos = transform.localPosition;
+        scal = transform.localScale;
+    }
+
     public void SpawnEffect(string _effectName)
     {
         CharacterEffect _effect = effects.Find(x => (x.effectName == _effectName));
@@ -39,10 +51,19 @@ public class CharacterEffectSystem : MonoBehaviour
     /// </summary>
     protected virtual IEnumerator FallProcess()
     {
-        Vector3 pos = transform.localPosition, scal = transform.localScale;
         transform.localPosition = new Vector2(pos.x, pos.y - .015f);
         transform.localScale = new Vector2(scal.x, scal.y * .8f);
         yield return new WaitForSeconds(.1f);
+        transform.localPosition = pos;
+        transform.localScale = scal;
+    }
+
+    /// <summary>
+    /// Сброс по всем эффектам
+    /// </summary>
+    public virtual void ResetEffects()
+    {
+        StopAllCoroutines();
         transform.localPosition = pos;
         transform.localScale = scal;
     }

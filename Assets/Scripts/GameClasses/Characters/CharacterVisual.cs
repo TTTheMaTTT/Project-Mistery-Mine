@@ -51,6 +51,8 @@ public class CharacterVisual : MonoBehaviour
     {
         anim = GetComponent<Animator>();
         effectSystem = GetComponent<CharacterEffectSystem>();
+        if (effectSystem != null)
+            effectSystem.Initialize();
         employment = maxEmployment;
         FormDictionaries();
     }

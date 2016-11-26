@@ -88,7 +88,8 @@ public class DynamicLight : MonoBehaviour
 	
 	void LateUpdate()
     {
-        if (!staticLight1 && ((Vector2)transform.position - (Vector2)cam.transform.position).sqrMagnitude < lightRadius * lightRadius/4f && renderStage==1)
+        if (!staticLight1 && ((Vector2)transform.position - (Vector2)cam.transform.position).sqrMagnitude < lightRadius * lightRadius / 4f && 
+            (renderStage == 1 || reloadTime==0))
         {
             RenderLightMesh();
             ResetBounds();
@@ -99,7 +100,8 @@ public class DynamicLight : MonoBehaviour
 
 	void FixedUpdate()
 	{
-        if (!staticLight1 && ((Vector2)transform.position - (Vector2)cam.transform.position).sqrMagnitude < lightRadius * lightRadius/4f && renderStage==0)
+        if (!staticLight1 && ((Vector2)transform.position - (Vector2)cam.transform.position).sqrMagnitude < lightRadius * lightRadius/4f && 
+            (renderStage==0 || reloadTime==0))
         {
             GetAllMeshes();
             SetLight();

@@ -11,12 +11,28 @@ public class AIController : CharacterController
 
     #region consts
 
-    protected const float sightRadius = 5f, sightOffset = 0.1f;
+    protected const float sightOffset = 0.1f;
     protected const float microStun = .1f;
 
     #endregion //consts
 
     #region fields
+
+    [SerializeField][HideInInspector]protected int id;//ID монстра, по которому его можно отличить
+    public int ID
+    {
+        get
+        {
+            return id;
+        }
+        set
+        {
+            id = value;
+#if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(this);
+#endif //UNITY_EDITOR 
+        }
+    }
 
     protected GameObject mainTarget;//Что является целью ИИ
     protected GameObject currentTarget;//Что является текущей целью ИИ
@@ -25,7 +41,10 @@ public class AIController : CharacterController
 
     #region parametres
 
-    protected bool agressive = false;
+    [SerializeField]protected float sightRadius = 5f;
+
+    protected bool agressive = false;//Находится ли ИИ в агрессивном состоянии (хочет ли он убить игрока?)
+    public bool Agressive { get { return agressive; } set { agressive = value; } }
 
     [SerializeField]protected float acceleration = 1f;
 
@@ -34,7 +53,7 @@ public class AIController : CharacterController
     [SerializeField] protected Vector2 attackSize = new Vector2(.07f, .07f);
     [SerializeField] protected Vector2 attackPosition = new Vector2(0f, 0f);
 
-    protected bool dead=false;
+    protected bool dead = false;
 
     #endregion //parametres
 
@@ -93,6 +112,32 @@ public class AIController : CharacterController
         immobile = true;
         yield return new WaitForSeconds(microStun);
         immobile = false;
+    }
+
+    /// <summary>
+    /// Получить данные о враге с целью сохранить их
+    /// </summary>
+    public virtual EnemyData GetAIData()
+    {
+        EnemyData eData = new EnemyData(this);
+        return eData;
+    }
+
+    /// <summary>
+    /// Настроить персонажа в соответствии с загруженными данными
+    /// </summary>
+    public virtual void SetAIData(EnemyData eData)
+    {
+        if (eData != null)
+        {
+            transform.position = eData.position;
+            if (transform.localScale.x * eData.orientation < 0f)
+                Turn((OrientationEnum)eData.orientation);
+            if (eData.agressive)
+                BecomeAgressive();
+            
+            Health = eData.health;
+        }
     }
 
 }

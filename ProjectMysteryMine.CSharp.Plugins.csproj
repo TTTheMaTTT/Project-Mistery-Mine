@@ -164,6 +164,7 @@
     <None Include="Assets\Scripts\Shaders\Outline.shader" />
     <None Include="Assets\Scripts\Shaders\SpriteLight.shader" />
     <None Include="Assets\Scripts\Shaders\SpriteLightKit-BlendImageEffect.shader" />
+    <None Include="Assets\Scripts\Shaders\SpriteShadowLight.shader" />
     <None Include="Assets\Scripts\Shaders\WaterShader.shader" />
     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />
@@ -243,6 +244,10 @@
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonBasicOutline.shader" />
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLit.shader" />
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLitOutline.shader" />
+    <None Include="Assets\StreamingAssets\Saves\Profile0.xml" />
+    <None Include="Assets\StreamingAssets\Saves\Profile1.xml" />
+    <None Include="Assets\StreamingAssets\Saves\Profile2.xml" />
+    <None Include="Assets\StreamingAssets\SavesInfo.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
 </Project>

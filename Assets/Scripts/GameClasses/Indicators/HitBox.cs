@@ -107,9 +107,9 @@ public class HitBox : MonoBehaviour
                     {
                         target.TakeDamage(hitData.damage);
                         Rigidbody2D rigid;
-                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null)
+                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null && !target.InInvul())
                         {
-                            rigid.AddForce((new Vector2(transform.lossyScale.x,0f)).normalized * hitData.hitForce);//Атака всегда толкает вперёд
+                            rigid.AddForce((new Vector2(other.transform.position.x-transform.position.x,0f)).normalized * hitData.hitForce);//Атака всегда толкает вперёд
                         }
                         OnAttack(new HitEventArgs(target.GetHealth()-prevHP));
                         return;
@@ -119,10 +119,10 @@ public class HitBox : MonoBehaviour
                         list.Add(other.gameObject);
                         target.TakeDamage(hitData.damage);
                         Rigidbody2D rigid;
-                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null)
+                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null && !target.InInvul())
                         {
                             rigid.velocity = Vector2.zero;
-                            rigid.AddForce((other.transform.position - transform.position).normalized * hitData.hitForce);
+                            rigid.AddForce((new Vector2(other.transform.position.x - transform.position.x, 0f)).normalized * hitData.hitForce);//Атака всегда толкает вперёд
                         }
                         OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
                     }

@@ -161,6 +161,8 @@ public class HeroVisual : GroundMoveVisual
         employment = maxEmployment;
         anim.Play("Hitted");
         StartCoroutine(VisualRoutine(5, hittedTime));
+        if (effectSystem != null)
+            effectSystem.ResetEffects();
     }
     
     public virtual void Blink()
@@ -181,6 +183,18 @@ public class HeroVisual : GroundMoveVisual
             yield return new WaitForSeconds(invulBlinkTime/2);
             sprite.enabled = true;
         }
+    }
+
+    /// <summary>
+    /// Отобразить смерть
+    /// </summary>
+    protected override void Death(string id, int argument)
+    {
+        StopAllCoroutines();
+        if (effectSystem != null)
+            effectSystem.ResetEffects();
+        employment = 0;
+        anim.Play("Death2");
     }
 
     /// <summary>

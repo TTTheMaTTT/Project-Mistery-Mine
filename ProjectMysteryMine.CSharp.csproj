@@ -86,6 +86,7 @@
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\ChestOpenStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\DatabaseClass.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\GameStatistics.cs" />
+    <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\ItemBaseClass.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\MechanismInteractionStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\MonsterDeathStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\NPCTalkStatistics.cs" />
@@ -95,13 +96,27 @@
     <Compile Include="Assets\Scripts\Game\Interface\GameMenuScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\GameUIScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\MainMenuScript.cs" />
-    <Compile Include="Assets\Scripts\Game\LevelEndController.cs" />
     <Compile Include="Assets\Scripts\Game\Light\DynamicLight.cs" />
     <Compile Include="Assets\Scripts\Game\Light\ObstacleCamera.cs" />
     <Compile Include="Assets\Scripts\Game\Light\ObstacleTextureCreator.cs" />
     <Compile Include="Assets\Scripts\Game\Light\SpriteLightKit.cs" />
     <Compile Include="Assets\Scripts\Game\Light\SpriteLightKitImageEffect.cs" />
     <Compile Include="Assets\Scripts\Game\Light\SpriteLightSource.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\LoadMenuScript.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\ProfileButton.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SavesInfo.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\DropData.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\EnemyData.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\EquipmentInfo.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\GameData.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\GameGeneralData.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\InterObjData.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\LevelData.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\LevelStatsData.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\NPCData.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\QuestInfo.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\StoryInfo.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\Serializator.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterEffectSystem.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterVisual.cs" />
@@ -110,9 +125,12 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Bat\BatVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Bosses\Bat-Boss\BatBossController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Bosses\BossController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Bosses\GhostMiner-Boss\GhostMinerBossController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Bosses\GhostMiner-Boss\GhostMinerBossVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Ghost\GhostController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\GroundMoveVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\MinerGhost\MinerGhostController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\MineSpiderController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\SpiderController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroVisual.cs" />
@@ -120,10 +138,13 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Spirit\SpiritController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Spirit\SpiritVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\BoxController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\BulletScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Checkpoint\CheckpointController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Checkpoint\LevelEndController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Checkpoint\NextLevelDoor.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\ChestController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DeathTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\DropClass.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Environment\Explosion.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\ExplosionScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\HeartDropClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\LeverRiddle.cs" />
@@ -131,8 +152,9 @@
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\GhostPlatform.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\LeverScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\MovingPlatform.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\NextLevelDoor.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\PushPlateScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\Riddles\PlatesRightOrderRiddle.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\Riddles\Riddle.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\TwoStagesLeverScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\MushroomScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\WaterDrops\WaterdropScript.cs" />
@@ -174,6 +196,7 @@
     <None Include="Assets\Scripts\Shaders\Outline.shader" />
     <None Include="Assets\Scripts\Shaders\SpriteLight.shader" />
     <None Include="Assets\Scripts\Shaders\SpriteLightKit-BlendImageEffect.shader" />
+    <None Include="Assets\Scripts\Shaders\SpriteShadowLight.shader" />
     <None Include="Assets\Scripts\Shaders\WaterShader.shader" />
     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />
@@ -253,6 +276,10 @@
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonBasicOutline.shader" />
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLit.shader" />
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLitOutline.shader" />
+    <None Include="Assets\StreamingAssets\Saves\Profile0.xml" />
+    <None Include="Assets\StreamingAssets\Saves\Profile1.xml" />
+    <None Include="Assets\StreamingAssets\Saves\Profile2.xml" />
+    <None Include="Assets\StreamingAssets\SavesInfo.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
 </Project>

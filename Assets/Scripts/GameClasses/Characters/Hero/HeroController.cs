@@ -38,10 +38,10 @@ public class HeroController : CharacterController
 
     #region fields
 
-    protected Transform groundCheck;
     protected Transform waterCheck;
     protected Transform wallAboveCheck;//Индикатор того, что над персонажем располагается твёрдое тело, земля
     protected WallChecker wallCheck;//Индикатор, необходимый для отсутствия зависаний в стене
+    protected WallChecker groundCheck;
     protected Interactor interactor;//Индикатор, ответственный за обнаружение и взаимодействие со всеми интерактивными объектами
 
     protected Collider2D col1, col2;
@@ -53,7 +53,7 @@ public class HeroController : CharacterController
 
     [SerializeField]
     protected WeaponClass currentWeapon;//Оружие, которое используется персонажем в данный момент
-    public WeaponClass CurrentWeapon { get { return currentWeapon; } }
+    public WeaponClass CurrentWeapon { get { return currentWeapon; } set { currentWeapon = value; OnEquipmentChanged(new EquipmentEventArgs(currentWeapon)); } }
 
     protected List<ItemClass> bag = new List<ItemClass>();//Рюкзак игрока.
     public List<ItemClass> Bag { get { return bag; } }
@@ -216,8 +216,8 @@ public class HeroController : CharacterController
     {
         base.Initialize();
         Transform indicators = transform.FindChild("Indicators");
-        groundCheck = indicators.FindChild("GroundCheck");
         waterCheck = indicators.FindChild("WaterCheck");
+        groundCheck = indicators.FindChild("GroundCheck").GetComponent<WallChecker>();
         wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
         wallAboveCheck = indicators.FindChild("WallAboveCheck");
         interactor = indicators.FindChild("Interactor").GetComponent<Interactor>();
@@ -237,6 +237,9 @@ public class HeroController : CharacterController
         col1 = cols[0]; col2 = cols[1];
         col2.enabled = false;
 
+        if (!PlayerPrefs.HasKey("Hero Health"))//Здоровье не восполняется при переходе на следующий уровень. Поэтому, его удобно сохранять в PlayerPrefs
+            PlayerPrefs.SetFloat("Hero Health", 12f);
+        Health = PlayerPrefs.GetFloat("Hero Health");
     }
 
     /// <summary>
@@ -244,7 +247,7 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Analyse()
     {
-        if (Physics2D.OverlapCircle(groundCheck.position, groundRadius, whatIsGround))
+        if (groundCheck.WallInFront())
             groundState = GroundStateEnum.grounded;
         else
             groundState = GroundStateEnum.inAir;
@@ -485,12 +488,18 @@ public class HeroController : CharacterController
         StartCoroutine(ShootRateProcess(bow.shootRate));
         yield return new WaitForSeconds(currentWeapon.preAttackTime);
 
-        RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(transform.position + Vector3.up*shootDelta + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(transform.position + Vector3.up*shootDelta/2f + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(transform.position + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(transform.position - Vector3.up*shootDelta/2f + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(transform.position - Vector3.up*shootDelta + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(transform.position - 1.5f*Vector3.up*shootDelta + (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim)};
+        RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(transform.position + .035f * Vector3.down+
+                                                   (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(transform.position + (-.035f + shootDelta) * Vector3.up + 
+                                                   (int)orientation * transform.right * .1f,(int)orientation * transform.right, bow.shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(transform.position + Vector3.up*(-.035f+shootDelta/2f) + 
+                                                   (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(transform.position + Vector3.up*(-.035f-shootDelta/2f) + 
+                                                   (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(transform.position + Vector3.up*(-.035f -shootDelta) + 
+                                                   (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(transform.position +  Vector3.up*(-.035f - 1.5f*shootDelta) + 
+                                                   (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim)};
         Vector2 endPoint = transform.position + (int)orientation * transform.right * (bow.shootDistance + .1f);
         if (hits[0] || hits[1] || hits[2] || hits[3] || hits[4] || hits[5])
         {
@@ -519,7 +528,7 @@ public class HeroController : CharacterController
         line.material = arrowMaterial;
         line.SetWidth(.01f, .01f);
         line.SetVertexCount(2);
-        line.SetPosition(0, transform.position + (int)orientation * transform.right * .1f);
+        line.SetPosition(0, transform.position + .035f * Vector3.down + (int)orientation * transform.right * .05f);
         line.SetPosition(1, new Vector3(endPoint.x, endPoint.y, transform.position.z));
         line.SetColors(new Color(1f, 1f, 1f, .5f), new Color(1f, 1f, 1f, .5f));
         Destroy(line, .1f);
@@ -601,8 +610,10 @@ public class HeroController : CharacterController
     /// </summary>
     protected virtual IEnumerator DeathProcess()
     {
+        Animate(new AnimationEventArgs("death"));
         immobile = true;
         SpecialFunctions.SetFade(true);
+        PlayerPrefs.SetFloat("Hero Health", 12f);
         yield return new WaitForSeconds(deathTime);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
@@ -610,12 +621,15 @@ public class HeroController : CharacterController
     /// <summary>
     /// Добавить предмет в инвентарь
     /// </summary>
-    public void SetItem(ItemClass item)
+    public void SetItem(ItemClass item, bool withoutDrop)
     {
         if (item is WeaponClass)
         {
-            GameObject drop = Instantiate(dropPrefab, transform.position, transform.rotation) as GameObject;
-            drop.GetComponent<DropClass>().item = currentWeapon;
+            if (!withoutDrop)
+            {
+                GameObject drop = Instantiate(dropPrefab, transform.position, transform.rotation) as GameObject;
+                drop.GetComponent<DropClass>().item = currentWeapon;
+            }
             currentWeapon = (WeaponClass)item;
             fightingMode = (currentWeapon is SwordClass) ? "melee" : "range";
             OnEquipmentChanged(new EquipmentEventArgs(currentWeapon));
@@ -642,6 +656,11 @@ public class HeroController : CharacterController
         invul = true;
         yield return new WaitForSeconds(_invulTime);
         invul = false;
+    }
+
+    public override bool InInvul()
+    {
+        return invul;
     }
 
     #region events

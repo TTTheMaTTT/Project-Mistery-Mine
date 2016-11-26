@@ -10,7 +10,7 @@ public class ChestController : MonoBehaviour, IInteractive
 
     #region consts
 
-    private const float pushForceY = 30f, pushForceX = 50f;//С какой силой выбрасывается содержимое сундука при его открытии?
+    private const float pushForceY = 50f, pushForceX = 25f;//С какой силой выбрасывается содержимое сундука при его открытии?
 
     #endregion //consts
 
@@ -19,6 +19,14 @@ public class ChestController : MonoBehaviour, IInteractive
     public List<DropClass> content = new List<DropClass>();
 
     #endregion //fields
+
+    #region parametres
+
+    [SerializeField]
+    [HideInInspector]
+    int id;
+
+    #endregion //parametres
 
     /// <summary>
     /// Как происходит взаимодействие с сундуком
@@ -38,6 +46,54 @@ public class ChestController : MonoBehaviour, IInteractive
             Rigidbody2D rigid = obj.GetComponent<Rigidbody2D>();
             rigid.AddForce(new Vector2(Random.RandomRange(-pushForceX, pushForceX), pushForceY));*/
         }
+        gameObject.tag = "Untagged";
+        SpecialFunctions.statistics.ConsiderStatistics(this);
+        Animator anim = GetComponent<Animator>();
+        if (anim != null)
+            anim.Play("Opened");
+        DestroyImmediate(this);
+    }
+
+    /// <summary>
+    /// Вернуть id
+    /// </summary>
+    public int GetID()
+    {
+        return id;
+    }
+
+    /// <summary>
+    /// Выставить id объекту
+    /// </summary>
+    public void SetID(int _id)
+    {
+        id = _id;
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(this);
+#endif //UNITY_EDITOR
+    }
+
+    /// <summary>
+    /// Загрузить данные о сундуке
+    /// </summary>
+    public void SetData(InterObjData _intObjData)
+    {
+    }
+
+    /// <summary>
+    /// Сохранить данные о сундуке
+    /// </summary>
+    public InterObjData GetData()
+    {
+        InterObjData cData = new InterObjData(id);
+        return cData;
+    }
+
+    /// <summary>
+    /// Сразу открыть сундук без вываливания содержимого
+    /// </summary>
+    public void DestroyClosedChest()
+    {
         gameObject.tag = "Untagged";
         SpecialFunctions.statistics.ConsiderStatistics(this);
         Animator anim = GetComponent<Animator>();

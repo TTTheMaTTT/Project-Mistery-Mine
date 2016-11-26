@@ -9,6 +9,12 @@ using System.Collections.Generic;
 public class NPCController : MonoBehaviour, IInteractive
 {
 
+    #region consts
+
+    protected const float disableTalkTime = .2f;//Время, в течение которого нельзя снова заговорить с персонажем
+
+    #endregion //consts
+
     #region delegates
 
     public delegate void storyActionDelegate(StoryAction _action);
@@ -35,6 +41,9 @@ public class NPCController : MonoBehaviour, IInteractive
     [SerializeField]
     protected List<Dialog> dialogs=new List<Dialog>();//Диалоги, что могут произойти с этим персонажем
 
+    protected bool canTalk=true;//Может ли персонаж разговаривать
+    public bool CanTalk { get { return canTalk; } set { canTalk = value; } }
+
     #endregion //fields
 
     #region parametres
@@ -43,6 +52,8 @@ public class NPCController : MonoBehaviour, IInteractive
 
     [SerializeField]protected DialogModEnum speechMod;
     [SerializeField]protected int dialogArgument1, dialogArgument2;
+
+    [SerializeField][HideInInspector]protected int id;
 
     #endregion //parametres
 
@@ -74,7 +85,11 @@ public class NPCController : MonoBehaviour, IInteractive
     /// </summary>
     public virtual void Interact()
     {
-        Talk();
+        if (canTalk)
+        {
+            Talk();
+            canTalk = false;
+        }
     }
 
     /// <summary>
@@ -97,7 +112,7 @@ public class NPCController : MonoBehaviour, IInteractive
                 case DialogModEnum.random:
                     {
                         if (dialogArgument1 == 0 || dialogArgument2 == 0)
-                            dialog = dialogs[UnityEngine.Random.Range(0,dialogs.Count-1)];
+                            dialog = dialogs[UnityEngine.Random.Range(0,dialogs.Count)];
                         else
                             dialog = dialogs[UnityEngine.Random.Range(dialogArgument1,dialogArgument2)];
                         break;
@@ -117,10 +132,25 @@ public class NPCController : MonoBehaviour, IInteractive
         }
     }
 
+    /// <summary>
+    /// Прекратить разговор
+    /// </summary>
     public virtual void StopTalking()
     {
         if (anim!=null)
             anim.Play("Idle");
+        canTalk = false;
+        StartCoroutine(NoTalkingProcess());
+    }
+
+    /// <summary>
+    /// Процесс, в течение которого нельзя разговаривать
+    /// </summary>
+    protected IEnumerator NoTalkingProcess()
+    {
+        yield return new WaitForSeconds(disableTalkTime);
+        canTalk = true;
+
     }
 
     public void SpeechSaid(string speechName)
@@ -155,5 +185,55 @@ public class NPCController : MonoBehaviour, IInteractive
     }
 
     #endregion //storyActions
+
+    /// <summary>
+    /// Вернуть id персонажа
+    /// </summary>
+    public int GetID()
+    {
+        return id;
+    }
+
+    /// <summary>
+    /// Выставить объекту его id
+    /// </summary>
+    /// <param name="_id"></param>
+    public void SetID(int _id)
+    {
+        id = _id;
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(this);
+#endif //UNITY_EDITOR
+    }
+
+    /// <summary>
+    /// Настроить персонажа в соответствии с сохранёнными данными
+    /// </summary>
+    public void SetData(InterObjData _intObjData)
+    {
+        NPCData npcData = (NPCData)_intObjData;
+        if (npcData != null)
+        {
+            List<Dialog> _dialogs = dialogs;
+            dialogs = new List<Dialog>();
+            for (int i = 0; i < npcData.dialogs.Count; i++)
+            {
+                Dialog dialog = _dialogs.Find(x => (x.dialogName == npcData.dialogs[i]));
+                if (dialog != null)
+                    dialogs.Add(dialog);
+            }
+        }
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(this);
+#endif //UNITY_EDITOR
+    }
+
+    /// <summary>
+    /// Вернуть сохраняемые данные персонажа
+    /// </summary>
+    public InterObjData GetData()
+    {
+        return new NPCData(id, dialogs);
+    }
 
 }

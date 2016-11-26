@@ -45,8 +45,11 @@ public class Interactor : MonoBehaviour {
             if (interactions[0] != null)
             {
                 IInteractive interaction = interactions[0].GetComponent<IInteractive>();
-                interaction.Interact();
-                StartCoroutine(InteractionProcess());
+                if (interaction != null)
+                {
+                    interaction.Interact();
+                    StartCoroutine(InteractionProcess());
+                }
             }
             if (interactions[0] == null ? true : (interactions[0].GetComponent<IInteractive>() == null
                                                  || interactions[0].GetComponent<Collider2D>() == null ? true: !interactions[0].GetComponent<Collider2D>().enabled))
@@ -72,8 +75,7 @@ public class Interactor : MonoBehaviour {
     {
         if (whatIsInteractable.Contains(other.gameObject.tag))
         {
-            IInteractive interaction = other.gameObject.GetComponent<IInteractive>();
-            if (interaction != null ? interactions.Contains(other.gameObject) : false)
+            if (interactions.Contains(other.gameObject))
             {
                 interactions.Remove(other.gameObject);
             }

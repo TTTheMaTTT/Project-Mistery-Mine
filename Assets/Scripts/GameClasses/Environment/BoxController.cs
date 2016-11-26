@@ -10,7 +10,7 @@ public class BoxController : MonoBehaviour, IDamageable
 
     #region consts
 
-    protected const float dropForceX = 50f, dropForceY = 80f;
+    protected const float dropForceX = 25f, dropForceY = 80f;
     protected const float deathTime = .05f;
 
     #endregion //consts
@@ -28,6 +28,8 @@ public class BoxController : MonoBehaviour, IDamageable
 
     [SerializeField] protected float maxHealth = 10f;
     [SerializeField] protected float health = 10f;
+
+    [SerializeField][HideInInspector]int id;
 
     #endregion //parametres
 
@@ -66,6 +68,11 @@ public class BoxController : MonoBehaviour, IDamageable
             Destroy();
     }
 
+    public bool InInvul()
+    {
+        return false;
+    }
+
     /// <summary>
     /// Что произойдёт, когда коробка будет уничтожена
     /// </summary>
@@ -97,6 +104,46 @@ public class BoxController : MonoBehaviour, IDamageable
             yield return new WaitForSeconds(.1f);
             anim.Play("Idle");
         }
+    }
+
+    /// <summary>
+    /// Вернуть id
+    /// </summary>
+    public int GetID()
+    {
+        return id;
+    }
+
+    /// <summary>
+    /// Выставить id объекту
+    /// </summary>
+    public void SetID(int _id)
+    {
+        id = _id;
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(this);
+#endif //UNITY_EDITOR
+    }
+
+    /// <summary>
+    /// Загрузить данные о коробке 
+    /// </summary>
+    public void SetData(InterObjData _intObjData)
+    {
+        BoxData bData = (BoxData)_intObjData;
+        if (bData != null)
+        {
+            health = bData.health;
+        }
+    }
+
+    /// <summary>
+    /// Сохранить данные о коробке
+    /// </summary>
+    public InterObjData GetData()
+    {
+        BoxData bData = new BoxData(id, health);
+        return bData;
     }
 
 }

@@ -22,6 +22,14 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
 
     #endregion //fields
 
+    #region parametres
+
+    [SerializeField]
+    [HideInInspector]
+    protected int id;
+
+    #endregion //parametres
+
     void Awake()
     {
         col = GetComponent<Collider2D>();
@@ -31,7 +39,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
     /// <summary>
     /// Провести взаимодействие с дверью
     /// </summary>
-    public void Interact()
+    public virtual void Interact()
     {
         HeroController player = SpecialFunctions.player.GetComponent<HeroController>();
         if (keyID == string.Empty)
@@ -60,9 +68,52 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
     /// <summary>
     /// Активировать механизм
     /// </summary>
-    public void ActivateMechanism()
+    public virtual void ActivateMechanism()
     {
-        col.enabled = !col.enabled;
+        Open();
+    }
+
+        /// <summary>
+    /// Вернуть id
+    /// </summary>
+    public virtual int GetID()
+    {
+        return id;
+    }
+
+    /// <summary>
+    /// Выставить id объекту
+    /// </summary>
+    public virtual void SetID(int _id)
+    {
+        id = _id;
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(this);
+#endif //UNITY_EDITOR
+    }
+
+    /// <summary>
+    /// Загрузить данные о двери 
+    /// </summary>
+    public virtual void SetData(InterObjData _intObjData)
+    {
+        DoorData dData = (DoorData)_intObjData;
+        if (dData != null)
+        {
+            if (dData.opened)
+            {
+                Open();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Сохранить данные о двери
+    /// </summary>
+    public virtual InterObjData GetData()
+    {
+        DoorData dData = new DoorData(id, !col.enabled);
+        return dData;
     }
 
 }

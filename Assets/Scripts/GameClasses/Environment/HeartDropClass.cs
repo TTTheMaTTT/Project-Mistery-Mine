@@ -9,4 +9,5 @@ public class HeartDropClass : DropClass
         if (hero.Health<hero.MaxHealth)
             base.OnTriggerEnter2D(other);
     }
+
 }

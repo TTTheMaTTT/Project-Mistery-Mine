@@ -17,8 +17,6 @@ public class DropClass : MonoBehaviour, IInteractive
 
     public ItemClass item;
 
-
-
     #endregion //fields
 
     #region parametres
@@ -36,7 +34,7 @@ public class DropClass : MonoBehaviour, IInteractive
     /// </summary>
     public void Interact()
     {
-        SpecialFunctions.player.GetComponent<HeroController>().SetItem(item);
+        SpecialFunctions.player.GetComponent<HeroController>().SetItem(item,false);
         Destroy(gameObject);
     }
 
@@ -63,5 +61,36 @@ public class DropClass : MonoBehaviour, IInteractive
             Interact();
         }
     }
+
+    /// <summary>
+    /// Вернуть id персонажа
+    /// </summary>
+    public int GetID()
+    {
+        return -1;
+    }
+
+    /// <summary>
+    /// Выставить id объекту
+    /// </summary>
+    public void SetID(int _id)
+    {
+    }
+
+    /// <summary>
+    /// Настроить персонажа в соответствии с сохранёнными данными
+    /// </summary>
+    public void SetData(InterObjData _intObjData)
+    {
+    }
+
+    /// <summary>
+    /// Вернуть сохраняемые данные персонажа
+    /// </summary>
+    public InterObjData GetData()
+    {
+        return null;
+    }
+
 
 }
