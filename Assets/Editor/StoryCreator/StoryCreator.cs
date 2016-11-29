@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEditor;
 using System.Collections;
 
@@ -11,10 +12,14 @@ public class StoryCreator: EditorWindow
 
     public string storyPath = "Assets/Database/Stories/";
 
+    public bool currentSceneStory = true;
+
     void OnGUI()
     {
         storyName = EditorGUILayout.TextField(storyName);
         storyPath = EditorGUILayout.TextField(storyPath);
+
+        currentSceneStory = EditorGUILayout.Toggle("current scene story", currentSceneStory);
 
         if (GUILayout.Button("Create New"))
         {
@@ -27,6 +32,8 @@ public class StoryCreator: EditorWindow
     {
         Story asset = ScriptableObject.CreateInstance<Story>();
         asset.storyName = storyName;
+        if (currentSceneStory)
+            asset.sceneName = SceneManager.GetActiveScene().name;
         AssetDatabase.CreateAsset(asset, storyPath + storyName + ".asset");
         AssetDatabase.SaveAssets();
         EditorUtility.FocusProjectWindow();

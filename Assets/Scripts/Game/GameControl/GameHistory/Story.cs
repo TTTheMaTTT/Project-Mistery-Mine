@@ -216,7 +216,38 @@ public class CustomStoryEditor : Editor
 
         story.storyName = EditorGUILayout.TextField("story name", story.storyName);
 
-        story.sceneName = EditorGUILayout.TextField("scene name", story.sceneName);
+        string newSceneName = EditorGUILayout.TextField("scene name", story.sceneName);
+        if (newSceneName != story.sceneName)
+        {
+            story.sceneName = newSceneName;
+            if (story.sceneName == sceneName)
+            {
+                if (history != null)
+                {
+                    init = history.FindInitializer(story);
+                    if (init == null)
+                    {
+                        init = new StoryInitializer();
+                        init.story = story;
+                        init.eventObjects = new List<GameObject>();
+                        history.initList.Add(init);
+                    }
+                    if (init.eventObjects.Count != story.storyActions.Count)
+                    {
+                        int m = init.eventObjects.Count;
+                        for (int i = m; i < story.storyActions.Count; i++)
+                        {
+                            init.eventObjects.Add(null);
+                        }
+                        for (int i = m - 1; i >= story.storyActions.Count; i--)
+                        {
+                            init.eventObjects.RemoveAt(i);
+                        }
+                    }
+                }
+            }
+        }
+
 
         EditorGUILayout.Space();
 
