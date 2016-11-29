@@ -91,6 +91,9 @@
     <Reference Include="SyntaxTree.VisualStudio.Unity.Bridge">
       <HintPath>Library\UnityAssemblies\SyntaxTree.VisualStudio.Unity.Bridge.dll</HintPath>
     </Reference>
+    <Reference Include="pseudoSinCos">
+      <HintPath>Assets\Scripts\Game\Light\pseudoSinCos.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="repo.CSharp.Plugins.csproj">
@@ -138,13 +141,18 @@
     <None Include="Assets\Scripts\Shaders\Experiments\CharacterUnderWater.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Glass.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Green.shader" />
+    <None Include="Assets\Scripts\Shaders\Experiments\LightKitDisableShader.shader" />
+    <None Include="Assets\Scripts\Shaders\Experiments\LightKitObstaclesShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\OutlineShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Red.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Sulhouette.shader" />
+    <None Include="Assets\Scripts\Shaders\Experiments\TexCoordShader.shader" />
+    <None Include="Assets\Scripts\Shaders\Gradient-ZFighting.shader" />
     <None Include="Assets\Scripts\Shaders\LineSpriteShader.shader" />
     <None Include="Assets\Scripts\Shaders\Outline.shader" />
     <None Include="Assets\Scripts\Shaders\SpriteLight.shader" />
     <None Include="Assets\Scripts\Shaders\SpriteLightKit-BlendImageEffect.shader" />
+    <None Include="Assets\Scripts\Shaders\SpriteShadowLight.shader" />
     <None Include="Assets\Scripts\Shaders\WaterShader.shader" />
     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />
@@ -224,6 +232,10 @@
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonBasicOutline.shader" />
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLit.shader" />
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLitOutline.shader" />
+    <None Include="Assets\StreamingAssets\Saves\Profile0.xml" />
+    <None Include="Assets\StreamingAssets\Saves\Profile1.xml" />
+    <None Include="Assets\StreamingAssets\Saves\Profile2.xml" />
+    <None Include="Assets\StreamingAssets\SavesInfo.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
 </Project>
