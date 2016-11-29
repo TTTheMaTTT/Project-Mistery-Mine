@@ -69,6 +69,10 @@ public class CustomDialogEditor : Editor
             speech.speechName = EditorGUILayout.TextField("speech name", speech.speechName);
             speech.text = EditorGUILayout.TextArea(speech.text, GUILayout.Height(60f));
             speech.portrait = (Sprite)EditorGUILayout.ObjectField("portrait", speech.portrait, typeof(Sprite));
+
+            speech.moveCam = EditorGUILayout.Toggle("Camera Move?", speech.moveCam);
+            speech.camPosition = EditorGUILayout.Vector3Field("Camera Position", speech.camPosition);
+
         }
 
         dialog.pause = EditorGUILayout.Toggle("pause", dialog.pause);

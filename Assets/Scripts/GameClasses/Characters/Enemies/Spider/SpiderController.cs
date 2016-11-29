@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Контроллер паука (в данном случае джунглиевого)
@@ -226,5 +227,36 @@ public class SpiderController : AIController
     }
 
     #endregion //storyActions
+
+    #region IHaveStory
+
+    /// <summary>
+    /// Вернуть список сюжетных действий, которые может воспроизводить персонаж
+    /// </summary>
+    /// <returns></returns>
+    public override List<string> actionNames()
+    {
+        return new List<string>(){ };
+    }
+
+    /// <summary>
+    /// Вернуть словарь первых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public override Dictionary<string, List<string>> actionIDs1()
+    {
+        return new Dictionary<string, List<string>>() { { "moveForward", new List<string>() { } } };
+    }
+
+    /// <summary>
+    /// Вернуть словарь вторых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public override Dictionary<string, List<string>> actionIDs2()
+    {
+        return new Dictionary<string, List<string>>() { { "moveForward", new List<string>() { } } };
+    }
+
+    #endregion //IHaveStory
 
 }

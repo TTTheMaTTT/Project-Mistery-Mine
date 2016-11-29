@@ -6,7 +6,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Скрипт, контролирующий НПС
 /// </summary>
-public class NPCController : MonoBehaviour, IInteractive
+public class NPCController : MonoBehaviour, IInteractive, IHaveStory
 {
 
     #region consts
@@ -153,9 +153,25 @@ public class NPCController : MonoBehaviour, IInteractive
 
     }
 
+    /// <summary>
+    /// Событие "Сказана реплика"
+    /// </summary>
+    /// <param name="speechName"></param>
     public void SpeechSaid(string speechName)
     {
         SpecialFunctions.StartStoryEvent(this, SpeechSaidEvent, new StoryEventArgs(speechName,0));
+    }
+
+    /// <summary>
+    /// Вернуть список всех реплик
+    /// </summary>
+    public List<string> GetSpeeches()
+    {
+        List<string> newSpeeches=new List<string>();
+        for (int i = 0; i < dialogs.Count; i++)
+            for (int j = 0; j < dialogs[i].speeches.Count; j++)
+                newSpeeches.Add(dialogs[i].speeches[j].speechName);
+        return newSpeeches;
     }
 
     #region storyActions
@@ -185,6 +201,8 @@ public class NPCController : MonoBehaviour, IInteractive
     }
 
     #endregion //storyActions
+
+    #region IHaveID
 
     /// <summary>
     /// Вернуть id персонажа
@@ -235,5 +253,50 @@ public class NPCController : MonoBehaviour, IInteractive
     {
         return new NPCData(id, dialogs);
     }
+
+    #endregion //IHaveID
+
+    #region IHaveStory
+
+    /// <summary>
+    /// Вернуть список сюжетных действий, которые может воспроизводить персонаж
+    /// </summary>
+    /// <returns></returns>
+    public virtual List<string> actionNames()
+    {
+        return new List<string>() { "speechAction" };
+    }
+
+    /// <summary>
+    /// Вернуть словарь первых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public virtual Dictionary<string, List<string>> actionIDs1()
+    {
+        return new Dictionary<string, List<string>>() {
+                                                    { "speechAction", new List<string> {"change speech", "talk" } } };
+    }
+
+    /// <summary>
+    /// Вернуть словарь вторых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public virtual Dictionary<string, List<string>> actionIDs2()
+    {
+        return new Dictionary<string, List<string>>() {
+                                                    { "speechAction", dialogs.ConvertAll<string>(x => x.dialogName)} };
+    }
+
+    /// <summary>
+    /// Вернуть словарь id-шников, настраивающих функцию проверки
+    /// </summary>
+    public virtual Dictionary<string, List<string>> conditionIDs()
+    {
+        return new Dictionary<string, List<string>>() { { "", new List<string>()},
+                                                        { "compare", new List<string>()},
+                                                        { "compareSpeech", GetSpeeches()} };
+    }
+
+    #endregion //IHaveStory
 
 }

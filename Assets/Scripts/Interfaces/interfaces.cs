@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Интерфейс для объектов, которые должны быть идентифицированы
 /// </summary>
-public interface IHasID
+public interface IHaveID
 {
     int GetID();
 
@@ -18,7 +19,7 @@ public interface IHasID
 /// <summary>
 /// Интерфейс, реализующий возможность получить урон
 /// </summary>
-public interface IDamageable: IHasID
+public interface IDamageable: IHaveID
 {
 
     void TakeDamage(float damage);
@@ -34,7 +35,7 @@ public interface IDamageable: IHasID
 /// <summary>
 /// Интерфейс, реализующий возможность внешнего взаимодействия
 /// </summary>
-public interface IInteractive: IHasID
+public interface IInteractive: IHaveID
 {
     void Interact();
 
@@ -43,8 +44,19 @@ public interface IInteractive: IHasID
 /// <summary>
 /// Интерфейс игрового механизма (двери, движущиеся платформы)
 /// </summary>
-public interface IMechanism: IHasID
+public interface IMechanism: IHaveID
 {
     void ActivateMechanism();
 
+}
+
+/// <summary>
+/// Интерфейс, используемый для удобно настраиваемого редактора игровой истории
+/// </summary>
+public interface IHaveStory
+{
+    List<string> actionNames();//Вернуть имена сюжетно важных функций, выполняемых данным объектом
+    Dictionary<string, List<string>> actionIDs1();//Вернуть id-шники,
+    Dictionary<string, List<string>> actionIDs2();//настраивающие данные функции
+    Dictionary<string, List<string>> conditionIDs();//id-шники, настраивающие функцию проверки
 }

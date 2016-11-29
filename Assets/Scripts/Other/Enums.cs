@@ -14,6 +14,11 @@ public enum OrientationEnum {left=-1, right=1 }
 public enum GroundStateEnum {grounded = 0, crouching = 1, inAir=2 }
 
 /// <summary>
+/// Режим перемещения камеры
+/// </summary>
+public enum CameraModEnum {position=0, move=1, player=2, playerMove=3}
+
+/// <summary>
 /// Енам, связанный с режимом редактора уровней
 /// </summary>
 public enum EditorModEnum {select=0, draw=1, drag=2, erase=3 }

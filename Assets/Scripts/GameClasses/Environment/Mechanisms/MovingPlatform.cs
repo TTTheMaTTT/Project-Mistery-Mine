@@ -30,6 +30,7 @@ public class MovingPlatform : MonoBehaviour, IMechanism
     [SerializeField]
     [HideInInspector]
     protected List<LineRenderer> lines = new List<LineRenderer>();//Линии, отображающие маршрут платормы
+    public List<LineRenderer> Lines { get { return lines; } set { lines = value; } }
 
     #endregion //fields
 
@@ -184,16 +185,6 @@ public class MovingPlatform : MonoBehaviour, IMechanism
         }
     }
 
-    public List<LineRenderer> GetLines()
-    {
-        return lines;
-    }
-
-    public void SetLines(List<LineRenderer> _lines)
-    {
-        lines = _lines;
-    }
-
     /// <summary>
     /// Вернуть id
     /// </summary>
@@ -264,18 +255,57 @@ public class MovingPlatform : MonoBehaviour, IMechanism
 public class MovingPlatformEditor : Editor
 {
 
+    #region consts
+
+    private const string iconPath = "Assets/Editor/LevelEditor/EditorIcons/brushIcon.png";
+
+    #endregion //consts
+
+    #region fields
+
+    private static Sprite drawIcon;
+
     List<LineRenderer> lines;
+
+    #endregion //fields
+
+    #region parametres
+
+    private bool drawMod = false;
+    public GUIStyle textureStyle;
+    public GUIStyle textureStyleAct;
+
+    #endregion //parametres
+
+    public void OnEnable()
+    {
+        drawIcon = drawIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath);
+    }
+
+    public void OnDestroy()
+    {
+        drawMod = false;
+    }
 
     public override void OnInspectorGUI()
     {
+
+        textureStyle = new GUIStyle(GUI.skin.button);
+        textureStyle.margin = new RectOffset(2, 2, 2, 2);
+        textureStyle.normal.background = null;
+        textureStyleAct = new GUIStyle(textureStyle);
+        textureStyleAct.margin = new RectOffset(0, 0, 0, 0);
+        textureStyleAct.normal.background = textureStyle.active.background;
+
         base.OnInspectorGUI();
+        
         MovingPlatform mov = (MovingPlatform)target;
-        lines = mov.GetLines();
+        lines = mov.Lines;
         if (lines == null)
-            mov.SetLines(new List<LineRenderer>());
+            mov.Lines=new List<LineRenderer>();
         if (GUILayout.Button("DeleteLines"))
         {
-            mov.SetLines(new List<LineRenderer>());
+            mov.Lines=new List<LineRenderer>();
             foreach (LineRenderer line in lines)
                 DestroyImmediate(line.gameObject);
         }
@@ -302,8 +332,34 @@ public class MovingPlatformEditor : Editor
                 rLine.AutoTile();
                 lines.Add(line);
             }
-            mov.SetLines(lines);
+            mov.Lines=lines;
         }
+
+        if (drawMod)
+        {
+            if (GUILayout.Button("", textureStyleAct, GUILayout.Width(drawIcon.textureRect.width + 6), GUILayout.Height(drawIcon.textureRect.height + 4)))
+                drawMod=false;
+            GUI.DrawTextureWithTexCoords(new Rect(GUILayoutUtility.GetLastRect().x + 3f,
+                                                  GUILayoutUtility.GetLastRect().y + 2f,
+                                                  GUILayoutUtility.GetLastRect().width - 6f,
+                                                  GUILayoutUtility.GetLastRect().height - 4f),
+                                         drawIcon.texture,
+                                         new Rect(drawIcon.textureRect.x / (float)drawIcon.texture.width,
+                                         drawIcon.textureRect.y / (float)drawIcon.texture.height,
+                                         drawIcon.textureRect.width / (float)drawIcon.texture.width,
+                                         drawIcon.textureRect.height / (float)drawIcon.texture.height));
+        }
+        else
+        {
+            if (GUILayout.Button("", textureStyle, GUILayout.Width(drawIcon.textureRect.width + 2), GUILayout.Height(drawIcon.textureRect.height + 2)))
+                drawMod = true;
+            GUI.DrawTextureWithTexCoords(GUILayoutUtility.GetLastRect(), drawIcon.texture,
+                                         new Rect(drawIcon.textureRect.x / (float)drawIcon.texture.width,
+                                                  drawIcon.textureRect.y / (float)drawIcon.texture.height,
+                                                  drawIcon.textureRect.width / (float)drawIcon.texture.width,
+                                                  drawIcon.textureRect.height / (float)drawIcon.texture.height));
+        }
+
     }
 }
 #endif
