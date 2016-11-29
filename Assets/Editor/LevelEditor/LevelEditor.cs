@@ -27,7 +27,8 @@ public class LevelEditor : EditorWindow
     #region fields
 
     private static Sprite selectIcon, drawIcon, dragIcon, eraseIcon;//Иконки, используемые при отрисовки меню редактора
-    private static Sprite groundIcon, waterIcon, plantIcon, ladderIcon, spikesIcon, usualDrawIcon, lightPointIcon;//Иконки, используемые в меню рисования
+    private static Sprite groundIcon, waterIcon, plantIcon, ladderIcon, spikesIcon, usualDrawIcon, 
+                                                                                    lightPointIcon;//Иконки, используемые в меню создания
 
     #endregion //fields
 
@@ -138,6 +139,8 @@ public class LevelEditor : EditorWindow
 
     private static int lightObstacleLayer = LayerMask.NameToLayer("lightObstacle");
     private static string lightObstacleParentObjName;//Имя объекта, который станет родительским по отношению к создаваемым объектам.
+
+    private static bool createWholeCollider = false;//Если true, то игнорируется принадлежность нажатого мышью коллайдеру к слою lightObstacleLayer
 
     private static bool createMargin = true;//Если true, то препятствие будет создано с неким отступом с целью созданию эффекта подсвеченного края
     private static float lightMarginOffset=0.05f;//Ширина края твёрдого объекта (препятствия света), который ещё освещается
@@ -1512,7 +1515,7 @@ public class LevelEditor : EditorWindow
                 string lName = LayerMask.LayerToName(groundLayer), olName = LayerMask.LayerToName(lightObstacleLayer);
 
                 if (Physics2D.Raycast(mouseWorldPos, Vector2.right, lightPointerPrecision, LayerMask.GetMask(lName)) &&
-                    !Physics2D.Raycast(mouseWorldPos, Vector2.right, lightPointerPrecision, LayerMask.GetMask(olName)))
+                   (!Physics2D.Raycast(mouseWorldPos, Vector2.right, lightPointerPrecision, LayerMask.GetMask(olName)) || createWholeCollider))
                 {
 
                     lightObstacles.Clear();
@@ -3030,6 +3033,8 @@ public class LevelEditor : EditorWindow
         lightObstacleLayer = EditorGUILayout.LayerField("light obstacle layer", lightObstacleLayer);
 
         zPosition = EditorGUILayout.FloatField("z-position", zPosition);
+
+        createWholeCollider = EditorGUILayout.Toggle("Create whole collider", createWholeCollider);
 
         EditorGUILayout.BeginHorizontal();
         createMargin = EditorGUILayout.Toggle("Create margin", createMargin);

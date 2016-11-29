@@ -9,6 +9,8 @@ public static class SpecialFunctions
 {
     public static GameObject player { get { return GameObject.FindGameObjectWithTag("player"); } }
 
+    public static CameraController camControl { get { return GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); } }
+
     public static GameController gameController { get { return GameObject.FindGameObjectWithTag("gameController").GetComponent<GameController>(); } }
 
     public static History history { get { return gameController.GetComponent<GameHistory>().history; } }

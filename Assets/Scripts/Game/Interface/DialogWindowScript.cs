@@ -23,13 +23,19 @@ public class DialogWindowScript : MonoBehaviour
 
     protected Transform hero;
     protected NPCController npc;
+    protected CameraController cam;
 
     protected Dialog currentDialog = null;
 
     protected Speech currentSpeech = null;
     public Speech CurrentSpeech { get { return currentSpeech; }
-                                  set { currentSpeech = value; if (value != null) { speechText.text = value.text; portrait.sprite = value.portrait; npc.SpeechSaid(currentSpeech.speechName); }
-                                                               else { speechText.text = null;  portrait.sprite = null; } } }
+                                  set { currentSpeech = value; if (value != null) { speechText.text = value.text; portrait.sprite = value.portrait;
+                                                                                    npc.SpeechSaid(currentSpeech.speechName);
+                                                                                    cam.ChangeCameraMod(value.moveCam?CameraModEnum.move: CameraModEnum.playerMove);
+                                                                                    cam.ChangeCameraTarget(value.moveCam ? value.camPosition : hero.position); }
+
+                                                               else { speechText.text = null;  portrait.sprite = null; cam.ChangeCameraMod(CameraModEnum.player);
+                                                                                                                        cam.ChangeCameraTarget(hero.position);} } }
 
     #endregion //fields
 
@@ -62,7 +68,7 @@ public class DialogWindowScript : MonoBehaviour
     /// <summary>
     /// Начать диалог
     /// </summary>
-    public void BeginDialog(Transform _hero, NPCController _npc, Dialog dialog)
+    public void BeginDialog(NPCController _npc, Dialog dialog)
     {
         npc = _npc;
         currentDialog = dialog;
@@ -71,7 +77,6 @@ public class DialogWindowScript : MonoBehaviour
         CurrentSpeech = dialog.speeches[0];
 
         canvas.enabled = true;
-        hero = _hero;
 
         HeroController hControl = hero.GetComponent<HeroController>();
         hControl.SetImmobile(true);
@@ -144,6 +149,9 @@ public class DialogWindowScript : MonoBehaviour
         Transform panel = transform.FindChild("Panel");
         speechText = panel.FindChild("SpeechText").GetComponent<Text>();
         portrait = transform.FindChild("PortraitImage").FindChild("Portrait").GetComponent<Image>();
+
+        hero = SpecialFunctions.player.transform;
+        cam = SpecialFunctions.camControl;
         CurrentSpeech = null;
     }
 

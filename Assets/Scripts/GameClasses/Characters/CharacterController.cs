@@ -6,7 +6,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Базовый класс для персонажей, имеющих некоторую самостоятельность (искусственный интеллект или управляемый игрок)
 /// </summary>
-public class CharacterController : MonoBehaviour, IDamageable
+public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
 {
 
     #region delegates
@@ -35,7 +35,7 @@ public class CharacterController : MonoBehaviour, IDamageable
 
     protected Rigidbody2D rigid;
     protected HitBox hitBox;//То, чем атакует персонаж
-
+    
     protected CharacterVisual anim;//Визуальное представление персонажа
 
     #endregion //fields
@@ -227,6 +227,8 @@ public class CharacterController : MonoBehaviour, IDamageable
 
     #endregion //events
 
+    #region IHasID
+
     /// <summary>
     /// Вернуть id персонажа
     /// </summary>
@@ -256,5 +258,48 @@ public class CharacterController : MonoBehaviour, IDamageable
     {
         return null;
     }
+
+    #endregion //IHasID
+
+    #region IHaveStory
+
+    /// <summary>
+    /// Вернуть список сюжетных действий, которые может воспроизводить персонаж
+    /// </summary>
+    /// <returns></returns>
+    public virtual List<string> actionNames()
+    {
+        return new List<string>() { };
+    }
+
+    /// <summary>
+    /// Вернуть словарь первых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public virtual Dictionary<string, List<string>> actionIDs1()
+    {
+        return new Dictionary<string, List<string>>();
+    }
+
+    /// <summary>
+    /// Вернуть словарь вторых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public virtual Dictionary<string, List<string>> actionIDs2()
+    {
+        return new Dictionary<string, List<string>>();
+    }
+
+    /// <summary>
+    /// Вернуть словарь id-шников, связанных с конкретной функцией проверки условия сюжетного события
+    /// </summary>
+    public virtual Dictionary<string, List<string>> conditionIDs()
+    {
+        return new Dictionary<string, List<string>>() {
+                                                        {"", new List<string>() },
+                                                        {"compare",new List<string>()} };
+    }
+
+    #endregion //IHaveStory
 
 }

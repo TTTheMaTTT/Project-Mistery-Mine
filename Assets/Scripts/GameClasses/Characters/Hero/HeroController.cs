@@ -32,8 +32,6 @@ public class HeroController : CharacterController
     protected const float highWallCheckPosition = -0.02f, lowWallCheclPosition = -0.0544f;
     protected const float highWallCheckSize = .08f, lowWallCheckSize = .05f;
 
-    protected const float shootDelta = .03f;
-
     #endregion //consts
 
     #region fields
@@ -45,11 +43,6 @@ public class HeroController : CharacterController
     protected Interactor interactor;//Индикатор, ответственный за обнаружение и взаимодействие со всеми интерактивными объектами
 
     protected Collider2D col1, col2;
-
-    [SerializeField] protected GameObject attackParticles; //Чем атакует герой
-
-    protected LineRenderer line;
-    [SerializeField] protected Material arrowMaterial;
 
     [SerializeField]
     protected WeaponClass currentWeapon;//Оружие, которое используется персонажем в данный момент
@@ -453,7 +446,7 @@ public class HeroController : CharacterController
         }
         else if (fightingMode == "range")
         {
-            if (!dontShoot)
+            if (((BowClass)currentWeapon).canShoot)
             {
                 StopMoving();
                 Animate(new AnimationEventArgs("shoot", currentWeapon.name, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime))));
@@ -470,10 +463,7 @@ public class HeroController : CharacterController
         employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
         SwordClass sword = (SwordClass)currentWeapon;
         yield return new WaitForSeconds(sword.preAttackTime);
-        hitBox.SetHitBox(new HitClass(sword.damage, sword.attackTime, sword.attackSize, sword.attackPosition, sword.attackForce));
-        //GameObject _attackParticles = Instantiate(attackParticles, hitBox.transform.position, hitBox.transform.rotation) as GameObject;
-        //_attackParticles.transform.parent = transform;
-        //Destroy(_attackParticles, sword.attackTime);
+        sword.Attack(hitBox, transform.position);
         yield return new WaitForSeconds(sword.attackTime);
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
@@ -485,66 +475,11 @@ public class HeroController : CharacterController
     {
         employment = Mathf.Clamp(employment - 5, 0, maxEmployment);
         BowClass bow = (BowClass)currentWeapon;
-        StartCoroutine(ShootRateProcess(bow.shootRate));
         yield return new WaitForSeconds(currentWeapon.preAttackTime);
-
-        RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(transform.position + .035f * Vector3.down+
-                                                   (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(transform.position + (-.035f + shootDelta) * Vector3.up + 
-                                                   (int)orientation * transform.right * .1f,(int)orientation * transform.right, bow.shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(transform.position + Vector3.up*(-.035f+shootDelta/2f) + 
-                                                   (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(transform.position + Vector3.up*(-.035f-shootDelta/2f) + 
-                                                   (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(transform.position + Vector3.up*(-.035f -shootDelta) + 
-                                                   (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(transform.position +  Vector3.up*(-.035f - 1.5f*shootDelta) + 
-                                                   (int)orientation * transform.right * .1f, (int)orientation * transform.right, bow.shootDistance, whatIsAim)};
-        Vector2 endPoint = transform.position + (int)orientation * transform.right * (bow.shootDistance + .1f);
-        if (hits[0] || hits[1] || hits[2] || hits[3] || hits[4] || hits[5])
-        {
-            IDamageable target = null;
-            int hitIndex = -1;
-            for (int i = 0; i < 5; i++)
-            {
-                if (hits[i].collider != null ? (target = hits[i].collider.gameObject.GetComponent<IDamageable>()) != null : false)
-                {
-                    hitIndex = i;
-                    target.TakeDamage(bow.damage);
-                    break;
-                }
-            }
-            if (hitIndex == -1 && hits[2])
-            {
-                hitIndex = 1;
-                GameObject _bullet = GameObject.Instantiate(bow.arrow, new Vector3(hits[1].point.x, hits[1].point.y, transform.position.z), transform.rotation) as GameObject;
-                Vector3 vect = _bullet.transform.localScale;
-                _bullet.transform.localScale = new Vector3((int)orientation * vect.x, vect.y, vect.z);
-            }
-            if (hitIndex != -1)
-                endPoint = hits[hitIndex].point;
-        }
-        line = gameObject.AddComponent<LineRenderer>();
-        line.material = arrowMaterial;
-        line.SetWidth(.01f, .01f);
-        line.SetVertexCount(2);
-        line.SetPosition(0, transform.position + .035f * Vector3.down + (int)orientation * transform.right * .05f);
-        line.SetPosition(1, new Vector3(endPoint.x, endPoint.y, transform.position.z));
-        line.SetColors(new Color(1f, 1f, 1f, .5f), new Color(1f, 1f, 1f, .5f));
-        Destroy(line, .1f);
+        bow.Shoot(hitBox, transform.position+Vector3.down*0.035f + Vector3.right*(int)orientation*.05f, (int)orientation, whatIsAim, enemies);
         yield return new WaitForSeconds(currentWeapon.attackTime);
 
         employment = Mathf.Clamp(employment + 5, 0, maxEmployment);
-    }
-
-    /// <summary>
-    /// Процесс, учитывающий конечную скорострельность дальнобойного оружия
-    /// </summary>
-    protected virtual IEnumerator ShootRateProcess(float shootRateTime)
-    {
-        dontShoot = true;
-        yield return new WaitForSeconds(shootRateTime);
-        dontShoot = false;
     }
 
     /// <summary>
@@ -631,7 +566,13 @@ public class HeroController : CharacterController
                 drop.GetComponent<DropClass>().item = currentWeapon;
             }
             currentWeapon = (WeaponClass)item;
-            fightingMode = (currentWeapon is SwordClass) ? "melee" : "range";
+            if (currentWeapon is BowClass)
+            {
+                ((BowClass)currentWeapon).ReloadWeapon();
+                fightingMode = "range";
+            }
+            else
+             fightingMode ="melee";
             OnEquipmentChanged(new EquipmentEventArgs(currentWeapon));
         }
         else if (item is HeartClass)

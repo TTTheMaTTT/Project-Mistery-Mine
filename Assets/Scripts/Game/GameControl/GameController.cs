@@ -142,7 +142,7 @@ public class GameController : MonoBehaviour
     public void StartDialog(NPCController npc, Dialog dialog)
     {
         Transform player = SpecialFunctions.player.transform;
-        dialogWindow.BeginDialog(player, npc, dialog);
+        dialogWindow.BeginDialog(npc, dialog);
     }
 
     /// <summary>
@@ -469,7 +469,7 @@ public class GameController : MonoBehaviour
                 enInfo.Add(monster.GetAIData());
 
             foreach (GameObject intObject in intObjects)
-                intInfo.Add(intObject.GetComponent<IHasID>().GetData());
+                intInfo.Add(intObject.GetComponent<IHaveID>().GetData());
 
             foreach (NPCController npc in NPCs)
                 npcInfo.Add((NPCData)npc.GetData());
@@ -541,7 +541,7 @@ public class GameController : MonoBehaviour
 
         ConsiderObjectsWithTag("box", setID);
 
-        intObjects.Sort((x, y) => { return x.GetComponent<IHasID>().GetID().CompareTo(y.GetComponent<IHasID>().GetID()); });
+        intObjects.Sort((x, y) => { return x.GetComponent<IHaveID>().GetID().CompareTo(y.GetComponent<IHaveID>().GetID()); });
 
         #region NPCs
 
@@ -581,7 +581,7 @@ public class GameController : MonoBehaviour
         GameObject[] intObjs = GameObject.FindGameObjectsWithTag(tag);
         foreach (GameObject obj in intObjs)
         {
-            IHasID inter = obj.GetComponent<IHasID>();
+            IHaveID inter = obj.GetComponent<IHaveID>();
             if (inter != null)
             {
                 if (setID)

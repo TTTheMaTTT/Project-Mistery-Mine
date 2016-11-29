@@ -33,8 +33,6 @@ public class ItemCreator : EditorWindow
             SwordClass asset = ScriptableObject.CreateInstance<SwordClass>();
             asset.itemName = itemName;
             AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
-            AssetDatabase.SaveAssets();
-            EditorUtility.FocusProjectWindow();
             Selection.activeObject = asset;
         }
         else if (itemType == "bow")
@@ -42,8 +40,13 @@ public class ItemCreator : EditorWindow
             BowClass asset = ScriptableObject.CreateInstance<BowClass>();
             asset.itemName = itemName;
             AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
-            AssetDatabase.SaveAssets();
-            EditorUtility.FocusProjectWindow();
+            Selection.activeObject = asset;
+        }
+        else if (itemType == "boomerang")
+        {
+            BoomerangClass asset = ScriptableObject.CreateInstance<BoomerangClass>();
+            asset.itemName = itemName;
+            AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
             Selection.activeObject = asset;
         }
         else if (itemType == "heart")
@@ -51,8 +54,6 @@ public class ItemCreator : EditorWindow
             HeartClass asset = ScriptableObject.CreateInstance<HeartClass>();
             asset.itemName = itemName;
             AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
-            AssetDatabase.SaveAssets();
-            EditorUtility.FocusProjectWindow();
             Selection.activeObject = asset;
         }
         else if (itemType == "key")
@@ -60,9 +61,9 @@ public class ItemCreator : EditorWindow
             KeyClass asset = ScriptableObject.CreateInstance<KeyClass>();
             asset.itemName = itemName;
             AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
-            AssetDatabase.SaveAssets();
-            EditorUtility.FocusProjectWindow();
             Selection.activeObject = asset;
         }
+        AssetDatabase.SaveAssets();
+        EditorUtility.FocusProjectWindow();
     }
 }

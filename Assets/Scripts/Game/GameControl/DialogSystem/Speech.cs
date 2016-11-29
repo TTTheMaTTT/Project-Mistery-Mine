@@ -18,4 +18,7 @@ public class Speech
 
     public Sprite portrait;
 
+    public bool moveCam;//Если true, то когда реплика появится на экране, камера передвинется к нужному месту
+    public Vector3 camPosition;//Позиция камеры при реплике
+
 }

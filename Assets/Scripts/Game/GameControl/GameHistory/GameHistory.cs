@@ -6,7 +6,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Компонент, ответственный за работу игровых событий, квестов и обучения
 /// </summary>
-public class GameHistory : MonoBehaviour
+public class GameHistory : MonoBehaviour, IHaveStory
 {
     #region fields
 
@@ -23,6 +23,48 @@ public class GameHistory : MonoBehaviour
     public void Start()
     {
     }
+
+    #region IHaveStory
+
+    /// <summary>
+    /// Вернуть список сюжетных действий, которые может воспроизводить персонаж
+    /// </summary>
+    /// <returns></returns>
+    public virtual List<string> actionNames()
+    {
+        return new List<string>() { "changeQuestData", "removeObject" };
+    }
+
+    /// <summary>
+    /// Вернуть словарь первых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public virtual Dictionary<string, List<string>> actionIDs1()
+    {
+        return new Dictionary<string, List<string>>() {
+                                                    { "changeQuestData", new List<string>() {"add","continue","complete" } },
+                                                    { "removeObject", new List<string>(){ } } };
+    }
+
+    /// <summary>
+    /// Вернуть словарь вторых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public virtual Dictionary<string, List<string>> actionIDs2()
+    {
+        return new Dictionary<string, List<string>>() {
+                                                    { "changeQuestData", (SpecialFunctions.statistics.database != null?
+                                                                                        SpecialFunctions.statistics.database.quests.ConvertAll<string>(x=>x.questName):
+                                                                                        new List<string>())},
+                                                    {"removeOject", new List<string>()} };
+    }
+
+    public virtual Dictionary<string, List<string>> conditionIDs()
+    {
+        return new Dictionary<string, List<string>>();
+    }
+
+    #endregion //IHaveStory
 
 }
 
@@ -46,9 +88,39 @@ public class History
     #region dictionaries
 
     private Dictionary<string, storyActionDelegate> storyActionBase = new Dictionary<string, storyActionDelegate>(); //Словарь сюжетных действий
+    
+    //Возвращает список типов, которые могут быть причиной события
+    public virtual List<string> storyTypes
+    {
+        get
+        {
+            return new List<string>() { "GameController", "GameStatistics", "CharacterController", "StoryTrigger", "NPCController" };
+        }
+    }
+
+    //Возвращает имена инциализирующих функций для создания причины сюжетного события
+    public virtual Dictionary<Type, List<string>> initNames { get { return new Dictionary<Type, List<string>>() {
+                                                                                    { typeof(GameController), new List<string> {"startGame" } },
+                                                                                    { typeof(GameStatistics), new List<string> {"statisticCount"} },
+                                                                                    { typeof(CharacterController),new List<string> { "characterDeath"} },
+                                                                                    { typeof(StoryTrigger),new List<string> {"triggerEvent"} },
+                                                                                    { typeof(NPCController),new List<string> {"speech" } } }; } }
+    //Возвращает имена сравнивающих функций для настройки причины сюжетного события
+    public virtual Dictionary<Type, List<string>> compareNames
+    {
+        get
+        {
+            return new Dictionary<Type, List<string>> {
+                                                                                    { typeof(GameController), new List<string> {"","compare"} },
+                                                                                    { typeof(GameStatistics), new List<string> {"", "compare", "compareStatistics", } },
+                                                                                    { typeof(CharacterController),new List<string> { "", "compare" } },
+                                                                                    { typeof(StoryTrigger),new List<string> { "", "compare" } },
+                                                                                    { typeof(NPCController),new List<string> { "", "compare", "compareSpeech"} } };
+        }
+    }
 
     //Словарь функций проверки сюжетных условий
-    private static Dictionary<string, storyConditionDelegate> storyConditionBase = new Dictionary<string, storyConditionDelegate> { { "compare", Compare } };
+    private static Dictionary<string, storyConditionDelegate> storyConditionBase = new Dictionary<string, storyConditionDelegate> ();
 
     private Dictionary<string, storyInitDelegate> storyInitBase = new Dictionary<string, storyInitDelegate>();//подписка
     private Dictionary<string, storyInitDelegate> storyDeInitBase = new Dictionary<string, storyInitDelegate>();//отписка
@@ -393,9 +465,9 @@ public class History
         List<string> questLines = new List<string>();
         foreach (Quest _quest in activeQuests)
         {
-            if (_quest.hasStatistic)
+            string s = _quest.questLine[_quest.stage];
+            if (_quest.hasStatistic && s.Contains("/"))
             {
-                string s = _quest.questLine[_quest.stage];
                 string s1 = s.Substring(0, s.LastIndexOf("/"));
                 string s2 = s.Substring(s.LastIndexOf("/") + 1);
                 if (_quest.statisticName == e.ID && _quest.questLine[_quest.stage].Contains("/"))
@@ -405,7 +477,7 @@ public class History
                 questLines.Add(s1 + _quest.statisticCount.ToString() + "/" + s2);
             }
             else
-                questLines.Add(_quest.questLine[_quest.stage]);
+                questLines.Add(s);
         }
         SpecialFunctions.gameUI.ConsiderQuests(questLines);
     }

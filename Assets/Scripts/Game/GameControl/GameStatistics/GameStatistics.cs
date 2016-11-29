@@ -13,7 +13,7 @@ using UnityEditor;
 /// <summary>
 /// Компонент игрового контроллера, ответственный за подсчёт игровых параметров, а также за хранение информации
 /// </summary>
-public class GameStatistics : MonoBehaviour
+public class GameStatistics : MonoBehaviour, IHaveStory
 {
 
     #region dictionaries
@@ -145,6 +145,47 @@ public class GameStatistics : MonoBehaviour
             SpecialFunctions.StartStoryEvent(this, StatisticCountEvent, new StoryEventArgs(stat.statisticName, stat.value));
         }
     }
+
+    #region IHaveStory
+
+    /// <summary>
+    /// Вернуть список сюжетных действий, которые может воспроизводить персонаж
+    /// </summary>
+    /// <returns></returns>
+    public virtual List<string> actionNames()
+    {
+        return new List<string>() { };
+    }
+
+    /// <summary>
+    /// Вернуть словарь первых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public virtual Dictionary<string, List<string>> actionIDs1()
+    {
+        return new Dictionary<string, List<string>>();
+    }
+
+    /// <summary>
+    /// Вернуть словарь вторых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public virtual Dictionary<string, List<string>> actionIDs2()
+    {
+        return new Dictionary<string, List<string>>();
+    }
+
+    /// <summary>
+    /// Вернуть словарь id-шников, связанных с конкретной функцией проверки условия сюжетного события
+    /// </summary>
+    public virtual Dictionary<string, List<string>> conditionIDs()
+    {
+        return new Dictionary<string, List<string>> { { "", new List<string>() },
+                                                      { "compare", new List<string>() },
+                                                      { "compareStatistics", statistics.ConvertAll<string>(x=>x.statisticName)} };
+    }
+
+    #endregion //IHaveStory
 
 }
 
