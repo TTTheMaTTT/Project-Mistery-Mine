@@ -22,7 +22,7 @@ public class MovingPlatform : MonoBehaviour, IMechanism
 
     [SerializeField]
     protected List<Vector2> platformPositions = new List<Vector2>();
-    public List<Vector2> PlatformPositions { get { return platformPositions; } }
+    public List<Vector2> PlatformPositions { get { return platformPositions; } set { platformPositions = value; } }
 
     protected Animator anim;
     public Material lineMaterial;//Какой материал используется для отрисовки линии
@@ -263,33 +263,106 @@ public class MovingPlatformEditor : Editor
 
     #region fields
 
-    private static Sprite drawIcon;
+    private static MovingPlatform mov;
 
-    List<LineRenderer> lines;
+    private Sprite drawIcon;
+
+    public static List<LineRenderer> lines;
 
     #endregion //fields
 
     #region parametres
 
-    private bool drawMod = false;
+    private static bool drawMod = false;
     public GUIStyle textureStyle;
     public GUIStyle textureStyleAct;
+
+    private static Vector3 lastPoint = Vector3.zero;
 
     #endregion //parametres
 
     public void OnEnable()
     {
+
         drawIcon = drawIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath);
+        MovingPlatform mov = (MovingPlatform)target;
+        lines = mov.Lines;
+        if (lines == null)
+        {
+            mov.Lines = new List<LineRenderer>();
+            lines = new List<LineRenderer>();
+        }
+
+        if (lines.Count > 0)
+            lastPoint = mov.PlatformPositions[mov.PlatformPositions.Count - 1];
+        Debug.Log(mov.name);
+
+        Editor.CreateInstance(typeof(SceneViewEventHandler));
     }
 
     public void OnDestroy()
     {
         drawMod = false;
+        mov = null;
+        lines = null;
+    }
+
+    /// <summary>
+    /// Класс, что задаёт правила ввода в редакторе платформ
+    /// </summary>
+    public class SceneViewEventHandler : Editor
+    {
+        static SceneViewEventHandler()
+        {
+            SceneView.onSceneGUIDelegate += OnSceneGUI;
+        }
+
+        /// <summary>
+        /// Действия, производимые на сцене при работающем редакторе уровней
+        /// </summary>
+        static void OnSceneGUI(SceneView sView)
+        {
+            Event e = Event.current;
+            if (e.type == EventType.keyDown)
+            {
+                if (e.keyCode == KeyCode.P)
+                    drawMod = !drawMod;
+            }
+            if (drawMod)
+            {
+                MovingPlatform _mov = mov;
+                List<LineRenderer> _lines = lines;
+                HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+                if (e.type == EventType.MouseDown)
+                {
+                    Camera camera = SceneView.currentDrawingSceneView.camera;
+
+                    Vector2 mousePos = Event.current.mousePosition;
+                    mousePos.y = camera.pixelHeight - mousePos.y;
+                    Vector3 mouseWorldPos = camera.ScreenPointToRay(mousePos).origin;
+                    mouseWorldPos.z = mov.transform.position.z;
+
+                    if (mov.PlatformPositions.Count <= 0 || Vector3.Distance(mouseWorldPos, lastPoint) > .05f)
+                    {
+                        lastPoint = mouseWorldPos;
+                        mov.PlatformPositions.Add(lastPoint);
+                        if (mov.PlatformPositions.Count > 1)
+                        {
+                            CreateLine(mov.PlatformPositions.Count - 1);
+                        }
+                    }
+
+                }
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(mov);
+#endif //UNITY_EDITOR
+            }
+        }
     }
 
     public override void OnInspectorGUI()
     {
-
+        mov = (MovingPlatform)target;
         textureStyle = new GUIStyle(GUI.skin.button);
         textureStyle.margin = new RectOffset(2, 2, 2, 2);
         textureStyle.normal.background = null;
@@ -299,15 +372,13 @@ public class MovingPlatformEditor : Editor
 
         base.OnInspectorGUI();
         
-        MovingPlatform mov = (MovingPlatform)target;
-        lines = mov.Lines;
-        if (lines == null)
-            mov.Lines=new List<LineRenderer>();
         if (GUILayout.Button("DeleteLines"))
         {
+            lines = mov.Lines;
             mov.Lines=new List<LineRenderer>();
             foreach (LineRenderer line in lines)
                 DestroyImmediate(line.gameObject);
+            mov.PlatformPositions = new List<Vector2>();
         }
         if (GUILayout.Button("CreateLines"))
         {
@@ -316,21 +387,7 @@ public class MovingPlatformEditor : Editor
             lines.Clear();
             for (int i = 1; i < mov.PlatformPositions.Count; i++)
             {
-                GameObject gLine = new GameObject("line" + (i - 1).ToString());
-                GameObject gLines = GameObject.Find("PlatformLines");
-                if (gLines != null)
-                    gLine.transform.SetParent(gLines.transform);
-                LineRenderer line = gLine.AddComponent<LineRenderer>();
-                line.sharedMaterial = mov.lineMaterial;
-                Vector3 pos1 = mov.PlatformPositions[i - 1], pos2=mov.PlatformPositions[i];
-                pos1.z = mov.transform.position.z;
-                pos2.z = mov.transform.position.z;
-                line.SetPositions(new Vector3[] { pos1, pos2 });
-                line.SetWidth(mov.LineWidth, mov.LineWidth);
-                AutoLineRender rLine=gLine.AddComponent<AutoLineRender>();
-                rLine.SetPoints(mov.LineRatio, pos1, pos2);
-                rLine.AutoTile();
-                lines.Add(line);
+                CreateLine(i);
             }
             mov.Lines=lines;
         }
@@ -360,6 +417,26 @@ public class MovingPlatformEditor : Editor
                                                   drawIcon.textureRect.height / (float)drawIcon.texture.height));
         }
 
+    }
+
+    public static void CreateLine(int index)
+    {
+        GameObject gLine = new GameObject("line" + (index - 1).ToString());
+        GameObject gLines = GameObject.Find("PlatformLines");
+        if (gLines != null)
+            gLine.transform.SetParent(gLines.transform);
+        LineRenderer line = gLine.AddComponent<LineRenderer>();
+        line.sharedMaterial = mov.lineMaterial;
+        Vector3 pos1 = mov.PlatformPositions[index - 1], pos2 = mov.PlatformPositions[index];
+        pos1.z = mov.transform.position.z;
+        pos2.z = mov.transform.position.z;
+        line.SetPositions(new Vector3[] { pos1, pos2 });
+        line.SetWidth(mov.LineWidth, mov.LineWidth);
+        AutoLineRender rLine = gLine.AddComponent<AutoLineRender>();
+        rLine.SetPoints(mov.LineRatio, pos1, pos2);
+        rLine.AutoTile();
+        lines.Add(line);
+        mov.Lines.Add(line);
     }
 }
 #endif
