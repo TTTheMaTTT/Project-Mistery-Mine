@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Game_x0020_Data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Level_x0020_Data Active="true">
-    <Checkpoint>2</Checkpoint>
+    <Checkpoint>1</Checkpoint>
     <Level_x0020_Statistics_x0020_Data>
       <Level_x0020_Statistics_x0020_List>
         <Level_x0020_Statistics_x0020_Info>
@@ -11,53 +11,28 @@
       </Level_x0020_Statistics_x0020_List>
     </Level_x0020_Statistics_x0020_Data>
     <Equipment_x0020_Level_x0020_Data>
-      <Weapon>Club</Weapon>
+      <Weapon>Knife</Weapon>
       <Bag_x0020_Items />
     </Equipment_x0020_Level_x0020_Data>
     <Drop_x0020_Data>
-      <Drops>
-        <Drop_x0020_Info Custom_x0020_Drop="true">
-          <Position>
-            <x>-8.575002</x>
-            <y>0.06500006</y>
-            <z>0</z>
-          </Position>
-          <Item_x0020_Name>Knife</Item_x0020_Name>
-        </Drop_x0020_Info>
-        <Drop_x0020_Info Custom_x0020_Drop="false">
-          <Position>
-            <x>-8.608446</x>
-            <y>0.0500000678</y>
-            <z>0</z>
-          </Position>
-          <Item_x0020_Name>Heart</Item_x0020_Name>
-        </Drop_x0020_Info>
-        <Drop_x0020_Info Custom_x0020_Drop="false">
-          <Position>
-            <x>-4.722944</x>
-            <y>-6.510001</y>
-            <z>0</z>
-          </Position>
-          <Item_x0020_Name>Heart</Item_x0020_Name>
-        </Drop_x0020_Info>
-      </Drops>
+      <Drops />
     </Drop_x0020_Data>
     <Enemies_x0020_Info>
       <Enemy_x0020_Data Agressive="false">
         <ID>0</ID>
         <Position>
-          <x>0.822455</x>
-          <y>-6.651639</y>
+          <x>0.7126307</x>
+          <y>-6.65308142</y>
           <z>0</z>
         </Position>
-        <Orientation>-1</Orientation>
+        <Orientation>1</Orientation>
         <Health>140</Health>
       </Enemy_x0020_Data>
       <Enemy_x0020_Data Agressive="false">
         <ID>1</ID>
         <Position>
-          <x>-0.583861053</x>
-          <y>-1.53075171</y>
+          <x>-0.7783528</x>
+          <y>-1.53181827</y>
           <z>0</z>
         </Position>
         <Orientation>-1</Orientation>
@@ -66,8 +41,8 @@
       <Enemy_x0020_Data Agressive="false">
         <ID>2</ID>
         <Position>
-          <x>-5.60179043</x>
-          <y>0.0703294948</y>
+          <x>-5.941541</x>
+          <y>0.06837501</y>
           <z>0</z>
         </Position>
         <Orientation>1</Orientation>
@@ -76,8 +51,8 @@
       <Enemy_x0020_Data Agressive="false">
         <ID>3</ID>
         <Position>
-          <x>-4.688481</x>
-          <y>-3.61297655</y>
+          <x>-4.663655</x>
+          <y>-3.61298013</y>
           <z>0</z>
         </Position>
         <Orientation>-1</Orientation>
@@ -86,58 +61,58 @@
       <Enemy_x0020_Data Agressive="false">
         <ID>4</ID>
         <Position>
-          <x>-10.77359</x>
-          <y>-10.0130148</y>
-          <z>0</z>
-        </Position>
-        <Orientation>1</Orientation>
-        <Health>140</Health>
-      </Enemy_x0020_Data>
-      <Enemy_x0020_Data Agressive="false">
-        <ID>5</ID>
-        <Position>
-          <x>1.03066242</x>
-          <y>-6.65303326</y>
+          <x>-10.5704975</x>
+          <y>-10.0094118</y>
           <z>0</z>
         </Position>
         <Orientation>-1</Orientation>
         <Health>140</Health>
       </Enemy_x0020_Data>
       <Enemy_x0020_Data Agressive="false">
-        <ID>6</ID>
+        <ID>5</ID>
         <Position>
-          <x>-10.9406424</x>
-          <y>-10.0129471</y>
+          <x>0.9053181</x>
+          <y>-6.653076</y>
           <z>0</z>
         </Position>
         <Orientation>1</Orientation>
+        <Health>140</Health>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data Agressive="false">
+        <ID>6</ID>
+        <Position>
+          <x>-10.7534885</x>
+          <y>-10.012991</y>
+          <z>0</z>
+        </Position>
+        <Orientation>-1</Orientation>
         <Health>140</Health>
       </Enemy_x0020_Data>
       <Enemy_x0020_Data Agressive="false">
         <ID>7</ID>
         <Position>
-          <x>-10.60644</x>
-          <y>-10.0101767</y>
+          <x>-10.417881</x>
+          <y>-10.0130329</y>
           <z>0</z>
         </Position>
-        <Orientation>1</Orientation>
+        <Orientation>-1</Orientation>
         <Health>140</Health>
       </Enemy_x0020_Data>
       <Enemy_x0020_Data Agressive="false">
         <ID>8</ID>
         <Position>
-          <x>-4.07311153</x>
-          <y>0.06717155</y>
+          <x>-5.28850365</x>
+          <y>0.07059191</y>
           <z>0</z>
         </Position>
-        <Orientation>1</Orientation>
+        <Orientation>-1</Orientation>
         <Health>140</Health>
       </Enemy_x0020_Data>
       <Enemy_x0020_Data Agressive="false">
         <ID>9</ID>
         <Position>
-          <x>-3.498328</x>
-          <y>-9.85176849</y>
+          <x>-3.755209</x>
+          <y>-9.853047</y>
           <z>0</z>
         </Position>
         <Orientation>-1</Orientation>
@@ -146,8 +121,8 @@
       <Enemy_x0020_Data Agressive="false">
         <ID>10</ID>
         <Position>
-          <x>-0.749575436</x>
-          <y>-1.53292751</y>
+          <x>-0.93186307</x>
+          <y>-1.53160119</y>
           <z>0</z>
         </Position>
         <Orientation>-1</Orientation>
@@ -156,11 +131,11 @@
       <Enemy_x0020_Data Agressive="false">
         <ID>11</ID>
         <Position>
-          <x>-2.372693</x>
-          <y>-9.851612</y>
+          <x>-3.41319776</x>
+          <y>-9.849598</y>
           <z>0</z>
         </Position>
-        <Orientation>-1</Orientation>
+        <Orientation>1</Orientation>
         <Health>140</Health>
       </Enemy_x0020_Data>
     </Enemies_x0020_Info>
@@ -169,14 +144,26 @@
         <ID>0</ID>
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data>
+        <ID>1</ID>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data>
         <ID>2</ID>
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data xsi:type="Door_x0020_Data" Opened="false">
         <ID>3</ID>
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
-        <ID>5</ID>
+        <ID>4</ID>
         <Activated>true</Activated>
+        <Position>
+          <x>-7.977</x>
+          <y>-6.085</y>
+          <z>0</z>
+        </Position>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
+        <ID>5</ID>
+        <Activated>false</Activated>
         <Position>
           <x>-1.756</x>
           <y>-6.55798054</y>
@@ -187,19 +174,19 @@
         <ID>7</ID>
         <Activated>true</Activated>
         <Position>
-          <x>-3.218009</x>
+          <x>-3.204957</x>
           <y>-7.957538</y>
           <z>0</z>
         </Position>
-        <Direction>-1</Direction>
-        <Current_x0020_Position>1</Current_x0020_Position>
+        <Direction>1</Direction>
+        <Current_x0020_Position>0</Current_x0020_Position>
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data xsi:type="Moving_x0020_Platform_x0020_Data">
         <ID>8</ID>
         <Activated>true</Activated>
         <Position>
           <x>-7.12</x>
-          <y>-3.84399915</y>
+          <y>-2.63199067</y>
           <z>0</z>
         </Position>
         <Direction>-1</Direction>
@@ -219,50 +206,50 @@
         <Activated>true</Activated>
         <Position>
           <x>-6.391137</x>
-          <y>-9.452002</y>
+          <y>-9.805679</y>
           <z>0</z>
         </Position>
-        <Direction>-1</Direction>
-        <Current_x0020_Position>1</Current_x0020_Position>
+        <Direction>1</Direction>
+        <Current_x0020_Position>0</Current_x0020_Position>
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data xsi:type="Moving_x0020_Platform_x0020_Data">
         <ID>11</ID>
         <Activated>true</Activated>
         <Position>
           <x>-7.644874</x>
-          <y>-0.7390094</y>
+          <y>-0.7239709</y>
           <z>0</z>
         </Position>
-        <Direction>1</Direction>
-        <Current_x0020_Position>0</Current_x0020_Position>
+        <Direction>-1</Direction>
+        <Current_x0020_Position>1</Current_x0020_Position>
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data xsi:type="Moving_x0020_Platform_x0020_Data">
         <ID>12</ID>
         <Activated>true</Activated>
         <Position>
-          <x>-7.348894</x>
+          <x>-6.69900036</x>
           <y>-0.03284979</y>
           <z>0</z>
         </Position>
-        <Direction>1</Direction>
-        <Current_x0020_Position>0</Current_x0020_Position>
+        <Direction>-1</Direction>
+        <Current_x0020_Position>1</Current_x0020_Position>
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data xsi:type="Moving_x0020_Platform_x0020_Data">
         <ID>13</ID>
         <Activated>true</Activated>
         <Position>
           <x>-6.612587</x>
-          <y>-4.302994</y>
+          <y>-3.162006</y>
           <z>0</z>
         </Position>
-        <Direction>1</Direction>
-        <Current_x0020_Position>0</Current_x0020_Position>
+        <Direction>-1</Direction>
+        <Current_x0020_Position>1</Current_x0020_Position>
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
         <ID>14</ID>
         <Activated>false</Activated>
         <Position>
-          <x>-6.296</x>
+          <x>-7.53</x>
           <y>-5.953</y>
           <z>0</z>
         </Position>
@@ -271,12 +258,12 @@
         <ID>15</ID>
         <Activated>false</Activated>
         <Position>
-          <x>-6.296</x>
+          <x>-7.53</x>
           <y>-5.946</y>
           <z>0</z>
         </Position>
         <Direction>1</Direction>
-        <Current_x0020_Position>1</Current_x0020_Position>
+        <Current_x0020_Position>0</Current_x0020_Position>
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
         <ID>16</ID>
@@ -303,7 +290,7 @@
         <Activated>true</Activated>
         <Position>
           <x>-7.066518</x>
-          <y>-4.53660536</y>
+          <y>-4.566606</y>
           <z>0</z>
         </Position>
         <Direction>1</Direction>
@@ -333,12 +320,12 @@
         <ID>21</ID>
         <Activated>true</Activated>
         <Position>
-          <x>-2.40499783</x>
+          <x>-2.38230944</x>
           <y>-4.782663</y>
           <z>0</z>
         </Position>
-        <Direction>-1</Direction>
-        <Current_x0020_Position>1</Current_x0020_Position>
+        <Direction>1</Direction>
+        <Current_x0020_Position>0</Current_x0020_Position>
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
         <ID>22</ID>
@@ -357,14 +344,14 @@
           <y>-2.785514</y>
           <z>0</z>
         </Position>
-        <Direction>1</Direction>
+        <Direction>-1</Direction>
         <Current_x0020_Position>0</Current_x0020_Position>
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data xsi:type="Moving_x0020_Platform_x0020_Data">
         <ID>24</ID>
         <Activated>true</Activated>
         <Position>
-          <x>-0.5999012</x>
+          <x>-0.549900055</x>
           <y>-9.209402</y>
           <z>0</z>
         </Position>
@@ -395,6 +382,10 @@
       </Interactive_x0020_Object_x0020_Data>
       <Interactive_x0020_Object_x0020_Data xsi:type="Box_x0020_Data">
         <ID>28</ID>
+        <Health>10</Health>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Box_x0020_Data">
+        <ID>29</ID>
         <Health>10</Health>
       </Interactive_x0020_Object_x0020_Data>
     </Interactive_x0020_Objects_x0020_Info>
@@ -537,7 +528,7 @@
       <NPC_x0020_Info>
         <ID>7</ID>
         <Dialogs>
-          <Dialog>Первый тотем</Dialog>
+          <Dialog>Вход в шахту</Dialog>
           <Dialog>Обучение движению 2</Dialog>
           <Dialog>Прыжок 1</Dialog>
           <Dialog>Прыжок 2</Dialog>
@@ -574,8 +565,6 @@
       </Stories>
       <Completed_x0020_Stories>
         <Completed_x0020_Story>Вход в шахту</Completed_x0020_Story>
-        <Completed_x0020_Story>Движущиеся платформы</Completed_x0020_Story>
-        <Completed_x0020_Story>Первый тотем</Completed_x0020_Story>
       </Completed_x0020_Stories>
     </History_x0020_Data>
   </Level_x0020_Data>
