@@ -10,6 +10,7 @@ public class DropClass : MonoBehaviour, IInteractive
     #region consts
 
     private const float groundRadius = .001f;
+    private const float dropTime = .8f;//Сколько времени предмет "выпадает"
 
     #endregion //consts
 
@@ -22,11 +23,13 @@ public class DropClass : MonoBehaviour, IInteractive
     #region parametres
 
     public bool autoPick;//Будет ли дроп автоматически подбираться, когда будет в зоне доступа персонажа?
+    public bool dropped = false;//Предмет можно подобрать только в том случае, если это поле true
 
     #endregion //parametres
 
-    void Awake()
+    protected virtual void Awake()
     {
+        StartCoroutine(DropProcess());
     }
 
     /// <summary>
@@ -34,8 +37,12 @@ public class DropClass : MonoBehaviour, IInteractive
     /// </summary>
     public void Interact()
     {
-        SpecialFunctions.player.GetComponent<HeroController>().SetItem(item,false);
-        Destroy(gameObject);
+        if (dropped)
+        {
+            SpecialFunctions.player.GetComponent<HeroController>().SetItem(item, false);
+            Destroy(gameObject);
+            SpecialFunctions.statistics.ConsiderStatistics(this);
+        }
     }
 
     /// <summary>
@@ -55,12 +62,21 @@ public class DropClass : MonoBehaviour, IInteractive
 
     public virtual void OnTriggerEnter2D(Collider2D other)
     {
-        if (autoPick)
-        if (other.gameObject == SpecialFunctions.player)
-        {
-            Interact();
-        }
+        if (autoPick && dropped)
+            if (other.gameObject == SpecialFunctions.player)
+            {
+                Interact();
+            }
     }
+
+    public virtual IEnumerator DropProcess()
+    {
+        dropped = false;
+        yield return new WaitForSeconds(dropTime);
+        dropped = true;
+    }
+
+    #region IHaveID
 
     /// <summary>
     /// Вернуть id персонажа
@@ -92,5 +108,6 @@ public class DropClass : MonoBehaviour, IInteractive
         return null;
     }
 
+    #endregion //IHaveID
 
 }

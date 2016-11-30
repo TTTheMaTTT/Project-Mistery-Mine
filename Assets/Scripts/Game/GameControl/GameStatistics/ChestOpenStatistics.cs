@@ -13,8 +13,8 @@ public class ChestOpenStatistics : Statistics
 
     public override void Compare(UnityEngine.Object obj)
     {
-        ChestController npc = (ChestController)obj;
-        if (npc.gameObject.name.Contains(chestName))
+        ChestController chest = (ChestController)obj;
+        if (chest.gameObject.name.Contains(chestName))
             value++;
     }
 }

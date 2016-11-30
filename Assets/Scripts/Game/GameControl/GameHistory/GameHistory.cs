@@ -272,6 +272,8 @@ public class History
         {
             _story.storyCondition.storyCondition = Empty;
         }
+
+        SpecialFunctions.statistics.InitializeAllStatistics();//Сразу же проверить выполнение условия, связанного со статистикой, для нового события
     }
 
     /// <summary>
@@ -438,7 +440,7 @@ public class History
     /// </summary>
     static bool Compare(StoryCondition _condition, StoryEventArgs e)
     {
-        return SpecialFunctions.ComprFunctionality(e.Argument, _condition.id, _condition.argument);
+        return SpecialFunctions.ComprFunctionality(e.Argument, _condition.id2, _condition.argument);
     }
 
     /// <summary>
@@ -446,7 +448,7 @@ public class History
     /// </summary>
     static bool CompareSpeech(StoryCondition _condition, StoryEventArgs e)
     {
-        return (e.ID == _condition.id);
+        return (e.ID == _condition.id1);
     }
 
     /// <summary>
@@ -454,8 +456,12 @@ public class History
     /// </summary>
     static bool CompareStatistics(StoryCondition _condition, StoryEventArgs e)
     {
-        return (e.ID == _condition.id && e.Argument==_condition.argument);
+        if ((e.ID == _condition.id1))
+            return SpecialFunctions.ComprFunctionality(e.Argument, _condition.id2, _condition.argument);
+        else
+            return false;
     }
+
     #endregion //conditionFunctions
 
     #region events

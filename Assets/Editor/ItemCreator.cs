@@ -63,6 +63,13 @@ public class ItemCreator : EditorWindow
             AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
             Selection.activeObject = asset;
         }
+        else if (itemType == "item")
+        {
+            ItemClass asset = ScriptableObject.CreateInstance<ItemClass>();
+            asset.itemName = itemName;
+            AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
+            Selection.activeObject = asset;
+        }
         AssetDatabase.SaveAssets();
         EditorUtility.FocusProjectWindow();
     }
