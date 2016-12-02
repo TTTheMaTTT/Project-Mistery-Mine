@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -18,9 +19,13 @@ public class EditorColliderCreator : MonoBehaviour
 [CustomEditor(typeof(EditorColliderCreator))]
 public class EditorColliderCreator_Editor : Editor
 {
+    bool parentMod = false;
+
     public override void OnInspectorGUI()
     {
         base.OnInspectorGUI();
+
+        parentMod=EditorGUILayout.Toggle("Parent mod", parentMod);
 
         if (GUILayout.Button("Create Editor Colliders"))
             CreateColliders();
@@ -36,11 +41,26 @@ public class EditorColliderCreator_Editor : Editor
     void CreateColliders()
     {
         EditorColliderCreator creator = (EditorColliderCreator)target;
-        foreach (GameObject editorObj in creator.editorObjects)
-            if (editorObj.GetComponent<EditorCollider>() == null)
-            {
-                editorObj.AddComponent<EditorCollider>();
-            }
+        if (parentMod)
+        {
+            foreach (GameObject obj in creator.editorObjects)
+                for (int i = 0; i < obj.transform.childCount; i++)
+                {
+                    GameObject editorObj = obj.transform.GetChild(i).gameObject;
+                    if (editorObj.GetComponent<EditorCollider>() == null)
+                    {
+                        editorObj.AddComponent<EditorCollider>();
+                    }
+                }
+        }
+        else
+        {
+            foreach (GameObject editorObj in creator.editorObjects)
+                if (editorObj.GetComponent<EditorCollider>() == null)
+                {
+                    editorObj.AddComponent<EditorCollider>();
+                }
+        }
     }
 
     /// <summary>
@@ -50,9 +70,24 @@ public class EditorColliderCreator_Editor : Editor
     {
         EditorColliderCreator creator = (EditorColliderCreator)target;
         EditorCollider col=null;
-        foreach (GameObject editorObj in creator.editorObjects)
-            if ((col = editorObj.GetComponent<EditorCollider>()) != null)
-                DestroyImmediate(col);
+        if (parentMod)
+        {
+            foreach (GameObject obj in creator.editorObjects)
+                for (int i = 0; i < obj.transform.childCount; i++)
+                {
+                    GameObject editorObj = obj.transform.GetChild(i).gameObject;
+                    if ((col = editorObj.GetComponent<EditorCollider>()) != null)
+                        DestroyImmediate(col);
+                }
+        }
+        else
+        {
+            foreach (GameObject editorObj in creator.editorObjects)
+                if ((col = editorObj.GetComponent<EditorCollider>()) != null)
+                    DestroyImmediate(col);
+        }
+        Button button;
+
     }
 
 }
