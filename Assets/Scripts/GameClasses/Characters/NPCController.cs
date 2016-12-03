@@ -133,6 +133,15 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     }
 
     /// <summary>
+    /// Начать разговор
+    /// </summary>
+    public virtual void StartTalking()
+    {
+        if (anim != null)
+            anim.Play("Talk");
+    }
+
+    /// <summary>
     /// Прекратить разговор
     /// </summary>
     public virtual void StopTalking()

@@ -91,7 +91,8 @@ public class StoryCondition
     public string storyConditionName;
 
     public string conditionName;//имя функции проверки сюжетного события
-    public string id;    //параметры, что использует
+    public string id1;    //параметры, что использует
+    public string id2;//Знак сравнения
     public int argument;//данное действие
     public GameObject obj;//с каким объектом произвести действие
     public StoryConditionDelegate storyCondition;//ссылка на функцию, которая соответствует названию выше
@@ -104,18 +105,28 @@ public class StoryCondition
 public class CustomStoryEditor : Editor
 {
 
-    int actionSize, presequencesSize, consequencesSize, nonsequencesSize;
-    string sceneName;
+    #region fields
 
     Story story;
     History history = null;
     StoryInitializer init = null;
 
-    List<int> actionNamesIndexes = new List<int>(), actionID1Indexes = new List<int>(), actionID2Indexes=new List<int>();
+    List<int> actionNamesIndexes = new List<int>(), actionID1Indexes = new List<int>(), actionID2Indexes = new List<int>();
 
-    int initNameIndex = -1, conditionNameIndex = -1, conditionIDIndex=-1;
-    List<string> conditionNames = new List<string>(), initNames = new List<string>(), conditionIDs=new List<string>();
+    List<string> conditionNames = new List<string>(), initNames = new List<string>(), conditionIDs = new List<string>(), 
+        conditionIDs2 = new List<string>() { "<", "<=", "=", ">", ">=", "!=", "!" };
     IHaveStory currentConditionObject = null;//Объект, который является инициатором сюжетного события
+
+    #endregion //fields
+
+    #region parametres
+
+    int actionSize, presequencesSize, consequencesSize, nonsequencesSize;
+    string sceneName;
+
+    int initNameIndex = -1, conditionNameIndex = -1, conditionIDIndex = -1, conditionID2Index = -1;
+
+    #endregion //parametres
 
     public void OnEnable()
     {
@@ -543,7 +554,7 @@ public class CustomStoryEditor : Editor
                 _condition.storyConditionName = initNames[newIndex];
 
                 _condition.conditionName = string.Empty;
-                _condition.id = string.Empty;
+                _condition.id1 = string.Empty;
                 conditionIDIndex = -1;
                 conditionNameIndex = -1;
             }
@@ -558,7 +569,7 @@ public class CustomStoryEditor : Editor
                 conditionNameIndex = newIndex;
                 _condition.conditionName = conditionNames[newIndex];
 
-                _condition.id = string.Empty;
+                _condition.id1 = string.Empty;
                 conditionIDIndex = -1;
 
                 List<string> conditionTypes = SpecialFunctions.history.storyTypes;
@@ -588,10 +599,21 @@ public class CustomStoryEditor : Editor
             if (newIndex != conditionIDIndex && conditionIDs.Count>0)
             {
                 conditionIDIndex = newIndex;
-                _condition.id = conditionIDs[newIndex];
+                _condition.id1 = conditionIDs[newIndex];
             }
         }
-        _condition.id = EditorGUILayout.TextField("id", _condition.id);
+        _condition.id1 = EditorGUILayout.TextField("id", _condition.id1);
+
+        if (_condition.obj != null && currentConditionObject != null)
+        {
+            int newIndex = EditorGUILayout.Popup(conditionID2Index, conditionIDs2.ToArray());
+            if (newIndex != conditionID2Index)
+            {
+                conditionID2Index = newIndex;
+                _condition.id2 = conditionIDs2[newIndex];
+            }
+        }
+        _condition.id2 = EditorGUILayout.TextField("id2", _condition.id2);
 
         _condition.argument=EditorGUILayout.IntField("argument",_condition.argument);
 
@@ -672,7 +694,7 @@ public class CustomStoryEditor : Editor
             {
                 if (storyObject.actionNames().Contains(sAction.actionName))
                 {
-                    actionNamesIndexes.Add(storyObject.actionNames().IndexOf(sAction.actionName));
+                    actionNamesIndexes[actionIndex]=storyObject.actionNames().IndexOf(sAction.actionName);
                     List<string> id1List = storyObject.actionIDs1()[sAction.actionName], id2List = storyObject.actionIDs2()[sAction.actionName];
                     if (id1List.Contains(sAction.id1))
                         actionID1Indexes[actionIndex] = id1List.IndexOf(sAction.id1);
@@ -713,6 +735,7 @@ public class CustomStoryEditor : Editor
         conditionNames = new List<string>();
         initNames = new List<string>();
         conditionIDs = new List<string>();
+        conditionIDs2 = new List<string>() { "<", "<=", "=", ">", ">=", "!=", "!" };
 
         currentConditionObject = null;
 
@@ -723,6 +746,7 @@ public class CustomStoryEditor : Editor
             initNameIndex = -1;
             conditionNameIndex = -1;
             conditionIDIndex = -1;
+            conditionID2Index = -1;
         }
         else
         {
@@ -749,6 +773,8 @@ public class CustomStoryEditor : Editor
             {
                 conditionNameIndex = -1;
                 initNameIndex = -1;
+                conditionIDIndex = -1;
+                conditionID2Index = -1;
             }
             else
             {
@@ -781,17 +807,29 @@ public class CustomStoryEditor : Editor
 
                     if (conditionIDs.Count > 0)
                     {
-                        if (conditionIDs.Contains(sCondition.id))
-                            conditionIDIndex = conditionIDs.IndexOf(sCondition.id);
+                        if (conditionIDs.Contains(sCondition.id1))
+                        {
+                            conditionIDIndex = conditionIDs.IndexOf(sCondition.id1);
+                            if (conditionIDs2.Contains(sCondition.id2))
+                                conditionID2Index = conditionIDs2.IndexOf(sCondition.id2);
+                            else
+                            {
+                                sCondition.id2 = string.Empty;
+                                conditionID2Index = -1;
+                            }
+                        }
                         else
                         {
                             conditionIDIndex = -1;
-                            sCondition.id = string.Empty;
+                            sCondition.id1 = string.Empty;
+                            conditionID2Index = -1;
+                            sCondition.id2 = string.Empty;
                         }
                     }
                     else
                     {
                         conditionIDIndex = -1;
+                        conditionID2Index = -1;
                     }
                 }
                 else
@@ -800,7 +838,10 @@ public class CustomStoryEditor : Editor
                     sCondition.conditionName = string.Empty;
 
                     conditionIDIndex = -1;
-                    sCondition.id = string.Empty;
+                    sCondition.id1 = string.Empty;
+
+                    conditionID2Index = -1;
+                    sCondition.id2 = string.Empty;
                 }
 
             }

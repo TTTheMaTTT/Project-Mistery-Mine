@@ -41,6 +41,7 @@ public class AutoLineRender : MonoBehaviour
         if (lRenderer != null)
         {
             float length=Vector2.Distance(point1,point2);
+            lRenderer.sharedMaterial = new Material(lRenderer.sharedMaterial);
             lRenderer.sharedMaterial.SetFloat("_Tiling", length * ratio);
         }
     }

@@ -36,7 +36,8 @@ public static class SpecialFunctions
                         ((arg1 > arg2) && (string.Equals(opr, ">"))) ||
                         ((arg1 >= arg2) && (string.Equals(opr, ">="))) ||
                         ((arg1 != arg2) && (string.Equals(opr, "!="))) ||
-                        (string.Equals(opr, "!")));
+                        (string.Equals(opr, "!")) ||
+                        (opr==string.Empty));
     }
 
     public static void PauseGame()

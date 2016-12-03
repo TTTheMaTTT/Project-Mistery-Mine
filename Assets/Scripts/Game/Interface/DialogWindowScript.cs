@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Скрипт, управляющий диалоговым окном
@@ -26,6 +27,10 @@ public class DialogWindowScript : MonoBehaviour
     protected CameraController cam;
 
     protected Dialog currentDialog = null;
+    protected List<Dialog> reserveDialogs = new List<Dialog>();//Список диалогов, которые надо проиграть по порядку 
+                                                               //(пополняется, когда диалоговому окну запрашивается открыть новый диалог) 
+                                                               //и очищается, когда появляется возможность начать новый диалог
+    protected List<NPCController> reserveNPCs = new List<NPCController>();//Тот же самый список, но для НПС, с которыми педстоит пообщаться
 
     protected Speech currentSpeech = null;
     public Speech CurrentSpeech { get { return currentSpeech; }
@@ -59,6 +64,15 @@ public class DialogWindowScript : MonoBehaviour
             if (Input.anyKeyDown && !Input.GetButtonDown("Horizontal") && !Input.GetButtonDown("Vertical") && !Input.GetButtonDown("Cancel") && noInput==-1)
                 NextSpeech();
         }
+        else if (reserveDialogs.Count>0)
+        {
+            NPCController newNPC = reserveNPCs[0];
+            newNPC.StartTalking();
+            Dialog newDialog = reserveDialogs[0];
+            reserveDialogs.RemoveAt(0);
+            reserveNPCs.RemoveAt(0);
+            BeginDialog(newNPC, newDialog);
+        }
         if (noInput > -1)
             noInput++;
         if (noInput == maxNoInput)
@@ -70,34 +84,44 @@ public class DialogWindowScript : MonoBehaviour
     /// </summary>
     public void BeginDialog(NPCController _npc, Dialog dialog)
     {
-        npc = _npc;
-        currentDialog = dialog;
-        currentDialog.stage = 0;
-
-        CurrentSpeech = dialog.speeches[0];
-
-        canvas.enabled = true;
-
-        HeroController hControl = hero.GetComponent<HeroController>();
-        hControl.SetImmobile(true);
-
-        //Повернуть персонажей друг к другу
-        prevScale1 = hero.localScale.x;
-        prevScale2 = npc.transform.localScale.x;
-        if (hero.localScale.x * (npc.transform.position - hero.position).x < 0f)
+        if (!canvas.enabled)
         {
-            hero.localScale += new Vector3(-2f * prevScale1, 0f);
-        }
-        if (npc.transform.localScale.x * (npc.transform.position- hero.position).x < 0f)
-        {
-            npc.transform.localScale += new Vector3(-2f * prevScale2, 0f);
-        }
+            npc = _npc;
+            currentDialog = dialog;
+            currentDialog.stage = 0;
 
-        if (currentDialog.pause)
-        {
-            SpecialFunctions.PauseGame();
+            CurrentSpeech = dialog.speeches[0];
+
+            canvas.enabled = true;
+
+            HeroController hControl = hero.GetComponent<HeroController>();
+            hControl.SetImmobile(true);
+
+            //Повернуть персонажей друг к другу
+            prevScale1 = hero.localScale.x;
+            prevScale2 = npc.transform.localScale.x;
+            if (hero.localScale.x * (npc.transform.position - hero.position).x < 0f)
+            {
+                hero.localScale += new Vector3(-2f * prevScale1, 0f);
+            }
+            if (npc.transform.localScale.x * (npc.transform.position - hero.position).x < 0f)
+            {
+                npc.transform.localScale += new Vector3(-2f * prevScale2, 0f);
+            }
+
+            if (currentDialog.pause)
+            {
+                SpecialFunctions.PauseGame();
+            }
+            noInput = 0;
         }
-        noInput = 0;
+        else//Занести диалог и НПС в резерв, чтобы пообщатся с ним потом
+        {
+            if (_npc != npc)
+                _npc.StopTalking();
+            reserveDialogs.Add(dialog);
+            reserveNPCs.Add(_npc);
+        }
     }
 
     /// <summary>
@@ -145,6 +169,9 @@ public class DialogWindowScript : MonoBehaviour
     protected void Initialize()
     {
         canvas = GetComponent<Canvas>();
+
+        reserveDialogs = new List<Dialog>();
+        reserveNPCs = new List<NPCController>();
 
         Transform panel = transform.FindChild("Panel");
         speechText = panel.FindChild("SpeechText").GetComponent<Text>();

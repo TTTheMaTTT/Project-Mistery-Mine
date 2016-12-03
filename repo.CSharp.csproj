@@ -86,6 +86,7 @@
     <Compile Include="Assets\Scripts\Game\GameControl\GameHistory\Story.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\ChestOpenStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\DatabaseClass.cs" />
+    <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\DropStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\GameStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\ItemBaseClass.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\MechanismInteractionStatistics.cs" />
