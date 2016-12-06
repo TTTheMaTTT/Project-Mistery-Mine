@@ -18,15 +18,26 @@ public class ChestController : MonoBehaviour, IInteractive
 
     public List<DropClass> content = new List<DropClass>();
 
+    protected SpriteRenderer sRenderer;
+
     #endregion //fields
 
     #region parametres
 
     [SerializeField]
     [HideInInspector]
-    int id;
+    protected int id;
+
+    protected Color outlineColor = Color.yellow;
 
     #endregion //parametres
+
+    #region IInteractive
+
+    void Awake()
+    {
+        sRenderer = GetComponent<SpriteRenderer>();
+    }
 
     /// <summary>
     /// Как происходит взаимодействие с сундуком
@@ -35,7 +46,7 @@ public class ChestController : MonoBehaviour, IInteractive
     {
         foreach (DropClass drop in content)
         {
-            GameObject _drop = Instantiate(drop.gameObject,transform.position+Vector3.up*.05f,transform.rotation) as GameObject;
+            GameObject _drop = Instantiate(drop.gameObject, transform.position + Vector3.up * .05f, transform.rotation) as GameObject;
             if (_drop.GetComponent<Rigidbody2D>() != null)
             {
                 _drop.GetComponent<Rigidbody2D>().AddForce(new Vector2(Random.RandomRange(-pushForceX, pushForceX), pushForceY));
@@ -49,10 +60,30 @@ public class ChestController : MonoBehaviour, IInteractive
         gameObject.tag = "Untagged";
         SpecialFunctions.statistics.ConsiderStatistics(this);
         Animator anim = GetComponent<Animator>();
+        SetOutline(false);
         if (anim != null)
             anim.Play("Opened");
         DestroyImmediate(this);
     }
+
+    /// <summary>
+    /// Отрисовать контур, если происзодит взаимодействие (или убрать этот контур)
+    /// </summary>
+    public virtual void SetOutline(bool _outline)
+    {
+        if (sRenderer != null)
+        {
+            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+            sRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat("_Outline", _outline ? 1f : 0);
+            mpb.SetColor("_OutlineColor", outlineColor);
+            sRenderer.SetPropertyBlock(mpb);
+        }
+    }
+
+    #endregion //IInteractive
+
+    #region IHaveID
 
     /// <summary>
     /// Вернуть id
@@ -101,5 +132,7 @@ public class ChestController : MonoBehaviour, IInteractive
             anim.Play("Opened");
         DestroyImmediate(this);
     }
+
+    #endregion //IHaveID
 
 }

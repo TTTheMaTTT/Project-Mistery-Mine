@@ -307,6 +307,12 @@ public class History
     /// </summary>
     public void AddStory(Story _story)
     {
+        StoryInitializer sInit = FindInitializer(_story);
+        if (sInit == null)
+            return;
+        if (sInit.impossible)
+            return;
+
         for (int i = 0; i < _story.presequences.Count; i++)
         {
             if (FindInitializer(_story.presequences[i])!=null? !FindInitializer(_story.presequences[i]).completed:false)
@@ -331,7 +337,7 @@ public class History
     }
 
     /// <summary>
-    /// Убрать из списка историю
+    /// Убрать из списка историю и сделать её невозможной
     /// </summary>
     public void RemoveStory(Story _story)
     {
@@ -340,6 +346,7 @@ public class History
             storyList.Remove(_story);
             DeInitializeScript(_story);
         }
+        FindInitializer(_story).impossible = true;
     }
 
     /// <summary>
@@ -542,6 +549,9 @@ public class StoryInitializer
 
     [NonSerialized][HideInInspector]
     public bool completed=false;
+    [NonSerialized]
+    [HideInInspector]
+    public bool impossible = false;//Если true, то эта история больше не сможет проинициализироваться
 }
 
 

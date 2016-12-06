@@ -7,6 +7,6 @@ using System.Collections;
 public abstract class WeaponClass : ItemClass
 {
     public float damage;
-    public float attackTime, preAttackTime;//Время самой атаки и время подготовки к ней
+    public float attackTime, preAttackTime, endAttackTime;//Время самой атаки и время подготовки к ней, а также время завершения атаки
 
 }

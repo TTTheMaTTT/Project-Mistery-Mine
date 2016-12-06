@@ -12,6 +12,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     #region consts
 
     protected const float disableTalkTime = .2f;//Время, в течение которого нельзя снова заговорить с персонажем
+    private const float pushForceY = 50f, pushForceX = 25f;//С какой силой НПС выбрасывает дроп
 
     #endregion //consts
 
@@ -44,6 +45,9 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     protected bool canTalk=true;//Может ли персонаж разговаривать
     public bool CanTalk { get { return canTalk; } set { canTalk = value; } }
 
+    public List<DropClass> NPCDrop = new List<DropClass>();//Что может вывалить НПС, при выполнении его задания (или при иных условиях)
+    protected SpriteRenderer sRenderer;
+
     #endregion //fields
 
     #region parametres
@@ -54,6 +58,8 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     [SerializeField]protected int dialogArgument1, dialogArgument2;
 
     [SerializeField][HideInInspector]protected int id;
+
+    protected Color outlineColor = Color.yellow;//Цвет контура
 
     #endregion //parametres
 
@@ -70,6 +76,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     protected virtual void Initialize()
     {
         anim = GetComponent<Animator>();
+        sRenderer = GetComponent<SpriteRenderer>();
         FormDictionaries();
     }
 
@@ -78,18 +85,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
         storyActionBase = new Dictionary<string, storyActionDelegate>();
 
         storyActionBase.Add("speechAction", SpeechAction);
-    }
-
-    /// <summary>
-    /// Функция взаимодействия с объектом
-    /// </summary>
-    public virtual void Interact()
-    {
-        if (canTalk)
-        {
-            Talk();
-            canTalk = false;
-        }
+        storyActionBase.Add("dropAction", GiveDrop);
     }
 
     /// <summary>
@@ -139,6 +135,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     {
         if (anim != null)
             anim.Play("Talk");
+        SetOutline(false);
     }
 
     /// <summary>
@@ -150,6 +147,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
             anim.Play("Idle");
         canTalk = false;
         StartCoroutine(NoTalkingProcess());
+        SetOutline(true);
     }
 
     /// <summary>
@@ -205,6 +203,48 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
             {
                 dialogs[0] = _dialog;
                 Talk();
+            }
+        }
+    }
+
+    /// <summary>
+    /// НПС отдаёт предмет
+    /// </summary>
+    public void GiveDrop(StoryAction _action)
+    {
+        if (_action.id1 == "one")
+        {
+            if (_action.id2 != string.Empty)
+            {
+                DropClass drop = NPCDrop.Find(x => (x.gameObject.name == _action.id2));
+                if (drop != null)
+                {
+                    GameObject _drop = Instantiate(drop.gameObject, transform.position + Vector3.up * .05f, transform.rotation) as GameObject;
+                    if (_drop.GetComponent<Rigidbody2D>() != null)
+                    {
+                        _drop.GetComponent<Rigidbody2D>().AddForce(new Vector2(UnityEngine.Random.RandomRange(-pushForceX, pushForceX), pushForceY));
+                    }
+                }
+            }
+
+            else if (_action.argument < NPCDrop.Count)
+            {
+                GameObject _drop = Instantiate(NPCDrop[_action.argument].gameObject, transform.position + Vector3.up * .05f, transform.rotation) as GameObject;
+                if (_drop.GetComponent<Rigidbody2D>() != null)
+                {
+                    _drop.GetComponent<Rigidbody2D>().AddForce(new Vector2(UnityEngine.Random.RandomRange(-pushForceX, pushForceX), pushForceY));
+                }
+            }
+        }
+        else
+        {
+            foreach (DropClass drop in NPCDrop)
+            {
+                GameObject _drop = Instantiate(drop.gameObject, transform.position + Vector3.up * .05f, transform.rotation) as GameObject;
+                if (_drop.GetComponent<Rigidbody2D>() != null)
+                {
+                    _drop.GetComponent<Rigidbody2D>().AddForce(new Vector2(UnityEngine.Random.RandomRange(-pushForceX, pushForceX), pushForceY));
+                }
             }
         }
     }
@@ -265,6 +305,37 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
 
     #endregion //IHaveID
 
+    #region IInteractive
+
+    /// <summary>
+    /// Функция взаимодействия с объектом
+    /// </summary>
+    public virtual void Interact()
+    {
+        if (canTalk)
+        {
+            Talk();
+            canTalk = false;
+        }
+    }
+
+    /// <summary>
+    /// Отрисовать контур, если происзодит взаимодействие (или убрать этот контур)
+    /// </summary>
+    public virtual void SetOutline(bool _outline)
+    {
+        if (sRenderer != null)
+        {
+            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+            sRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat("_Outline", _outline ? 1f : 0);
+            mpb.SetColor("_OutlineColor", outlineColor);
+            sRenderer.SetPropertyBlock(mpb);
+        }
+    }
+
+    #endregion //IInteractive
+
     #region IHaveStory
 
     /// <summary>
@@ -273,7 +344,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// <returns></returns>
     public virtual List<string> actionNames()
     {
-        return new List<string>() { "speechAction" };
+        return new List<string>() { "speechAction", "dropAction"};
     }
 
     /// <summary>
@@ -283,7 +354,8 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     public virtual Dictionary<string, List<string>> actionIDs1()
     {
         return new Dictionary<string, List<string>>() {
-                                                    { "speechAction", new List<string> {"change speech", "talk" } } };
+                                                    { "speechAction", new List<string> {"change speech", "talk" } },
+                                                    {"dropAction", new List<string> {"","one" } } };
     }
 
     /// <summary>
@@ -293,7 +365,8 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     public virtual Dictionary<string, List<string>> actionIDs2()
     {
         return new Dictionary<string, List<string>>() {
-                                                    { "speechAction", dialogs.ConvertAll<string>(x => x.dialogName)} };
+                                                    { "speechAction", dialogs.ConvertAll<string>(x => x.dialogName)},
+                                                    { "dropAction", NPCDrop.ConvertAll<string>(x=>x.gameObject.name)} };
     }
 
     /// <summary>

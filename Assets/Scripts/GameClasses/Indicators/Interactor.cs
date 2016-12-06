@@ -54,7 +54,13 @@ public class Interactor : MonoBehaviour {
             if (interactions[0] == null ? true : (interactions[0].GetComponent<IInteractive>() == null
                                                  || interactions[0].GetComponent<Collider2D>() == null ? true: !interactions[0].GetComponent<Collider2D>().enabled))
             {
+                IInteractive interaction = interactions[0]!=null?interactions[0].GetComponent<IInteractive>():null;
+                if (interaction != null)
+                    interaction.SetOutline(false);
                 interactions.RemoveAt(0);
+                interaction = interactions.Count>0? (interactions[0]!= null ? interactions[0].GetComponent<IInteractive>() : null):null;
+                if (interaction != null)
+                    interaction.SetOutline(false);
             }
         }
     }
@@ -67,6 +73,10 @@ public class Interactor : MonoBehaviour {
             if (interaction != null ? !interactions.Contains(other.gameObject) : false)
             {
                interactions.Add(other.gameObject);
+                if (interactions.Count == 1)
+                {
+                    interaction.SetOutline(true);
+                }
             }
         }
     }
@@ -75,9 +85,19 @@ public class Interactor : MonoBehaviour {
     {
         if (whatIsInteractable.Contains(other.gameObject.tag))
         {
+            IInteractive interaction = other.gameObject.GetComponent<IInteractive>();
+            if (interaction != null)
+            {
+                interaction.SetOutline(false);
+            }
             if (interactions.Contains(other.gameObject))
             {
                 interactions.Remove(other.gameObject);
+            }
+            if (interactions.Count > 0)
+            {
+                interaction = interactions[0].GetComponent<IInteractive>();
+                interaction.SetOutline(true);
             }
         }
         else if (ladder != null? other.gameObject == ladder:false)
@@ -95,6 +115,26 @@ public class Interactor : MonoBehaviour {
             {
                 ladder = other.gameObject;
             }
+        }
+    }
+
+    /// <summary>
+    /// Сменить объект взаимодействия
+    /// </summary>
+    public virtual void ChangeInteraction()
+    {
+        if (interactions.Count > 1)
+        {
+            GameObject changedInter = interactions[0];
+            IInteractive inter = changedInter.GetComponent<IInteractive>();
+            if (inter != null)
+                inter.SetOutline(false);
+            interactions.RemoveAt(0);
+            interactions.Add(changedInter);
+            inter = interactions[0].GetComponent<IInteractive>();
+            if (inter != null)
+                inter.SetOutline(true);
+            
         }
     }
 
