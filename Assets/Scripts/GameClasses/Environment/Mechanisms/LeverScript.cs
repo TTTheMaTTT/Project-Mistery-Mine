@@ -21,6 +21,7 @@ public class LeverScript : MonoBehaviour, IInteractive
     protected Animator anim;
 
     protected bool once = false;//Взаимодействовал ли уже игрок с рычагом
+    protected SpriteRenderer sRenderer;
 
     #endregion //fields
 
@@ -31,6 +32,8 @@ public class LeverScript : MonoBehaviour, IInteractive
 
     [SerializeField]
     protected int id;
+
+    protected Color outlineColor = Color.yellow;
 
     #endregion //parametres
 
@@ -46,33 +49,8 @@ public class LeverScript : MonoBehaviour, IInteractive
         {
             anim.Play(activated ? "Active" : "Inactive");
         }
+        sRenderer = GetComponent<SpriteRenderer>();
         once = false;
-    }
-
-    /// <summary>
-    /// Взаимодействие с рычагом
-    /// </summary>
-    public virtual void Interact()
-    {
-        if (!activated)
-        {
-            foreach (GameObject obj in mechanisms)
-            {
-                IMechanism mech = obj.GetComponent<IMechanism>();
-                if (mech!=null)
-                    mech.ActivateMechanism();
-            }
-            activated = !activated;
-            if (anim != null)
-            {
-                anim.Play(activated ? "Active" : "Inactive");
-            }
-            if (!once)
-            {
-                once = true;
-                SpecialFunctions.statistics.ConsiderStatistics(this);
-            }
-        }
     }
 
     #region events
@@ -90,6 +68,53 @@ public class LeverScript : MonoBehaviour, IInteractive
     }
 
     #endregion //events
+
+    #region IInteractive
+
+    /// <summary>
+    /// Взаимодействие с рычагом
+    /// </summary>
+    public virtual void Interact()
+    {
+        if (!activated)
+        {
+            foreach (GameObject obj in mechanisms)
+            {
+                IMechanism mech = obj.GetComponent<IMechanism>();
+                if (mech != null)
+                    mech.ActivateMechanism();
+            }
+            activated = true;
+            if (anim != null)
+            {
+                anim.Play(activated ? "Active" : "Inactive");
+            }
+            if (!once)
+            {
+                once = true;
+                SpecialFunctions.statistics.ConsiderStatistics(this);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Отрисовать контур, если происзодит взаимодействие (или убрать этот контур)
+    /// </summary>
+    public virtual void SetOutline(bool _outline)
+    {
+        if (sRenderer != null)
+        {
+            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+            sRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat("_Outline", _outline ? 1f : 0);
+            mpb.SetColor("_OutlineColor", outlineColor);
+            sRenderer.SetPropertyBlock(mpb);
+        }
+    }
+
+    #endregion //IInteractive
+
+    #region IHaveID
 
     /// <summary>
     /// Вернуть id
@@ -121,6 +146,7 @@ public class LeverScript : MonoBehaviour, IInteractive
             activated = mData.activated;
             if (anim != null)
             {
+                anim.Stop();
                 anim.Play(activated ? "Active" : "Inactive");
             }
         }
@@ -134,5 +160,7 @@ public class LeverScript : MonoBehaviour, IInteractive
         MechData mData = new MechData(id, activated, transform.position);
         return mData;
     }
+
+    #endregion //IHaveID
 
 }

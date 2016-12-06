@@ -49,6 +49,8 @@ public class LevelEditor : EditorWindow
 
     private static DrawModEnum drawMod;//Режим рисования
 
+    private static int layerOrder = 0;//Какой порядок отрисовки на данном слое
+
     #region groundBrush
 
     private static List<GroundBrush> groundBrushes=new List<GroundBrush>();
@@ -438,6 +440,7 @@ public class LevelEditor : EditorWindow
                     newGround.transform.position = mouseWorldPos;
                     newGround.GetComponent<SpriteRenderer>().sprite = groundAngle? grBrush.angleGround:grBrush.outGround;
                     newGround.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                    newGround.GetComponent<SpriteRenderer>().sortingOrder = layerOrder;
                     newGround.tag = tagName;
                     newGround.layer = groundLayer;
                     if (parentObj != null)
@@ -644,7 +647,9 @@ public class LevelEditor : EditorWindow
         }
 
         #endregion //ground
-        
+
+        #region plants
+
         /// <summary>
         /// Отрисовка растений
         /// </summary>
@@ -714,6 +719,7 @@ public class LevelEditor : EditorWindow
                     newPlant.transform.localScale += new Vector3((plantUp.x * plantUp.y != 0f ? Mathf.Sqrt(2)-1f : 0f),0f,0f);
                     newPlant.GetComponent<SpriteRenderer>().sprite = loadedPlant;
                     newPlant.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                    newPlant.GetComponent<SpriteRenderer>().sortingOrder = layerOrder;
                     newPlant.tag = tagName;
                     newPlant.layer = plantLayer;
                     if (parentObj != null)
@@ -726,6 +732,7 @@ public class LevelEditor : EditorWindow
             }
         }
 
+        #endregion //plants
 
         #region water
 
@@ -998,6 +1005,7 @@ public class LevelEditor : EditorWindow
                 GameObject newWater = new GameObject(objName, typeof(SpriteRenderer));
                 newWater.transform.position = new Vector3(cellPosition.x, cellPosition.y, zPosition);
                 newWater.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                newWater.GetComponent<SpriteRenderer>().sortingOrder = layerOrder;
                 if (waterMaterial != null)
                     newWater.GetComponent<SpriteRenderer>().material = waterMaterial;
                 newWater.tag = tagName;
@@ -1212,6 +1220,7 @@ public class LevelEditor : EditorWindow
                     newLadder.layer = ladderLayer;
                     newLadder.name = ladderName;
                     newLadder.GetComponent<SpriteRenderer>().sortingLayerName=sortingLayer;
+                    newLadder.GetComponent<SpriteRenderer>().sortingOrder = layerOrder;
                     
                     if (parentObj != null)
                         newLadder.transform.parent = parentObj.transform;
@@ -1309,6 +1318,7 @@ public class LevelEditor : EditorWindow
                     newObstacle.tag = tagName;
                     newObstacle.layer = obstacleLayer;
                     newObstacle.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                    newObstacle.GetComponent<SpriteRenderer>().sortingOrder = layerOrder;
 
                     if (obstacle != null)
                     {
@@ -1463,6 +1473,7 @@ public class LevelEditor : EditorWindow
                     newSprite.transform.position = mouseWorldPos;
                     newSprite.GetComponent<SpriteRenderer>().sprite = loadedSprite;
                     newSprite.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
+                    newSprite.GetComponent<SpriteRenderer>().sortingOrder = layerOrder;
                     newSprite.tag = tagName;
                     newSprite.layer = spriteLayer;
                     if (parentObj != null)
@@ -2199,7 +2210,7 @@ public class LevelEditor : EditorWindow
                 newContour.Add(newLObstacle.transform.InverseTransformPoint(contour[i]));
             }
             PolygonCollider2D col = newLObstacle.AddComponent<PolygonCollider2D>();
-            col.isTrigger = true;
+            col.isTrigger = !createWholeCollider;
             col.points = newContour.ConvertAll(x=>(Vector2)x).ToArray();
 
             if (parentObj == null && lightObstacleParentObjName != string.Empty)
@@ -2677,6 +2688,8 @@ public class LevelEditor : EditorWindow
         sortingLayer = sortingLayers[sLayerIndex];
         EditorGUILayout.EndHorizontal();
 
+        layerOrder = EditorGUILayout.IntField("Layer Order", layerOrder);
+
         zPosition = EditorGUILayout.FloatField("z-position", zPosition);
         grParentObjName = EditorGUILayout.TextField("parent name", grParentObjName);
         if (grParentObjName != string.Empty && (parentObj != null? parentObj.name!=grParentObjName: true))
@@ -2804,6 +2817,8 @@ public class LevelEditor : EditorWindow
         sortingLayer = sortingLayers[sLayerIndex];
         EditorGUILayout.EndHorizontal();
 
+        layerOrder = EditorGUILayout.IntField("Layer Order", layerOrder);
+
         zPosition = EditorGUILayout.FloatField("z-position", zPosition);
         plantParentObjName = EditorGUILayout.TextField("parent name", plantParentObjName);
         if (plantParentObjName != string.Empty && (parentObj != null ? parentObj.name != plantParentObjName : true))
@@ -2910,6 +2925,8 @@ public class LevelEditor : EditorWindow
         sLayerIndex = EditorGUILayout.Popup(sLayerIndex, sortingLayers);
         sortingLayer = sortingLayers[sLayerIndex];
         EditorGUILayout.EndHorizontal();
+
+        layerOrder = EditorGUILayout.IntField("Layer Order", layerOrder);
 
         zPosition = EditorGUILayout.FloatField("z-position", zPosition);
         maxWaterHeight = EditorGUILayout.FloatField("max water height",maxWaterHeight);
@@ -3082,6 +3099,8 @@ public class LevelEditor : EditorWindow
         sortingLayer = sortingLayers[sLayerIndex];
         EditorGUILayout.EndHorizontal();
 
+        layerOrder = EditorGUILayout.IntField("Layer Order", layerOrder);
+
         zPosition = EditorGUILayout.FloatField("z-position", zPosition);
         ladderParentObjName = EditorGUILayout.TextField("parent name", ladderParentObjName);
         if (ladderParentObjName != string.Empty && (parentObj != null ? parentObj.name != ladderParentObjName : true))
@@ -3171,6 +3190,8 @@ public class LevelEditor : EditorWindow
         ladderBase.SetDirty();
     }
 
+    #endregion //ladderGUI
+
     /// <summary>
     /// Меню отрисовки препятствий
     /// </summary>
@@ -3190,6 +3211,8 @@ public class LevelEditor : EditorWindow
         sLayerIndex = EditorGUILayout.Popup(sLayerIndex, sortingLayers);
         sortingLayer = sortingLayers[sLayerIndex];
         EditorGUILayout.EndHorizontal();
+
+        layerOrder = EditorGUILayout.IntField("Layer Order", layerOrder);
 
         zPosition = EditorGUILayout.FloatField("z-position", zPosition);
 
@@ -3313,6 +3336,8 @@ public class LevelEditor : EditorWindow
         sortingLayer = sortingLayers[sLayerIndex];
         EditorGUILayout.EndHorizontal();
 
+        layerOrder = EditorGUILayout.IntField("Layer Order", layerOrder);
+
         zPosition = EditorGUILayout.FloatField("z-position", zPosition);
         spriteParentObjName = EditorGUILayout.TextField("parent name", spriteParentObjName);
         if (spriteParentObjName != string.Empty && (parentObj != null ? parentObj.name != spriteParentObjName : true))
@@ -3400,8 +3425,6 @@ public class LevelEditor : EditorWindow
         EditorGUILayout.EndHorizontal();
         spriteBase.SetDirty();
     }
-
-    #endregion //ladderGUI
 
     #endregion //drawGUI
 

@@ -17,6 +17,7 @@ public class DropClass : MonoBehaviour, IInteractive
     #region fields
 
     public ItemClass item;
+    protected SpriteRenderer sRenderer;
 
     #endregion //fields
 
@@ -25,24 +26,13 @@ public class DropClass : MonoBehaviour, IInteractive
     public bool autoPick;//Будет ли дроп автоматически подбираться, когда будет в зоне доступа персонажа?
     public bool dropped = false;//Предмет можно подобрать только в том случае, если это поле true
 
+    protected Color outlineColor = Color.yellow;
+
     #endregion //parametres
 
     protected virtual void Awake()
     {
         StartCoroutine(DropProcess());
-    }
-
-    /// <summary>
-    /// Провзаимодействовать с дропом
-    /// </summary>
-    public void Interact()
-    {
-        if (dropped)
-        {
-            SpecialFunctions.player.GetComponent<HeroController>().SetItem(item, false);
-            Destroy(gameObject);
-            SpecialFunctions.statistics.ConsiderStatistics(this);
-        }
     }
 
     /// <summary>
@@ -72,9 +62,42 @@ public class DropClass : MonoBehaviour, IInteractive
     public virtual IEnumerator DropProcess()
     {
         dropped = false;
+        sRenderer = GetComponent<SpriteRenderer>();
         yield return new WaitForSeconds(dropTime);
         dropped = true;
     }
+
+    #region IInteractive
+
+    /// <summary>
+    /// Провзаимодействовать с дропом
+    /// </summary>
+    public void Interact()
+    {
+        if (dropped)
+        {
+            SpecialFunctions.player.GetComponent<HeroController>().SetItem(item, false);
+            Destroy(gameObject);
+            SpecialFunctions.statistics.ConsiderStatistics(this);
+        }
+    }
+
+    /// <summary>
+    /// Отрисовать контур, если происзодит взаимодействие (или убрать этот контур)
+    /// </summary>
+    public virtual void SetOutline(bool _outline)
+    {
+        if (sRenderer != null)
+        {
+            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+            sRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat("_Outline", _outline ? 1f : 0);
+            mpb.SetColor("_OutlineColor", outlineColor);
+            sRenderer.SetPropertyBlock(mpb);
+        }
+    }
+
+    #endregion //IInteractive
 
     #region IHaveID
 

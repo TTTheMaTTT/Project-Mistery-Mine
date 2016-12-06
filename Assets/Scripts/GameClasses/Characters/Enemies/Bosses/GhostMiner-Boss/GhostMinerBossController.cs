@@ -47,7 +47,7 @@ public class GhostMinerBossController : BossController
     protected int divingPhase = 0;
     protected Vector3 divingPosition;
     protected float divingHealth=250f;//Если здоровье персонажа опустится ниже этого значения, то босс начнёт совершать особую атаку
-    protected float divingPrecision = .01f;//Точность определения местоположения противника, когда босс находится под ним
+    protected float divingPrecision = .05f;//Точность определения местоположения противника, когда босс находится под ним
 
     #endregion //parametres
 
@@ -106,6 +106,8 @@ public class GhostMinerBossController : BossController
                                 Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
                             else if ((targetPosition - transform.position).x * (int)orientation < 0f)
                                 Turn();
+                            else
+                                StopMoving();
                             if (Mathf.Abs(targetPosition.x - transform.position.x) < divingPrecision)
                             {
                                 Vector3 pos = transform.position;
@@ -175,6 +177,14 @@ public class GhostMinerBossController : BossController
     }
 
     /// <summary>
+    /// Остановиться
+    /// </summary>
+    protected override void StopMoving()
+    {
+        rigid.velocity = new Vector2(0f, 0f);
+    }
+
+    /// <summary>
     /// Анализировать окружающую обстановку
     /// </summary>
     protected override void Analyse()
@@ -217,6 +227,7 @@ public class GhostMinerBossController : BossController
             rigid.gravityScale = 1f;
             col.enabled = true;
             divingPhase = 0;
+            StartCoroutine(EmploymentProcess(5));
             hitBox.ResetHitBox();
         }
     }
@@ -249,9 +260,10 @@ public class GhostMinerBossController : BossController
         Animate(new AnimationEventArgs("attack", crit ? "CritAttack": "Attack", 0));
         employment = Mathf.Clamp(employment - 8, 0, maxEmployment);
         yield return new WaitForSeconds(crit ? preCritAttackTime : preAttackTime);
+        Vector3 playerPosition = SpecialFunctions.player.transform.position;
 
-        Vector3 direction = (SpecialFunctions.player.transform.position - (transform.position + 
-                                                                            new Vector3(sightOffsetX * (int)orientation, sightOffsetY, 0f))).normalized;
+        Vector3 direction = (playerPosition - transform.position).x * (int)orientation >= 0f? (playerPosition - (transform.position + 
+                                                                            new Vector3(sightOffsetX * (int)orientation, sightOffsetY, 0f))).normalized: (int)orientation*Vector3.right;
         GameObject newCoal = Instantiate(coal, transform.position + new Vector3(sightOffsetX * (int)orientation, sightOffsetY, 0f),
                                                   Quaternion.identity) as GameObject;
         Rigidbody2D coalRigid = newCoal.GetComponent<Rigidbody2D>();
@@ -266,6 +278,17 @@ public class GhostMinerBossController : BossController
 
         yield return new WaitForSeconds(attackRate);
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
+    }
+
+    /// <summary>
+    /// Процесс занятости
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IEnumerator EmploymentProcess(int _employment)
+    {
+        employment = Mathf.Clamp(employment - _employment, 0, maxEmployment);
+        yield return new WaitForSeconds(attackTime + preAttackTime);
+        employment = Mathf.Clamp(employment + _employment, 0, maxEmployment);
     }
 
     /// <summary>

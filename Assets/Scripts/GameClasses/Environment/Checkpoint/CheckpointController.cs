@@ -11,6 +11,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
     #region fields
 
     Animator anim;
+    SpriteRenderer sRenderer;
     GameObject light;
 
     #endregion //fields
@@ -24,11 +25,14 @@ public class CheckpointController : MonoBehaviour, IInteractive
     [HideInInspector]
     int id;
 
+    protected Color outlineColor = Color.yellow;//Цвет контура
+
     #endregion //parametres
 
     public void Awake()
     {
         anim = GetComponent<Animator>();
+        sRenderer = GetComponent<SpriteRenderer>();
         if (transform.childCount > 0)
         {
             light = transform.FindChild("Light").gameObject;
@@ -41,6 +45,25 @@ public class CheckpointController : MonoBehaviour, IInteractive
         if (activated)
             DestroyCheckpoint();
     }
+
+    /// <summary>
+    /// После активации чекпоинт больше не может быть активирован
+    /// </summary>
+    public void DestroyCheckpoint()
+    {
+        SetOutline(false);
+        if (anim != null)
+        {
+            anim.Play("Active");
+        }
+        if (light != null)
+        {
+            light.SetActive(true);
+        }
+        DestroyImmediate(this);
+    }
+
+    #region IInteractive
 
     /// <summary>
     /// Провзаимодействовать с чекпоинтом
@@ -56,21 +79,23 @@ public class CheckpointController : MonoBehaviour, IInteractive
     }
 
     /// <summary>
-    /// После активации чекпоинт больше не может быть активирован
+    /// Отрисовать контур, если происзодит взаимодействие (или убрать этот контур)
     /// </summary>
-    public void DestroyCheckpoint()
+    public virtual void SetOutline(bool _outline)
     {
-        if (anim != null)
+        if (sRenderer != null)
         {
-            anim.Play("Active");
+            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+            sRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat("_Outline", _outline ? 1f : 0);
+            mpb.SetColor("_OutlineColor", outlineColor);
+            sRenderer.SetPropertyBlock(mpb);
         }
-        if (light != null)
-        {
-            light.SetActive(true);
-        }
-        DestroyImmediate(this);
     }
 
+    #endregion //IInteractive
+
+    #region IHaveID
 
     /// <summary>
     /// Вернуть id
@@ -111,5 +136,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
         MechData chData = new MechData(id, activated,transform.position);
         return chData;
     }
+
+    #endregion //IHaveID
 
 }

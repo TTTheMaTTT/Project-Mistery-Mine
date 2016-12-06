@@ -18,6 +18,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
 
     protected Collider2D col;
     protected Animator anim;
+    protected SpriteRenderer sRenderer;
 
 
     #endregion //fields
@@ -28,27 +29,15 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
     [HideInInspector]
     protected int id;
 
+    protected Color outlineColor = Color.yellow;
+
     #endregion //parametres
 
     void Awake()
     {
         col = GetComponent<Collider2D>();
         anim = GetComponent<Animator>();
-    }
-
-    /// <summary>
-    /// Провести взаимодействие с дверью
-    /// </summary>
-    public virtual void Interact()
-    {
-        HeroController player = SpecialFunctions.player.GetComponent<HeroController>();
-        if (keyID == string.Empty)
-            Open();
-        else if (player.Bag.Find(x => x.itemName == keyID))
-            Open();
-        else
-            SpecialFunctions.SetText(closedDoorMessage, 2.5f);
-
+        sRenderer = GetComponent<SpriteRenderer>();
     }
 
     /// <summary>
@@ -73,7 +62,42 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
         Open();
     }
 
-        /// <summary>
+    #region IInteractive
+
+    /// <summary>
+    /// Провести взаимодействие с дверью
+    /// </summary>
+    public virtual void Interact()
+    {
+        HeroController player = SpecialFunctions.player.GetComponent<HeroController>();
+        if (keyID == string.Empty)
+            Open();
+        else if (player.Bag.Find(x => x.itemName == keyID))
+            Open();
+        else
+            SpecialFunctions.SetText(closedDoorMessage, 2.5f);
+    }
+
+    /// <summary>
+    /// Отрисовать контур, если происзодит взаимодействие (или убрать этот контур)
+    /// </summary>
+    public virtual void SetOutline(bool _outline)
+    {
+        if (sRenderer != null)
+        {
+            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+            sRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat("_Outline", _outline ? 1f : 0);
+            mpb.SetColor("_OutlineColor", outlineColor);
+            sRenderer.SetPropertyBlock(mpb);
+        }
+    }
+
+    #endregion //IInteractive
+
+    #region IHaveID
+
+    /// <summary>
     /// Вернуть id
     /// </summary>
     public virtual int GetID()
@@ -102,7 +126,12 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
         {
             if (dData.opened)
             {
-                Open();
+                if (col != null)
+                    col.enabled = false;
+                if (anim != null)
+                {
+                    anim.Play("Opened");
+                }
             }
         }
     }
@@ -115,5 +144,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
         DoorData dData = new DoorData(id, !col.enabled);
         return dData;
     }
+
+    #endregion //IHaveID
 
 }

@@ -29,7 +29,7 @@ public class HeroController : CharacterController
     protected const float suffocateTime = .3f;//Сколько времени должно пройти, чтобы запас воздуха уменьшился на 1 или здоровье ГГ на .5
     protected const int maxAirSupply = 10;
 
-    protected const float highWallCheckPosition = -0.02f, lowWallCheclPosition = -0.0544f;
+    protected const float highWallCheckPosition = -0.0108f, lowWallCheclPosition = -0.0544f;
     protected const float highWallCheckSize = .08f, lowWallCheckSize = .05f;
 
     #endregion //consts
@@ -81,6 +81,8 @@ public class HeroController : CharacterController
     protected bool invul;//Если true, то персонаж невосприимчив к урону
 
     protected string fightingMode;
+
+    public bool attacking = false;
 
     #endregion //parametres
 
@@ -149,6 +151,8 @@ public class HeroController : CharacterController
                         else if (Input.GetButtonDown("Flip"))
                             if ((rigid.velocity.x * (int)orientation > .1f) && (groundState == GroundStateEnum.grounded) && (employment > 8))
                                 Flip();
+                        if (Input.GetButtonDown("ChangeInteraction"))
+                            interactor.ChangeInteraction();
                     }
                 }
             }
@@ -441,7 +445,7 @@ public class HeroController : CharacterController
     {
         if (fightingMode == "melee")
         {
-            Animate(new AnimationEventArgs("attack", currentWeapon.itemName, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime))));
+            Animate(new AnimationEventArgs("attack", currentWeapon.itemName, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime+currentWeapon.endAttackTime))));
             StartCoroutine(AttackProcess());
         }
         else if (fightingMode == "range")
@@ -463,8 +467,11 @@ public class HeroController : CharacterController
         employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
         SwordClass sword = (SwordClass)currentWeapon;
         yield return new WaitForSeconds(sword.preAttackTime);
+        attacking = true;
         sword.Attack(hitBox, transform.position);
         yield return new WaitForSeconds(sword.attackTime);
+        attacking = false;
+        yield return new WaitForSeconds(sword.endAttackTime);
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 

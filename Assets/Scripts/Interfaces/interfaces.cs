@@ -39,6 +39,8 @@ public interface IInteractive: IHaveID
 {
     void Interact();
 
+    void SetOutline(bool _outline);//Отрисовать контур обхекта, если с ним возможно произвести взаимодействие
+
 }
 
 /// <summary>
