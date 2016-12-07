@@ -9,6 +9,7 @@ using System.Xml.Serialization;
 [XmlType("Game Data")]
 [XmlInclude(typeof(LevelStatsData))]
 [XmlInclude(typeof(EquipmentInfo))]
+[XmlInclude(typeof(CollectionInfo))]
 [XmlInclude(typeof(DropData))]
 [XmlInclude(typeof(EnemyData))]
 [XmlInclude(typeof(NPCData))]
@@ -29,6 +30,10 @@ public class LevelData
 
     [XmlElement("Equipment Level Data")]
     public EquipmentInfo eInfo;//Данные об инвентаре персонажа на данном уровне
+
+    [XmlArray("Collections Level Data")]
+    [XmlArrayItem("Coolection Level Information")]
+    public List<CollectionInfo> cInfo = new List<CollectionInfo>();//Информация о собранных коллекциях на данном уровне
 
     [XmlElement("Drop Data")]
     public DropData dropInfo;//Данные о дропе, что разбросан по уровню
@@ -55,7 +60,7 @@ public class LevelData
     {
     }
 
-    public LevelData(int cNumber, HeroController player, List<DropClass> drops, History history, GameStatistics gStats, 
+    public LevelData(int cNumber, HeroController player, List<ItemCollection> _collection, List<DropClass> drops, History history, GameStatistics gStats,
                                                                                 List<EnemyData> _enInfo, List<InterObjData> _intInfo, List<NPCData> _npcInfo)
     {
         active = true;
@@ -68,6 +73,11 @@ public class LevelData
         enInfo = _enInfo;
         intInfo = _intInfo;
         npcInfo = _npcInfo;
+
+        cInfo = new List<CollectionInfo>();
+        for (int i = 0; i < _collection.Count; i++)
+            cInfo.Add(new CollectionInfo(_collection[i]));
+
     }
 
 }

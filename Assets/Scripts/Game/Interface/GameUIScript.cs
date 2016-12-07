@@ -17,6 +17,9 @@ public class GameUIScript : MonoBehaviour
 
     protected const float bossHPMaxWidth = 430f;//Максимальная длина полоски хп босса
 
+    protected const float collectionItemTime = 2f;//Как долго висят экраны с коллекционными предметами?
+    protected const float collectionImageWidth = 100f;//Какова длина изображения предмета коллекции
+
     #endregion //consts
 
     #region fields
@@ -33,7 +36,14 @@ public class GameUIScript : MonoBehaviour
     protected Image weaponImage;
 
     protected GameObject textPanel;//В этом окошечке будет выводится информация о процессе игры
-    protected Text infoText;
+    protected GameObject messagePanel;//В этом окошечке выводится информация, переданная от других персонажей или игровых объектов
+    protected Text messageText;
+    protected GameObject secretPlacePanel;//В этом окошечке выводится информация, о том, что герой нашёл секретное место
+    protected Text secretPlaceText;
+
+    protected GameObject collectorScreen;//Панель, на которой отображается информация о собранных коллекциях
+    protected GameObject oneItemScreen;//Экран, в котором показывается найденный коллекционный предмет
+    protected GameObject collectionScreen;//Экран, в котором показывается, к каким коллекциям этот предмет принадлежит
 
     protected Image fadeScreen;//Объект, ответственный за затемнение, происходящее в переходах между уровнями
 
@@ -46,7 +56,7 @@ public class GameUIScript : MonoBehaviour
     #region parametres
 
     protected int fadeDirection;
-    protected float fadeTextTime=0f;
+    protected float fadeTextTime = 0f, fadeSecretTextTime = 0f;
 
     #endregion //parametres
 
@@ -86,9 +96,20 @@ public class GameUIScript : MonoBehaviour
         fadeScreen = transform.FindChild("FadeScreen").GetComponent<Image>();
 
         textPanel = transform.FindChild("TextPanel").gameObject;
-        infoText = textPanel.transform.FindChild("InfoText").GetComponent<Text>();
-        infoText.text = "";
-        textPanel.SetActive(false);
+        messagePanel = textPanel.transform.FindChild("MessagePanel").gameObject;
+        messageText = messagePanel.transform.FindChild("MessageText").GetComponent<Text>();
+        messageText.text = "";
+        messagePanel.SetActive(false);
+        secretPlacePanel = textPanel.transform.FindChild("SecretPlacePanel").gameObject;
+        secretPlaceText = secretPlacePanel.transform.FindChild("SecretPlaceText").GetComponent<Text>();
+        secretPlaceText.text = "";
+
+        collectorScreen = transform.FindChild("CollectionsPanel").gameObject;
+        oneItemScreen = collectorScreen.transform.FindChild("OneItemScreen").gameObject;
+        collectionScreen = collectorScreen.transform.FindChild("CollectionItemsScreen").gameObject;
+        oneItemScreen.SetActive(false);
+        collectionScreen.SetActive(false);
+        collectorScreen.SetActive(false);
 
         breathPanel = transform.FindChild("BreathPanel");
         player.suffocateEvent += HandleSuffocate;
@@ -173,24 +194,113 @@ public class GameUIScript : MonoBehaviour
     }
 
     /// <summary>
-    /// выставить текст на экран
+    /// Функция, что учитывает информацию о собираемых поверхностях
     /// </summary>
-    public void SetText(string _info, float textTime)
+    public void ConsiderCollections(ItemClass _item, List<ItemCollection> _collections)
     {
-        infoText.text = _info;
-        StopCoroutine(TextProcess(fadeTextTime));
-        fadeTextTime = textTime;
-        StartCoroutine(TextProcess(fadeTextTime));
+        StartCoroutine(CollectionProcess(_item, _collections));
     }
 
     /// <summary>
-    /// Процесс появления и исчезания текста
+    /// Процесс отображения новой информации о коллекциях
     /// </summary>
-    IEnumerator TextProcess(float textTime)
+    public IEnumerator CollectionProcess(ItemClass _item, List<ItemCollection> _collections)
     {
-        textPanel.SetActive(true);
+        SpecialFunctions.PauseGame();
+        collectorScreen.SetActive(true);
+        oneItemScreen.SetActive(false);
+        collectionScreen.SetActive(false);
+        yield return new WaitForSecondsRealtime(collectionItemTime / 2f);
+
+        Image _img = oneItemScreen.transform.FindChild("CollectionItemImage").GetComponent<Image>();
+        _img.sprite = _item.itemImage;
+        Text _text = oneItemScreen.transform.FindChild("ItemNameText").GetComponent<Text>();
+        _text.text = _item.itemName;
+        oneItemScreen.SetActive(true);
+        yield return new WaitForSecondsRealtime(collectionItemTime);
+
+        oneItemScreen.SetActive(false);
+        collectionScreen.SetActive(true);
+        foreach (ItemCollection _collection in _collections)
+        {
+            for (int i = 0; i < collectionScreen.transform.childCount; i++)//Сначала удалим все объекты на экране, что являются изображениями
+            {
+                GameObject child = collectionScreen.transform.GetChild(i).gameObject;
+                if (child.GetComponent<Image>() != null)
+                {
+                    DestroyImmediate(child);
+                }
+            }
+            //Теперь расставим объекты на нужные позиции и зададим им параметры
+            _text = collectionScreen.transform.FindChild("ItemsCountText").GetComponent<Text>();
+            float xPosition = -collectionImageWidth / 2f * _collection.collection.Count;
+            int secretsFoundCount = 0;
+            _text.GetComponent<RectTransform>().localPosition = new Vector3(xPosition,0f,0f);
+            for (int i = 0; i < _collection.collection.Count; i++)
+            {
+                xPosition += collectionImageWidth;
+                GameObject newObject = new GameObject("ItemImage" + i.ToString());
+                newObject.transform.SetParent(collectionScreen.transform);
+                RectTransform rTrans = newObject.AddComponent<RectTransform>();
+                rTrans.localPosition = new Vector3(xPosition, 0f, 0f);
+                rTrans.localScale = new Vector3(1f, 1f, 1f);
+                _img=newObject.AddComponent<Image>();
+                if (_collection.collection[i].itemFound)
+                {
+                    secretsFoundCount++;
+                    _img.sprite = _collection.collection[i].item.itemImage;
+                }
+            }
+            _text.text = secretsFoundCount.ToString() + "/" + _collection.collection.Count.ToString();
+            yield return new WaitForSecondsRealtime(collectionItemTime);
+        }
+        oneItemScreen.SetActive(false);
+        collectionScreen.SetActive(false);
+        collectorScreen.SetActive(false);
+
+        SpecialFunctions.PlayGame();
+    }
+
+    /// <summary>
+    /// выставить текст на экран сообщений
+    /// </summary>
+    public void SetMessage(string _info, float textTime)
+    {
+        messageText.text = _info;
+        StopCoroutine(TextMessage(fadeTextTime));
+        fadeTextTime = textTime;
+        StartCoroutine(TextMessage(fadeTextTime));
+    }
+
+    /// <summary>
+    /// Процесс появления и исчезания текста на экране сообщений
+    /// </summary>
+    IEnumerator TextMessage(float textTime)
+    {
+        messagePanel.SetActive(true);
         yield return new WaitForSeconds(textTime);
-        textPanel.SetActive(false);
+        messagePanel.SetActive(false);
+    }
+
+    /// <summary>
+    /// выставить текст на экране сообщений о секретах
+    /// </summary>
+    public void SetSecretMessage(float textTime)
+    {
+        secretPlaceText.text = "Вы нашли секретное место!";
+        StopCoroutine(SecretTextMessage(fadeSecretTextTime));
+        fadeSecretTextTime = textTime;
+        StartCoroutine(SecretTextMessage(fadeSecretTextTime));
+    }
+
+    /// <summary>
+    /// Процесс появления и исчезания текста на экране сообщений
+    /// </summary>
+    IEnumerator SecretTextMessage(float textTime)
+    {
+        secretPlacePanel.SetActive(true);
+        yield return new WaitForSeconds(textTime);
+        secretPlacePanel.SetActive(false);
     }
 
     /// <summary>

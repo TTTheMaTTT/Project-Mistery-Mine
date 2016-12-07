@@ -18,8 +18,9 @@ public class GameController : MonoBehaviour
 
     #region fields
 
-    protected DialogWindowScript dialogWindow;
-    protected GameMenuScript gameMenu;
+    protected DialogWindowScript dialogWindow;//Окно диалога
+    protected GameMenuScript gameMenu;//игровой интерфейс
+    protected LevelCompleteScreenScript levelCompleteScreen;//Окошко, открывающееся при завершении уровня
 
     List<CheckpointController> checkpoints = new List<CheckpointController>();
 
@@ -44,6 +45,8 @@ public class GameController : MonoBehaviour
     string savesInfoPath;
 
     int startCheckpointNumber = 0;
+
+    int secretsFoundNumber = 0, secretsTotalNumber = 0;//Сколько секретных мест на уровне было найдено и сколько их всего
 
     [SerializeField]protected bool idSetted=false;//Были ли установлены id для всех игровых объектов
     public bool IDSetted
@@ -103,6 +106,7 @@ public class GameController : MonoBehaviour
         Transform interfaceWindows = SpecialFunctions.gameInterface.transform;
         dialogWindow = interfaceWindows.GetComponentInChildren<DialogWindowScript>();
         gameMenu = interfaceWindows.GetComponentInChildren<GameMenuScript>();
+        levelCompleteScreen = interfaceWindows.GetComponentInChildren<LevelCompleteScreenScript>();
         SpecialFunctions.PlayGame();
         if (SceneManager.GetActiveScene().name != "MainMenu")
             Cursor.visible = false;
@@ -124,6 +128,14 @@ public class GameController : MonoBehaviour
         if (!PlayerPrefs.HasKey("Checkpoint Number"))
             PlayerPrefs.SetInt("Checkpoint Number", 0);
         startCheckpointNumber = PlayerPrefs.GetInt("Checkpoint Number");
+
+        //Определим, сколько секретных мест на уровне
+        secretsTotalNumber = 0; secretsFoundNumber = 0;
+        GameObject[] secretPlaces = GameObject.FindGameObjectsWithTag("mechanism");
+        foreach (GameObject secretPlace in secretPlaces)
+            if (secretPlace.GetComponent<SecretPlaceTrigger>() != null)
+                secretsTotalNumber++;
+
     }
 
     /*
@@ -143,6 +155,14 @@ public class GameController : MonoBehaviour
     {
         Transform player = SpecialFunctions.player.transform;
         dialogWindow.BeginDialog(npc, dialog);
+    }
+
+    /// <summary>
+    /// Функция, вызывающаяся при нахождении секретного места
+    /// </summary>
+    public void FindSecretPlace()
+    {
+        secretsFoundNumber++;
     }
 
     /// <summary>
@@ -215,6 +235,19 @@ public class GameController : MonoBehaviour
                     }
                 }
 
+                List<CollectionInfo> cInfo = gGData.cInfo;
+                List<ItemCollection> _collection = gStats.ItemCollections;
+                if (cInfo != null && _collection != null)
+                {
+                    foreach (CollectionInfo cData in cInfo)
+                    {
+                        ItemCollection iCollection = _collection.Find(x => x.collectionName == cData.collectionName);
+                        if (iCollection != null)
+                            for (int i = 0; i < cData.itemsFound.Count && i < iCollection.collection.Count; i++)
+                                iCollection.collection[i].itemFound = cData.itemsFound[i]; 
+                    }
+                }
+
                 GetComponent<GameStatistics>().ResetStatistics();
 
                 #endregion //heroEquipment
@@ -255,6 +288,23 @@ public class GameController : MonoBehaviour
             }
 
             #endregion //heroEquipment
+
+            #region gameCollections
+
+            List<CollectionInfo> cInfo = lData.cInfo;
+            List<ItemCollection> _collection = gStats.ItemCollections;
+            if (cInfo != null && _collection != null)
+            {
+                foreach (CollectionInfo cData in cInfo)
+                {
+                    ItemCollection iCollection = _collection.Find(x => x.collectionName == cData.collectionName);
+                    if (iCollection != null)
+                        for (int i = 0; i < cData.itemsFound.Count && i < iCollection.collection.Count; i++)
+                            iCollection.collection[i].itemFound = cData.itemsFound[i];
+                }
+            }
+
+            #endregion //gameCollections
 
             GameHistory gHistory = GetComponent<GameHistory>();
             History history = gHistory!=null? gHistory.history:null;
@@ -378,13 +428,23 @@ public class GameController : MonoBehaviour
                 {
                     if (intObjects[i] != null)
                     {
-                        ChestController chest = intObjects[i].GetComponent<ChestController>();
-                        CheckpointController checkpoint = intObjects[i].GetComponent<CheckpointController>();
-                        if (chest != null)
+                        if (intObjects[i].GetComponent<ChestController>() != null)
+                        {
+                            ChestController chest = intObjects[i].GetComponent<ChestController>();
                             chest.DestroyClosedChest();
-                        else if (checkpoint != null)
+                        }
+                        else if (intObjects[i].GetComponent<CheckpointController>() != null)
+                        {
+                            CheckpointController checkpoint = intObjects[i].GetComponent<CheckpointController>();
                             checkpoint.DestroyCheckpoint();
-                        else 
+                        }
+                        else if (intObjects[i].GetComponent<SecretPlaceTrigger>())
+                        {
+                            SecretPlaceTrigger secretPlace = intObjects[i].GetComponent<SecretPlaceTrigger>();
+                            FindSecretPlace();
+                            Destroy(secretPlace);
+                        }
+                        else
                             DestroyImmediate(intObjects[i]);
                     }
                 }
@@ -440,7 +500,7 @@ public class GameController : MonoBehaviour
         if (general)
         {
             _gData.ResetLevelData();
-            _gData.SetGeneralGameData(cNumber, SpecialFunctions.player.GetComponent<HeroController>());
+            _gData.SetGeneralGameData(cNumber, SpecialFunctions.player.GetComponent<HeroController>(), SpecialFunctions.statistics.ItemCollections);
         }
         else
         {
@@ -474,7 +534,9 @@ public class GameController : MonoBehaviour
             foreach (NPCController npc in NPCs)
                 npcInfo.Add((NPCData)npc.GetData());
 
-            _gData.SetLevelData(cNumber, SpecialFunctions.player.GetComponent<HeroController>(), drops, GetComponent<GameHistory>().history,
+            List<ItemCollection> _collection = SpecialFunctions.statistics.ItemCollections;
+
+            _gData.SetLevelData(cNumber, SpecialFunctions.player.GetComponent<HeroController>(),  _collection, drops, GetComponent<GameHistory>().history,
                                                                                                         GetComponent<GameStatistics>(),enInfo,intInfo, npcInfo);
         }
         return _gData;
@@ -591,5 +653,17 @@ public class GameController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Функция завершения данного уровня
+    /// </summary>
+    /// <param name="nextLevelName">Название следующего уровня</param>
+    public void CompleteLevel(string nextLevelName)
+    {
+        GameStatistics statistics = SpecialFunctions.statistics;
+        List<ItemCollection> itemCollections = statistics != null ? statistics.ItemCollections : null;
+        string sceneName = SceneManager.GetActiveScene().name;
+        ItemCollection _collection = itemCollections != null ? itemCollections.Find(x=>sceneName.Contains(x.settingName)):null;
+        levelCompleteScreen.SetLevelCompleteScreen(nextLevelName, secretsFoundNumber, secretsTotalNumber, _collection);
+    }
 
 }

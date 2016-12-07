@@ -66,7 +66,16 @@ public static class SpecialFunctions
     /// </summary>
     public static void SetText(string _info, float textTime)
     {
-        gameUI.SetText(_info, textTime);
+        gameUI.SetMessage(_info, textTime);
+    }
+
+    /// <summary>
+    /// Функция, обрабатывающая событие нахождения секретного места
+    /// </summary>
+    public static void FindSecretPlace(float textTime)
+    {
+        gameUI.SetSecretMessage(textTime);
+        gameController.FindSecretPlace();
     }
 
     /// <summary>

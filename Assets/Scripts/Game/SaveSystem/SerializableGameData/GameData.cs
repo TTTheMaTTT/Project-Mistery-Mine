@@ -27,10 +27,10 @@ public class GameData
     /// <summary>
     /// Задать данные уровня
     /// </summary>
-    public void SetLevelData(int cNumber,HeroController player, List<DropClass> drops, History history,
+    public void SetLevelData(int cNumber,HeroController player, List<ItemCollection> _collection, List<DropClass> drops, History history,
                                                                 GameStatistics gStats, List<EnemyData> enemyList, List<InterObjData> intObjList, List<NPCData> npcList)
     {
-        lData = new LevelData(cNumber, player, drops, history, gStats, enemyList,intObjList, npcList);
+        lData = new LevelData(cNumber, player, _collection, drops, history, gStats, enemyList,intObjList, npcList);
     }
 
     /// <summary>
@@ -44,9 +44,9 @@ public class GameData
     /// <summary>
     /// Задать общие данные по игре
     /// </summary>
-    public void SetGeneralGameData(int cNumber, HeroController player)
+    public void SetGeneralGameData(int cNumber, HeroController player, List<ItemCollection> _collection)
     {
-        gGData = new GameGeneralData(cNumber, player);
+        gGData = new GameGeneralData(cNumber,player,_collection);
     }
 
 }

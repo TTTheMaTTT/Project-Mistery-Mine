@@ -115,6 +115,7 @@ public class HeroController : CharacterController
                         jumpInput = 0;
                         if (groundState == GroundStateEnum.grounded && !jumping)
                         {
+                            jumping = true;
                             rigid.AddForce(new Vector2(0f, jumpForce * (underWater ? waterCoof : 1f)));
                             StartCoroutine(JumpProcess());
                         }
@@ -312,7 +313,6 @@ public class HeroController : CharacterController
         jumpInput = 1;
         yield return new WaitForSeconds(jumpInputTime);
         jumpInput = 0;
-        jumping = true;
         yield return new WaitForSeconds(jumpTime);
         employment = Mathf.Clamp(employment + 2, 0, maxEmployment);
         jumping = false;

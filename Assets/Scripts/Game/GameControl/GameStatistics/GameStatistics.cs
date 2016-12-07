@@ -28,6 +28,9 @@ public class GameStatistics : MonoBehaviour, IHaveStory
     Dictionary<string, GameObject> dropDict = new Dictionary<string, GameObject>();//Словарь дропа
     public Dictionary<string, GameObject> DropDict { get { return dropDict; } }
 
+    List<ItemCollection> itemCollections = new List<ItemCollection>();//Игровые коллекции, учёт которых ведётся на данном уровне
+    public List<ItemCollection> ItemCollections { get { return itemCollections; } }
+
     #endregion //dictionaries
 
     #region eventHandlers
@@ -77,6 +80,11 @@ public class GameStatistics : MonoBehaviour, IHaveStory
                 dropDict.Add(drop.item.itemName, dropObj);
         }
 
+        itemCollections = new List<ItemCollection>();
+        foreach (ItemCollection _collection in itemBase.collections)
+            itemCollections.Add(new ItemCollection(_collection));
+        bool k = false;
+
     }
 
     void Start()
@@ -106,6 +114,25 @@ public class GameStatistics : MonoBehaviour, IHaveStory
             return null;
     }
 
+    /// <summary>
+    /// При получении коллекционного предмета узнать, в какую коллекци он входит и вывести соответствующий экран
+    /// </summary>
+    /// <param name="_item">Рассматриваемый предмет</param>
+    public void ConsiderCollectionItem(ItemClass _item)
+    {
+        List<ItemCollection> considerList = new List<ItemCollection>();
+        foreach (ItemCollection _collection in itemCollections)
+        {
+            CollectorsItem cItem = _collection.collection.Find(x => x.item == _item);
+            if (cItem != null)
+            {
+                cItem.itemFound = true;
+                considerList.Add(_collection);
+            }
+        }
+
+        SpecialFunctions.gameUI.ConsiderCollections(_item, considerList);//отоборазить изменения на экране
+    }
 
     /// <summary>
     /// Произвести расчёт по нужным статистическим данным

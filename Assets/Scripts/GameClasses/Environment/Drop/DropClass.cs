@@ -72,7 +72,7 @@ public class DropClass : MonoBehaviour, IInteractive
     /// <summary>
     /// Провзаимодействовать с дропом
     /// </summary>
-    public void Interact()
+    public virtual void Interact()
     {
         if (dropped)
         {

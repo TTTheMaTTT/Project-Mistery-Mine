@@ -67,7 +67,7 @@ public class NextLevelDoor : DoorClass
         SpecialFunctions.SetFade(true);
         yield return new WaitForSeconds(nextLevelTime);
         if (nextLevelName != string.Empty)
-            SceneManager.LoadScene(nextLevelName);
+            SpecialFunctions.gameController.CompleteLevel(nextLevelName);
     }
 
     /// <summary>

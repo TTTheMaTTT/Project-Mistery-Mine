@@ -185,6 +185,8 @@ public class MovingPlatform : MonoBehaviour, IMechanism
         }
     }
 
+    #region IHaveID
+
     /// <summary>
     /// Вернуть id
     /// </summary>
@@ -244,6 +246,8 @@ public class MovingPlatform : MonoBehaviour, IMechanism
         MovPlatformData mData = new MovPlatformData(id, moving, transform.position,orientation, currentPosition);
         return mData;
     }
+
+    #endregion //IHaveID
 
 }
 
