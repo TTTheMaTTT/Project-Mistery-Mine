@@ -115,9 +115,7 @@ public class HeroController : CharacterController
                         jumpInput = 0;
                         if (groundState == GroundStateEnum.grounded && !jumping)
                         {
-                            jumping = true;
-                            rigid.AddForce(new Vector2(0f, jumpForce * (underWater ? waterCoof : 1f)));
-                            StartCoroutine(JumpProcess());
+                            Jump();
                         }
                     }
 
@@ -236,7 +234,7 @@ public class HeroController : CharacterController
         col2.enabled = false;
 
         if (!PlayerPrefs.HasKey("Hero Health"))//Здоровье не восполняется при переходе на следующий уровень. Поэтому, его удобно сохранять в PlayerPrefs
-            PlayerPrefs.SetFloat("Hero Health", 12f);
+            PlayerPrefs.SetFloat("Hero Health", maxHealth);
         Health = PlayerPrefs.GetFloat("Hero Health");
     }
 
@@ -430,12 +428,23 @@ public class HeroController : CharacterController
         rigid.velocity = Vector2.zero;
     }
 
+    /// <summary>
+    /// Развернуться
+    /// </summary>
+    /// <param name="_orientation">В какую сторону должен смотреть персонаж после поворота</param>
     protected override void Turn(OrientationEnum _orientation)
     {
         if (employment >= 8)
         {
             base.Turn(_orientation);
         }
+    }
+
+    protected override void Jump()
+    {
+        jumping = true;
+        rigid.AddForce(new Vector2(0f, jumpForce * (underWater ? waterCoof : 1f)));
+        StartCoroutine(JumpProcess());
     }
 
     /// <summary>
@@ -555,7 +564,7 @@ public class HeroController : CharacterController
         Animate(new AnimationEventArgs("death"));
         immobile = true;
         SpecialFunctions.SetFade(true);
-        PlayerPrefs.SetFloat("Hero Health", 12f);
+        PlayerPrefs.SetFloat("Hero Health", maxHealth);
         yield return new WaitForSeconds(deathTime);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
