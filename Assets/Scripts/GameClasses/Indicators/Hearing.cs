@@ -14,6 +14,12 @@ public class Hearing : MonoBehaviour
 
     #endregion //eventHandlers
 
+    #region parametres
+
+    public float radius { set { GetComponent<CircleCollider2D>().radius = value; } }
+
+    #endregion //parametres
+
     void OnTriggerEnter2D(Collider2D other)
     {
         if (other.gameObject.tag == "player")

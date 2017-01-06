@@ -74,6 +74,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Experiment\AngleCalculator.cs" />
     <Compile Include="Assets\Scripts\Experiment\SpriteOutline.cs" />
     <Compile Include="Assets\Scripts\Game\AutoLineRender.cs" />
     <Compile Include="Assets\Scripts\Game\CameraController.cs" />
@@ -104,6 +105,8 @@
     <Compile Include="Assets\Scripts\Game\Light\SpriteLightKit.cs" />
     <Compile Include="Assets\Scripts\Game\Light\SpriteLightKitImageEffect.cs" />
     <Compile Include="Assets\Scripts\Game\Light\SpriteLightSource.cs" />
+    <Compile Include="Assets\Scripts\Game\NavigationSystem\NavigationMap.cs" />
+    <Compile Include="Assets\Scripts\Game\NavigationSystem\NavigationSystem.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\LoadMenuScript.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\ProfileButton.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\SavesInfo.cs" />
@@ -163,10 +166,12 @@
     <Compile Include="Assets\Scripts\GameClasses\Environment\MushroomScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\WaterDrops\WaterdropScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\WaterDrops\WaterdropSpawner.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\AreaTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Hearing.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\HitBox.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Interactor.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\SecretPlaceTrigger.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\SightFrustum.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\StoryTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\WallChecker.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\WaterIndicator.cs" />
@@ -185,7 +190,9 @@
     <Compile Include="Assets\Scripts\Other\EditorColliderCreator.cs" />
     <Compile Include="Assets\Scripts\Other\Enums.cs" />
     <Compile Include="Assets\Scripts\Other\EventArgs.cs" />
+    <Compile Include="Assets\Scripts\Other\MapVisualizer.cs" />
     <Compile Include="Assets\Scripts\Other\SpecialFunctions.cs" />
+    <Compile Include="Assets\Scripts\Other\Structs.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\Shaders\CharacterShader.shader" />

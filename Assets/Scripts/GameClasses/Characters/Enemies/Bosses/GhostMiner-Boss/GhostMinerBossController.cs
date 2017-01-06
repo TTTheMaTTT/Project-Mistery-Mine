@@ -51,103 +51,9 @@ public class GhostMinerBossController : BossController
 
     #endregion //parametres
 
-    protected virtual void FixedUpdate()
+    protected override void FixedUpdate()
     {
-        if (agressive)
-        {
-            Vector3 targetPosition = currentTarget.transform.position;
-            if (!diving)
-            {
-                if (employment > 2)
-                {
-                    float distance = Vector3.SqrMagnitude(targetPosition- transform.position);
-                    if (distance > attackDistance * attackDistance)
-                    {
-                        if (!wallCheck.WallInFront())
-                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
-                        else if ((targetPosition - transform.position).x * (int)orientation < 0f)
-                            Turn();
-                    }
-                    else if (employment > 8)
-                    {
-                        if ((targetPosition - transform.position).x * (int)orientation < 0f)
-                            Turn();
-                        Attack();
-                    }
-                }
-            }
-
-            else
-            {
-                //Здесь описаны все фазы совершения особой атаки босса
-
-                Vector3 direction = (divingPosition - transform.position).normalized;
-
-                switch (divingPhase)
-                {
-                    case 1:
-                        {
-                            //Сначала босс опускается под землю
-                            rigid.velocity = direction * speed*2;
-                            if (Mathf.Abs(transform.position.y - divingPosition.y) < divingPrecision)
-                            {
-                                Vector3 pos = transform.position;
-                                transform.position = new Vector3(pos.x, divingPosition.y, pos.z);
-                                divingPhase++;
-                                divingPosition = new Vector3(targetPosition.x,pos.y,pos.z);
-                                rigid.velocity = Vector2.zero;
-                            }
-                            break;
-                        }
-                    case 2:
-                        {
-                            //"Заныривает" под противника
-                            if (!wallCheck.WallInFront())
-                                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
-                            else if ((targetPosition - transform.position).x * (int)orientation < 0f)
-                                Turn();
-                            else
-                                StopMoving();
-                            if (Mathf.Abs(targetPosition.x - transform.position.x) < divingPrecision)
-                            {
-                                Vector3 pos = transform.position;
-                                transform.position = new Vector3(targetPosition.x, pos.y, pos.z);
-                                divingPhase++;
-                                divingPosition = transform.position + diveDownOffset * Vector3.up;
-
-                                Animate(new AnimationEventArgs("attack", "SpecialAttack", 0));
-                                employment = Mathf.Clamp(employment - 8, 0, maxEmployment);
-                                hitBox.SetHitBox(new HitClass(damage, -1f, attackSize, attackPosition, hitForce));
-                                rigid.velocity = Vector2.zero;
-                            }
-                            
-                            break;
-                        }
-                    case 3:
-                        {
-                            //И выходит из-под земли с атакой
-                            rigid.velocity = direction * diveOutSpeed;
-                            if (Mathf.Abs(transform.position.y- divingPosition.y)<divingPrecision)
-                            {
-                                Vector3 pos = transform.position;
-                                transform.position = new Vector3(pos.x, divingPosition.y, pos.z);
-                                employment = Mathf.Clamp(employment + 8, 0, maxEmployment);
-                                SetDiving(false);
-                                rigid.velocity = Vector2.zero;
-                            }
-                            break;
-                        }
-                    default:
-                        {
-                            break;
-                        }
-                }
-            }
-
-            if (employment>2)
-                if ((targetPosition - transform.position).x * (int)orientation < 0f)
-                    Turn();
-        }
+        base.FixedUpdate();
 
         Analyse();
         Animate(new AnimationEventArgs("groundMove"));
@@ -190,7 +96,7 @@ public class GhostMinerBossController : BossController
     protected override void Analyse()
     {
         base.Analyse();
-        if (!agressive)
+        if (behaviour!=BehaviourEnum.agressive)
         {
             if (Vector3.Distance(SpecialFunctions.player.transform.position, transform.position) <= sightRadius)
                 BecomeAgressive();
@@ -200,7 +106,7 @@ public class GhostMinerBossController : BossController
         {
             while (health <=divingHealth)
                 divingHealth -= divingHealthFold;
-            if (agressive && !diving)
+            if (behaviour==BehaviourEnum.agressive && !diving)
             {
                 SetDiving(true);
             }
@@ -312,5 +218,108 @@ public class GhostMinerBossController : BossController
         GameObject _drop = Instantiate(drop, transform.position, transform.rotation) as GameObject;
         base.Death();
     }
+
+    #region behaviourActions
+
+    /// <summary>
+    /// Агрессивное поведение
+    /// </summary>
+    protected override void AgressiveBehaviour()
+    {
+        Vector3 targetPosition = currentTarget.transform.position;
+        if (!diving)
+        {
+            if (employment > 2)
+            {
+                float distance = Vector3.SqrMagnitude(targetPosition - transform.position);
+                if (distance > attackDistance * attackDistance)
+                {
+                    if (!wallCheck.WallInFront())
+                        Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
+                    else if ((targetPosition - transform.position).x * (int)orientation < 0f)
+                        Turn();
+                }
+                else if (employment > 8)
+                {
+                    if ((targetPosition - transform.position).x * (int)orientation < 0f)
+                        Turn();
+                    Attack();
+                }
+            }
+        }
+
+        else
+        {
+            //Здесь описаны все фазы совершения особой атаки босса
+
+            Vector3 direction = (divingPosition - transform.position).normalized;
+
+            switch (divingPhase)
+            {
+                case 1:
+                    {
+                        //Сначала босс опускается под землю
+                        rigid.velocity = direction * speed * 2;
+                        if (Mathf.Abs(transform.position.y - divingPosition.y) < divingPrecision)
+                        {
+                            Vector3 pos = transform.position;
+                            transform.position = new Vector3(pos.x, divingPosition.y, pos.z);
+                            divingPhase++;
+                            divingPosition = new Vector3(targetPosition.x, pos.y, pos.z);
+                            rigid.velocity = Vector2.zero;
+                        }
+                        break;
+                    }
+                case 2:
+                    {
+                        //"Заныривает" под противника
+                        if (!wallCheck.WallInFront())
+                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
+                        else if ((targetPosition - transform.position).x * (int)orientation < 0f)
+                            Turn();
+                        else
+                            StopMoving();
+                        if (Mathf.Abs(targetPosition.x - transform.position.x) < divingPrecision)
+                        {
+                            Vector3 pos = transform.position;
+                            transform.position = new Vector3(targetPosition.x, pos.y, pos.z);
+                            divingPhase++;
+                            divingPosition = transform.position + diveDownOffset * Vector3.up;
+
+                            Animate(new AnimationEventArgs("attack", "SpecialAttack", 0));
+                            employment = Mathf.Clamp(employment - 8, 0, maxEmployment);
+                            hitBox.SetHitBox(new HitClass(damage, -1f, attackSize, attackPosition, hitForce));
+                            rigid.velocity = Vector2.zero;
+                        }
+
+                        break;
+                    }
+                case 3:
+                    {
+                        //И выходит из-под земли с атакой
+                        rigid.velocity = direction * diveOutSpeed;
+                        if (Mathf.Abs(transform.position.y - divingPosition.y) < divingPrecision)
+                        {
+                            Vector3 pos = transform.position;
+                            transform.position = new Vector3(pos.x, divingPosition.y, pos.z);
+                            employment = Mathf.Clamp(employment + 8, 0, maxEmployment);
+                            SetDiving(false);
+                            rigid.velocity = Vector2.zero;
+                        }
+                        break;
+                    }
+                default:
+                    {
+                        break;
+                    }
+            }
+        }
+
+        if (employment > 2)
+            if ((targetPosition - transform.position).x * (int)orientation < 0f)
+                Turn();
+    }
+
+    #endregion //behaviourActions
 
 }

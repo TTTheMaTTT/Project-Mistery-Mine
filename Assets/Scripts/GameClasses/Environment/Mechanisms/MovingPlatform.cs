@@ -173,7 +173,9 @@ public class MovingPlatform : MonoBehaviour, IMechanism
     {
         if (other.GetComponent<Rigidbody2D>() != null && (other.gameObject.tag != "boss"))
         {
-            other.transform.SetParent(transform);
+            AIController ai= other.GetComponent<AIController>();
+            if (ai!=null? ai.CanStayOnPlatform:true)
+                other.transform.SetParent(transform);
         }
     }
 

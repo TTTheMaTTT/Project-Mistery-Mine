@@ -16,6 +16,12 @@ using UnityEditor;
 public class GameStatistics : MonoBehaviour, IHaveStory
 {
 
+    #region consts
+
+    protected const string mapsPath = "Assets/Database/Maps/";//В этой папке находятся навигационные карты
+
+    #endregion //consts
+
     #region dictionaries
 
     //Эти словари нужны для удобства
@@ -30,6 +36,8 @@ public class GameStatistics : MonoBehaviour, IHaveStory
 
     List<ItemCollection> itemCollections = new List<ItemCollection>();//Игровые коллекции, учёт которых ведётся на данном уровне
     public List<ItemCollection> ItemCollections { get { return itemCollections; } }
+
+    [HideInInspector]public NavigationSystem navSystem;//Карты уровня, используемые на данной сцене
 
     #endregion //dictionaries
 
@@ -83,16 +91,37 @@ public class GameStatistics : MonoBehaviour, IHaveStory
         itemCollections = new List<ItemCollection>();
         foreach (ItemCollection _collection in itemBase.collections)
             itemCollections.Add(new ItemCollection(_collection));
-        bool k = false;
 
     }
 
+
+    [ExecuteInEditMode]
     void Start()
     {
         //foreach (Statistics stat in statistics)
         //{
-            //stat.value = 0;//Стоит пока обнулять значения статистик в самом начале игры.
+        //stat.value = 0;//Стоит пока обнулять значения статистик в самом начале игры.
         //}
+
+#if UNITY_EDITOR
+
+        if (navSystem == null)
+        {
+            if (!File.Exists(mapsPath + SceneManager.GetActiveScene().name + "NavSystem.asset"))
+            {
+                NavigationSystem _navSystem = new NavigationSystem(SceneManager.GetActiveScene().name);
+                AssetDatabase.CreateAsset(_navSystem, mapsPath + SceneManager.GetActiveScene().name + "NavSystem.asset");
+                AssetDatabase.SaveAssets();
+                navSystem = _navSystem;
+            }
+            else
+            {
+                navSystem = AssetDatabase.LoadAssetAtPath<NavigationSystem>(mapsPath + SceneManager.GetActiveScene().name + "NavSystem.asset");
+            }
+        }
+
+#endif //UNITY_EDITOR
+
     }
 
     public void ResetStatistics()

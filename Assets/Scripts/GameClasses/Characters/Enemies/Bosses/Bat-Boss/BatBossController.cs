@@ -37,50 +37,6 @@ public class BatBossController: BossController
 
     #endregion //parametres
 
-
-    protected virtual void FixedUpdate()
-    {
-        if (!immobile)
-        {
-            if (agressive && mainTarget != null)
-            {
-                if (currentTarget != null)
-                {
-                    Vector3 targetPosition = currentTarget.transform.position;
-                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
-                    if (currentTarget != mainTarget && Vector3.Distance(currentTarget.transform.position, transform.position) < batSize)
-                    {
-                        DestroyImmediate(currentTarget);
-                        currentTarget = FindPath();
-                    }
-
-                }
-                if (currentTarget != mainTarget)
-                {
-                    Vector2 vect = mainTarget.transform.position - transform.position;
-                    RaycastHit2D hit = Physics2D.Raycast(transform.position + new Vector3(vect.x, vect.y, 0f).normalized * batSize, vect, sightRadius);
-                    if (hit)
-                        if (hit.collider.gameObject == mainTarget)
-                            currentTarget = mainTarget;
-                }
-                if (Physics2D.Raycast(transform.position, currentTarget.transform.position - transform.position, batSize, whatIsGround))
-                {
-                    currentTarget = FindPath();
-                }
-                Analyse();
-            }
-
-            if (!agressive && rigid.velocity.magnitude < minSpeed)
-            {
-                Animate(new AnimationEventArgs("idle"));
-            }
-            else
-            {
-                Animate(new AnimationEventArgs("fly"));
-            }
-        }
-    }
-
     /// <summary>
     /// Инициализация
     /// </summary>
@@ -208,6 +164,74 @@ public class BatBossController: BossController
         }
         return mainTarget;
     }
+
+    #region behaviourActions
+
+    /// <summary>
+    /// Спокойное поведение
+    /// </summary>
+    protected override void CalmBehaviour()
+    {
+        if (!immobile)
+        {
+            if (rigid.velocity.magnitude < minSpeed)
+            {
+                Animate(new AnimationEventArgs("idle"));
+            }
+            else
+            {
+                Animate(new AnimationEventArgs("fly"));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Агрессивное поведение
+    /// </summary>
+    protected override void AgressiveBehaviour()
+    {
+        if (!immobile)
+        {
+            if ( mainTarget != null)
+            {
+                if (currentTarget != null)
+                {
+                    Vector3 targetPosition = currentTarget.transform.position;
+                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
+                    if (currentTarget != mainTarget && Vector3.Distance(currentTarget.transform.position, transform.position) < batSize)
+                    {
+                        DestroyImmediate(currentTarget);
+                        currentTarget = FindPath();
+                    }
+
+                }
+                if (currentTarget != mainTarget)
+                {
+                    Vector2 vect = mainTarget.transform.position - transform.position;
+                    RaycastHit2D hit = Physics2D.Raycast(transform.position + new Vector3(vect.x, vect.y, 0f).normalized * batSize, vect, sightRadius);
+                    if (hit)
+                        if (hit.collider.gameObject == mainTarget)
+                            currentTarget = mainTarget;
+                }
+                if (Physics2D.Raycast(transform.position, currentTarget.transform.position - transform.position, batSize, whatIsGround))
+                {
+                    currentTarget = FindPath();
+                }
+                Analyse();
+            }
+
+            if ( rigid.velocity.magnitude < minSpeed)
+            {
+                Animate(new AnimationEventArgs("idle"));
+            }
+            else
+            {
+                Animate(new AnimationEventArgs("fly"));
+            }
+        }
+    }
+
+    #endregion //behaviourActions
 
     #region events
 

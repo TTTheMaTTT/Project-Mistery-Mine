@@ -22,8 +22,12 @@ public class EnemyData
     [XmlElement("Health")]
     public float health;//Здоровье
 
-    [XmlAttribute("Agressive")]
-    public bool agressive;//Находится ли монстр в агрессивном состоянии?
+    [XmlElement("Behaviour")]
+    public string behaviour;//Какую модель поведения реализует монстр в данный момент
+
+    [XmlArray("Waypoints")]
+    [XmlArrayItem("Waypoint")]
+    public List<Vector2> waypoints = new List<Vector2>();
 
     public EnemyData()
     { }
@@ -34,7 +38,13 @@ public class EnemyData
         position = _ai.transform.position;
         orientation = Mathf.RoundToInt(Mathf.Sign(_ai.transform.lossyScale.x));
 
+        behaviour = _ai.Behaviour.ToString();
+
+        List<NavigationCell> _waypoints = _ai.GetWaypoints();
+        if (_waypoints != null ? waypoints.Count > 0 : false)
+            waypoints = _waypoints.ConvertAll<Vector2>(x => x.cellPosition);
+        else
+            waypoints = new List<Vector2>();
         health = _ai.Health;
-        agressive = _ai.Agressive;
     }
 }

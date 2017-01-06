@@ -26,6 +26,8 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
 
     protected const int maxEmployment = 10;
 
+    protected const string gLName = "ground";//Название слоя земли
+
     #endregion //consts
 
     #region fields
@@ -77,7 +79,8 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     {
         rigid = GetComponent<Rigidbody2D>();
 
-        hitBox = GetComponentInChildren<HitBox>();
+        if (transform.FindChild("HitBox")!=null)
+            hitBox = transform.FindChild("HitBox").GetComponent<HitBox>();
 
         if (hitBox!=null)
             hitBox.SetEnemies(enemies);
@@ -145,6 +148,13 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         Vector3 vect = transform.localScale;
         orientation = (OrientationEnum)(-1*(int)orientation);
         transform.localScale = new Vector3(-1 * vect.x, vect.y, vect.z);
+    }
+
+    /// <summary>
+    /// Совершить прыжок
+    /// </summary>
+    protected virtual void Jump()
+    {
     }
 
     /// <summary>

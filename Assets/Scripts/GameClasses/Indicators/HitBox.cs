@@ -79,6 +79,22 @@ public class HitBox : MonoBehaviour
     }
 
     /// <summary>
+    /// Настройка хитбокса (без изменения положения и размера хитбокса)
+    /// </summary>
+    /// <param name="_damage">Наносимый урон</param>
+    /// <param name="_actTime">Время действи (если -1, то всегда действует)</param>
+    /// <param name="_hitForce">Сила отталкивания, действующая на цель</param>
+    public void SetHitBox(float _damage, float _actTime, float _hitForce)
+    {
+        activated = true;
+        hitData = new HitClass(_damage,_actTime, _hitForce);
+        if (hitData.actTime != -1f)
+        {
+            StartCoroutine(HitProcess(hitData.actTime));
+        }
+    }
+
+    /// <summary>
     /// Процесс нанесения урона
     /// </summary>
     protected IEnumerator HitProcess(float hitTime)
@@ -176,6 +192,15 @@ public class HitClass
         actTime = _actTime;
         hitSize = _size;
         hitPosition = _position;
+        hitForce = _hitForce;
+    }
+
+    public HitClass(float _damage, float _actTime, float _hitForce)
+    {
+        damage = _damage;
+        actTime = _actTime;
+        hitSize = Vector2.zero;
+        hitPosition = Vector2.zero;
         hitForce = _hitForce;
     }
 

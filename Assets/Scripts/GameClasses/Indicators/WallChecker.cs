@@ -20,6 +20,7 @@ public class WallChecker : MonoBehaviour {
 
     [SerializeField]
     protected List<string> whatIsWall;
+    public List<string> WhatIsWall { get { return whatIsWall; } }
 
     #endregion //parametres
 
@@ -78,5 +79,21 @@ public class WallChecker : MonoBehaviour {
         }
         StartCoroutine(CheckObstacles());
     }
+
+    /// <summary>
+    /// Убрать из списка воспринимаемых коллайдеров заданный тип
+    /// </summary>
+    /// <param name="wallType">Название слоя, на котором находятся убираемые коллайдеры</param>
+    public void RemoveWallType(string wallType)
+    {
+        whatIsWall.Remove(wallType);
+        for (int i = 0; i < walls.Count; i++)
+            if (walls[i].layer == LayerMask.NameToLayer(wallType))
+            {
+                walls.RemoveAt(i);
+                i--;
+            }
+    }
+ 
 
 }

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
+using UnityEngine.SceneManagement;
 using System.IO;
 //using System.Linq;
 using System.Collections;
@@ -16,18 +17,31 @@ public class LevelEditor : EditorWindow
     #region consts
 
     private const string iconPath = "Assets/Editor/LevelEditor/EditorIcons/";//в этой папке находятся все нужные иконки редактора
-    private const string groundBrushesPath= "Assets/Editor/LevelEditor/GroundBrushes/";//в этой папке находятся все нужные кисти
+    private const string groundBrushesPath = "Assets/Editor/LevelEditor/GroundBrushes/";//в этой папке находятся все нужные кисти
     private const string waterBrushesPath = "Assets/Editor/LevelEditor/WaterBrushes/";//в этой папке находятся все нужные кисти
-    private const string databasePath= "Assets/Editor/LevelEditor/Database/";//в этой папке находится база данных
+    private const string databasePath = "Assets/Editor/LevelEditor/Database/";//в этой папке находится база данных
+    private const string mapsPath = "Assets/Database/Maps/";//В этой папке находятся навигационные карты
 
     private const float maxCtr = 200f;
+
+    private const float mapMaxX = 100f, mapMaxY = 100f, mapMinX = -100f, mapMinY = -100f;//Максимально возможный размер карты: 200 X 200
+    private const float mapSliceDelta = 10f;//Размер стороны квадрата, который используется для определения размеров
+
+    #region mapConsts
+
+    private const float g = -9.16f;//Удельная сила тяжести
+    private const float crawlSpeed = 1.1f;
+    private const float crawlJumpSpeed = 2.804f;
+    private const float maxJumpDepth = .8f;
+
+    #endregion //mapConsts
 
     #endregion //consts
 
     #region fields
 
-    private static Sprite selectIcon, drawIcon, dragIcon, eraseIcon;//Иконки, используемые при отрисовки меню редактора
-    private static Sprite groundIcon, waterIcon, plantIcon, ladderIcon, spikesIcon, usualDrawIcon, 
+    private static Sprite selectIcon, drawIcon, dragIcon, eraseIcon, mapIcon;//Иконки, используемые при отрисовки меню редактора
+    private static Sprite groundIcon, waterIcon, plantIcon, ladderIcon, spikesIcon, usualDrawIcon,
                                                                                     lightPointIcon;//Иконки, используемые в меню создания
 
     #endregion //fields
@@ -40,7 +54,7 @@ public class LevelEditor : EditorWindow
     private static Vector2 gridSize = new Vector2(0.16f, 0.16f);//Размер сетки
 
     private static float zPosition;//Задаём ось z, по которой происходит отрисовка и установка объектов
-    private static string tagName="Untagged";//Тег, по которому мы создаём объекты
+    private static string tagName = "Untagged";//Тег, по которому мы создаём объекты
     private static string sortingLayer;//Sorting Layer, в котором отрисовываются спрайты
 
     private static GameObject parentObj;//Какой объект ставится как родительский по отношению к создаваемым объектам
@@ -53,14 +67,14 @@ public class LevelEditor : EditorWindow
 
     #region groundBrush
 
-    private static List<GroundBrush> groundBrushes=new List<GroundBrush>();
+    private static List<GroundBrush> groundBrushes = new List<GroundBrush>();
     private static GroundBrush grBrush;//Земляная кисть, которой мы рисуем поверхность в данный момент
     private static string groundBrushName;
 
     private static int groundLayer = LayerMask.NameToLayer("ground");//По дефолту у земли будет layer на ground
     private static bool groundCollider = true;
     private static int groundSortingLayer;
-    private static bool groundAngle=false;
+    private static bool groundAngle = false;
     private static string grParentObjName;//Имя объекта, который станет родительским по отношению к создаваемым объектам.
 
     #endregion //groundBrush
@@ -69,7 +83,7 @@ public class LevelEditor : EditorWindow
 
     private static PlantBase plantBase;//База данных по растительности
     private static float plantOffset;//Насколько сильно дольжно отклониться растение от центра сетки
-    private static List<Sprite> currentPlants=new List<Sprite>();//Выборка из растений которыми мы будем украшать уровень в данный момент, взятая из базы данных
+    private static List<Sprite> currentPlants = new List<Sprite>();//Выборка из растений которыми мы будем украшать уровень в данный момент, взятая из базы данных
 
     private static int plantLayer = LayerMask.NameToLayer("plant");
     private static Sprite nextPlant;
@@ -111,7 +125,7 @@ public class LevelEditor : EditorWindow
     private static GameObject currentObstacle;//Какой вид препятствия используется в данный момент
 
     private static float obstacleDamage;//Какой урон наносит данный вид препятствия
-    private static float damageBoxSize=.16f;//Размер области атаки по оси Y
+    private static float damageBoxSize = .16f;//Размер области атаки по оси Y
     private static float damageBoxOffset = 0f;//Насколько сдвинут хитбокс по оси Y
     private static float obstacleOffset;//Смещение по вертикальной оси при расположении препятствий
 
@@ -122,11 +136,11 @@ public class LevelEditor : EditorWindow
     #endregion //spikesBrush
 
     #region usualBrush
-    
+
     private static SpriteBase spriteBase;//База данных по спрайтам
     private static List<Sprite> currentSprites = new List<Sprite>();//Выборка из спрайтов которыми мы будем рисовать уровень, взятая из базы данных
 
-    private static bool hasCollider=true, isTrigger=false;//Определяем твёрдость объектов
+    private static bool hasCollider = true, isTrigger = false;//Определяем твёрдость объектов
     private static bool overpaint = false;//Есть ли возможность перерисовывать объекты?
 
     private static int spriteLayer = LayerMask.NameToLayer("ground");
@@ -145,7 +159,7 @@ public class LevelEditor : EditorWindow
     private static bool createWholeCollider = false;//Если true, то игнорируется принадлежность нажатого мышью коллайдеру к слою lightObstacleLayer
 
     private static bool createMargin = true;//Если true, то препятствие будет создано с неким отступом с целью созданию эффекта подсвеченного края
-    private static float lightMarginOffset=0.05f;//Ширина края твёрдого объекта (препятствия света), который ещё освещается
+    private static float lightMarginOffset = 0.05f;//Ширина края твёрдого объекта (препятствия света), который ещё освещается
 
     private static float lightPointerPrecision = 0.02f;//Точность определения границ коллайдеров твёрдых объектов 
 
@@ -156,12 +170,63 @@ public class LevelEditor : EditorWindow
 
     #endregion //lightObstaclePointer
 
+    #region map
+
+    private static NavigationSystem navSystem;//Навигационная система, используемая на данном уровне
+    private static NavigationMap navMap;//Навигационная карта, используемая в данный момент
+
+    private static NavMapTypeEnum mapType;//Тип используемой карты
+
+    private static Vector2 navMapSize;//Размер карты уровня
+    private static Vector2 navMapDownLeft;//Левый нижний угол карты уровня
+    private static Vector2 navGroupSize;//Размер групы навигационных ячеек
+    private static Vector2 navCellSize;//Размер навигационной ячейки
+
+    private static int cellColumnSize = 0, cellRowSize = 0;
+
+    private static bool visualizeMap = false;//Отобразить навигационную карту?
+    private static MapVisualizer mapVisualizer;//Объект, ответственный за визуализацию карт
+    private static MapVisualizer Visualizer
+    {
+        get
+        {
+            if (mapVisualizer == null)
+            {
+                GameObject visObj = GameObject.Find("MapVisualizer");
+                if (visObj == null)
+                {
+                    visObj = new GameObject("MapVisualizer");
+                    mapVisualizer = visObj.AddComponent<MapVisualizer>();
+                }
+                else
+                    mapVisualizer = visObj.GetComponent<MapVisualizer>();
+            }
+            return mapVisualizer;
+        }
+        set
+        {
+            if (mapVisualizer == null)
+            {
+                GameObject visObj = GameObject.Find("MapVisualizer");
+                if (visObj == null)
+                {
+                    visObj = new GameObject("MapVisualizer");
+                    mapVisualizer = visObj.AddComponent<MapVisualizer>();
+                }
+                else
+                    mapVisualizer = visObj.GetComponent<MapVisualizer>();
+            }
+        }
+    }
+
+    #endregion //map
+
     private Sprite[] sprites;
     private static Sprite activeSprite;//Спрайт, что мы используем для отрисовки
 
     private static bool addBoxCollider;//Станет ли добавляемый объект твёрдым после добавления
 
-    private static int drawIndex=0;
+    private static int drawIndex = 0;
     private static int sLayerIndex = 0;
 
     private string[] drawOptions;
@@ -192,15 +257,16 @@ public class LevelEditor : EditorWindow
         Repaint();
     }
 
-    
+
     void OnEnable()
     {
         isEnable = true;
 
-        selectIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath+"Select.png");
+        selectIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "Select.png");
         drawIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "Draw.png");
         dragIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "Drag.png");
         eraseIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "Erase.png");
+        mapIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "mapIcon.png");
 
         groundIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "rockIcon.png");
         plantIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "plantIcon.png");
@@ -210,9 +276,16 @@ public class LevelEditor : EditorWindow
         usualDrawIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "brushIcon.png");
         lightPointIcon = AssetDatabase.LoadAssetAtPath<Sprite>(iconPath + "lightObstacleIcon.png");
 
+        if (!Directory.Exists(mapsPath))
+        {
+            AssetDatabase.CreateFolder("Assets/Database/", "Maps");
+            AssetDatabase.Refresh();
+            Debug.Log("Created Maps Directory");
+        }
+
         if (!Directory.Exists(groundBrushesPath))
         {
-            AssetDatabase.CreateFolder("Assets/Editor/LevelEditor", "GroundBrushes");
+            AssetDatabase.CreateFolder("Assets/Editor/LevelEditor/", "GroundBrushes");
             AssetDatabase.Refresh();
             Debug.Log("Created Ground Brush Directory");
         }
@@ -226,7 +299,7 @@ public class LevelEditor : EditorWindow
 
         if (!Directory.Exists(waterBrushesPath))
         {
-            AssetDatabase.CreateFolder("Assets/Editor/LevelEditor", "WaterBrushes");
+            AssetDatabase.CreateFolder("Assets/Editor/LevelEditor/", "WaterBrushes");
             AssetDatabase.Refresh();
             Debug.Log("Created Water Brush Directory");
         }
@@ -242,7 +315,7 @@ public class LevelEditor : EditorWindow
             PlantBase _plantBase = new PlantBase();
             AssetDatabase.CreateAsset(_plantBase, databasePath + "PlantBase" + ".asset");
             AssetDatabase.SaveAssets();
-            _plantBase.plants = new List<Sprite>();  
+            _plantBase.plants = new List<Sprite>();
         }
         plantBase = AssetDatabase.LoadAssetAtPath<PlantBase>(databasePath + "PlantBase.asset");
 
@@ -281,6 +354,7 @@ public class LevelEditor : EditorWindow
         this.sortingLayers = (string[])sortingLayersProperty.GetValue(null, new object[0]);
 
         Editor.CreateInstance(typeof(SceneViewEventHandler));
+        SetMapVisualizer(false);
     }
 
     void OnDestroy()
@@ -334,7 +408,7 @@ public class LevelEditor : EditorWindow
                     {
                         EraseHandler();
                         break;
-                    }       
+                    }
             }
         }
 
@@ -414,7 +488,7 @@ public class LevelEditor : EditorWindow
                 if (e.keyCode == KeyCode.A)
                     groundAngle = !groundAngle;
             }
-            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && (grBrush!=null? !grBrush.Incomplete :false))
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && e.button == 0 && (grBrush != null ? !grBrush.Incomplete : false))
             {
                 Camera camera = SceneView.currentDrawingSceneView.camera;
 
@@ -433,12 +507,12 @@ public class LevelEditor : EditorWindow
                 int grLayer = groundLayer;
                 string lName = LayerMask.LayerToName(grLayer);
 
-                if (!Physics2D.Raycast(mouseWorldPos, Vector2.down, Mathf.Min(gridSize.x,gridSize.y)/4f, LayerMask.GetMask(lName)))
+                if (!Physics2D.Raycast(mouseWorldPos, Vector2.down, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(lName)))
                 {
                     string objName = (parentObj != null) ? parentObj.name + "0" : grBrush.outGround.name;
                     GameObject newGround = new GameObject(objName, typeof(SpriteRenderer));
                     newGround.transform.position = mouseWorldPos;
-                    newGround.GetComponent<SpriteRenderer>().sprite = groundAngle? grBrush.angleGround:grBrush.outGround;
+                    newGround.GetComponent<SpriteRenderer>().sprite = groundAngle ? grBrush.angleGround : grBrush.outGround;
                     newGround.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
                     newGround.GetComponent<SpriteRenderer>().sortingOrder = layerOrder;
                     newGround.tag = tagName;
@@ -451,7 +525,7 @@ public class LevelEditor : EditorWindow
                         Vector2 texSize = gSprite.textureRect.size;
                         PolygonCollider2D col = newGround.AddComponent<PolygonCollider2D>();
                         col.points = new Vector2[3];
-                        col.points = new Vector2[]{new Vector2(texSize.x, texSize.y) / 2f / gSprite.pixelsPerUnit, 
+                        col.points = new Vector2[]{new Vector2(texSize.x, texSize.y) / 2f / gSprite.pixelsPerUnit,
                                         new Vector2(-texSize.x, -texSize.y) / 2f / gSprite.pixelsPerUnit,
                                         new Vector2(texSize.x, -texSize.y) / 2f / gSprite.pixelsPerUnit};
                         col.isTrigger = !groundCollider;
@@ -463,10 +537,10 @@ public class LevelEditor : EditorWindow
                     }
                     GameObject[] groundBlocks = new GameObject[9];
                     groundBlocks[4] = newGround;
-                    RaycastHit2D hit=new RaycastHit2D();
-                    groundBlocks[0] = (hit=Physics2D.Raycast(mouseWorldPos + new Vector3(-gridSize.x,gridSize.y*1.1f,0f),Vector2.down,gridSize.x/4f, LayerMask.GetMask(lName)))?  hit.collider.gameObject : null;
-                    groundBlocks[1] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(0f, gridSize.y*1.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
-                    groundBlocks[2] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(gridSize.x, gridSize.y*1.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
+                    RaycastHit2D hit = new RaycastHit2D();
+                    groundBlocks[0] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(-gridSize.x, gridSize.y * 1.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
+                    groundBlocks[1] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(0f, gridSize.y * 1.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
+                    groundBlocks[2] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(gridSize.x, gridSize.y * 1.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
                     groundBlocks[3] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(-gridSize.x, gridSize.y * 0.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
                     groundBlocks[5] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(gridSize.x, gridSize.y * 0.1f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
                     groundBlocks[6] = (hit = Physics2D.Raycast(mouseWorldPos + new Vector3(-gridSize.x, gridSize.y * -0.9f, 0f), Vector2.down, gridSize.x / 4f, LayerMask.GetMask(lName))) ? hit.collider.gameObject : null;
@@ -506,7 +580,7 @@ public class LevelEditor : EditorWindow
             LayerMask grLayer = LayerMask.GetMask(LayerMask.LayerToName(groundLayer));
             //Сначала определим, что окружает блок земли
             bool b11, b12, b13, b21, b23, b31, b32, b33;//Матричные элементы, позволяющие определить, как данный блок земли окружён другими блоками
-            b11 = (Physics2D.OverlapCircle(pos+new Vector2(-gridSize.x,gridSize.y), radius, grLayer));
+            b11 = (Physics2D.OverlapCircle(pos + new Vector2(-gridSize.x, gridSize.y), radius, grLayer));
             b12 = (Physics2D.OverlapCircle(pos + new Vector2(0f, gridSize.y), radius, grLayer));
             b13 = (Physics2D.OverlapCircle(pos + new Vector2(gridSize.x, gridSize.y), radius, grLayer));
             b21 = (Physics2D.OverlapCircle(pos + new Vector2(-gridSize.x, 0f), radius, grLayer));
@@ -677,13 +751,13 @@ public class LevelEditor : EditorWindow
                 Vector2 dif = mouseWorldPos1 - mouseWorldPos;
                 Vector3 offsetVect = (Mathf.Abs(dif.x) > Mathf.Abs(dif.y) ? new Vector3(gridSize.x * Mathf.Sign(dif.x), 0f) : new Vector3(0f, gridSize.y * Mathf.Sign(dif.y)));
                 int grLayer = groundLayer;
-                string glName = LayerMask.LayerToName(grLayer), plName=LayerMask.LayerToName(plantLayer);
+                string glName = LayerMask.LayerToName(grLayer), plName = LayerMask.LayerToName(plantLayer);
 
                 float step = Mathf.Min(gridSize.x, gridSize.y);
-                bool b1 = Physics2D.Raycast(mouseWorldPos+Vector3.up*step/10f, Vector2.up, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
-                bool b2 = Physics2D.Raycast(mouseWorldPos + Vector3.right * step/10f, Vector2.right, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
-                bool b3 = Physics2D.Raycast(mouseWorldPos + Vector3.down * step/10f, Vector2.down, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
-                bool b4 = Physics2D.Raycast(mouseWorldPos + Vector3.left * step/10f, Vector2.left, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
+                bool b1 = Physics2D.Raycast(mouseWorldPos + Vector3.up * step / 10f, Vector2.up, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
+                bool b2 = Physics2D.Raycast(mouseWorldPos + Vector3.right * step / 10f, Vector2.right, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
+                bool b3 = Physics2D.Raycast(mouseWorldPos + Vector3.down * step / 10f, Vector2.down, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
+                bool b4 = Physics2D.Raycast(mouseWorldPos + Vector3.left * step / 10f, Vector2.left, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(glName));
 
                 Vector2 plantUp = Vector2.zero;
 
@@ -704,19 +778,19 @@ public class LevelEditor : EditorWindow
                 bool a4 = !Physics2D.Raycast(mouseWorldPos + new Vector3(plantUp.x, plantUp.y) * plantOffset, plantUp, step / 4f, LayerMask.GetMask(glName, LayerMask.LayerToName(plantLayer)));
                 if ((b1 && b2 && b3 && b4 &&
                          !Physics2D.Raycast(mouseWorldPos + offsetVect,
-                                       plantUp, step/ 4f, LayerMask.GetMask(glName)) &&
-                         !Physics2D.Raycast(mouseWorldPos,plantUp,
-                                        offsetVect.magnitude+plantOffset, LayerMask.GetMask(plName))) ||
-                    ((b1||b2||b3||b4) && !(b1&b2&&b3&&b4) && 
-                    !Physics2D.Raycast(mouseWorldPos+new Vector3(plantUp.x,plantUp.y)*step/10f,plantUp,step/4f,LayerMask.GetMask(glName))&&
-                    !Physics2D.Raycast(mouseWorldPos-new Vector3(plantUp.x,plantUp.y)*step/4f,plantUp,plantOffset + step / 4f, LayerMask.GetMask(plName))))
+                                       plantUp, step / 4f, LayerMask.GetMask(glName)) &&
+                         !Physics2D.Raycast(mouseWorldPos, plantUp,
+                                        offsetVect.magnitude + plantOffset, LayerMask.GetMask(plName))) ||
+                    ((b1 || b2 || b3 || b4) && !(b1 & b2 && b3 && b4) &&
+                    !Physics2D.Raycast(mouseWorldPos + new Vector3(plantUp.x, plantUp.y) * step / 10f, plantUp, step / 4f, LayerMask.GetMask(glName)) &&
+                    !Physics2D.Raycast(mouseWorldPos - new Vector3(plantUp.x, plantUp.y) * step / 4f, plantUp, plantOffset + step / 4f, LayerMask.GetMask(plName))))
                 {
                     Sprite loadedPlant = currentPlants[Random.Range(0, currentPlants.Count)];
-                    string plantName = (parentObj != null) ? parentObj.name + "0" :"plant";
+                    string plantName = (parentObj != null) ? parentObj.name + "0" : "plant";
                     GameObject newPlant = new GameObject(plantName, typeof(SpriteRenderer));
-                    newPlant.transform.position = mouseWorldPos + ((b1&&b2&&b3&&b4)? (offsetVect / 2f):Vector3.zero) +new Vector3(plantUp.x,plantUp.y) * plantOffset;
-                    newPlant.transform.eulerAngles=new Vector3(0f,0f,plantUp.x<0? Vector2.Angle(Vector2.up,plantUp): 360f-Vector2.Angle(Vector2.up, plantUp));
-                    newPlant.transform.localScale += new Vector3((plantUp.x * plantUp.y != 0f ? Mathf.Sqrt(2)-1f : 0f),0f,0f);
+                    newPlant.transform.position = mouseWorldPos + ((b1 && b2 && b3 && b4) ? (offsetVect / 2f) : Vector3.zero) + new Vector3(plantUp.x, plantUp.y) * plantOffset;
+                    newPlant.transform.eulerAngles = new Vector3(0f, 0f, plantUp.x < 0 ? Vector2.Angle(Vector2.up, plantUp) : 360f - Vector2.Angle(Vector2.up, plantUp));
+                    newPlant.transform.localScale += new Vector3((plantUp.x * plantUp.y != 0f ? Mathf.Sqrt(2) - 1f : 0f), 0f, 0f);
                     newPlant.GetComponent<SpriteRenderer>().sprite = loadedPlant;
                     newPlant.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
                     newPlant.GetComponent<SpriteRenderer>().sortingOrder = layerOrder;
@@ -724,8 +798,8 @@ public class LevelEditor : EditorWindow
                     newPlant.layer = plantLayer;
                     if (parentObj != null)
                         newPlant.transform.parent = parentObj.transform;
-                    BoxCollider2D col=newPlant.AddComponent<BoxCollider2D>();
-                    col.size = new Vector2(col.size.x, col.size.y /5f);
+                    BoxCollider2D col = newPlant.AddComponent<BoxCollider2D>();
+                    col.size = new Vector2(col.size.x, col.size.y / 5f);
                     newPlant.AddComponent<EditorCollider>();
 
                 }
@@ -773,7 +847,7 @@ public class LevelEditor : EditorWindow
                 bool a3 = (!Physics2D.Raycast(mouseWorldPos + Vector3.down * gridSize.y / 10f, Vector2.down, gridSize.y / 4f, LayerMask.GetMask(glName)));
                 bool a4 = (!Physics2D.Raycast(mouseWorldPos + Vector3.left * gridSize.x / 10f, Vector2.left, gridSize.x / 4f, LayerMask.GetMask(glName)));
 
-                if (b1 && b2 && b3 && b4 && !(!a1 && !a2 && !a3 && !a4)&&!wErase)
+                if (b1 && b2 && b3 && b4 && !(!a1 && !a2 && !a3 && !a4) && !wErase)
                 {
                     List<Vector2> waterBorder = FormWaterPoints(mouseWorldPos);
                     FillAreaWithWater(waterBorder);
@@ -803,8 +877,8 @@ public class LevelEditor : EditorWindow
             float step = Mathf.Abs(gridSize.x * movVect.x + gridSize.y * movVect.y);
             string glName = LayerMask.LayerToName(groundLayer), wlName = LayerMask.LayerToName(waterLayer);
             Vector2 leftPoint = beginPoint;
-            Vector2 rightPoint = leftPoint+Vector2.up*gridSize.y;
-            while (!((Mathf.Abs(rightPoint.y - leftPoint.y)<gridSize.y/10f)&&(Physics2D.Raycast(rightPoint+Vector2.right*gridSize.x*.1f,Vector2.right,gridSize.x*.7f,LayerMask.GetMask(glName)))))
+            Vector2 rightPoint = leftPoint + Vector2.up * gridSize.y;
+            while (!((Mathf.Abs(rightPoint.y - leftPoint.y) < gridSize.y / 10f) && (Physics2D.Raycast(rightPoint + Vector2.right * gridSize.x * .1f, Vector2.right, gridSize.x * .7f, LayerMask.GetMask(glName)))))
             {
                 if (rightPoint.y - leftPoint.y > gridSize.y / 10f)
                     rightPoint = leftPoint;
@@ -813,7 +887,7 @@ public class LevelEditor : EditorWindow
                     while (!Physics2D.Raycast(leftPoint + gridSize.x * .1f * Vector2.right, Vector2.left, gridSize.x * .7f, LayerMask.GetMask(glName)))
                     {
                         leftPoint -= new Vector2(gridSize.x, 0f);
-                        if (Mathf.Abs((rightPoint - leftPoint).x) > maxWaterWidth)  
+                        if (Mathf.Abs((rightPoint - leftPoint).x) > maxWaterWidth)
                             return null;
                     }
                     rightPoint = leftPoint;
@@ -829,7 +903,7 @@ public class LevelEditor : EditorWindow
                 }
 
                 int turnCount = 0;
-                while (turnCount<4 && Physics2D.Raycast(rightPoint + step*.1f*movVect, movVect, step * .7f, LayerMask.GetMask(glName)))
+                while (turnCount < 4 && Physics2D.Raycast(rightPoint + step * .1f * movVect, movVect, step * .7f, LayerMask.GetMask(glName)))
                 {
                     turnCount++;
                     Vector2 vect = -colVect;
@@ -879,7 +953,7 @@ public class LevelEditor : EditorWindow
                 if (onBorder)
                 {
                     if ((Mathf.Abs(leftPoint.y - rightPoint.y) <= gridSize.y / 10f) &&
-                        (!Physics2D.Raycast(rightPoint+Vector2.left*step*.1f, Vector2.left, .7f * gridSize.x, LayerMask.GetMask(glName)))&&
+                        (!Physics2D.Raycast(rightPoint + Vector2.left * step * .1f, Vector2.left, .7f * gridSize.x, LayerMask.GetMask(glName))) &&
                         (Physics2D.Raycast(rightPoint + Vector2.right * step * .1f, Vector2.right, .7f * gridSize.x, LayerMask.GetMask(glName))))
                     {
                         onBorder = false;
@@ -925,7 +999,7 @@ public class LevelEditor : EditorWindow
                 {
                     return border;
                 }
-                if (Mathf.Approximately(rightPoint.y, leftPoint.y) && Physics2D.Raycast(rightPoint+Vector2.right*gridSize.x*.1f,Vector2.right,gridSize.x*.7f,LayerMask.GetMask(glName)))
+                if (Mathf.Approximately(rightPoint.y, leftPoint.y) && Physics2D.Raycast(rightPoint + Vector2.right * gridSize.x * .1f, Vector2.right, gridSize.x * .7f, LayerMask.GetMask(glName)))
                 {
                     onBorder = false;
                     movVect = Vector2.left;
@@ -941,7 +1015,7 @@ public class LevelEditor : EditorWindow
         /// </summary>
         static void FillAreaWithWater(List<Vector2> areaBorder)
         {
-            if (areaBorder == null? true : areaBorder.Count == 0)
+            if (areaBorder == null ? true : areaBorder.Count == 0)
                 return;
             Vector2 leftPoint = Vector2.zero, rightPoint = Vector2.zero;
             string glName = LayerMask.LayerToName(groundLayer), wlName = LayerMask.LayerToName(waterLayer);
@@ -951,17 +1025,17 @@ public class LevelEditor : EditorWindow
                 if (vect.y < depth)
                     depth = vect.y;
             }
-            while (Mathf.Abs(depth-areaBorder[0].y)<gridSize.y/10f || depth<areaBorder[0].y)
+            while (Mathf.Abs(depth - areaBorder[0].y) < gridSize.y / 10f || depth < areaBorder[0].y)
             {
                 float leftPos = Mathf.Infinity, rightPos = Mathf.NegativeInfinity;
-                List<Vector2> border = areaBorder.FindAll(x => Mathf.Abs(x.y-depth)<gridSize.y/10f);
-                border.Sort((x,y)=> { return x.x.CompareTo(y.x); });
+                List<Vector2> border = areaBorder.FindAll(x => Mathf.Abs(x.y - depth) < gridSize.y / 10f);
+                border.Sort((x, y) => { return x.x.CompareTo(y.x); });
 
-                for (int i=0;i< border.Count;i++)
+                for (int i = 0; i < border.Count; i++)
                 {
                     leftPos = border[i].x;
-                    if (i < border.Count - 1 ? !(Physics2D.Raycast(border[i] + Vector2.right*gridSize.x/10f, border[i + 1] - border[i], gridSize.x * .7f, LayerMask.GetMask(glName)) && 
-                                                (Physics2D.Raycast(border[i+1] + Vector2.left * gridSize.x / 10f, Vector2.left, gridSize.x * .7f, LayerMask.GetMask(glName)))): false)
+                    if (i < border.Count - 1 ? !(Physics2D.Raycast(border[i] + Vector2.right * gridSize.x / 10f, border[i + 1] - border[i], gridSize.x * .7f, LayerMask.GetMask(glName)) &&
+                                                (Physics2D.Raycast(border[i + 1] + Vector2.left * gridSize.x / 10f, Vector2.left, gridSize.x * .7f, LayerMask.GetMask(glName)))) : false)
                     {
                         rightPos = border[i + 1].x;
                         while (leftPos < rightPos)
@@ -1065,7 +1139,7 @@ public class LevelEditor : EditorWindow
             GameObject newWaterObj = null;
             Vector2 downCellPosition = new Vector2(cellPosition.x, cellPosition.y - gridSize.y);
             if (Physics2D.Raycast(downCellPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.x * .35f, LayerMask.GetMask(wlName)))
-                newWaterObj = Physics2D.Raycast(downCellPosition+ Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y * .35f, LayerMask.GetMask(wlName)).collider.gameObject;
+                newWaterObj = Physics2D.Raycast(downCellPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y * .35f, LayerMask.GetMask(wlName)).collider.gameObject;
             if (newWaterObj != null && wBrush != null ? wBrush.waterObjects.Count > 0 : false)
             {
                 GameObject wObject = GameObject.Instantiate(wBrush.waterObjects[Random.Range(0, wBrush.waterObjects.Count - 1)], newWaterObj.transform.position + Vector3.up * gridSize.y / 2f, Quaternion.identity) as GameObject;
@@ -1092,8 +1166,8 @@ public class LevelEditor : EditorWindow
             for (int i = 0; i < border1.Count; i++)
             {
                 leftPos = border1[i].x;
-                if (i < border1.Count - 1 ? !(Physics2D.Raycast(new Vector2(leftPos, y1), Vector2.right, gridSize.x * .75f, LayerMask.GetMask(glName))&&
-                                              (Physics2D.Raycast(new Vector2(border1[i+1].x, y1), Vector2.left, gridSize.x * .75f, LayerMask.GetMask(glName)))) : false)
+                if (i < border1.Count - 1 ? !(Physics2D.Raycast(new Vector2(leftPos, y1), Vector2.right, gridSize.x * .75f, LayerMask.GetMask(glName)) &&
+                                              (Physics2D.Raycast(new Vector2(border1[i + 1].x, y1), Vector2.left, gridSize.x * .75f, LayerMask.GetMask(glName)))) : false)
                 {
                     float rightPos = border1[i + 1].x;
                     while (leftPos < rightPos || Mathf.Abs(rightPos - leftPos) < gridSize.x / 10f)
@@ -1123,14 +1197,14 @@ public class LevelEditor : EditorWindow
             Vector2 colVect = Vector2.right;
             Vector2 rightPoint = currentPosition;
             float step = gridSize.y;
-            string glName = LayerMask.LayerToName(groundLayer), wlName=LayerMask.LayerToName(waterLayer);
-            while (!(findBorder && Mathf.Approximately(rightPoint.y,currentPosition.y) && Mathf.Approximately(rightPoint.x, currentPosition.x)) && 
-                   (Physics2D.Raycast(currentPosition+Vector2.up*gridSize.y*.55f,Vector2.up,gridSize.y*.3f,LayerMask.GetMask(glName,wlName))))
+            string glName = LayerMask.LayerToName(groundLayer), wlName = LayerMask.LayerToName(waterLayer);
+            while (!(findBorder && Mathf.Approximately(rightPoint.y, currentPosition.y) && Mathf.Approximately(rightPoint.x, currentPosition.x)) &&
+                   (Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .55f, Vector2.up, gridSize.y * .3f, LayerMask.GetMask(glName, wlName))))
             {
                 int turnCount = 0;
                 if (!findBorder)
                 {
-                    if (Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y*.7f, LayerMask.GetMask(glName)))
+                    if (Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y * .7f, LayerMask.GetMask(glName)))
                     {
                         findBorder = true;
                         rightPoint = currentPosition;
@@ -1139,7 +1213,7 @@ public class LevelEditor : EditorWindow
                         step = gridSize.x;
                     }
                 }
-                else if (!Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y*.7f, LayerMask.GetMask(glName)) && currentPosition.y >= rightPoint.y)
+                else if (!Physics2D.Raycast(currentPosition + Vector2.up * gridSize.y * .1f, Vector2.up, gridSize.y * .7f, LayerMask.GetMask(glName)) && currentPosition.y >= rightPoint.y)
                 {
                     findBorder = false;
                     step = gridSize.y;
@@ -1154,15 +1228,15 @@ public class LevelEditor : EditorWindow
                     {
                         Vector2 vect = -movVect;
                         movVect = colVect;
-                        colVect=vect;
+                        colVect = vect;
                         step = movVect.x != 0 ? gridSize.x : gridSize.y;
                     }
-                    while (turnCount<4 && Physics2D.Raycast(currentPosition+movVect*step*.1f,movVect,step*.7f,LayerMask.GetMask(glName)))
+                    while (turnCount < 4 && Physics2D.Raycast(currentPosition + movVect * step * .1f, movVect, step * .7f, LayerMask.GetMask(glName)))
                     {
-                        Vector2 vect= -colVect;
+                        Vector2 vect = -colVect;
                         colVect = movVect;
                         movVect = vect;
-                        step = movVect.x!=0? gridSize.x : gridSize.y;
+                        step = movVect.x != 0 ? gridSize.x : gridSize.y;
                         turnCount++;
                     }
                 }
@@ -1205,23 +1279,23 @@ public class LevelEditor : EditorWindow
 
                 float step = Mathf.Min(gridSize.x, gridSize.y);
 
-                if (!Physics2D.Raycast(mouseWorldPos,Vector2.down, gridSize.y*.45f, LayerMask.GetMask(glName, llName)) && 
-                    (!isLiana || Physics2D.Raycast(mouseWorldPos+Vector3.up*gridSize.y*.5f,Vector2.up,gridSize.y*.05f,LayerMask.GetMask(glName,llName))))
+                if (!Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y * .45f, LayerMask.GetMask(glName, llName)) &&
+                    (!isLiana || Physics2D.Raycast(mouseWorldPos + Vector3.up * gridSize.y * .5f, Vector2.up, gridSize.y * .05f, LayerMask.GetMask(glName, llName))))
                 {
                     if (parentObj == null && ladderParentObjName != string.Empty)
                     {
                         parentObj = new GameObject(ladderParentObjName);
                         parentObj.transform.position = mouseWorldPos;
                     }
-                    string ladderName = (parentObj != null) ? parentObj.name + "0" : (isLiana? "liana" : "ladder");
-                    GameObject newLadder = GameObject.Instantiate(currentLadder,mouseWorldPos,Quaternion.identity) as GameObject;
+                    string ladderName = (parentObj != null) ? parentObj.name + "0" : (isLiana ? "liana" : "ladder");
+                    GameObject newLadder = GameObject.Instantiate(currentLadder, mouseWorldPos, Quaternion.identity) as GameObject;
                     newLadder.transform.position = mouseWorldPos;
                     newLadder.tag = ladderTag;
                     newLadder.layer = ladderLayer;
                     newLadder.name = ladderName;
-                    newLadder.GetComponent<SpriteRenderer>().sortingLayerName=sortingLayer;
+                    newLadder.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
                     newLadder.GetComponent<SpriteRenderer>().sortingOrder = layerOrder;
-                    
+
                     if (parentObj != null)
                         newLadder.transform.parent = parentObj.transform;
                 }
@@ -1260,7 +1334,7 @@ public class LevelEditor : EditorWindow
                     Physics2D.Raycast(mouseWorldPos + Vector3.down * gridSize.y * .5f, Vector2.down, gridSize.y * .05f, LayerMask.GetMask(glName)))
                 {
                     GameObject obstacle = null;
-                    if (Physics2D.Raycast(mouseWorldPos + Vector3.up*(obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.left * gridSize.x * .55f, 
+                    if (Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.left * gridSize.x * .55f,
                         Vector2.left, gridSize.x * .15f, LayerMask.GetMask(olName)))
                     {
                         obstacle = Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.left * gridSize.x * .55f,
@@ -1269,7 +1343,7 @@ public class LevelEditor : EditorWindow
                              ((obstacleType == ObstacleEnum.spikes && obstacle.GetComponent<SpikesScript>() != null))))
                             obstacle = null;
                     }
-                    if ((obstacle == null) && Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset +  (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f, 
+                    if ((obstacle == null) && Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f,
                                                                 Vector2.right, gridSize.x * .15f, LayerMask.GetMask(olName)))
                     {
                         obstacle = Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f,
@@ -1281,15 +1355,15 @@ public class LevelEditor : EditorWindow
                     if (obstacle == null)
                     {
                         obstacle = new GameObject(obstacleName);
-                        obstacle.transform.position = mouseWorldPos+Vector3.up*obstacleOffset;
+                        obstacle.transform.position = mouseWorldPos + Vector3.up * obstacleOffset;
                         BoxCollider2D col = obstacle.AddComponent<BoxCollider2D>();
                         col.size = new Vector2(gridSize.x, damageBoxSize);
-                        col.offset = new Vector2(0f, (damageBoxSize-gridSize.y) / 2f + damageBoxOffset);
+                        col.offset = new Vector2(0f, (damageBoxSize - gridSize.y) / 2f + damageBoxOffset);
                         col.isTrigger = true;
                         if (obstacleType == ObstacleEnum.plants)
                         {
                             ObstacleScript obScript = obstacle.AddComponent<ObstacleScript>();
-                            obScript.HitData = new HitClass(obstacleDamage, -1f, col.size, col.offset,0f);
+                            obScript.HitData = new HitClass(obstacleDamage, -1f, col.size, col.offset, 0f);
                             obScript.HitData.damage = obstacleDamage;
                             obScript.HitData.hitSize = col.size;
                             obScript.HitData.hitPosition = col.offset;
@@ -1314,7 +1388,7 @@ public class LevelEditor : EditorWindow
                             obstacle.transform.parent = parentObj.transform;
                         }
                     }
-                    GameObject newObstacle = Instantiate(currentObstacle, mouseWorldPos+obstacleOffset*Vector3.up, Quaternion.identity) as GameObject;
+                    GameObject newObstacle = Instantiate(currentObstacle, mouseWorldPos + obstacleOffset * Vector3.up, Quaternion.identity) as GameObject;
                     newObstacle.tag = tagName;
                     newObstacle.layer = obstacleLayer;
                     newObstacle.GetComponent<SpriteRenderer>().sortingLayerName = sortingLayer;
@@ -1332,11 +1406,11 @@ public class LevelEditor : EditorWindow
                     {
                         GameObject obstacle1 = Physics2D.Raycast(mouseWorldPos + Vector3.up * (obstacleOffset + damageBoxOffset + (damageBoxSize - gridSize.y) / 2f) + Vector3.right * gridSize.x * .55f,
                                                                 Vector2.right, gridSize.x * .15f, LayerMask.GetMask(olName)).collider.gameObject;
-                        if (((obstacleType == ObstacleEnum.plants)&&(obstacle1.GetComponent<ObstacleScript>()!=null)||
-                            (obstacleType==ObstacleEnum.spikes)&&(obstacle1.GetComponent<SpikesScript>()!=null)))
+                        if (((obstacleType == ObstacleEnum.plants) && (obstacle1.GetComponent<ObstacleScript>() != null) ||
+                            (obstacleType == ObstacleEnum.spikes) && (obstacle1.GetComponent<SpikesScript>() != null)))
                             CombineObstacles(obstacle, obstacle1);
                     }
-                        
+
                 }
             }
         }
@@ -1348,7 +1422,7 @@ public class LevelEditor : EditorWindow
         {
             //Сначала вытащим все дочерние объекты из объекта
             List<GameObject> obChildren = new List<GameObject>();
-            for (int i=_obstacle.transform.childCount-1;i>=0;i--)
+            for (int i = _obstacle.transform.childCount - 1; i >= 0; i--)
             {
                 obChildren.Add(_obstacle.transform.GetChild(i).gameObject);
             }
@@ -1357,7 +1431,7 @@ public class LevelEditor : EditorWindow
             //Настроим само препятствие
             obChildren.Sort((x, y) => { return x.transform.position.x.CompareTo(y.transform.position.x); });
             Vector3 pos = _obstacle.transform.position;
-            _obstacle.transform.position = new Vector3(obChildren[0].transform.position.x+(obChildren[obChildren.Count - 1].transform.position.x - obChildren[0].transform.position.x) / 2f, 
+            _obstacle.transform.position = new Vector3(obChildren[0].transform.position.x + (obChildren[obChildren.Count - 1].transform.position.x - obChildren[0].transform.position.x) / 2f,
                                                         pos.y, pos.z);
             BoxCollider2D col = _obstacle.GetComponent<BoxCollider2D>();
             col.size = new Vector2((obChildren[obChildren.Count - 1].transform.position - obChildren[0].transform.position).x + gridSize.x, col.size.y);
@@ -1386,7 +1460,7 @@ public class LevelEditor : EditorWindow
                 obChildren.Add(_obstacle.transform.GetChild(i).gameObject);
             }
             _obstacle.transform.DetachChildren();
-            GameObject obstacle1 = Instantiate(_obstacle,_obstacle.transform.position,_obstacle.transform.rotation) as GameObject;
+            GameObject obstacle1 = Instantiate(_obstacle, _obstacle.transform.position, _obstacle.transform.rotation) as GameObject;
             obstacle1.transform.parent = _obstacle.transform.parent;
 
             foreach (GameObject obj in obChildren)
@@ -1546,9 +1620,9 @@ public class LevelEditor : EditorWindow
                     for (int i = 0; i < colPoints.Length; i++)
                     {
                         Vector2 colPoint = colPoints[i];
-                        if (Vector2.Distance(colPoint, currentPoint) < colDistance && 
-                            !Physics2D.Raycast(currentPoint, (colPoint-(Vector2)currentPoint).normalized,
-                            Mathf.Clamp(Vector2.Distance(colPoint,currentPoint)-lightPointerPrecision,0f, Mathf.Infinity), LayerMask.GetMask(lName)))
+                        if (Vector2.Distance(colPoint, currentPoint) < colDistance &&
+                            !Physics2D.Raycast(currentPoint, (colPoint - (Vector2)currentPoint).normalized,
+                            Mathf.Clamp(Vector2.Distance(colPoint, currentPoint) - lightPointerPrecision, 0f, Mathf.Infinity), LayerMask.GetMask(lName)))
                         {
                             colDistance = Vector2.Distance(colPoint, currentPoint);
                             nextPoint = colPoint;
@@ -1593,9 +1667,9 @@ public class LevelEditor : EditorWindow
 
                     //Шаг 3: Получим контур, что обрамляет указанный твёрдый объект
                     List<Vector3> allPoints = new List<Vector3>();
-                    allPoints.Add(GetNextLightObstaclePoint(currentPoint,ref movingDirection));
-                    while ((allPoints.Count == 1 || Mathf.Abs(Vector3.Distance(allPoints[allPoints.Count - 1],allPoints[0]))>lightPointerPrecision) && 
-                                                                                                                                    movingDirection!=Vector2.zero)
+                    allPoints.Add(GetNextLightObstaclePoint(currentPoint, ref movingDirection));
+                    while ((allPoints.Count == 1 || Mathf.Abs(Vector3.Distance(allPoints[allPoints.Count - 1], allPoints[0])) > lightPointerPrecision) &&
+                                                                                                                                    movingDirection != Vector2.zero)
                         allPoints.Add(GetNextLightObstaclePoint(allPoints[allPoints.Count - 1], ref movingDirection));
                     allPoints.RemoveAt(allPoints.Count - 1);//Удалим последнюю точку, замыкающую контур
 
@@ -1618,7 +1692,7 @@ public class LevelEditor : EditorWindow
         /// Функция, что возвращает следующую точку контура, обрамляющую твёрдый объект 
         /// </summary>
         /// <returns>Точка, составляющая контур твёрдого объекта</returns>
-        static Vector3 GetNextLightObstaclePoint(Vector3 currentPoint , ref Vector2 movingDirection)
+        static Vector3 GetNextLightObstaclePoint(Vector3 currentPoint, ref Vector2 movingDirection)
         {
 
             string lName = LayerMask.LayerToName(groundLayer);
@@ -1633,7 +1707,7 @@ public class LevelEditor : EditorWindow
                 colDirection *= -1;
 
             currentPoint += (Vector3)movingDirection * lightPointerPrecision;
-            bool a1 = !Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f, 
+            bool a1 = !Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f,
                                                                                         movingDirection, lightPointerPrecision, LayerMask.GetMask(lName));
             bool a2 = Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f + (Vector3)movingDirection * lightPointerPrecision / 2f,
                                                                                             colDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
@@ -1648,8 +1722,8 @@ public class LevelEditor : EditorWindow
                 //                                                          colDirection, lightPointerPrecision, LayerMask.GetMask(lName));
                 a1 = !Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f,
                                                                                         movingDirection, lightPointerPrecision, LayerMask.GetMask(lName));
-                a2 = Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f + (Vector3)movingDirection*lightPointerPrecision/2f,
-                                                                                            colDirection, lightPointerPrecision, LayerMask.GetMask(lName))||
+                a2 = Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f + (Vector3)movingDirection * lightPointerPrecision / 2f,
+                                                                                            colDirection, lightPointerPrecision, LayerMask.GetMask(lName)) ||
                      Physics2D.Raycast(currentPoint - (Vector3)colDirection * lightPointerPrecision / 2f - (Vector3)movingDirection * lightPointerPrecision / 2f,
                                                                                             colDirection, lightPointerPrecision, LayerMask.GetMask(lName));
             }
@@ -1663,7 +1737,7 @@ public class LevelEditor : EditorWindow
             Vector2 prevDirection = movingDirection;
             Vector2 nextPoint = Vector2.zero;
             while ((colIndex < cols.Length) && (newDirection == Vector2.zero))
-            { 
+            {
                 Vector2[] colPoints = GetColliderPoints(cols[colIndex]);
                 if (colPoints != null)
                 {
@@ -1695,7 +1769,7 @@ public class LevelEditor : EditorWindow
                                                                                         newDirection, lightPointerPrecision, LayerMask.GetMask(lName));
                     a2 = !Physics2D.Raycast(nextPoint - colDirection * lightPointerPrecision / 2f + newDirection * lightPointerPrecision / 5f,
                                                                                                 colDirection, lightPointerPrecision, LayerMask.GetMask(lName));
-                    if (a1 ||a2||
+                    if (a1 || a2 ||
                         (Mathf.Approximately(Mathf.Abs(Vector2.Dot(prevDirection, newDirection)), 1f)))
                     {
                         //Проверим, возможно ли перемещение к другой точке коллайдера
@@ -1713,7 +1787,7 @@ public class LevelEditor : EditorWindow
                                                                                         newDirection, lightPointerPrecision, LayerMask.GetMask(lName));
                         a2 = !Physics2D.Raycast(nextPoint - colDirection * lightPointerPrecision / 2f + newDirection * lightPointerPrecision / 5f,
                                                                                                 colDirection, lightPointerPrecision, LayerMask.GetMask(lName));
-                        if (a1||a2||
+                        if (a1 || a2 ||
                             (Mathf.Approximately(Mathf.Abs(Vector2.Dot(prevDirection, newDirection)), 1f)))
                         {
                             newDirection = Vector2.zero;
@@ -1733,9 +1807,9 @@ public class LevelEditor : EditorWindow
         }
 
         /// <summary>
-        /// Функция, возвращающая граничный точки простого коллайдера
+        /// Функция, возвращающая граничные точки простого коллайдера
         /// </summary>
-        /// <param name="коллайдер"></param>
+        /// <param name="col">заданный коллайдер</param>
         /// <returns></returns>
         static Vector2[] GetColliderPoints(Collider2D col)
         {
@@ -1762,7 +1836,7 @@ public class LevelEditor : EditorWindow
 
                 Transform bTrans = bCol.transform;
                 Vector3 vect = bCol.transform.position;
-                Vector2[] points = new Vector2[] {vect+b1, vect+b2,vect-b1,vect-b2};
+                Vector2[] points = new Vector2[] { vect + b1, vect + b2, vect - b1, vect - b2 };
                 return points;
             }
             return null;
@@ -1785,7 +1859,7 @@ public class LevelEditor : EditorWindow
                 float verticalX = 0f;
 
                 //Сдвинем одну прямую
-                int prevIndex = i >0 ? i - 1 : contour.Count-1;
+                int prevIndex = i > 0 ? i - 1 : contour.Count - 1;
                 Vector2 direction = ((Vector2)(contour[i] - contour[prevIndex])).normalized;
                 Vector2 normalDirection = new Vector2(1, 0);
                 if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(normalDirection, direction)), 1f))
@@ -1803,7 +1877,7 @@ public class LevelEditor : EditorWindow
                 }
 
                 //А потом вторую
-                int nextIndex = i < contour.Count-1 ? i + 1 : 0;
+                int nextIndex = i < contour.Count - 1 ? i + 1 : 0;
                 direction = ((Vector2)(contour[nextIndex] - contour[i])).normalized;
                 normalDirection = new Vector2(1, 0);
                 if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(normalDirection, direction)), 1f))
@@ -1862,7 +1936,7 @@ public class LevelEditor : EditorWindow
             int vLinesCount = Mathf.FloorToInt((maxX - minX) / maxLightObstacleSize.x);//Количество вертикальных линий, разрезающих фигуру
 
             List<LightObstaclePoint> contourPoints = new List<LightObstaclePoint>();//Список, используемый для учёта, прошли 
-                                                                                             //ли все точки изначального контура разбивку по прямоугольникам
+                                                                                    //ли все точки изначального контура разбивку по прямоугольникам
             List<LightObstaclePoint> allPoints = new List<LightObstaclePoint>();//немного изменённый контур, используемый для разреза
 
             allPoints = contour.ConvertAll<LightObstaclePoint>(x => new LightObstaclePoint(x));
@@ -1880,7 +1954,7 @@ public class LevelEditor : EditorWindow
             #region VerticalSlice
 
             //Разрез вертикальными линиями
-            for (int i = 1; i <=vLinesCount; i++)
+            for (int i = 1; i <= vLinesCount; i++)
             {
                 List<LightObstaclePointWithTarget> vLine = vLines[i - 1];
                 for (int j = 0; j < allPoints.Count; j++)
@@ -1927,11 +2001,11 @@ public class LevelEditor : EditorWindow
                     }
                     else if ((endPoint.x - posX) * (beginPoint.x - posX) < 0)//Если вертикальная линия пересекается с одной из сторон фигуры
                     {
-                        LightObstaclePoint newPoint = new LightObstaclePoint(new Vector3(posX, beginPoint.y+
-                                                                                       (endPoint.y-beginPoint.y)*(posX-beginPoint.x)/(endPoint.x-beginPoint.x),
+                        LightObstaclePoint newPoint = new LightObstaclePoint(new Vector3(posX, beginPoint.y +
+                                                                                       (endPoint.y - beginPoint.y) * (posX - beginPoint.x) / (endPoint.x - beginPoint.x),
                                                                                        zPosition));
                         vLine.Add(new LightObstaclePointWithTarget(newPoint, null));
-                        allPoints.Insert(j+1,newPoint);
+                        allPoints.Insert(j + 1, newPoint);
                         j++;
                     }
                 }
@@ -1994,7 +2068,7 @@ public class LevelEditor : EditorWindow
                                                                                     (endPoint.x - beginPoint.x) * (posY - beginPoint.y) / (endPoint.y - beginPoint.y),
                                                                                     posY,
                                                                                     zPosition));
-                        hLine.Add(new LightObstaclePointWithTarget(newPoint,null));
+                        hLine.Add(new LightObstaclePointWithTarget(newPoint, null));
                         allPoints.Insert(j + 1, newPoint);
                         j++;
                     }
@@ -2012,8 +2086,8 @@ public class LevelEditor : EditorWindow
                 vLine.Sort((x, y) => { return x.point.position.y.CompareTo(y.point.position.y); });
                 for (int i = 0; i < vLine.Count / 2; i++)
                 {
-                    vLine[i*2].nextPoint = vLine[i*2+1];
-                    vLine[i*2 + 1].nextPoint = vLine[i*2];
+                    vLine[i * 2].nextPoint = vLine[i * 2 + 1];
+                    vLine[i * 2 + 1].nextPoint = vLine[i * 2];
                 }
                 int lineIndex = 0, hLinesIndex = 1;
                 while ((lineIndex < vLine.Count - 1) && (hLinesIndex <= hLinesCount))
@@ -2021,13 +2095,13 @@ public class LevelEditor : EditorWindow
                     float posY = minY + hLinesIndex * maxLightObstacleSize.y;
                     if ((vLine[lineIndex].point.position.y - posY) * (vLine[lineIndex + 1].point.position.y - posY) < 0)
                     {
-                        vLine.Insert(lineIndex + 1, new LightObstaclePointWithTarget(new LightObstaclePoint(new Vector3(vLine[lineIndex].point.position.x, 
+                        vLine.Insert(lineIndex + 1, new LightObstaclePointWithTarget(new LightObstaclePoint(new Vector3(vLine[lineIndex].point.position.x,
                                                                                                             posY, zPosition)), null));
                         lineIndex++;
                     }
-                    if ((vLine[lineIndex + 1].point.position.y - posY) <=0)
+                    if ((vLine[lineIndex + 1].point.position.y - posY) <= 0)
                     {
-                        lineIndex+=2;
+                        lineIndex += 2;
                     }
                     else
                         hLinesIndex++;
@@ -2039,8 +2113,8 @@ public class LevelEditor : EditorWindow
                 hLine.Sort((x, y) => { return x.point.position.x.CompareTo(y.point.position.x); });
                 for (int i = 0; i < hLine.Count / 2; i++)
                 {
-                    hLine[i*2].nextPoint = hLine[i*2 + 1];
-                    hLine[i*2 + 1].nextPoint = hLine[i*2];
+                    hLine[i * 2].nextPoint = hLine[i * 2 + 1];
+                    hLine[i * 2 + 1].nextPoint = hLine[i * 2];
                 }
                 int lineIndex = 0, vLinesIndex = 1;
                 while ((lineIndex < hLine.Count - 1) && (vLinesIndex <= vLinesCount))
@@ -2048,11 +2122,11 @@ public class LevelEditor : EditorWindow
                     float posX = minX + vLinesIndex * maxLightObstacleSize.x;
                     if ((hLine[lineIndex].point.position.x - posX) * (hLine[lineIndex + 1].point.position.x - posX) < 0)
                     {
-                        hLine.Insert(lineIndex+1,new LightObstaclePointWithTarget(new LightObstaclePoint(new Vector3(posX, 
+                        hLine.Insert(lineIndex + 1, new LightObstaclePointWithTarget(new LightObstaclePoint(new Vector3(posX,
                                                                                         hLine[lineIndex].point.position.y, zPosition)), null));
                         lineIndex++;
                     }
-                    if ((hLine[lineIndex + 1].point.position.x - posX) <=0)
+                    if ((hLine[lineIndex + 1].point.position.x - posX) <= 0)
                         lineIndex += 2;
                     else
                         vLinesIndex++;
@@ -2064,8 +2138,8 @@ public class LevelEditor : EditorWindow
             #region CreateSegments
 
             List<LightObstaclePoint> segmentPoints = new List<LightObstaclePoint>();//Список точек контура, которые находятся внутри рассматриваемого 
-                                                                                              //сегмента. Используется для учёта (не пропустили ли мы точки)
-            List<Vector3> collPoints=new List<Vector3>();
+                                                                                    //сегмента. Используется для учёта (не пропустили ли мы точки)
+            List<Vector3> collPoints = new List<Vector3>();
             for (int i = 0; i <= vLinesCount; i++)
                 for (int j = 0; j <= hLinesCount; j++)
                 {
@@ -2074,7 +2148,7 @@ public class LevelEditor : EditorWindow
                     for (int k = 0; k < allPoints.Count; k++)
                     {
                         Vector3 pos = allPoints[k].position;
-                        if (BelongToRect(new Vector2(leftX,downY),new Vector2(rightX,upY),pos))
+                        if (BelongToRect(new Vector2(leftX, downY), new Vector2(rightX, upY), pos))
                         {
                             segmentPoints.Add(allPoints[k]);
                         }
@@ -2087,8 +2161,8 @@ public class LevelEditor : EditorWindow
                         Vector3 endPoint = beginPoint;
                         collPoints = new List<Vector3>();
                         collPoints.Add(beginPoint);
-                        nextIndex = nextIndex < segmentPoints.Count - 1? nextIndex+1:0;
-                        while (collPoints.Count<2 || Vector3.SqrMagnitude(beginPoint-endPoint)>lightPointerPrecision*lightPointerPrecision)
+                        nextIndex = nextIndex < segmentPoints.Count - 1 ? nextIndex + 1 : 0;
+                        while (collPoints.Count < 2 || Vector3.SqrMagnitude(beginPoint - endPoint) > lightPointerPrecision * lightPointerPrecision)
                         {
                             if (collPoints.Count > segmentPoints.Count * 2)
                                 break;
@@ -2097,17 +2171,17 @@ public class LevelEditor : EditorWindow
                                 break;
                             nextIndex = nextIndex < segmentPoints.Count - 1 ? nextIndex + 1 : 0;
 
-                            List<LightObstaclePointWithTarget> vSliceLine = vLines.Find(y => y.Find(x=>(Vector3.Distance(endPoint,x.point.position)<
-                                                                                                                            lightPointerPrecision))!=null);
+                            List<LightObstaclePointWithTarget> vSliceLine = vLines.Find(y => y.Find(x => (Vector3.Distance(endPoint, x.point.position) <
+                                                                                                                            lightPointerPrecision)) != null);
                             List<LightObstaclePointWithTarget> hSliceLine = hLines.Find(y => y.Find(x => (Vector3.Distance(endPoint, x.point.position) <
                                                                                                 lightPointerPrecision)) != null);
                             bool onBorderX = (Mathf.Approximately(endPoint.x, leftX) && !Mathf.Approximately(leftX, minX) ||
                                                         Mathf.Approximately(endPoint.x, rightX) && !Mathf.Approximately(rightX, maxX)) &&
-                                                        vSliceLine!=null;
+                                                        vSliceLine != null;
                             bool onBorderY = (Mathf.Approximately(endPoint.y, downY) && !Mathf.Approximately(downY, minY) ||
-                                                Mathf.Approximately(endPoint.y, upY) && !Mathf.Approximately(upY, maxY))&&
-                                                hSliceLine!=null;
-                            bool onBorder = onBorderX||onBorderY;
+                                                Mathf.Approximately(endPoint.y, upY) && !Mathf.Approximately(upY, maxY)) &&
+                                                hSliceLine != null;
+                            bool onBorder = onBorderX || onBorderY;
                             if (onBorder)
                             {
                                 while (Vector3.SqrMagnitude(beginPoint - endPoint) > lightPointerPrecision * lightPointerPrecision && onBorder)
@@ -2123,7 +2197,7 @@ public class LevelEditor : EditorWindow
                                         currentObstPoint = sliceLine.Find(x => (Vector3.Distance(endPoint, x.point.position) <
                                                                                           lightPointerPrecision));
                                     else
-                                        break; 
+                                        break;
                                     collPoints.Add(endPoint);
                                     if (collPoints.Count > segmentPoints.Count * 2)
                                     {
@@ -2162,11 +2236,11 @@ public class LevelEditor : EditorWindow
                                     hSliceLine = hLines.Find(y => y.Find(x => (Vector3.Distance(endPoint, x.point.position) <
                                                                                                         lightPointerPrecision)) != null);
                                     onBorderX = (Mathf.Approximately(endPoint.x, leftX) && !Mathf.Approximately(leftX, minX) ||
-                                                     Mathf.Approximately(endPoint.x, rightX) && !Mathf.Approximately(rightX, maxX))&&
-                                                     vSliceLine!=null;
+                                                     Mathf.Approximately(endPoint.x, rightX) && !Mathf.Approximately(rightX, maxX)) &&
+                                                     vSliceLine != null;
                                     onBorderY = (Mathf.Approximately(endPoint.y, downY) && !Mathf.Approximately(downY, minY) ||
-                                                     Mathf.Approximately(endPoint.y, upY) && !Mathf.Approximately(upY, maxY)) && 
-                                                     hSliceLine!=null;
+                                                     Mathf.Approximately(endPoint.y, upY) && !Mathf.Approximately(upY, maxY)) &&
+                                                     hSliceLine != null;
                                     if (segmentPoints.Contains(currentObstPoint.point))
                                     {
                                         onBorder = false;
@@ -2177,12 +2251,12 @@ public class LevelEditor : EditorWindow
                             }
                             collPoints.Add(endPoint);
                         }
-                        if (Vector3.SqrMagnitude(collPoints[0] - collPoints[collPoints.Count-1]) < lightPointerPrecision * lightPointerPrecision && collPoints.Count>1)
+                        if (Vector3.SqrMagnitude(collPoints[0] - collPoints[collPoints.Count - 1]) < lightPointerPrecision * lightPointerPrecision && collPoints.Count > 1)
                             collPoints.RemoveAt(collPoints.Count - 1);
                         CreateLightObstacle(collPoints, lPosition);
                         foreach (Vector3 collPoint in collPoints)
                         {
-                            LightObstaclePoint removePoint = segmentPoints.Find(x => (Vector3.SqrMagnitude(collPoint - x.position) < 
+                            LightObstaclePoint removePoint = segmentPoints.Find(x => (Vector3.SqrMagnitude(collPoint - x.position) <
                                                                                                         lightPointerPrecision * lightPointerPrecision));
                             if (removePoint != null)
                                 segmentPoints.Remove(removePoint);
@@ -2211,7 +2285,7 @@ public class LevelEditor : EditorWindow
             }
             PolygonCollider2D col = newLObstacle.AddComponent<PolygonCollider2D>();
             col.isTrigger = !createWholeCollider;
-            col.points = newContour.ConvertAll(x=>(Vector2)x).ToArray();
+            col.points = newContour.ConvertAll(x => (Vector2)x).ToArray();
 
             if (parentObj == null && lightObstacleParentObjName != string.Empty)
             {
@@ -2228,7 +2302,7 @@ public class LevelEditor : EditorWindow
         /// </summary>
         static bool BelongToRect(Vector2 leftDown, Vector2 rightUp, Vector2 point)
         {
-            return ((point.x <=rightUp.x) && (point.y <=rightUp.y) && (point.x >=leftDown.x) && (point.y >= leftDown.y));
+            return ((point.x <= rightUp.x) && (point.y <= rightUp.y) && (point.x >= leftDown.x) && (point.y >= leftDown.y));
         }
 
         #endregion //lightObstacles
@@ -2315,7 +2389,7 @@ public class LevelEditor : EditorWindow
                 Vector2 pos = gridSize;
 
                 Collider2D col = null;
-                if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.down, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(LayerMask.LayerToName (eraseLayer))).collider)!=null)
+                if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.down, Mathf.Min(gridSize.x, gridSize.y) / 4f, LayerMask.GetMask(LayerMask.LayerToName(eraseLayer))).collider) != null)
                 {
                     GameObject eraseGround = col.gameObject;
                     DestroyImmediate(eraseGround);
@@ -2410,17 +2484,17 @@ public class LevelEditor : EditorWindow
 
                 Collider2D col = null;
                 string elName = LayerMask.LayerToName(eraseLayer);
-                if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y*.45f, LayerMask.GetMask(elName)).collider) != null)
+                if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.down, gridSize.y * .45f, LayerMask.GetMask(elName)).collider) != null)
                 {
                     obstacle = col.gameObject;
                 }
-                else if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.up, gridSize.y*.45f, LayerMask.GetMask(elName)).collider) != null)
+                else if ((col = Physics2D.Raycast(mouseWorldPos, Vector2.up, gridSize.y * .45f, LayerMask.GetMask(elName)).collider) != null)
                 {
                     obstacle = col.gameObject;
                 }
-                if (obstacle!= null)
+                if (obstacle != null)
                 {
-                    List<GameObject> obChildren=new List<GameObject>();
+                    List<GameObject> obChildren = new List<GameObject>();
                     for (int i = 0; i < obstacle.transform.childCount; i++)
                     {
                         obChildren.Add(obstacle.transform.GetChild(i).gameObject);
@@ -2497,9 +2571,12 @@ public class LevelEditor : EditorWindow
                     Gizmos.DrawLine(new Vector3(minGrid.x, j, 0.0f), new Vector3(maxGrid.x, j, 0.0f));
                 SceneView.RepaintAll();
             }
+
         }
-        
+
     }
+
+
 
     /// <summary>
     /// Отрисовка окна редактора уровней
@@ -2516,9 +2593,9 @@ public class LevelEditor : EditorWindow
         EditorGUILayout.BeginHorizontal(textureStyleAct);
         {
 
-            for (int i=0;i<4;i++)
+            for (int i = 0; i < 5; i++)
             {
-                Sprite[] iconSprites = { selectIcon, drawIcon, dragIcon, eraseIcon };
+                Sprite[] iconSprites = { selectIcon, drawIcon, dragIcon, eraseIcon, mapIcon };
                 Sprite currentSprite = iconSprites[i];
                 if (editorMod == (EditorModEnum)i)
                 {
@@ -2536,7 +2613,7 @@ public class LevelEditor : EditorWindow
                 else
                 {
                     if (GUILayout.Button("", textureStyle, GUILayout.Width(currentSprite.textureRect.width + 2), GUILayout.Height(currentSprite.textureRect.height + 2)))
-                        editorMod= (EditorModEnum)i;
+                        editorMod = (EditorModEnum)i;
                     GUI.DrawTextureWithTexCoords(GUILayoutUtility.GetLastRect(), currentSprite.texture,
                                                  new Rect(currentSprite.textureRect.x / (float)currentSprite.texture.width,
                                                              currentSprite.textureRect.y / (float)currentSprite.texture.height,
@@ -2548,13 +2625,13 @@ public class LevelEditor : EditorWindow
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.Space();
-        
+
         GUILayout.BeginHorizontal();
         {
             isGrid = EditorGUILayout.Toggle(isGrid, GUILayout.Width(16));
             gridSize = EditorGUILayout.Vector2Field("Grid Size (0.05 minimum)", gridSize, GUILayout.Width(236));
         }
-       GUILayout.EndHorizontal();
+        GUILayout.EndHorizontal();
 
         switch (editorMod)
         {
@@ -2578,6 +2655,16 @@ public class LevelEditor : EditorWindow
                     OnEraseGUI();
                     break;
                 }
+            case EditorModEnum.map:
+                {
+                    MapCreatorGUI();
+                    break;
+                }
+        }
+
+        if (editorMod != EditorModEnum.map)
+        {
+            SetMapVisualizer(false);
         }
 
     }
@@ -2598,7 +2685,7 @@ public class LevelEditor : EditorWindow
     {
         EditorGUILayout.BeginHorizontal(textureStyleAct);
         {
-            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon, spikesIcon,usualDrawIcon, lightPointIcon };
+            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon, spikesIcon, usualDrawIcon, lightPointIcon };
             for (int i = 0; i < 7; i++)
             {
                 Sprite currentDrawSprite = drawIconSprites[i];
@@ -2692,7 +2779,7 @@ public class LevelEditor : EditorWindow
 
         zPosition = EditorGUILayout.FloatField("z-position", zPosition);
         grParentObjName = EditorGUILayout.TextField("parent name", grParentObjName);
-        if (grParentObjName != string.Empty && (parentObj != null? parentObj.name!=grParentObjName: true))
+        if (grParentObjName != string.Empty && (parentObj != null ? parentObj.name != grParentObjName : true))
         {
             parentObj = GameObject.Find(grParentObjName);
         }
@@ -2701,7 +2788,7 @@ public class LevelEditor : EditorWindow
 
         EditorGUILayout.BeginHorizontal();
         {
-            groundBrushName=EditorGUILayout.TextField(groundBrushName);
+            groundBrushName = EditorGUILayout.TextField(groundBrushName);
             if (GUILayout.Button("Create new ground brush"))
             {
                 if (groundBrushName != string.Empty)
@@ -2770,19 +2857,19 @@ public class LevelEditor : EditorWindow
     void CreateNewGroundBrushWindow()
     {
 
-        grBrush.defGround = (Sprite)EditorGUILayout.ObjectField("default ground",grBrush.defGround, typeof(Sprite));
-        grBrush.outGround = (Sprite)EditorGUILayout.ObjectField("out ground",grBrush.outGround, typeof(Sprite));
-        grBrush.inAngleGround = (Sprite)EditorGUILayout.ObjectField("inner angle ground",grBrush.inAngleGround, typeof(Sprite));
-        grBrush.outAngleGround = (Sprite)EditorGUILayout.ObjectField("outer angle ground",grBrush.outAngleGround, typeof(Sprite));
-        grBrush.edgeGround = (Sprite)EditorGUILayout.ObjectField("edge ground",grBrush.edgeGround, typeof(Sprite));
-        grBrush.marginGround = (Sprite)EditorGUILayout.ObjectField("margin ground",grBrush.marginGround, typeof(Sprite));
-        grBrush.inGround = (Sprite)EditorGUILayout.ObjectField("inner ground",grBrush.inGround, typeof(Sprite));
-        grBrush.angleGround = (Sprite)EditorGUILayout.ObjectField("45 angle ground",grBrush.angleGround, typeof(Sprite));
+        grBrush.defGround = (Sprite)EditorGUILayout.ObjectField("default ground", grBrush.defGround, typeof(Sprite));
+        grBrush.outGround = (Sprite)EditorGUILayout.ObjectField("out ground", grBrush.outGround, typeof(Sprite));
+        grBrush.inAngleGround = (Sprite)EditorGUILayout.ObjectField("inner angle ground", grBrush.inAngleGround, typeof(Sprite));
+        grBrush.outAngleGround = (Sprite)EditorGUILayout.ObjectField("outer angle ground", grBrush.outAngleGround, typeof(Sprite));
+        grBrush.edgeGround = (Sprite)EditorGUILayout.ObjectField("edge ground", grBrush.edgeGround, typeof(Sprite));
+        grBrush.marginGround = (Sprite)EditorGUILayout.ObjectField("margin ground", grBrush.marginGround, typeof(Sprite));
+        grBrush.inGround = (Sprite)EditorGUILayout.ObjectField("inner ground", grBrush.inGround, typeof(Sprite));
+        grBrush.angleGround = (Sprite)EditorGUILayout.ObjectField("45 angle ground", grBrush.angleGround, typeof(Sprite));
 
         if (GUILayout.Button("CreateBrush"))
         {
             if (grBrush.defGround && grBrush.outGround && grBrush.inAngleGround && grBrush.outAngleGround && grBrush.edgeGround && grBrush.marginGround && grBrush.inGround && grBrush.angleGround)
-            grBrush.Incomplete = false;
+                grBrush.Incomplete = false;
             AssetDatabase.CreateAsset(grBrush, groundBrushesPath + grBrush.brushName + ".asset");
             AssetDatabase.SaveAssets();
             OnEnable();
@@ -2840,7 +2927,7 @@ public class LevelEditor : EditorWindow
             if (ctr < plant.textureRect.x)
             {
                 GUILayout.EndHorizontal();
-                EditorGUILayout.Space(); 
+                EditorGUILayout.Space();
                 GUILayout.BeginHorizontal();
                 ctr = maxCtr;
             }
@@ -2899,7 +2986,7 @@ public class LevelEditor : EditorWindow
                 }
             }
             EditorGUILayout.EndHorizontal();
-            
+
         }
         EditorGUILayout.EndHorizontal();
         plantBase.SetDirty();
@@ -2929,7 +3016,7 @@ public class LevelEditor : EditorWindow
         layerOrder = EditorGUILayout.IntField("Layer Order", layerOrder);
 
         zPosition = EditorGUILayout.FloatField("z-position", zPosition);
-        maxWaterHeight = EditorGUILayout.FloatField("max water height",maxWaterHeight);
+        maxWaterHeight = EditorGUILayout.FloatField("max water height", maxWaterHeight);
         maxWaterWidth = EditorGUILayout.FloatField("max water width", maxWaterWidth);
 
         waterParentObjName = EditorGUILayout.TextField("parent name", waterParentObjName);
@@ -3070,7 +3157,7 @@ public class LevelEditor : EditorWindow
         if (lightObstacleParentObjName != string.Empty && (parentObj != null ? parentObj.name != lightObstacleParentObjName : true))
         {
             parentObj = GameObject.Find(lightObstacleParentObjName);
-        }       
+        }
         SceneView.RepaintAll();
 
     }
@@ -3086,7 +3173,7 @@ public class LevelEditor : EditorWindow
     {
 
         ladderTag = EditorGUILayout.TagField("tag", ladderTag);
-        ladderLayer = EditorGUILayout.LayerField("ladder layer",  ladderLayer);
+        ladderLayer = EditorGUILayout.LayerField("ladder layer", ladderLayer);
         groundLayer = EditorGUILayout.LayerField("ground layer", groundLayer);
 
         EditorGUILayout.BeginHorizontal();
@@ -3132,7 +3219,7 @@ public class LevelEditor : EditorWindow
                 ctr = maxCtr;
             }
             ctr -= ladderSprite.textureRect.x;
-            if (currentLadder==ladder)
+            if (currentLadder == ladder)
             {
                 if (GUILayout.Button("", textureStyleAct, GUILayout.Width(textRect.width + 6), GUILayout.Height(textRect.height + 4)))
                 { }
@@ -3149,7 +3236,7 @@ public class LevelEditor : EditorWindow
             else
             {
                 if (GUILayout.Button("", textureStyle, GUILayout.Width(textRect.width + 2), GUILayout.Height(textRect.height + 2)))
-                    currentLadder=ladder;
+                    currentLadder = ladder;
                 GUI.DrawTextureWithTexCoords(GUILayoutUtility.GetLastRect(), texture,
                                              new Rect(textRect.x / (float)texture.width,
                                                          textRect.y / (float)texture.height,
@@ -3163,17 +3250,17 @@ public class LevelEditor : EditorWindow
         EditorGUILayout.BeginHorizontal();
         {
             EditorGUILayout.LabelField("new ladder", GUILayout.Width(75f));
-            nextLadder = (GameObject)EditorGUILayout.ObjectField(nextLadder,typeof(GameObject), GUILayout.Width(150f));
+            nextLadder = (GameObject)EditorGUILayout.ObjectField(nextLadder, typeof(GameObject), GUILayout.Width(150f));
 
             EditorGUILayout.BeginVertical();
             {
                 if (GUILayout.Button("Add"))
                 {
-                    if (nextLadder != null? nextLadder.GetComponent<Collider2D>()!=null && nextLadder.GetComponent<SpriteRenderer>() != null : false)
+                    if (nextLadder != null ? nextLadder.GetComponent<Collider2D>() != null && nextLadder.GetComponent<SpriteRenderer>() != null : false)
                         if (!ladderBase.ladders.Contains(nextLadder))
                         {
                             ladderBase.ladders.Add(nextLadder);
-                            currentLadder=nextLadder;
+                            currentLadder = nextLadder;
                             nextLadder = null;
                         }
                 }
@@ -3228,7 +3315,7 @@ public class LevelEditor : EditorWindow
 
         obstacleDamage = EditorGUILayout.FloatField("obstacle damage", obstacleDamage);
         damageBoxSize = EditorGUILayout.FloatField("damage size", damageBoxSize);
-        damageBoxOffset= EditorGUILayout.FloatField("damage offset", damageBoxOffset);
+        damageBoxOffset = EditorGUILayout.FloatField("damage offset", damageBoxOffset);
 
         obstacleType = (ObstacleEnum)EditorGUILayout.EnumPopup("obstacle type", obstacleType);
 
@@ -3249,7 +3336,7 @@ public class LevelEditor : EditorWindow
             Texture2D texture = obstacleSprite.texture;
             if (ctr < obstacleSprite.textureRect.x)
             {
-               GUILayout.EndHorizontal();
+                GUILayout.EndHorizontal();
                 EditorGUILayout.Space();
                 GUILayout.BeginHorizontal();
                 ctr = maxCtr;
@@ -3442,7 +3529,7 @@ public class LevelEditor : EditorWindow
     {
         EditorGUILayout.BeginHorizontal(textureStyleAct);
         {
-            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon,spikesIcon,usualDrawIcon };
+            Sprite[] drawIconSprites = { groundIcon, plantIcon, waterIcon, ladderIcon, spikesIcon, usualDrawIcon };
             for (int i = 0; i < 6; i++)
             {
                 Sprite currentDrawSprite = drawIconSprites[i];
@@ -3508,6 +3595,734 @@ public class LevelEditor : EditorWindow
         }
     }
 
+    /// <summary>
+    /// Что выводится на окне редактора при режиме карты
+    /// </summary>
+    void MapCreatorGUI()
+    {
+        if (navSystem != null ? navSystem.levelName != SceneManager.GetActiveScene().name : true)
+        {
+            if (!File.Exists(mapsPath + SceneManager.GetActiveScene().name + "NavSystem.asset"))
+            {
+                NavigationSystem _navSystem = new NavigationSystem(SceneManager.GetActiveScene().name);
+                AssetDatabase.CreateAsset(_navSystem, mapsPath + SceneManager.GetActiveScene().name + "NavSystem.asset");
+                AssetDatabase.SaveAssets();
+                navSystem = _navSystem;
+            }
+            else
+            {
+                navSystem = AssetDatabase.LoadAssetAtPath<NavigationSystem>(mapsPath + SceneManager.GetActiveScene().name + "NavSystem.asset");
+            }
+            if (SpecialFunctions.statistics.navSystem!=navSystem)
+            {
+                SpecialFunctions.statistics.navSystem = navSystem;
+                UnityEditor.EditorUtility.SetDirty(SpecialFunctions.statistics);//Сохранение изменений
+            }
+            navMapSize = navSystem.mapSize;
+            navMapDownLeft = navSystem.mapDownLeft;
+            navGroupSize = navSystem.groupSize;
+            navCellSize = navSystem.cellSize;
+            UnityEditor.EditorUtility.SetDirty(navSystem);//Сохранение изменений
+        }
+
+        EditorGUILayout.Vector2Field("map size", navMapSize);
+        EditorGUILayout.Vector2Field("map down left", navMapDownLeft);
+
+        navGroupSize = EditorGUILayout.Vector2Field("cell group size", navGroupSize);
+        navSystem.groupSize = navGroupSize;
+
+        Vector2 prevSize = navCellSize;
+        navCellSize = EditorGUILayout.Vector2Field("cell size", navCellSize);
+        if (prevSize != navCellSize)
+            Visualizer.CellSize = navCellSize;
+        navSystem.cellSize = navCellSize;
+
+        NavigationMap prevMap = navMap;
+        mapType = (NavMapTypeEnum)EditorGUILayout.EnumPopup("map type", mapType);
+        navMap = navSystem.GetMap(mapType);
+        if (prevMap != navMap)
+            Visualizer.Map = navMap;
+
+        bool prevBool = visualizeMap;
+        visualizeMap = EditorGUILayout.Toggle("visualize map", visualizeMap);
+        if (prevBool != visualizeMap)
+            SetMapVisualizer(visualizeMap);
+
+        if (GUILayout.Button("Calculate Maps"))
+        {
+            CalculateMaps();
+        }
+
+    }
+
+    /// <summary>
+    /// Функция, что создаёт навигационные карты
+    /// </summary>
+    void CalculateMaps()
+    {
+        #region findSizes
+
+        //Сначала вычислим размер 
+        float minX = Mathf.Infinity, minY = Mathf.Infinity, maxX = Mathf.NegativeInfinity, maxY = Mathf.NegativeInfinity;
+        float squareX = mapMinX, squareY = mapMinY;
+        if (navCellSize.x <= 0 || navCellSize.y <= 0)
+            return;
+        while (squareY < mapMaxY)
+        {
+            squareX = mapMinX;
+            while (squareX < mapMaxX)
+            {
+                if (Physics2D.OverlapArea(new Vector2(squareX, squareY + mapSliceDelta), new Vector2(squareX + mapSliceDelta, squareY)))
+                {
+                    float cellX = squareX, cellY = squareY;
+                    while (cellY < squareY + mapSliceDelta)
+                    {
+                        cellX = squareX;
+                        while (cellX < squareX + mapSliceDelta)
+                        {
+                            if (Physics2D.OverlapArea(new Vector2(cellX, cellY + navCellSize.y), new Vector2(cellX + navCellSize.x, cellY)))
+                            {
+                                if (cellX < minX)
+                                    minX = cellX;
+                                if (cellX + navCellSize.x > maxX)
+                                    maxX = cellX + navCellSize.x;
+                                if (cellY < minY)
+                                    minY = cellY;
+                                if (cellY + navCellSize.y > maxY)
+                                    maxY = cellY + navCellSize.y;
+                            }
+                            cellX += navCellSize.x;
+                        }
+                        cellY += navCellSize.y;
+                    }
+                }
+                squareX += mapSliceDelta;
+            }
+            squareY += mapSliceDelta;
+        }
+        navSystem.mapDownLeft = new Vector2(minX, minY);
+        navSystem.mapSize = new Vector2(maxX - minX, maxY - minY);
+        navMapSize = navSystem.mapSize;
+        navMapDownLeft = navSystem.mapDownLeft;
+
+        #endregion //findSizes
+
+        if (navGroupSize.x < navCellSize.x || navGroupSize.y < navCellSize.y)
+            return;
+
+        cellColumnSize = Mathf.FloorToInt(navMapSize.y / navCellSize.y);
+        cellRowSize = Mathf.FloorToInt(navMapSize.x / navCellSize.x);
+        string groundName = LayerMask.LayerToName(groundLayer);
+
+        #region flyMap
+
+        //Создаём карту для летающих существ (пока что неоптимизированная версия, для проверки производительности)
+
+        NavigationMap flyMap = navSystem.GetMap(NavMapTypeEnum.fly);
+        flyMap.CreateGroups(navMapDownLeft, navMapSize, navGroupSize);
+
+        NavigationCell[][] newCells = NavigationSystem.GetNewCells(navMapDownLeft, navMapSize, navCellSize);
+
+        for (int i = 0; i < cellColumnSize; i++)
+        {
+            for (int j = 0; j < cellRowSize; j++)
+            {
+                NavigationCell currentCell = newCells[i][j];
+                bool a1 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, navCellSize.y / 40f * 19f),
+                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                LayerMask.GetMask(groundName));
+                bool a2 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 40f * 19f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 40f * 19f, navCellSize.y / 20f * 9f),
+                                                LayerMask.GetMask(groundName));
+                bool a3 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 40f * 19f, -navCellSize.y / 40f * 19f),
+                                                LayerMask.GetMask(groundName));
+                bool a4 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 40f * 19f),
+                                                LayerMask.GetMask(groundName));
+                if (a1 || a2 || a3 || a4)
+                {
+                    NavigationGroup currentGroup = flyMap.GetCurrentGroup(currentCell.cellPosition);
+                    currentGroup.cells.Add(currentCell);
+                }
+            }
+
+
+        }
+
+        flyMap.CheckGroups();
+
+        for (int i = 0; i < cellColumnSize; i++)
+        {
+            for (int j = 0; j < cellRowSize; j++)
+            {
+                NavigationCell currentCell = newCells[i][j];
+                bool a1 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, navCellSize.y / 40f * 19f),
+                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                LayerMask.GetMask(groundName));
+                bool a2 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 40f * 19f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 40f * 19f, navCellSize.y / 20f * 9f),
+                                                LayerMask.GetMask(groundName));
+                bool a3 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 40f * 19f, -navCellSize.y / 40f * 19f),
+                                                LayerMask.GetMask(groundName));
+                bool a4 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 40f * 19f),
+                                                LayerMask.GetMask(groundName));
+                if (a1 || a2 || a3 || a4)
+                {
+
+                    #region addNeighbours
+
+                    //Проверка верхнего левого соседа
+                    #region upLeft
+
+                    if (j > 0 && i < cellColumnSize - 1)
+                    {
+                        NavigationCell nextCell = newCells[i + 1][j - 1];
+                        bool b2 = !Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 40f * 19f),
+                                                       nextCell.cellPosition + new Vector2(navCellSize.x / 40f * 19f, navCellSize.y / 20f * 9f),
+                                                       LayerMask.GetMask(groundName));
+                        bool b4 = !Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, -navCellSize.y / 20f * 9f),
+                                                        nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 40f * 19f),
+                                                        LayerMask.GetMask(groundName));
+                        if (b2 && a2 || b4 && a4)
+                        {
+                            currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
+                            nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.usual));
+                        }
+
+                    }
+
+                    #endregion //upLeft
+
+                    //Проверка верхнего соседа
+                    #region up
+
+                    if (i < cellColumnSize - 1)
+                    {
+                        NavigationCell nextCell = newCells[i + 1][j];
+                        bool b3 = !Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                        nextCell.cellPosition + new Vector2(navCellSize.x / 40f * 19f, -navCellSize.y / 40f * 19f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b4 = !Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, -navCellSize.y / 20f * 9f),
+                                                        nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 40f * 19f),
+                                                        LayerMask.GetMask(groundName));
+                        if (b4 && a1 || b3 && a2)
+                        {
+                            currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
+                            nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.usual));
+                        }
+
+                    }
+
+                    #endregion //up
+
+                    //Проверка верхнего правого соседа
+                    #region upRight
+
+                    if (i < cellColumnSize - 1 && j < cellRowSize - 1)
+                    {
+                        NavigationCell nextCell = newCells[i + 1][j + 1];
+                        bool b1 = !Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, navCellSize.y / 40f * 19f),
+                                                        nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b3 = !Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                        nextCell.cellPosition + new Vector2(navCellSize.x / 40f * 19f, -navCellSize.y / 40f * 19f),
+                                                        LayerMask.GetMask(groundName));
+                        if (b1 && a1 || b3 && a3)
+                        {
+                            currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
+                            nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.usual));
+                        }
+
+                    }
+
+                    #endregion //upRight
+
+                    //Проверка правого соседа
+                    #region right
+
+                    if (j < cellRowSize - 1)
+                    {
+                        NavigationCell nextCell = newCells[i][j + 1];
+                        bool b1 = !Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, navCellSize.y / 40f * 19f),
+                                                        nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b4 = !Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, -navCellSize.y / 20f * 9f),
+                                                        nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 40f * 19f),
+                                                        LayerMask.GetMask(groundName));
+                        if (b4 && a3 || b1 && a2)
+                        {
+                            currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
+                            nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.usual));
+                        }
+
+                    }
+
+                    #endregion //right
+
+                    #endregion //addNeighbours
+
+                }
+            }
+        }
+
+        newCells = null;
+
+        //Пересчитать размеры групп, учитывая новые клетки
+        foreach (NavigationGroup navGroup in flyMap.cellGroups)
+            navGroup.SetSize(navCellSize);
+
+        #endregion //flyMap
+
+        #region crawlMap
+
+        //Создаём карту для ползающих существ (пока что неоптимизированная версия, для проверки производительности)
+
+        NavigationMap crawlMap = navSystem.GetMap(NavMapTypeEnum.crawl);
+        crawlMap.CreateGroups(navMapDownLeft, navMapSize, navGroupSize);
+
+        GameObject platforms = GameObject.Find("platforms");
+        if (platforms != null)
+            platforms.SetActive(false);//Для правильного расчёта карты ползучих тварей лучше не учитывать движущиеся платформы
+
+        float maxJumpHeight = Mathf.Floor(maxJumpDepth / navCellSize.y) * navCellSize.y;//На какую максимальную высоту может опуститься ползущее существо при осуществлении прыжка
+
+        newCells = NavigationSystem.GetNewCells(navMapDownLeft, navMapSize, navCellSize);
+
+        #region findCells
+
+        //Сначала определим, какие ячейки будут составлять карту
+        for (int i = 0; i < cellColumnSize; i++)
+        {
+            for (int j = 0; j < cellRowSize; j++)
+            {
+                NavigationCell currentCell = newCells[i][j];
+                int connectionCount = 0;
+                Collider2D[] checkCols=new Collider2D[0];
+
+                checkCols = Physics2D.OverlapAreaAll(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
+                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                               LayerMask.GetMask(groundName));
+                if (checkCols.Length>0)
+                {
+                    foreach (Collider2D col in checkCols)
+                    {
+                        if (col.GetComponent<GhostPlatform>() == null)
+                        {
+                            connectionCount++;
+                            break;
+                        }
+                    }
+                }
+
+                checkCols = Physics2D.OverlapAreaAll(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 11f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, navCellSize.y / 20f * 9f),
+                                                LayerMask.GetMask(groundName));
+                if (checkCols.Length > 0)
+                {
+                    foreach (Collider2D col in checkCols)
+                    {
+                        if (col.GetComponent<GhostPlatform>() == null)
+                        {
+                            connectionCount++;
+                            break;
+                        }
+                    }
+                }
+
+                checkCols = Physics2D.OverlapAreaAll(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                                LayerMask.GetMask(groundName));
+                if (checkCols.Length > 0)
+                {
+                    foreach (Collider2D col in checkCols)
+                    {
+                        if (col.GetComponent<GhostPlatform>() == null)
+                        {
+                            connectionCount++;
+                            break;
+                        }
+                    }
+                }
+
+                checkCols=Physics2D.OverlapAreaAll(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                                LayerMask.GetMask(groundName));
+                if (checkCols.Length > 0)
+                {
+                    foreach (Collider2D col in checkCols)
+                    {
+                        if (col.GetComponent<GhostPlatform>() == null)
+                        {
+                            connectionCount++;
+                            break;
+                        }
+                    }
+                }
+
+                if (connectionCount>1 && connectionCount<4)
+                {
+                    NavigationGroup currentGroup = crawlMap.GetCurrentGroup(currentCell.cellPosition);
+                    currentGroup.cells.Add(currentCell);
+                    currentCell.visited = true;
+                }
+            }
+
+
+        }
+
+        crawlMap.CheckGroups();
+
+        #endregion //findCells
+
+        //Теперь определим, какие навигационные ячейки соседствуют друг с другом
+        for (int i = 0; i < cellColumnSize; i++)
+        {
+            //if (i == 93)
+            //{
+            //    bool k = false;
+            //}
+            for (int j = 0; j < cellRowSize; j++)
+            {
+                //if (j == 85)
+                //{
+                //    bool k = false;
+                //}
+                NavigationCell currentCell = newCells[i][j];
+                if (!currentCell.visited)
+                    continue;
+                bool a1 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
+                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                LayerMask.GetMask(groundName));
+                bool a2 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 11f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, navCellSize.y / 20f * 9f),
+                                                LayerMask.GetMask(groundName));
+                bool a3 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                                LayerMask.GetMask(groundName));
+                bool a4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                                LayerMask.GetMask(groundName));
+
+                #region addNeighbours
+
+                //Проверка верхнего левого соседа
+                #region upLeft
+
+                if (j > 0 && i < cellColumnSize - 1)
+                {
+                    NavigationCell nextCell = newCells[i + 1][j - 1];
+                    if (nextCell.visited)
+                    {
+                        bool b2 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 11f),
+                                                        nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b4 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                                        nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                                        LayerMask.GetMask(groundName));
+                        if (!b2 && !a2 || !b4 && !a4)
+                        {
+                            currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
+                            nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.usual));
+                        }
+                    }
+                }
+
+                #endregion //upLeft
+
+                //Проверка верхнего соседа
+                #region up
+
+                if (i < cellColumnSize - 1)
+                {
+                    NavigationCell nextCell = newCells[i + 1][j];
+                    if (nextCell.visited)
+                    {
+                        bool b1 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
+                                                        nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b2 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 11f),
+                                                        nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b3 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                        nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b4 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                                        nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                                        LayerMask.GetMask(groundName));
+                        if (a2&&b3 &&(!a1&&!b4 || !a4&&!b1) || a1 && b4 && (!a3&&!b2 || !a2&&!b3))//Возможен путь из текущей клетки в верхнюю
+                        {
+                            currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
+                            nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.usual));
+                        }
+                    }
+                }
+
+                #endregion //up
+
+                //Проверка верхнего правого соседа
+                #region upRight
+
+                if (i < cellColumnSize - 1 && j < cellRowSize - 1)
+                {
+                    NavigationCell nextCell = newCells[i + 1][j + 1];
+                    if (nextCell.visited)
+                    {
+                        bool b1 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
+                                                        nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b3 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                        nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                                        LayerMask.GetMask(groundName));
+                        if (!b1 && !a1 || !b3 && !a3)
+                        {
+                            currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
+                            nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.usual));
+                        }
+                    }
+                }
+
+                #endregion //upRight
+
+                //Проверка правого соседа
+                #region right
+
+                if (j < cellRowSize - 1)
+                {
+                    NavigationCell nextCell = newCells[i][j + 1];
+                    if (nextCell.visited)
+                    {
+                        bool b1 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
+                                                        nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b2 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 11f),
+                                                        nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b3 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                        nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b4 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                                        nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                                        LayerMask.GetMask(groundName));
+                        if (a3&&b4&&(!a1 && !b2 || !a2 && !b1) || a2&&b1&&(!a4 && !b3 || !a3 && !b4))//Можно проложить горизонтальный путь
+                        {
+                            currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
+                            nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.usual));
+                        }
+                    }
+                    else if (a3 && a4 && !a1 && !a2)//Если здесь находится уступ
+                    {
+                        nextCell = GetJumpCell(newCells, currentCell, crawlSpeed, crawlJumpSpeed, g);
+                            if (nextCell != null? nextCell.visited:false)
+                        {
+                            currentCell.cellType = NavCellTypeEnum.jump;
+                            nextCell.cellType = NavCellTypeEnum.jump;
+                            currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.jump));
+                        }
+                    }
+                }
+
+                #endregion //right
+
+                #region down
+
+                if (i > 0)
+                {
+                    if (!a3 && !a4 && a1 && a2)//Если мы рассматриваем потолок
+                    {
+                        NavigationCell nextCell = GetJumpDownCell(newCells, currentCell);
+                        if (nextCell != null? nextCell.visited:false)
+                        {
+                            currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
+                        }
+                    }
+                }
+
+                #endregion //down
+
+                #region left
+
+                if (j > 0)
+                {
+                    NavigationCell nextCell = newCells[i][j-1];
+                    bool b3 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                    nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                                    LayerMask.GetMask(groundName));
+                    bool b4 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                                    nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                                    LayerMask.GetMask(groundName));
+                    if (a3 && a4 && !a1 && !a2 && !(b3&&b4))//Если здесь находится уступ
+                    {
+                        nextCell = GetJumpCell(newCells, currentCell, -crawlSpeed, crawlJumpSpeed, g);
+                        if (nextCell != null? nextCell.visited:false)
+                        {
+                            currentCell.cellType = NavCellTypeEnum.jump;
+                            nextCell.cellType = NavCellTypeEnum.jump;
+                            currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.jump));
+                        }
+                    }
+                }
+
+                #endregion //left
+
+                #endregion //addNeighbours
+            }
+        }
+
+        newCells = null;
+
+        //Пересчитать размеры групп, учитывая новые клетки
+        foreach (NavigationGroup navGroup in flyMap.cellGroups)
+            navGroup.SetSize(navCellSize);
+
+        if (platforms != null)
+            platforms.SetActive(true);
+
+        #endregion //crawlMap
+
+        UnityEditor.EditorUtility.SetDirty(navSystem);//Сохранение изменений
+
+    }
+
+    public void SetMapVisualizer(bool activate)
+    {
+        if (!activate)
+        {
+            if (mapVisualizer != null)
+            {
+                mapVisualizer.Map = null;
+            }
+        }
+        if (activate)
+        {
+            Visualizer.CellSize = navCellSize;
+            mapVisualizer.Map = navMap;
+        }
+    }
+
+    /// <summary>
+    /// Возвращает клетку, на которую можно запрыгнуть из данной клетки... Или возвращает null, если таковых клеток нет
+    /// </summary>
+    /// <param name="_cells">Набор клеток, относительно которых мы и ориентируемся</param>
+    /// <param name="_startCell">Клетка, из которой прыгаем</param>
+    /// <param name="vx">Скорость по x координате</param>
+    /// <param name="vy">Начальная скорость по y координате</param>
+    /// <param name="g1">Ускорение свободного падения</param>
+    /// <returns>Искомая клетка</returns>
+    public NavigationCell GetJumpCell(NavigationCell[][] _cells, NavigationCell _startCell, float vx, float vy, float g1)
+    {
+        float x1 = _startCell.cellPosition.x;
+        float y0 = _startCell.cellPosition.y - navCellSize.y / 2f;//y-координата, от которой будем отсчитывать высоту падения
+        float y1 = y0;
+        //if (x1 > -3.8 && y1+navCellSize.y/2f >0f)
+        //{
+        //    bool k = true;
+        //}
+        string groundName = "ground";
+
+        Vector2 currentPosition = new Vector2(x1, y1);
+
+        NavigationCell currentCell = _startCell;
+        bool a1 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
+                                               currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                               LayerMask.GetMask(groundName));
+        bool a2 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 11f),
+                                        currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, navCellSize.y / 20f * 9f),
+                                        LayerMask.GetMask(groundName));
+        bool a3 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                        currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                        LayerMask.GetMask(groundName));
+        bool a4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                        currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                        LayerMask.GetMask(groundName));
+
+        float t = 0;
+        bool wallInFront = (Mathf.Sign(vx) > 0 ? a1 && a4 : a2 && a3);
+
+        while (currentPosition.y > y0 - maxJumpDepth)
+        {
+            t += navCellSize.x/10f / Mathf.Abs(vx);//Течение времени
+            float newX = 0f, newY = 0f;
+            if (wallInFront)
+            {
+                newX = currentPosition.x;
+                newY = y1 + vy * t + g * t * t / 2f;
+            }
+            else
+            {
+                newX = currentPosition.x + Mathf.Sign(vx) * navCellSize.x/10f;
+                newY = y1 + vy * t + g * t * t / 2f;
+            }
+
+            currentPosition = new Vector2(newX, newY);
+            int cellIndexX = Mathf.RoundToInt((currentPosition.x - _cells[0][0].cellPosition.x) / navCellSize.x);
+            int cellIndexY = Mathf.RoundToInt((currentPosition.y - _cells[0][0].cellPosition.y) / navCellSize.y);
+            if (cellIndexX >= cellRowSize || cellIndexY >= cellColumnSize || cellIndexY < 0 || cellIndexX < 0)
+                return null;
+            currentCell = _cells[cellIndexY][cellIndexX];
+            a1 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
+                                               currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                               LayerMask.GetMask(groundName));
+            a2 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 11f),
+                                            currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, navCellSize.y / 20f * 9f),
+                                            LayerMask.GetMask(groundName));
+            a3 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                            currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                            LayerMask.GetMask(groundName));
+            a4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                            currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                            LayerMask.GetMask(groundName));
+            if (a1 && a2 && vy+g*t>0f)
+            {
+                //Если мы достигли потолка, то сразу начинается падени
+                y1 = currentPosition.y;
+                t = 0f;
+                vy = 0f;
+            }
+
+            wallInFront = (Mathf.Sign(vx) < 0 ? a1 && a4 : a2 && a3);
+
+            if (a3 && a4)
+                if (currentCell.cellPosition!=_startCell.cellPosition)
+                return currentCell;
+
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Возвращает клетку, на которую можо спрыгнуть вниз из данной клетки (пример: паук спрыгивает с "потолка вниз")... Или возвращает null, если таковых клеток нет
+    /// </summary>
+    /// <param name="_cells">Набор клеток, относительно которых мы и ориентируемся</param>
+    /// <param name="_startCell">Клетка, из которой прыгаем</param>
+    /// <returns>Искомая клетка</returns>
+    public NavigationCell GetJumpDownCell(NavigationCell[][] _cells, NavigationCell _startCell)
+    {
+        int cellIndexX = Mathf.RoundToInt((_startCell.cellPosition.x - _cells[0][0].cellPosition.x) / navCellSize.x);
+        int cellIndexY = Mathf.RoundToInt((_startCell.cellPosition.y - _cells[0][0].cellPosition.y) / navCellSize.y);
+        NavigationCell currentCell;
+        string groundName = "ground";
+
+        cellIndexY--;
+        while (cellIndexY>=0)
+        {
+            currentCell = _cells[cellIndexY][cellIndexX];
+            bool a3 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                        currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                        LayerMask.GetMask(groundName));
+            bool a4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                            currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                            LayerMask.GetMask(groundName));
+            if (a3 && a4)
+                return currentCell;
+            cellIndexY--;
+
+        }
+        return null;
+    }
 }
 
 /// <summary>
