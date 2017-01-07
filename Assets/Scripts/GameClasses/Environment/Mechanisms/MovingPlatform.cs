@@ -55,6 +55,7 @@ public class MovingPlatform : MonoBehaviour, IMechanism
     public bool moving = true;//Движется ли платформа или нет
     protected int currentPosition = 0;//Текущая позиция
     protected Vector2 direction = Vector2.zero;//Направление движения платформа
+    public Vector2 Direction { get { return direction; } }
 
     [SerializeField]public int id;
 

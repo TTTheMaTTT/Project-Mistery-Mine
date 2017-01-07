@@ -30,8 +30,8 @@ public class LevelEditor : EditorWindow
     #region mapConsts
 
     private const float g = -9.16f;//Удельная сила тяжести
-    private const float crawlSpeed = 1.1f;
-    private const float crawlJumpSpeed = 2.804f;
+    private const float crawlSpeed = 1.1f, crawlJumpSpeed = 2.804f;//Примерные скорость и сила прыжка ползучих существ
+    private const float usualSpeed = 1.0f, usualJumpSpeed = 2.804f;//Примерные скорость и сила прыжка гуманоидов
     private const float maxJumpDepth = .8f;
 
     #endregion //mapConsts
@@ -3613,7 +3613,7 @@ public class LevelEditor : EditorWindow
             {
                 navSystem = AssetDatabase.LoadAssetAtPath<NavigationSystem>(mapsPath + SceneManager.GetActiveScene().name + "NavSystem.asset");
             }
-            if (SpecialFunctions.statistics.navSystem!=navSystem)
+            if (SpecialFunctions.statistics.navSystem != navSystem)
             {
                 SpecialFunctions.statistics.navSystem = navSystem;
                 UnityEditor.EditorUtility.SetDirty(SpecialFunctions.statistics);//Сохранение изменений
@@ -3713,6 +3713,7 @@ public class LevelEditor : EditorWindow
         cellColumnSize = Mathf.FloorToInt(navMapSize.y / navCellSize.y);
         cellRowSize = Mathf.FloorToInt(navMapSize.x / navCellSize.x);
         string groundName = LayerMask.LayerToName(groundLayer);
+        string ladderName = LayerMask.LayerToName(ladderLayer);
 
         #region flyMap
 
@@ -3900,12 +3901,12 @@ public class LevelEditor : EditorWindow
             {
                 NavigationCell currentCell = newCells[i][j];
                 int connectionCount = 0;
-                Collider2D[] checkCols=new Collider2D[0];
+                Collider2D[] checkCols = new Collider2D[0];
 
                 checkCols = Physics2D.OverlapAreaAll(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
                                 currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
                                LayerMask.GetMask(groundName));
-                if (checkCols.Length>0)
+                if (checkCols.Length > 0)
                 {
                     foreach (Collider2D col in checkCols)
                     {
@@ -3947,7 +3948,7 @@ public class LevelEditor : EditorWindow
                     }
                 }
 
-                checkCols=Physics2D.OverlapAreaAll(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                checkCols = Physics2D.OverlapAreaAll(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
                                                 currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
                                                 LayerMask.GetMask(groundName));
                 if (checkCols.Length > 0)
@@ -3962,7 +3963,7 @@ public class LevelEditor : EditorWindow
                     }
                 }
 
-                if (connectionCount>1 && connectionCount<4)
+                if (connectionCount > 1 && connectionCount < 4)
                 {
                     NavigationGroup currentGroup = crawlMap.GetCurrentGroup(currentCell.cellPosition);
                     currentGroup.cells.Add(currentCell);
@@ -3977,7 +3978,9 @@ public class LevelEditor : EditorWindow
 
         #endregion //findCells
 
-        //Теперь определим, какие навигационные ячейки соседствуют друг с другом
+        #region addNeighbours
+
+        //Теперь определим, какие навигационные ячейки соседствуют друг с друго
         for (int i = 0; i < cellColumnSize; i++)
         {
             //if (i == 93)
@@ -4005,8 +4008,6 @@ public class LevelEditor : EditorWindow
                 bool a4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
                                                 currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
                                                 LayerMask.GetMask(groundName));
-
-                #region addNeighbours
 
                 //Проверка верхнего левого соседа
                 #region upLeft
@@ -4052,7 +4053,7 @@ public class LevelEditor : EditorWindow
                         bool b4 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
                                                         nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
                                                         LayerMask.GetMask(groundName));
-                        if (a2&&b3 &&(!a1&&!b4 || !a4&&!b1) || a1 && b4 && (!a3&&!b2 || !a2&&!b3))//Возможен путь из текущей клетки в верхнюю
+                        if (a2 && b3 && (!a1 && !b4 || !a4 && !b1) || a1 && b4 && (!a3 && !b2 || !a2 && !b3))//Возможен путь из текущей клетки в верхнюю
                         {
                             currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
                             nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.usual));
@@ -4086,7 +4087,7 @@ public class LevelEditor : EditorWindow
 
                 #endregion //upRight
 
-                //Проверка правого соседа
+                //Проверка соседей справа
                 #region right
 
                 if (j < cellRowSize - 1)
@@ -4106,7 +4107,7 @@ public class LevelEditor : EditorWindow
                         bool b4 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
                                                         nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
                                                         LayerMask.GetMask(groundName));
-                        if (a3&&b4&&(!a1 && !b2 || !a2 && !b1) || a2&&b1&&(!a4 && !b3 || !a3 && !b4))//Можно проложить горизонтальный путь
+                        if (a3 && b4 && (!a1 && !b2 || !a2 && !b1) || a2 && b1 && (!a4 && !b3 || !a3 && !b4))//Можно проложить горизонтальный путь
                         {
                             currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
                             nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.usual));
@@ -4115,7 +4116,7 @@ public class LevelEditor : EditorWindow
                     else if (a3 && a4 && !a1 && !a2)//Если здесь находится уступ
                     {
                         nextCell = GetJumpCell(newCells, currentCell, crawlSpeed, crawlJumpSpeed, g);
-                            if (nextCell != null? nextCell.visited:false)
+                        if (nextCell != null ? nextCell.visited : false)
                         {
                             currentCell.cellType = NavCellTypeEnum.jump;
                             nextCell.cellType = NavCellTypeEnum.jump;
@@ -4126,6 +4127,7 @@ public class LevelEditor : EditorWindow
 
                 #endregion //right
 
+                //Проверка соседей снизу
                 #region down
 
                 if (i > 0)
@@ -4133,7 +4135,7 @@ public class LevelEditor : EditorWindow
                     if (!a3 && !a4 && a1 && a2)//Если мы рассматриваем потолок
                     {
                         NavigationCell nextCell = GetJumpDownCell(newCells, currentCell);
-                        if (nextCell != null? nextCell.visited:false)
+                        if (nextCell != null ? nextCell.visited : false)
                         {
                             currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
                         }
@@ -4142,21 +4144,22 @@ public class LevelEditor : EditorWindow
 
                 #endregion //down
 
+                //Проверка соседей слева
                 #region left
 
                 if (j > 0)
                 {
-                    NavigationCell nextCell = newCells[i][j-1];
+                    NavigationCell nextCell = newCells[i][j - 1];
                     bool b3 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
                                                     nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
                                                     LayerMask.GetMask(groundName));
                     bool b4 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
                                                     nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
                                                     LayerMask.GetMask(groundName));
-                    if (a3 && a4 && !a1 && !a2 && !(b3&&b4))//Если здесь находится уступ
+                    if (a3 && a4 && !a1 && !a2 && !(b3 && b4))//Если здесь находится уступ
                     {
                         nextCell = GetJumpCell(newCells, currentCell, -crawlSpeed, crawlJumpSpeed, g);
-                        if (nextCell != null? nextCell.visited:false)
+                        if (nextCell != null ? nextCell.visited : false)
                         {
                             currentCell.cellType = NavCellTypeEnum.jump;
                             nextCell.cellType = NavCellTypeEnum.jump;
@@ -4167,20 +4170,380 @@ public class LevelEditor : EditorWindow
 
                 #endregion //left
 
-                #endregion //addNeighbours
             }
         }
+
+        #endregion //addNeighbours
 
         newCells = null;
 
         //Пересчитать размеры групп, учитывая новые клетки
-        foreach (NavigationGroup navGroup in flyMap.cellGroups)
+        foreach (NavigationGroup navGroup in crawlMap.cellGroups)
             navGroup.SetSize(navCellSize);
 
         if (platforms != null)
             platforms.SetActive(true);
 
         #endregion //crawlMap
+
+        #region usualMap
+
+        //Создаём карту для гуманоидов (пока что неоптимизированная версия, для проверки производительности)
+
+        NavigationMap usualMap = navSystem.GetMap(NavMapTypeEnum.usual);
+        usualMap.CreateGroups(navMapDownLeft, navMapSize, navGroupSize);
+
+        newCells = NavigationSystem.GetNewCells(navMapDownLeft, navMapSize, navCellSize);
+
+        #region findCells
+
+        //Сначала определим, какие ячейки будут составлять карту
+        for (int i = 0; i < cellColumnSize; i++)
+        {
+            for (int j = 0; j < cellRowSize; j++)
+            {
+                NavigationCell currentCell = newCells[i][j];
+                int connectionCount = 0;
+                Collider2D[] checkCols = new Collider2D[0];
+                bool nearGhostPlatform = false;
+
+                checkCols = Physics2D.OverlapAreaAll(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                                LayerMask.GetMask(groundName));
+                if (checkCols.Length > 0)
+                {
+                    connectionCount++;
+                    foreach (Collider2D col in checkCols)
+                    {
+                        if (col.GetComponent<GhostPlatform>() != null)
+                        {
+                            nearGhostPlatform = true;
+                            break;
+                        }
+                    }
+                }
+
+                checkCols = Physics2D.OverlapAreaAll(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                                LayerMask.GetMask(groundName));
+                if (checkCols.Length > 0)
+                {
+                    connectionCount++;
+                    foreach (Collider2D col in checkCols)
+                    {
+                        if (col.GetComponent<GhostPlatform>() != null)
+                        {
+                            nearGhostPlatform = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f, navCellSize.y / 20f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 20f, -navCellSize.y / 20f),
+                                                LayerMask.GetMask(ladderName)))
+                {
+                    currentCell.cellType = NavCellTypeEnum.ladder;
+                    connectionCount += 2;
+                }
+
+                if (Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                            currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 7f),
+                                            LayerMask.GetMask(groundName)) &&
+                    Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 7f),
+                                                LayerMask.GetMask(groundName)))
+                    connectionCount = 0;
+                if (connectionCount > 1 && !nearGhostPlatform)
+                {
+                    NavigationGroup currentGroup = usualMap.GetCurrentGroup(currentCell.cellPosition);
+                    currentGroup.cells.Add(currentCell);
+                    currentCell.visited = true;
+                }
+            }
+
+        }
+
+        for (int i = 0; i < platforms.transform.childCount; i++)
+        {
+            MovingPlatform platform = platforms.transform.GetChild(i).GetComponent<MovingPlatform>();
+            DefinePlatformCells(newCells, platform, usualMap);
+        }
+
+        usualMap.CheckGroups();
+
+        #endregion //findCells
+
+        int ladderID= 0;
+
+        #region addNeighbors
+
+        //Определим соседние ячейки для платформенных маршрутов
+        for (int i = 0; i < platforms.transform.childCount; i++)
+        {
+            MovingPlatform platform = platforms.transform.GetChild(i).GetComponent<MovingPlatform>();
+            DefinePlatformCellsNeighbors(platform, usualMap);
+        }
+
+        //Теперь определим, какие навигационные ячейки соседствуют друг с другом
+        for (int i = 0; i < cellColumnSize; i++)
+        {
+            for (int j = 0; j < cellRowSize; j++)
+            {
+                NavigationCell currentCell = newCells[i][j];
+                if (!currentCell.visited)
+                    continue;
+
+                //Проверка верхнего соседа
+                #region up
+
+                if (i < cellColumnSize - 1 && currentCell.cellType == NavCellTypeEnum.ladder)
+                {
+                    if (currentCell.id == -1)
+                    {
+                        ladderID++;
+                        currentCell.id = ladderID;
+                    }
+                    NavigationCell nextCell = newCells[i + 1][j];
+                    if (nextCell.visited && nextCell.cellType == NavCellTypeEnum.ladder)
+                    {
+                        currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.ladder));
+                        nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.ladder));
+                        nextCell.id = currentCell.id;
+                    }
+                    else
+                    {
+                        //Проверим, можно ли прыгнуть вертикально вверх от вершины текущей лестницы и зацепиться за лестицу выше
+                        List<NavigationCell> jumpCells = GetJumpCells(newCells, currentCell, 0f, usualJumpSpeed, g, false);
+                        if (jumpCells != null)
+                        {
+                            foreach (NavigationCell jumpCell in jumpCells)
+                            {
+                                if (jumpCell != null ? (jumpCell.visited ? jumpCell.cellPosition.y > currentCell.cellPosition.y : false) : false)
+                                {
+                                    currentCell.neighbors.Add(new NeighborCellStruct(jumpCell.groupNumb, jumpCell.cellNumb, NavCellTypeEnum.jump));
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+                #endregion //up
+
+                //Проверка правого соседа
+                #region right
+
+                if (j < cellRowSize - 1)
+                {
+                    NavigationCell nextCell = newCells[i][j + 1];
+                    if (nextCell.visited && currentCell.cellType != NavCellTypeEnum.movPlatform)
+                    {
+                        if (currentCell.cellType == NavCellTypeEnum.ladder && nextCell.cellType == currentCell.cellType)
+                        {
+                            Collider2D col1 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f, navCellSize.y / 20f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 20f, -navCellSize.y / 20f),
+                                                LayerMask.GetMask(ladderName));
+                            Collider2D col2 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f, navCellSize.y / 20f),
+                                                nextCell.cellPosition + new Vector2(navCellSize.x / 20f, -navCellSize.y / 20f),
+                                                LayerMask.GetMask(ladderName));
+                            if (col1==col2) //Если ячейки находятся над одними и теми же лестницами, то связь между клетками будет "лестничной"
+                            {
+                                nextCell.id = currentCell.id;
+                            }
+                        }
+                        currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
+                        nextCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.usual));
+                    }
+                    else//Если здесь находится уступ или препятствие или мы на платформе
+                    {
+                        //if (currentCell.cellType == NavCellTypeEnum.movPlatform && currentCell.cellPosition.y >= -0.1f)
+                        //{
+                            //bool k=true;//Для проверки
+                        //}
+                        bool b3 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, -navCellSize.y / 20f * 7f),
+                                                        currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool b4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 7f),
+                                                        currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        NavigationCell upCell = i < cellColumnSize - 1 ? newCells[i + 1][j] : null;
+                        NavigationCell downCell = i > 0 && b3 && b4 ? newCells[i - 1][j] : null;
+                        bool correct = currentCell.cellType == NavCellTypeEnum.ladder ? ((upCell != null ? upCell.cellType != NavCellTypeEnum.ladder : false) ||
+                                                                                         (downCell != null ? downCell.cellType != NavCellTypeEnum.ladder : false)) : true;
+
+                        if (correct)
+                        {
+                            List<NavigationCell> jumpCells = GetJumpCells(newCells, currentCell, usualSpeed, usualJumpSpeed, g, currentCell.cellType != NavCellTypeEnum.movPlatform);
+                            if (jumpCells != null)
+                            {
+                                foreach (NavigationCell jumpCell in jumpCells)
+                                {
+                                    if (jumpCell != null ? (jumpCell.visited ? (currentCell.cellType == NavCellTypeEnum.ladder ? ((downCell!=null? downCell.cellType!=NavCellTypeEnum.ladder:true) || 
+                                                                                                                                  jumpCell.cellPosition.y > currentCell.cellPosition.y) : true) :false) : false)
+                                    {
+                                        if (currentCell.cellType == NavCellTypeEnum.usual)
+                                            currentCell.cellType = NavCellTypeEnum.jump;
+                                        if (jumpCell.cellType == NavCellTypeEnum.usual)
+                                            jumpCell.cellType = NavCellTypeEnum.jump;
+                                        currentCell.neighbors.Add(new NeighborCellStruct(jumpCell.groupNumb, jumpCell.cellNumb, NavCellTypeEnum.jump));
+                                    }
+                                }
+                            }
+                        }
+
+                        NavigationCell rightCell = newCells[i][j + 1];
+                        bool a1 = Physics2D.OverlapArea(rightCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                        rightCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 7f),
+                                                        LayerMask.GetMask(groundName));
+                        bool a2 = Physics2D.OverlapArea(rightCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
+                                                        rightCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 7f),
+                                                        LayerMask.GetMask(groundName));
+                        bool a3 = Physics2D.OverlapArea(rightCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, -navCellSize.y / 20f * 7f),
+                                                        rightCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool a4 = Physics2D.OverlapArea(rightCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 7f),
+                                                        rightCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        if (!a1 && !a2 && a3 && a4)
+                        {
+                            List<NavigationCell> jumpCells = GetJumpDownCells(newCells, rightCell, currentCell.cellType != NavCellTypeEnum.movPlatform);
+                            if (jumpCells != null)
+                            {
+                                foreach (NavigationCell jumpCell in jumpCells)
+                                {
+                                    if (jumpCell != null ? jumpCell.visited : false)
+                                    {
+                                        currentCell.neighbors.Add(new NeighborCellStruct(jumpCell.groupNumb, jumpCell.cellNumb, NavCellTypeEnum.usual));
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+                #endregion //right
+
+                //Проверка левого соседа
+                #region left
+
+                if (j > 0)
+                {
+                    NavigationCell leftCell = newCells[i][j - 1];
+                    if (!leftCell.visited)//Если здесь находится уступ или препятствие
+                    {
+                        bool b3 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, -navCellSize.y / 20f * 7f),
+                                currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                LayerMask.GetMask(groundName));
+                        bool b4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 7f),
+                                                        currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        NavigationCell upCell = i < cellColumnSize - 1 ? newCells[i + 1][j] : null;
+                        NavigationCell downCell = i > 0 && b3 && b4 ? newCells[i - 1][j] : null;
+                        bool correct = currentCell.cellType == NavCellTypeEnum.ladder ? ((upCell != null ? upCell.cellType != NavCellTypeEnum.ladder : false) ||
+                                                                                         (downCell != null ? downCell.cellType != NavCellTypeEnum.ladder : false)) : true;
+
+                        if (correct)
+                        {
+                            List<NavigationCell> jumpCells = GetJumpCells(newCells, currentCell, -usualSpeed, usualJumpSpeed, g, currentCell.cellType != NavCellTypeEnum.movPlatform);
+                            if (jumpCells != null)
+                            {
+                                foreach (NavigationCell jumpCell in jumpCells)
+                                {
+                                    if (jumpCell != null ? (jumpCell.visited ? (currentCell.cellType == NavCellTypeEnum.ladder ? ((downCell != null ? downCell.cellType != NavCellTypeEnum.ladder : true) || 
+                                                                                                                                  jumpCell.cellPosition.y > currentCell.cellPosition.y) : true) : false) : false)
+                                    {
+                                        if (currentCell.cellType == NavCellTypeEnum.usual)
+                                            currentCell.cellType = NavCellTypeEnum.jump;
+                                        if (jumpCell.cellType == NavCellTypeEnum.usual)
+                                            jumpCell.cellType = NavCellTypeEnum.jump;
+                                        currentCell.neighbors.Add(new NeighborCellStruct(jumpCell.groupNumb, jumpCell.cellNumb, NavCellTypeEnum.jump));
+                                    }
+                                }
+                            }
+                        }
+                        bool a1 = Physics2D.OverlapArea(leftCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                        leftCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 7f),
+                                                        LayerMask.GetMask(groundName));
+                        bool a2 = Physics2D.OverlapArea(leftCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
+                                                        leftCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 7f),
+                                                        LayerMask.GetMask(groundName));
+                        bool a3 = Physics2D.OverlapArea(leftCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, -navCellSize.y / 20f * 7f),
+                                                        leftCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool a4 = Physics2D.OverlapArea(leftCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 7f),
+                                                        leftCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        if (!a1 && !a2 && a3 && a4)
+                        {
+                            List<NavigationCell> jumpCells = GetJumpDownCells(newCells, leftCell, currentCell.cellType != NavCellTypeEnum.movPlatform);
+                            if (jumpCells != null)
+                            {
+                                foreach (NavigationCell jumpCell in jumpCells)
+                                {
+                                    if (jumpCell != null ? jumpCell.visited : false)
+                                    {
+                                        currentCell.neighbors.Add(new NeighborCellStruct(jumpCell.groupNumb, jumpCell.cellNumb, NavCellTypeEnum.usual));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                #endregion //left
+
+                #region down
+
+                if (i > 0)
+                {
+                    NavigationCell downCell = newCells[i - 1][j];
+                    if (currentCell.cellType == NavCellTypeEnum.ladder && downCell.cellType!=NavCellTypeEnum.ladder)
+                    {
+                        bool a1 = Physics2D.OverlapArea(downCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                        downCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 7f),
+                                LayerMask.GetMask(groundName));
+                        bool a2 = Physics2D.OverlapArea(downCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
+                                                        downCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 7f),
+                                                        LayerMask.GetMask(groundName));
+                        bool a3 = Physics2D.OverlapArea(downCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, -navCellSize.y / 20f * 7f),
+                                                        downCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        bool a4 = Physics2D.OverlapArea(downCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 7f),
+                                                        downCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
+                                                        LayerMask.GetMask(groundName));
+                        if (!a1 && !a2 && a3 && a4)
+                        {
+                            List<NavigationCell> jumpCells = GetJumpDownCells(newCells, downCell, true);
+                            if (jumpCells != null)
+                            {
+                                foreach (NavigationCell jumpCell in jumpCells)
+                                {
+                                    if (jumpCell != null ? jumpCell.visited : false)
+                                    {
+                                        currentCell.neighbors.Add(new NeighborCellStruct(jumpCell.groupNumb, jumpCell.cellNumb, NavCellTypeEnum.usual));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                #endregion //down
+
+            }
+        }
+
+        #endregion //addNeighbours
+
+        newCells = null;
+
+        //Пересчитать размеры групп, учитывая новые клетки
+        foreach (NavigationGroup navGroup in usualMap.cellGroups)
+            navGroup.SetSize(navCellSize);
+
+        #endregion //usualMap
 
         UnityEditor.EditorUtility.SetDirty(navSystem);//Сохранение изменений
 
@@ -4211,15 +4574,12 @@ public class LevelEditor : EditorWindow
     /// <param name="vy">Начальная скорость по y координате</param>
     /// <param name="g1">Ускорение свободного падения</param>
     /// <returns>Искомая клетка</returns>
+    /// <returns></returns>
     public NavigationCell GetJumpCell(NavigationCell[][] _cells, NavigationCell _startCell, float vx, float vy, float g1)
     {
         float x1 = _startCell.cellPosition.x;
         float y0 = _startCell.cellPosition.y - navCellSize.y / 2f;//y-координата, от которой будем отсчитывать высоту падения
         float y1 = y0;
-        //if (x1 > -3.8 && y1+navCellSize.y/2f >0f)
-        //{
-        //    bool k = true;
-        //}
         string groundName = "ground";
 
         Vector2 currentPosition = new Vector2(x1, y1);
@@ -4239,21 +4599,22 @@ public class LevelEditor : EditorWindow
                                         LayerMask.GetMask(groundName));
 
         float t = 0;
+        float timeStep= navCellSize.x / 10f / Mathf.Abs(vx);
         bool wallInFront = (Mathf.Sign(vx) > 0 ? a1 && a4 : a2 && a3);
 
         while (currentPosition.y > y0 - maxJumpDepth)
         {
-            t += navCellSize.x/10f / Mathf.Abs(vx);//Течение времени
+            t += timeStep;//Течение времени
             float newX = 0f, newY = 0f;
             if (wallInFront)
             {
                 newX = currentPosition.x;
-                newY = y1 + vy * t + g * t * t / 2f;
+                newY = y1 + vy * t + g1 * t * t / 2f;
             }
             else
             {
-                newX = currentPosition.x + Mathf.Sign(vx) * navCellSize.x/10f;
-                newY = y1 + vy * t + g * t * t / 2f;
+                newX = currentPosition.x + Mathf.Sign(vx) * navCellSize.x / 10f;
+                newY = y1 + vy * t + g1 * t * t / 2f;
             }
 
             currentPosition = new Vector2(newX, newY);
@@ -4274,23 +4635,131 @@ public class LevelEditor : EditorWindow
             a4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
                                             currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
                                             LayerMask.GetMask(groundName));
-            if (a1 && a2 && vy+g*t>0f)
+            if (a1 && a2 && vy + g1 * t > 0f)
             {
                 //Если мы достигли потолка, то сразу начинается падени
                 y1 = currentPosition.y;
                 t = 0f;
-                vy = 0f;
+                vy = g1*timeStep*10f;//Введём небольшую погрешность, чтобы приблизиться к реальным условиям
             }
 
             wallInFront = (Mathf.Sign(vx) < 0 ? a1 && a4 : a2 && a3);
 
             if (a3 && a4)
-                if (currentCell.cellPosition!=_startCell.cellPosition)
-                return currentCell;
+                if (currentCell.cellPosition != _startCell.cellPosition)
+                    return currentCell;
 
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Функция, возвращающая навигационные клетки, до которых можно добраться прыжком
+    /// </summary>
+    /// <param name="_cells">Набор клеток, относительно которых мы и ориентируемся</param>
+    /// <param name="_startCell">Клетка, из которой прыгаем</param>
+    /// <param name="vx">Скорость по x координате</param>
+    /// <param name="vy">Начальная скорость по y координате</param>
+    /// <param name="g1">Ускорение свободного падения</param>
+    /// <param name="considerPlatform">Учитывать ли возможность прыгнуть на движущуюся платформу?</param>
+    /// <returns>Возвращает набор клеток, до которых можно добраться прыжком</returns>
+    public List<NavigationCell> GetJumpCells(NavigationCell[][] _cells, NavigationCell _startCell, float vx, float vy, float g1, bool considerPlatform)
+    {
+        float x1 = _startCell.cellPosition.x;
+        float y0 = _startCell.cellPosition.y - navCellSize.y / 2f;//y-координата, от которой будем отсчитывать высоту падения
+        float y1 = y0;
+        string groundName = "ground";
+
+        Vector2 currentPosition = new Vector2(x1, y1);
+        List<NavigationCell> jumpCells = new List<NavigationCell>();
+
+        NavigationCell currentCell = _startCell;
+        bool a1 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
+                                               currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                               LayerMask.GetMask(groundName));
+        bool a2 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 11f),
+                                        currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, navCellSize.y / 20f * 9f),
+                                        LayerMask.GetMask(groundName));
+        bool a3 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                        currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                        LayerMask.GetMask(groundName));
+        bool a4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                        currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                        LayerMask.GetMask(groundName));
+
+        float t = 0;
+        float timeStep= navCellSize.x / 10f / Mathf.Abs(vx);
+        bool wallInFront = (Mathf.Sign(vx) > 0 ? a1 && a4 : a2 && a3);
+        while (currentPosition.y > y0 - maxJumpDepth)
+        {
+            t += timeStep;//Течение времени
+            float newX = 0f, newY = 0f;
+            if (wallInFront)
+            {
+                newX = currentPosition.x;
+                newY = y1 + vy * t + g1 * t * t / 2f;
+            }
+            else
+            {
+                newX = currentPosition.x + Mathf.Sign(vx) * navCellSize.x / 10f;
+                newY = y1 + vy * t + g1 * t * t / 2f;
+            }
+
+            currentPosition = new Vector2(newX, newY);
+            int cellIndexX = Mathf.RoundToInt((currentPosition.x - _cells[0][0].cellPosition.x) / navCellSize.x);
+            int cellIndexY = Mathf.RoundToInt((currentPosition.y - _cells[0][0].cellPosition.y) / navCellSize.y);
+            if (cellIndexX >= cellRowSize || cellIndexY >= cellColumnSize || cellIndexY < 0 || cellIndexX < 0)
+                return null;
+            currentCell = _cells[cellIndexY][cellIndexX];
+            a1 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
+                                               currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                               LayerMask.GetMask(groundName));
+            a2 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 11f),
+                                            currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, navCellSize.y / 20f * 9f),
+                                            LayerMask.GetMask(groundName));
+            a3 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                            currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                            LayerMask.GetMask(groundName));
+            a4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                            currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                            LayerMask.GetMask(groundName));
+            if (a1 && a2 && vy + g1 * t > 0f)
+            {
+                //Если мы достигли потолка, то сразу начинается падени
+                y1 = currentPosition.y;
+                t = 0f;
+                vy = g1*timeStep*10f;//Введём небольшую погрешность, чтобы приблизится к реальным условиям
+            }
+
+            wallInFront = (Mathf.Sign(vx) < 0 ? a1 && a4 : a2 && a3);
+
+            if (a3 && a4 || currentCell.cellType == NavCellTypeEnum.ladder)
+            { 
+                if (currentCell.cellPosition != _startCell.cellPosition)
+                {
+                    float absVx = Mathf.Abs(vx);
+                    if (absVx > 0.1f ? vx*(currentCell.cellPosition.x-_startCell.cellPosition.x)>absVx*navCellSize.x/2f: true)
+                    {
+                        jumpCells.Add(currentCell);
+                        return jumpCells;
+                    }
+                }
+            }
+            else if (currentCell.cellType == NavCellTypeEnum.movPlatform && considerPlatform)
+            {
+                //Есть возможность прыгнуть на движущуюся платформу
+                if (!jumpCells.Contains(currentCell))
+                    jumpCells.Add(currentCell);
+            }
+
+
+        }
+
+        if (jumpCells.Count == 0)
+            return null;
+        else
+            return jumpCells;
     }
 
     /// <summary>
@@ -4307,7 +4776,8 @@ public class LevelEditor : EditorWindow
         string groundName = "ground";
 
         cellIndexY--;
-        while (cellIndexY>=0)
+
+        while (cellIndexY >= 0)
         {
             currentCell = _cells[cellIndexY][cellIndexX];
             bool a3 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
@@ -4322,7 +4792,170 @@ public class LevelEditor : EditorWindow
 
         }
         return null;
+
     }
+
+    /// <summary>
+    /// Вернуть клетки, до которых можно добраться, спрыгнув вниз
+    /// </summary>
+    /// <param name="_cells">Набор клеток, относительно которых мы и ориентируемся</param>
+    /// <param name="_startCell">Клетка, из которой прыгаем</param>
+    /// <param name="considerPlatforms">Надо ли учитывать движущиеся платформы?</param>
+    /// <returns>Искомые клетки</returns>
+    public List<NavigationCell> GetJumpDownCells(NavigationCell[][] _cells, NavigationCell _startCell, bool considerPlatforms)
+    {
+
+        int cellIndexX = Mathf.RoundToInt((_startCell.cellPosition.x - _cells[0][0].cellPosition.x) / navCellSize.x);
+        int cellIndexY = Mathf.RoundToInt((_startCell.cellPosition.y - _cells[0][0].cellPosition.y) / navCellSize.y);
+        List<NavigationCell> jumpCells = new List<NavigationCell>();
+        NavigationCell currentCell;
+        string groundName = "ground";
+        int prevPlatformNumber = -1;
+
+        cellIndexY--;
+
+        while (cellIndexY >= 0)
+        {
+            currentCell = _cells[cellIndexY][cellIndexX];
+            bool a3 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                            currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
+                                            LayerMask.GetMask(groundName));
+            bool a4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 9f),
+                                            currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 11f),
+                                            LayerMask.GetMask(groundName));
+            if (a3 && a4 || currentCell.cellType == NavCellTypeEnum.ladder)
+            {
+                jumpCells.Add(currentCell);
+                return jumpCells;
+            }
+            else if (currentCell.cellType == NavCellTypeEnum.movPlatform && considerPlatforms)
+            {
+                //PlatformNavigationCell pCell = (PlatformNavigationCell)currentCell;
+                if ((currentCell).id != prevPlatformNumber)
+                {
+                    prevPlatformNumber = currentCell.id;
+                    jumpCells.Add(currentCell);
+                }
+            }
+            else
+                prevPlatformNumber = -1;
+                
+            cellIndexY--;
+
+        }
+        if (jumpCells.Count == 0)
+            return null;
+        else
+            return jumpCells;
+    }
+
+    /// <summary>
+    /// Определить, какие навигационные ячейки будут соответствовать маршруту движущейся платформы
+    /// </summary>
+    /// <param name="_cells">Все навигационные клетки</param>
+    /// <param name="_platform">Рассматриваемая платформа с заданным маршрутом</param>
+    /// <param name="_map">Навигационная карта</param>
+    void DefinePlatformCells(NavigationCell[][] _cells, MovingPlatform _platform, NavigationMap _map)
+    {
+        float step = navCellSize.x / 4f;
+        List<Vector2> positions = _platform.PlatformPositions;
+        if (positions.Count < 2)
+            return;
+        if (!_platform.moving)
+        {
+            return;
+        }
+        NavigationCell currentCell;
+
+        for (int i = 0; i < positions.Count - 1; i++)
+        {
+            Vector2 startPosition = positions[i];
+            Vector2 currentPosition = startPosition;
+            Vector2 direction = (positions[i + 1] - currentPosition).normalized;
+            float distance = Vector2.SqrMagnitude(positions[i + 1] - startPosition);
+            while (Vector2.SqrMagnitude(currentPosition-startPosition)<distance)
+            {
+                int cellIndexX = Mathf.RoundToInt((currentPosition.x - _cells[0][0].cellPosition.x) / navCellSize.x);
+                int cellIndexY = Mathf.RoundToInt((currentPosition.y - _cells[0][0].cellPosition.y) / navCellSize.y);
+                if (cellIndexX >= cellRowSize || cellIndexY >= cellColumnSize || cellIndexY < 0 || cellIndexX < 0)
+                    return;
+                currentCell = _cells[cellIndexY][cellIndexX];
+                if (!currentCell.visited)
+                {
+                    //PlatformNavigationCell pCell = new PlatformNavigationCell(currentCell.cellPosition, NavCellTypeEnum.movPlatform, _platform.GetID());
+                    currentCell.visited = true;
+                    currentCell.cellType = NavCellTypeEnum.movPlatform;
+                    currentCell.id = _platform.GetID();
+                    //_cells[cellIndexY][cellIndexX] = pCell;
+                    NavigationGroup currentGroup = _map.GetCurrentGroup(currentCell.cellPosition);
+                    currentGroup.cells.Add(currentCell);
+                }
+
+
+                currentPosition += direction * step;
+            }
+        }
+
+    }
+
+    /// <summary>
+    /// Задать соседей всем клеткам, соотвествующим маршруту указанной платформы
+    /// </summary>
+    /// <param name="_cells">Все навигационные клетки</param>
+    /// <param name="_platform">Рассматриваемая платформа с заданным маршрутом</param>
+    /// <param name="_map">Навигационная карта</param>
+    void DefinePlatformCellsNeighbors(MovingPlatform _platform, NavigationMap _map)
+    {
+        float step = navCellSize.x / 4f;
+        List<Vector2> positions = _platform.PlatformPositions;
+        if (positions.Count < 2)
+            return;
+        if (!_platform.moving)
+        {
+            return;
+        }
+        NavigationCell currentCell;
+        NavigationCell prevCell;
+        NavigationCell startCell;
+
+        //Определим начальную клетку для того, чтобы обязательно замкнуть контур маршрута, если таковой имеется
+        Vector2 startPosition = positions[0];
+        NavigationGroup currentGroup = _map.GetCurrentGroup(startPosition);
+        if (currentGroup == null)
+            return;
+        startCell = currentGroup.GetCurrentCell(startPosition);
+        if (startCell == null)
+            return;
+        prevCell = startCell;
+
+        for (int i = 0; i < positions.Count - 1; i++)
+        {
+            startPosition = positions[i];
+            Vector2 currentPosition = startPosition;
+            Vector2 direction = (positions[i + 1] - currentPosition).normalized;
+            float distance = Vector2.SqrMagnitude(positions[i + 1] - startPosition);
+            while (Vector2.SqrMagnitude(currentPosition - startPosition) < distance)
+            {
+                currentGroup = _map.GetCurrentGroup(currentPosition);
+                currentCell = currentGroup.GetCurrentCell(currentPosition);
+                if (currentCell != prevCell)
+                {
+                    currentCell.neighbors.Add(new NeighborCellStruct(prevCell.groupNumb, prevCell.cellNumb, NavCellTypeEnum.movPlatform));
+                    prevCell.neighbors.Add(new NeighborCellStruct(currentCell.groupNumb, currentCell.cellNumb, NavCellTypeEnum.movPlatform));
+                    prevCell = currentCell;
+                }
+
+                currentPosition += direction * step;
+            }
+        }
+
+        if (Vector2.SqrMagnitude(positions[0] - positions[positions.Count - 1]) < navCellSize.x * navCellSize.x / 4f && prevCell!=startCell)
+        {
+            prevCell.neighbors.Add(new NeighborCellStruct(startCell.groupNumb, startCell.cellNumb, NavCellTypeEnum.movPlatform));
+            startCell.neighbors.Add(new NeighborCellStruct(prevCell.groupNumb, prevCell.cellNumb, NavCellTypeEnum.movPlatform));
+        }
+    }
+
 }
 
 /// <summary>

@@ -12,7 +12,6 @@ public class GhostMinerBossController : BossController
     protected const float sightOffsetX = .2f, sightOffsetY = .1f;//Насколько сдвинут прицел босса
     protected const float diveDownOffset = 1.5f;//Насколько глубоко босс уходит под землю?
 
-    protected const float attackTime = .6f, preAttackTime = .6f, preCritAttackTime = .9f;//Тайминги атак
     protected const float attackRate = 3f;//Сколько секунд проходит между атаками
 
     protected const float divingHealthFold = 50f;//Какому числу должно быть кратно здоровье, чтобы босс начал совершать особую атаку
@@ -38,7 +37,12 @@ public class GhostMinerBossController : BossController
     [SerializeField]
     protected float diveOutSpeed = .3f;//Скорость персонажа, когда он совершает особую атаку    
 
-    [SerializeField]protected float attackDistance = 1f;//На каком расстоянии персонаж начинает атаковать
+    //Тайминги атак
+    protected override float attackTime { get { return .6f; } }
+    protected override float preAttackTime { get{ return .6f; }}
+    protected float preCritAttackTime = .9f;
+
+    protected override float attackDistance { get { return 1f; } }//На каком расстоянии персонаж начинает атаковать
     [SerializeField]protected Vector2 coalHitSize = new Vector2(.1f,.1f);//Размер хитбокса снаряда
     [SerializeField]protected float coalForce = 80f;//Сила удара углём
     protected bool crit;

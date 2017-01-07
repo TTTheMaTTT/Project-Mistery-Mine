@@ -121,25 +121,25 @@ public class HitBox : MonoBehaviour
                     float prevHP = target.GetHealth();
                     if (hitData.actTime == -1f)
                     {
-                        target.TakeDamage(hitData.damage);
                         Rigidbody2D rigid;
                         if ((rigid = other.GetComponent<Rigidbody2D>()) != null && !target.InInvul())
                         {
-                            rigid.AddForce((new Vector2(other.transform.position.x-transform.position.x,0f)).normalized * hitData.hitForce);//Атака всегда толкает вперёд
+                            rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
                         }
+                        target.TakeDamage(hitData.damage);
                         OnAttack(new HitEventArgs(target.GetHealth()-prevHP));
                         return;
                     }
                     if (!list.Contains(other.gameObject))
                     {
                         list.Add(other.gameObject);
-                        target.TakeDamage(hitData.damage);
                         Rigidbody2D rigid;
                         if ((rigid = other.GetComponent<Rigidbody2D>()) != null && !target.InInvul())
                         {
                             rigid.velocity = Vector2.zero;
-                            rigid.AddForce((new Vector2(other.transform.position.x - transform.position.x, 0f)).normalized * hitData.hitForce);//Атака всегда толкает вперёд
+                            rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
                         }
+                        target.TakeDamage(hitData.damage);
                         OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
                     }
                 }

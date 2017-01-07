@@ -37,7 +37,7 @@ public class GameStatistics : MonoBehaviour, IHaveStory
     List<ItemCollection> itemCollections = new List<ItemCollection>();//Игровые коллекции, учёт которых ведётся на данном уровне
     public List<ItemCollection> ItemCollections { get { return itemCollections; } }
 
-    [HideInInspector]public NavigationSystem navSystem;//Карты уровня, используемые на данной сцене
+    public NavigationSystem navSystem;//Карты уровня, используемые на данной сцене
 
     #endregion //dictionaries
 

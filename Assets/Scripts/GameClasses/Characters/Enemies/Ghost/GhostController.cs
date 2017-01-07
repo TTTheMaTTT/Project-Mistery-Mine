@@ -7,19 +7,20 @@ using System.Collections;
 /// </summary>
 public class GhostController : AIController
 {
-    #region consts
-
-    protected const float attackDistance = .15f;//На каком расстоянии должен стоять паук, чтобы решить атаковать
-
-    protected const float attackTime = .6f, preAttackTime = .4f;
-
-    #endregion //consts
 
     #region fields
 
-    protected SightFrustum sight;//Зрение персонажа
+    //protected SightFrustum sight;//Зрение персонажа
 
     #endregion //fields
+
+    #region parametres
+
+    protected override float attackTime { get { return .6f; } }
+    protected override float preAttackTime { get { return .4f; } }
+    protected override float attackDistance { get { return .15f; } }//На каком расстоянии должен стоять паук, чтобы решить атаковать
+
+    #endregion //parametres
 
     protected override void FixedUpdate()
     {
@@ -29,15 +30,20 @@ public class GhostController : AIController
 
     }
 
+    protected virtual void Update()
+    {
+        Analyse();
+    }
+
     /// <summary>
     /// Инициализация
     /// </summary>
     protected override void Initialize()
     {
         Transform indicators = transform.FindChild("Indicators");
-        sight = indicators.GetComponentInChildren<SightFrustum>();
-        sight.sightInEventHandler += HandleSightInEvent;
-        sight.sightOutEventHandler += HandleSightOutEvent;
+        //sight = indicators.GetComponentInChildren<SightFrustum>();
+        //sight.sightInEventHandler += HandleSightInEvent;
+        //sight.sightOutEventHandler += HandleSightOutEvent;
 
         base.Initialize();
 
@@ -72,13 +78,66 @@ public class GhostController : AIController
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
+    protected override void Analyse()
+    {
+        base.Analyse();
+
+        switch (behaviour)
+        {
+            case BehaviourEnum.agressive:
+                {
+                    Vector2 direction = mainTarget.transform.position - transform.position;
+                    RaycastHit2D hit = Physics2D.Raycast(transform.position, direction.normalized, direction.magnitude, LayerMask.GetMask(gLName));
+                    if (hit)
+                        GoToThePoint(mainTarget.transform.position);
+
+                    break;
+                }
+            case BehaviourEnum.patrol:
+                {
+                    Vector2 direction = rigid.velocity.normalized;
+                    RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
+                    if (hit)
+                    {
+                        if (hit.collider.gameObject.CompareTag("player"))
+                        {
+                            BecomeAgressive();
+                        }
+                    }
+
+                    break;
+                }
+
+            case BehaviourEnum.calm:
+                {
+                    Vector2 direction = Vector2.right * (int)orientation;
+                    RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
+                    if (hit)
+                    {
+                        if (hit.collider.gameObject.CompareTag("player"))
+                        {
+                            BecomeAgressive();
+                        }
+                    }
+                    break;
+                }
+
+            default:
+                {
+                    break;
+                }
+        }
+
+        prevPosition = new EVector3(transform.position, true);
+    }
+
     /// <summary>
     /// Успокоится
     /// </summary>
     protected override void BecomeCalm()
     {
         base.BecomeCalm();
-        sight.Rotate(Vector2.right * (int)orientation);
+        //sight.Rotate(Vector2.right * (int)orientation);
     }
 
     /// <summary>
@@ -149,7 +208,7 @@ public class GhostController : AIController
 
         Vector3 targetPosition = currentTarget.transform.position;
         Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
-        sight.Rotate(((Vector2)rigid.velocity).normalized);//В режиме патрулирования призрак смотрит в ту сторону, в которую движется
+        //sight.Rotate(((Vector2)rigid.velocity).normalized);//В режиме патрулирования призрак смотрит в ту сторону, в которую движется
         if (Vector3.SqrMagnitude(currentTarget.transform.position - transform.position) < minDistance * minDistance)
         {
             if (Vector2.SqrMagnitude((Vector2)targetPosition - beginPosition) > minDistance * minDistance)

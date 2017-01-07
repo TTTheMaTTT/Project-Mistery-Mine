@@ -11,41 +11,41 @@ public class SpiderController : AIController
 
     #region consts
 
-    protected const float attackTime = .6f, preAttackTime = .3f;
-
     protected const float patrolDistance = 2f;//По таким дистанциям паук будет патрулировать
 
-    protected const float beCalmTime = 10f;//Время через которое пауки перестают преследовать игрока, если он ушёл из их поля зрения
-    protected const float avoidTime = 1f;//Время, спустя которое мжно судить о необходимости обхода препятствия
-
     protected const float spiderOffset = .052f;//Насколько должен быть смещён паук относительно поверхности земли
-
-    protected const int maxAgressivePathDepth = 20;//Насколько сложен может быть путь паука, в агрессивном состоянии 
-                                                   //(этот путь используется в тех случаях, когда невозможно настичь героя прямым путём)
 
     #endregion //consts
 
     #region fields
 
     protected WallChecker wallCheck, precipiceCheck;
-    protected SightFrustum sight;//Зрение персонажа
+    //protected SightFrustum sight;//Зрение персонажа
     protected HitBox selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
+
+    protected override List<NavigationCell> Waypoints
+    {
+        get
+        {
+            return waypoints;
+        }
+        set
+        {
+            waypoints = value;
+            if (value != null)
+            {
+                if (currentTarget != null ? (currentTarget != mainTarget) : false)
+                {
+                    Destroy(currentTarget);
+                    currentTarget = null;
+                }
+            }
+        }
+    }
 
     #endregion //fields
 
     #region parametres
-
-    [SerializeField]protected float jumpForce = 60f;//Сила, с которой паук совершает прыжок
-    protected bool jumping = false;
-    protected bool avoid = false;//Обходим ли препятствие в данный момент?
-
-    [SerializeField] protected float attackDistance = .2f;//На каком расстоянии должен стоять паук, чтобы решить атаковать
-
-    protected Vector2 waypoint;//Пункт назначения, к которому стремится ИИ
-    protected EVector3 prevTargetPosition = new EVector3(Vector3.zero);//Предыдущее местоположение цели
-    protected EVector3 prevPosition = EVector3.zero;//Собственное предыдущее местоположение
-
-    protected float navCellSize;
 
     protected bool moveOut = false;
 
@@ -56,7 +56,7 @@ public class SpiderController : AIController
         {
             spiderOrientation = value;
             movementDirection = GetNormal(spiderOrientation);
-            if (sight != null ? sight.enabled : false)
+            /*if (sight != null ? sight.enabled : false)
             {
                 if (spiderOrientation.y < 0 && Mathf.Abs(spiderOrientation.y) >= Mathf.Abs(spiderOrientation.x))
                 {
@@ -68,10 +68,10 @@ public class SpiderController : AIController
                     //canStayOnPlatform = spiderOrientation.y >= Mathf.Abs(spiderOrientation.x);
                     sight.RotateLocal(0f);
                 }
-            }
+            }*/
         }
     }
-    protected Vector3 movementDirection = Vector3.right;//В какую сторону движется паук, если он повёрнут вправо
+    protected Vector2 movementDirection = Vector2.right;//В какую сторону движется паук, если он повёрнут вправо
 
     //protected bool calmDown = false;//Успокаивается ли персонаж
     [SerializeField]protected bool neutral = true;//Является ли паук изначально нейтральным
@@ -85,7 +85,6 @@ public class SpiderController : AIController
         else if (moveOut)
             MoveOut();
         Animate(new AnimationEventArgs("groundMove"));
-        Analyse();
     }
 
     void Update()
@@ -94,6 +93,7 @@ public class SpiderController : AIController
         {
             GoToThePoint(SpecialFunctions.player.transform.position);
         }
+        Analyse();
     }
 
     /// <summary>
@@ -107,7 +107,7 @@ public class SpiderController : AIController
             wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
             precipiceCheck = indicators.FindChild("PrecipiceCheck").GetComponent<WallChecker>();
 
-            Transform sightParent = indicators.FindChild("Sight");
+            /*Transform sightParent = indicators.FindChild("Sight");
             sight = sightParent!=null? sightParent.GetComponentInChildren<SightFrustum>():null;
             if (sight != null)
             {
@@ -116,7 +116,7 @@ public class SpiderController : AIController
                 sight.enabled = !neutral;
                 if (!neutral)
                     sight.RotateLocal((spiderOrientation.y >= 0 && Mathf.Abs(spiderOrientation.x) - Mathf.Abs(spiderOrientation.y) < 0) ? 0f : 90f);
-            }
+            }*/
 
         }
 
@@ -138,11 +138,12 @@ public class SpiderController : AIController
                 areaTrigger.triggerFunctionIn += EnableSelfHitBox;
                 areaTrigger.triggerFunctionOut += DisableSelfHitBox;
             }
-            if (sight != null)
+            areaTrigger.triggerFunctionOut += AreaTriggerExitChangeBehavior;
+            /*if (sight != null)
             {
                 areaTrigger.triggerFunctionIn += EnableSight;
                 areaTrigger.triggerFunctionOut += DisableSight;
-            }
+            }*/
         }
 
         Patrol();
@@ -160,7 +161,7 @@ public class SpiderController : AIController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = wallCheck.WallInFront()? new Vector3(0f,rigid.velocity.y,0f):(rigid.gravityScale == 0f ? movementDirection * (int)orientation * speed : new Vector3((int)orientation * speed, rigid.velocity.y));
+        Vector2 targetVelocity = wallCheck.WallInFront()? new Vector2(0f,rigid.velocity.y):(rigid.gravityScale == 0f ? movementDirection * (int)orientation * speed : new Vector2((int)orientation * speed, rigid.velocity.y));
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)
@@ -175,27 +176,15 @@ public class SpiderController : AIController
         rigid.velocity -= projection;
     }
 
+    /*
     /// <summary>
     /// Процесс обхода препятствия
     /// </summary>
-    protected virtual IEnumerator AvoidProcess()
+    protected override IEnumerator AvoidProcess()
     {
         avoid = true;
         EVector3 _prevPos = prevPosition;
         yield return new WaitForSeconds(avoidTime);
-        /*string groundName = "ground";
-        bool a1 = Physics2D.OverlapArea((Vector2)transform.position + new Vector2(-navCellSize / 20f * 11f, navCellSize / 20f * 7f),
-                                (Vector2)transform.position + new Vector2(-navCellSize / 20f * 9f, -navCellSize / 20f * 7f),
-                                LayerMask.GetMask(groundName));
-        bool a2 = Physics2D.OverlapArea((Vector2)transform.position + new Vector2(-navCellSize / 20f * 7f, navCellSize / 20f * 11f),
-                                        (Vector2)transform.position + new Vector2(navCellSize / 20f * 7f, navCellSize / 20f * 9f),
-                                        LayerMask.GetMask(groundName));
-        bool a3 = Physics2D.OverlapArea((Vector2)transform.position + new Vector2(navCellSize / 20f * 9f, navCellSize / 20f * 7f),
-                                        (Vector2)transform.position + new Vector2(navCellSize / 20f * 11f, -navCellSize / 20f * 7f),
-                                        LayerMask.GetMask(groundName));
-        bool a4 = Physics2D.OverlapArea((Vector2)transform.position + new Vector2(-navCellSize / 20f * 7f, -navCellSize / 20f * 9f),
-                                        (Vector2)transform.position + new Vector2(navCellSize / 20f * 7f, -navCellSize / 20f * 11f),
-                                        LayerMask.GetMask(groundName));*/
         if (currentTarget != null && currentTarget!=mainTarget && (transform.position - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
         {
             transform.position += (currentTarget.transform.position - transform.position).normalized * navCellSize;
@@ -204,11 +193,12 @@ public class SpiderController : AIController
 
     }
 
-    protected virtual void StopAvoid()
+    protected override void StopAvoid()
     {
         StopCoroutine(AvoidProcess());
         avoid = false;
     }
+    */
 
     /// <summary>
     /// Определить следующую точку патрулирования
@@ -233,7 +223,7 @@ public class SpiderController : AIController
         Vector2 connectionPoint = Vector2.zero;
 
         //Найдём ту сторону коллайдера, которая имеет нормаль, отличную от текущей ориентации паука, и расстояние до которой от текущего положения паука является наименьшим
-        float minDistance = Mathf.Infinity;
+        float mDistance = Mathf.Infinity;
         int pointIndex = -1;
         for (int i = 0; i < colPoints.Length; i++)
         {
@@ -244,10 +234,10 @@ public class SpiderController : AIController
             {
                 Vector2 _connectionPoint = GetConnectionPoint(point1, point2, transform.position);
                 float newDistance = Vector2.SqrMagnitude(_connectionPoint - (Vector2)transform.position);
-                if (newDistance < minDistance)
+                if (newDistance < mDistance)
                 {
                     connectionPoint = _connectionPoint;
-                    minDistance = newDistance;
+                    mDistance = newDistance;
                     pointIndex = i;
                 }
             }
@@ -332,6 +322,23 @@ public class SpiderController : AIController
         {
            case BehaviourEnum.agressive:
                 {
+
+                    Vector2 direction = mainTarget.transform.position - transform.position;
+                    RaycastHit2D hit = Physics2D.Raycast(transform.position, direction.normalized, direction.magnitude, LayerMask.GetMask(gLName));
+                    if (hit)
+                    {
+                        if (direction.magnitude > sightOffset / 2f)
+                        {
+                            GoToThePoint(mainTarget.transform.position);
+                            if (behaviour == BehaviourEnum.agressive)
+                            {
+                                GoHome();
+                                break;
+                            }
+                            else
+                                StartCoroutine(BecomeCalmProcess());
+                        }
+                    }
                     if (currentTarget == null)
                         break;
                     if ((transform.position - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && !avoid && currentTarget != mainTarget)
@@ -348,8 +355,33 @@ public class SpiderController : AIController
                     {
                         StartCoroutine(AvoidProcess());
                     }
+                    Vector2 direction = spiderOrientation.y<-1*Mathf.Abs(spiderOrientation.x)? Vector2.down: movementDirection*(int)orientation;
+                    RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position+sightOffset*direction, direction, sightRadius, LayerMask.GetMask(gLName,cLName));
+                    if (hit)
+                    {
+                        if (hit.collider.gameObject.CompareTag("player"))
+                        {
+                            BecomeAgressive();
+                        }
+                    }
+
                     break;
                 }
+
+            case BehaviourEnum.calm:
+                {
+                    Vector2 direction = spiderOrientation.y < -1 * Mathf.Abs(spiderOrientation.x) ? Vector2.down : movementDirection * (int)orientation;
+                    RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
+                    if (hit)
+                    {
+                        if (hit.collider.gameObject.CompareTag("player"))
+                        {
+                            BecomeAgressive();
+                        }
+                    }
+                    break;
+                }
+
             default:
                 {
                     break;
@@ -360,26 +392,47 @@ public class SpiderController : AIController
     }
 
     /// <summary>
+    /// Определить, нужно ли отыскивать путь до главной цели
+    /// </summary>
+    /// <returns>Есть ли необходимость отыскания пути</returns>
+    protected override bool NeedToFindPath()
+    {
+        return Vector2.SqrMagnitude((Vector2)mainTarget.transform.position - prevTargetPosition) > navCellSize * navCellSize;
+    }
+
+    /// <summary>
     /// Функция получения урона
     /// </summary>
     public override void TakeDamage(float damage)
     {
         base.TakeDamage(damage);
-        BecomeAgressive();
+        if (behaviour!=BehaviourEnum.agressive)
+            BecomeAgressive();
         JumpDown();//Сбросить паука со стены ударом
     }
 
-    protected override void BecomeCalm()
+    protected override void RefreshTargets()
     {
-        base.BecomeCalm();
+        base.RefreshTargets();
         jumping = false;
         avoid = false;
-        gameObject.layer = LayerMask.NameToLayer("character");
-        if (sight != null ? sight.enabled : false)
-            sight.RotateLocal(0f);
         StopCoroutine(BecomeCalmProcess());
     }
 
+    /// <summary>
+    /// Перейти в спокойное состояние
+    /// </summary>
+    protected override void BecomeCalm()
+    {
+        base.BecomeCalm();
+        gameObject.layer = LayerMask.NameToLayer("character");
+        //if (sight != null ? sight.enabled : false)
+            //sight.RotateLocal(0f);
+    }
+
+    /// <summary>
+    /// Перейти в агрессивное состояние
+    /// </summary>
     protected override void BecomeAgressive()
     {
         base.BecomeAgressive();
@@ -389,33 +442,32 @@ public class SpiderController : AIController
         if (neutral)
         {
             neutral = false;//Паук теперь всегда будет нападать на игрока и будет искать его
-            sight.enabled = true;
-            sight.ChangeSightMod();
+            //sight.enabled = true;
+            //sight.ChangeSightMod();
         }
-        StopCoroutine(BecomeCalmProcess());
         prevTargetPosition = new EVector3(Vector3.zero);
         wallCheck.RemoveWallType("character");
-        if (sight != null)
+        /*if (sight != null)
         {
             sight.WhatToSight = LayerMask.GetMask("ground");
             sight.SetSightMod(true);
-        }
+        }*/
     }
 
+    /// <summary>
+    /// Перейти в состояние патрулирования
+    /// </summary>
     protected override void BecomePatrolling()
     {
         base.BecomePatrolling();
-        jumping = false;
-        avoid = false;
         wallCheck.RemoveWallType("character");
         gameObject.layer = LayerMask.NameToLayer("characterWithoutPlatform");
-        if (sight != null ? sight.enabled : false)
+        /*if (sight != null ? sight.enabled : false)
         {
             sight.WhatToSight = LayerMask.GetMask("character", "ground");
             sight.RotateLocal(0f);
             sight.SetSightMod(false);
-        }
-        StopCoroutine(BecomeCalmProcess());
+        }*/
            
     }
 
@@ -423,18 +475,49 @@ public class SpiderController : AIController
     /// Процесс успокаивания персонажа
     /// </summary>
     /// <returns></returns>
-    protected virtual IEnumerator BecomeCalmProcess()
+    protected override IEnumerator BecomeCalmProcess()
     {
         //calmDown = true;
         yield return new WaitForSeconds(beCalmTime);
-        if (Vector2.SqrMagnitude((Vector2)transform.position - beginPosition) > minDistance * minDistance)
+        if (Vector2.SqrMagnitude((Vector2)transform.position - beginPosition) > minDistance)
             GoHome();
         wallCheck.WhatIsWall.Add("character");
-        if (sight != null)
+        /*if (sight != null)
         {
             sight.WhatToSight = LayerMask.GetMask("character", "ground");
             sight.SetSightMod(false);
+        }*/
+    }
+
+    /// <summary>
+    /// Процесс обхода препятствия
+    /// </summary>
+    protected override IEnumerator AvoidProcess()
+    {
+        avoid = true;
+        EVector3 _prevPos = prevPosition;
+        yield return new WaitForSeconds(avoidTime);
+        //Если не сдвигаемся с места, то нужно обойти препятствие
+        if (currentTarget != null && currentTarget != mainTarget && (transform.position - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
+        {
+            transform.position += (currentTarget.transform.position - transform.position).normalized * navCellSize;
+            yield return new WaitForSeconds(avoidTime);
+            //Если всё равно не получается обойти ставшее на пути препятствие
+            if (currentTarget != null && currentTarget != mainTarget && (transform.position - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
+            {
+                if (mainTarget != null)
+                    GoHome();
+                else
+                {
+                    if (waypoints != null ? waypoints.Count > 0 : false)
+                        GoToThePoint(waypoints[waypoints.Count - 1].cellPosition);
+                    else
+                        GoHome();
+                }
+
+            }
         }
+        avoid = false;
     }
 
     #region behaviourActions
@@ -475,11 +558,11 @@ public class SpiderController : AIController
                         Turn();
                     else
                     {
-                        if (Vector2.SqrMagnitude(transform.position - mainTarget.transform.position) > minDistance * minDistance * 4f &&
-                            (Vector2.SqrMagnitude(mainTarget.transform.position - prevTargetPosition) > minDistance * minDistance || !prevTargetPosition.exists))
+                        if (Vector2.SqrMagnitude(transform.position - mainTarget.transform.position) > minCellSqrMagnitude * 16f &&
+                            (Vector2.SqrMagnitude(mainTarget.transform.position - prevTargetPosition) > minCellSqrMagnitude || !prevTargetPosition.exists))
                         {
-                            prevTargetPosition = new EVector3(mainTarget.transform.position, true);
-                            waypoints = FindPath(targetPosition, maxAgressivePathDepth);
+                            //prevTargetPosition = new EVector3(mainTarget.transform.position, true);
+                            Waypoints = FindPath(targetPosition, maxAgressivePathDepth);
                             if (waypoints != null)
                                 gameObject.layer = LayerMask.NameToLayer("characterWithoutPlatform");
                             else
@@ -523,9 +606,9 @@ public class SpiderController : AIController
                     //}
                     if (!jumping)
                     {
-                        if (Vector2.SqrMagnitude((Vector2)mainTarget.transform.position - prevTargetPosition) > navCellSize * navCellSize)
+                        if (NeedToFindPath())
                         {
-                            FindPath(mainTarget.transform.position, maxAgressivePathDepth);
+                            waypoints=FindPath(mainTarget.transform.position, maxAgressivePathDepth);
                             prevTargetPosition = new EVector3(mainTarget.transform.position, true);
                             return;
                         }
@@ -620,6 +703,9 @@ public class SpiderController : AIController
         }
     }
 
+    /// <summary>
+    /// Поведение патрулирования
+    /// </summary>
     protected override void PatrolBehaviour()
     {
         if (waypoints != null ? waypoints.Count > 0 : false)
@@ -663,6 +749,7 @@ public class SpiderController : AIController
                     if (Vector3.Distance(beginPosition, currentWaypoint.cellPosition) < navCellSize)
                     {
                         transform.position = beginPosition;
+                        Turn(beginOrientation);
                         BecomeCalm();
                         return;
                     }
@@ -708,7 +795,7 @@ public class SpiderController : AIController
                 }
                 else if (!precipiceCheck.WallInFront())
                 {
-                    RaycastHit2D hit = Physics2D.Raycast(transform.position - (int)orientation * movementDirection * navCellSize / 2f, -spiderOrientation, navCellSize, LayerMask.GetMask(gLName));
+                    RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position - (int)orientation * movementDirection * navCellSize / 2f, -spiderOrientation, navCellSize, LayerMask.GetMask(gLName));
                     if (hit)
                     {
                         ChangeOrientation(hit.collider);
@@ -718,22 +805,16 @@ public class SpiderController : AIController
         }
     }
 
-    protected override void GoToThePoint(Vector2 targetPosition)
-    {
-        base.GoToThePoint(targetPosition);
-        NavigationSystem navSystem = SpecialFunctions.statistics.navSystem;
-        navCellSize = navSystem.cellSize.magnitude;
-    }
-
     #endregion //behaviourActions
 
+    /*
     /// <summary>
     /// Функция, которая строит маршрут для паука
     /// </summary>
     /// <param name="endPoint">точка назначения</param>
     ///<param name="maxDepth">Максимальная сложность маршрута</param>
     /// <returns>Навигационные ячейки, составляющие маршрут</returns>
-    protected virtual List<NavigationCell> FindPath(Vector2 endPoint, int _maxDepth)
+    protected override List<NavigationCell> FindPath(Vector2 endPoint, int _maxDepth)
     {
         if (currentTarget != null && currentTarget != mainTarget)
             Destroy(currentTarget);
@@ -780,7 +861,7 @@ public class SpiderController : AIController
                 //Если путь оказался состоящим из слишком большого количества узлов, то не стоит пользоваться этим маршрутом. 
                 //Этот алгоритм поиска используется для создания коротких маршрутов, которые можно будет быстро поменять при необходимости. 
                 //Эти маршруты используются в агрессивном состоянии, когда не должно быть такого, 
-                //что паук обходит слишком большие дистанции, чтобы достичь игрока. Если такое случается, он должен ждать, чему соответствует несуществование подходящего маршрута
+                //что ИИ обходит слишком большие дистанции, чтобы достичь игрока. Если такое случается, он должен ждать, чему соответствует несуществование подходящего маршрута
                 depthOrder++;
                 if (depthOrder == _maxDepth)
                     return null;
@@ -836,9 +917,11 @@ public class SpiderController : AIController
 
         return _path;
     }
+    */
 
     #region optimization
 
+    /*
     /// <summary>
     /// Включить зрение
     /// </summary>
@@ -858,6 +941,7 @@ public class SpiderController : AIController
             //FindPath(mainTarget.transform.position, maxAgressivePathDepth * 5);
         sight.gameObject.SetActive(false);
     }
+    */
 
     /// <summary>
     /// Включить собственный хитбокс
@@ -879,6 +963,7 @@ public class SpiderController : AIController
 
     #region eventHandlers
 
+    /*
     /// <summary>
     /// Обработка события "Увидел врага"
     /// </summary>
@@ -905,7 +990,9 @@ public class SpiderController : AIController
                //GoHome();
         }
     }
+    */
 
+    /*
     /// <summary>
     ///  Обработка события "произошла атака"
     /// </summary>
@@ -915,6 +1002,7 @@ public class SpiderController : AIController
         if (behaviour!=BehaviourEnum.agressive)
             BecomeAgressive();
     }
+    */
 
     #endregion //eventHandlers
 
