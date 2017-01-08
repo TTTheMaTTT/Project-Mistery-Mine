@@ -78,8 +78,8 @@ public class NavigationMap
     /// <param name="cellSize">размер клетки</param>
     public void ResetGroupSizes(Vector2 cellSize)
     {
-        foreach (NavigationGroup navGroup in cellGroups)
-            navGroup.SetSize(cellSize);
+        //foreach (NavigationGroup navGroup in cellGroups)
+            //navGroup.SetSize(cellSize);
     }
 
     /// <summary>
@@ -326,6 +326,7 @@ public class NavigationCell
 
     #region fields
 
+    public int id=-1;//ID клетки
     public Vector2 cellPosition;//Координаты центра ячейки
     public NavCellTypeEnum cellType;//Тип клетки
 
@@ -369,6 +370,27 @@ public class NavigationCell
     }
 
 }
+
+/*
+/// <summary>
+/// Особый тип навигационных клеток, содержащих информацию об используемых платформах
+/// </summary>
+[System.Serializable]
+public class PlatformNavigationCell: NavigationCell
+{
+    public int platformID;//идентификатор платформы, которая связана с рассматриваемой навигационной клеткой
+
+    public PlatformNavigationCell(Vector2 _cellPosition, NavCellTypeEnum _cellType): base(_cellPosition,_cellType)
+    {
+        platformID = 0;
+    }
+
+    public PlatformNavigationCell(Vector2 _cellPosition, NavCellTypeEnum _cellType, int _platformID):base(_cellPosition,_cellType)
+    {
+        platformID = _platformID;
+    }
+
+}*/
 
 /// <summary>
 /// Структура, содержащая информацию о соседней клетки

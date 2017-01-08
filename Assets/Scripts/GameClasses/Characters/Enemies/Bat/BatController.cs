@@ -23,7 +23,7 @@ public class BatController : AIController
 
     protected Hearing hearing;//Слух персонажа
     
-    public LayerMask whatIsGround = LayerMask.GetMask("ground");
+    public LayerMask whatIsGround;
 
     #endregion //fields
 
@@ -274,19 +274,20 @@ public class BatController : AIController
 
     #region events
 
+    /*
     /// <summary>
     /// Обработка события "Услышал врага"
     /// </summary>
-    protected virtual void HandleHearingEvent(object sender, EventArgs e)
+    protected override void HandleHearingEvent(object sender, EventArgs e)
     {
         if (behaviour!=BehaviourEnum.agressive)
             BecomeAgressive();
-    }
+    }*/
 
     /// <summary>
     ///  Обработка события "произошла атака"
     /// </summary>
-    protected void HandleAttackProcess(object sender, HitEventArgs e)
+    protected override void HandleAttackProcess(object sender, HitEventArgs e)
     {
         rigid.velocity = Vector2.zero;
         rigid.AddForce((transform.position - mainTarget.transform.position).normalized * pushBackForce);//При столкновении с врагом летучая мышь отталкивается назад

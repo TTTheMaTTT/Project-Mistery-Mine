@@ -26,8 +26,6 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
 
     protected const int maxEmployment = 10;
 
-    protected const string gLName = "ground";//Название слоя земли
-
     #endregion //consts
 
     #region fields
@@ -114,6 +112,15 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     {}
 
     /// <summary>
+    /// Определить, есть ли необходимость отыскания пути до главной цели
+    /// </summary>
+    /// <returns>есть ли необходимость</returns>
+    protected virtual bool NeedToFindPath()
+    {
+        return true;
+    }
+
+    /// <summary>
     /// Функция, ответственная за перемещения персонажа
     /// </summary>
     protected virtual void Move(OrientationEnum _orientation)
@@ -125,6 +132,44 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     protected virtual void StopMoving()
     {
         rigid.velocity = new Vector2(0f, rigid.velocity.y);
+    }
+
+    /// <summary>
+    /// Залезть на лестницу
+    /// </summary>
+    protected virtual void LadderOn()
+    {
+        if (orientation == OrientationEnum.left)
+        {
+            Turn(OrientationEnum.right);
+        }
+        rigid.velocity = Vector3.zero;
+        rigid.gravityScale = 0f;
+    }
+
+    /// <summary>
+    /// Слезть с лестницы
+    /// </summary>
+    protected virtual void LadderOff()
+    {
+        rigid.gravityScale = 1f;
+        //rigid.AddForce(new Vector2(0f, jumpForce / 2));
+    }
+
+    /// <summary>
+    /// Передвижение по лестнице
+    /// </summary>
+    /// <param name="direction">Число, характеризующее направление движения. Если >0, то вверх, иначе - вниз</param>
+    protected virtual void LadderMove(float direction)
+    {
+    }
+
+    /// <summary>
+    /// Остановиться на лестнице
+    /// </summary>
+    protected virtual void StopLadderMoving()
+    {
+        rigid.velocity = Vector2.zero;
     }
 
     /// <summary>

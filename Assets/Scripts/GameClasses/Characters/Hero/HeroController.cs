@@ -75,6 +75,7 @@ public class HeroController : CharacterController
     protected GroundStateEnum groundState;
     protected float fallSpeed = 0f;
     protected bool onLadder;
+    public bool OnLadder { get { return onLadder; } }
     protected bool underWater;
     protected bool dontShoot = false;
 
@@ -164,7 +165,7 @@ public class HeroController : CharacterController
             {
                 if (Input.GetButton("Vertical"))
                 {
-                    LadderMove();
+                    LadderMove(Input.GetAxis("Vertical"));
                 }
                 else
                 {
@@ -173,6 +174,8 @@ public class HeroController : CharacterController
                 if (Input.GetButtonDown("Jump"))
                 {
                     LadderOff();
+                    rigid.AddForce(new Vector2(0f, jumpForce / 2));
+                    StartCoroutine(JumpProcess());
                 }
             }
 
@@ -297,7 +300,11 @@ public class HeroController : CharacterController
         if (onLadder)
         {
             if (!Physics2D.OverlapCircle(transform.position - transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")))
+            {
                 LadderOff();
+                rigid.AddForce(new Vector2(0f, jumpForce / 2));
+                StartCoroutine(JumpProcess());
+            }
         }
 
     }
@@ -376,17 +383,12 @@ public class HeroController : CharacterController
     /// <summary>
     /// Взобраться на лестницу
     /// </summary>
-    protected virtual void LadderOn()
+    protected override void LadderOn()
     {
         if (interactor.Ladder != null)
         {
-            if (orientation == OrientationEnum.left)
-            {
-                Turn(OrientationEnum.right);
-            }
+            base.LadderOn();
             onLadder = true;
-            rigid.velocity = Vector3.zero;
-            rigid.gravityScale = 0f;
             Animate(new AnimationEventArgs("setLadderMove", "", 1));
             Vector3 vect = transform.position;
             transform.position = new Vector3(interactor.Ladder.transform.position.x, vect.y, vect.z);
@@ -396,13 +398,11 @@ public class HeroController : CharacterController
     /// <summary>
     /// Слезть с лестницы
     /// </summary>
-    protected virtual void LadderOff()
+    protected override void LadderOff()
     {
         onLadder = false;
         rigid.gravityScale = 1f;
         Animate(new AnimationEventArgs("setLadderMove", "", 0));
-        rigid.AddForce(new Vector2(0f, jumpForce / 2));
-        StartCoroutine(JumpProcess());
         //if (Input.GetAxis("Vertical")>0f)
         //{
         //  rigid.AddForce(new Vector2(0f, jumpForce / 2));
@@ -413,19 +413,10 @@ public class HeroController : CharacterController
     /// <summary>
     /// Перемещение по лестнице
     /// </summary>
-    protected virtual void LadderMove()
+    protected override void LadderMove(float direction)
     {
-        float value = Input.GetAxis("Vertical");
         rigid.velocity = new Vector3(0f,
-                                     Physics2D.OverlapCircle(transform.position + Mathf.Sign(value) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? value * ladderSpeed : 0f);
-    }
-
-    /// <summary>
-    /// Прекратить передвижение по лестнице
-    /// </summary>
-    protected virtual void StopLadderMoving()
-    {
-        rigid.velocity = Vector2.zero;
+                                     Physics2D.OverlapCircle(transform.position + Mathf.Sign(direction) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? direction * ladderSpeed : 0f);
     }
 
     /// <summary>
@@ -532,6 +523,7 @@ public class HeroController : CharacterController
         {
             base.TakeDamage(damage);
             dontShoot = false;
+            LadderOff();
             StartCoroutine(InvulProcess(invulTime, true));
         }
     }
@@ -545,6 +537,7 @@ public class HeroController : CharacterController
         SpriteRenderer sprite = GetComponentInChildren<SpriteRenderer>();
         if (sprite != null) sprite.enabled = true;
         dontShoot = false;
+        LadderOff();
         StartCoroutine(InvulProcess(invulTime, true));
     }
 

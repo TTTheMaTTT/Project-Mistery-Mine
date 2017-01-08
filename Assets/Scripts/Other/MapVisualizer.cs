@@ -38,6 +38,7 @@ public class MapVisualizer : MonoBehaviour
                             {
                                 DrawCell(navCell.cellPosition, cellSize, navCell.cellType == NavCellTypeEnum.usual ? Color.green :
                                                                             navCell.cellType == NavCellTypeEnum.movPlatform ? Color.cyan :
+                                                                            navCell.cellType == NavCellTypeEnum.jump ? Color.red:
                                                                             Color.yellow);
                             }
                         }

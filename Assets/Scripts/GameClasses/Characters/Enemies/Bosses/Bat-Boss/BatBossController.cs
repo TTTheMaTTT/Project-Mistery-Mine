@@ -9,8 +9,6 @@ public class BatBossController: BossController
 {
     #region consts
 
-    protected const float minSpeed = .1f;
-
     protected const float pushBackForce = 500f;
     private const float batSize = .5f;
 
@@ -235,6 +233,7 @@ public class BatBossController: BossController
 
     #region events
 
+    /*
     /// <summary>
     /// Обработка события "Услышал врага"
     /// </summary>
@@ -242,11 +241,12 @@ public class BatBossController: BossController
     {
         BecomeAgressive();
     }
+    */
 
     /// <summary>
     ///  Обработка события "произошла атака"
     /// </summary>
-    protected void HandleAttackProcess(object sender, HitEventArgs e)
+    protected override void HandleAttackProcess(object sender, HitEventArgs e)
     {
         if (e.HPDif < 0f)
         {

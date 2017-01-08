@@ -12,7 +12,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
 
     Animator anim;
     SpriteRenderer sRenderer;
-    GameObject light;
+    GameObject checkpointLight;
 
     #endregion //fields
 
@@ -35,8 +35,8 @@ public class CheckpointController : MonoBehaviour, IInteractive
         sRenderer = GetComponent<SpriteRenderer>();
         if (transform.childCount > 0)
         {
-            light = transform.FindChild("Light").gameObject;
-            light.SetActive(false);
+            checkpointLight = transform.FindChild("Light").gameObject;
+            checkpointLight.SetActive(false);
         }
     }
 
@@ -56,9 +56,9 @@ public class CheckpointController : MonoBehaviour, IInteractive
         {
             anim.Play("Active");
         }
-        if (light != null)
+        if (checkpointLight != null)
         {
-            light.SetActive(true);
+            checkpointLight.SetActive(true);
         }
         DestroyImmediate(this);
     }
