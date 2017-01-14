@@ -30,20 +30,20 @@ public class HumanoidController : AIController
         }
         set
         {
+            StopFollowOptPath();
             waypoints = value;
             if (value != null)
             {
-                if (currentTarget != null)
-                {
-                    if (currentTarget != mainTarget && currentTarget != platformObject)
-                        Destroy(currentTarget);
-                    currentTarget = null;
-                }
+                currentTarget.Exists = false;
             }
             else
             {
                 StopAvoid();
                 LadderOff();
+                if (mainTarget.exists && behavior==BehaviorEnum.agressive)
+                {
+                    currentTarget = mainTarget;
+                }
             }
             if (currentPlatform != null)
                 CurrentPlatform = null;
@@ -52,7 +52,7 @@ public class HumanoidController : AIController
     }
 
     protected HeroController hero;//Герой, за которым следит гуманоид
-    protected virtual GameObject MainTarget { get { return mainTarget; } set { mainTarget = value; if (hero == null) { hero = SpecialFunctions.player.GetComponent<HeroController>(); } } }
+    protected virtual ETarget MainTarget { get { return mainTarget; } set { mainTarget = value; if (hero == null) { hero = SpecialFunctions.Player.GetComponent<HeroController>(); } } }
 
     #endregion //fields
 
@@ -64,6 +64,7 @@ public class HumanoidController : AIController
 
     #region platform
 
+    protected ETarget platformTarget;//Целевая движущаяся платформа
     protected MovingPlatform currentPlatform = null;//Движущаяся платформа, которая является предметом интереса для ИИ
     protected MovingPlatform CurrentPlatform
     {
@@ -76,12 +77,9 @@ public class HumanoidController : AIController
             currentPlatform = value;
             if (currentPlatform == null)
                 waitingForPlatform = false;
-            platformObject = value != null ? currentPlatform.gameObject : null;
-            platformTransform = platformObject != null ? platformObject.transform : null;
+            platformTarget = value!=null? new ETarget(currentPlatform.transform) : ETarget.zero;
         }
     }
-    protected GameObject platformObject;
-    protected Transform platformTransform;
     protected bool waitingForPlatform = false;//Ждёт ли персонаж выдвижения движущейся платформы?
     protected NavCellTypeEnum platformConnectionType;//Каким образом надо добираться до плафтормы
 
@@ -95,16 +93,16 @@ public class HumanoidController : AIController
     {
         base.FixedUpdate();
         Animate(new AnimationEventArgs("groundMove"));
-        Analyse();
     }
 
-    protected virtual void Update()
+    protected override void Update()
     {
+        base.Update();
         if (Input.GetKeyDown(KeyCode.B))
         {
-            GoToThePoint(SpecialFunctions.player.transform.position);
+            if (behavior!=BehaviorEnum.agressive)
+                GoToThePoint(SpecialFunctions.Player.transform.position);
         }
-        Analyse();
     }
 
     /// <summary>
@@ -112,7 +110,7 @@ public class HumanoidController : AIController
     /// </summary>
     protected override void Initialize()
     {
-        Transform indicators = transform.FindChild("Indicators");
+        indicators = transform.FindChild("Indicators");
         if (indicators != null)
         {
             wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
@@ -129,12 +127,10 @@ public class HumanoidController : AIController
         if (areaTrigger!=null)
         {
             areaTrigger.triggerFunctionOut += AreaTriggerExitChangeBehavior;
-            if (hearing!=null)
-            {
-                areaTrigger.triggerFunctionIn += EnableHearing;
-                areaTrigger.triggerFunctionOut += DisableHearing;
-            }
+            areaTrigger.InitializeAreaTrigger();
         }
+
+        BecomeCalm();
 
     }
 
@@ -247,38 +243,37 @@ public class HumanoidController : AIController
     /// </summary>
     protected override void Analyse()
     {
-        base.Analyse();
-
-        switch (behaviour)
+        Vector2 pos = transform.position;
+        switch (behavior)
         {
-            case BehaviourEnum.agressive:
+            case BehaviorEnum.agressive:
                 {
 
-                    Vector2 direction = mainTarget.transform.position - transform.position;
-                    RaycastHit2D hit = Physics2D.Raycast(transform.position, direction.normalized, direction.magnitude, LayerMask.GetMask(gLName));
+                    Vector2 direction = mainTarget - pos;
+                    RaycastHit2D hit = Physics2D.Raycast(pos, direction.normalized, direction.magnitude, LayerMask.GetMask(gLName));
                     if (hit)
                     {
                         //Если враг ушёл достаточно далеко
                         if (direction.magnitude > sightRadius*0.75f)
                         {
-                            GoToThePoint(mainTarget.transform.position);
-                            if (behaviour == BehaviourEnum.agressive)
+                            GoToThePoint(mainTarget);
+                            if (behavior == BehaviorEnum.agressive)
                             {
                                 GoHome();
                                 break;
                             }
                             else
-                                StartCoroutine(BecomeCalmProcess());
+                                StartCoroutine("BecomeCalmProcess");
                         }
                     }
-                    if (currentTarget == null)
-                        break;
+                    //if (currentTarget == null)
+                        //break;
                     if (!hit?
-                        ((transform.position - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && currentTarget != mainTarget && 
-                        (currentPlatform==null? true :(!waitingForPlatform && transform.parent==null))): true)
+                        ((pos - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && currentTarget != mainTarget && 
+                        (platformTarget.exists? true :(!waitingForPlatform && transform.parent==null))): true)
                     {
                         if (!avoid)
-                            StartCoroutine(AvoidProcess());
+                            StartCoroutine("AvoidProcess");
                     }
 
                     if (waitingForPlatform)
@@ -286,13 +281,10 @@ public class HumanoidController : AIController
                         if (WatchPlatform())
                         {
                             waitingForPlatform = false;
-                            if (currentTarget != mainTarget && currentTarget != platformObject)
-                                Destroy(currentTarget);
-                            currentTarget = platformObject;
+                            currentTarget = platformTarget;
                             if (platformConnectionType == NavCellTypeEnum.jump)
                             {
-                                Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign((currentTarget.transform.position - transform.position).x)));
-                                Vector3 pos = transform.position;
+                                Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign((currentTarget - pos).x)));
                                 //transform.position = new Vector3(currentTarget.transform.position.x + (int)orientation * navCellSize / 2f, pos.y, pos.z);
                                 Jump();
                             }
@@ -301,22 +293,29 @@ public class HumanoidController : AIController
 
                     break;
                 }
-            case BehaviourEnum.patrol:
+            case BehaviorEnum.patrol:
                 {
-                    if (currentTarget == null)
-                        break;
-                    if ((transform.position - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && !avoid && 
-                        (currentPlatform == null ? true : (!waitingForPlatform && transform.parent == null)))
+                    if (!currentTarget.exists)
                     {
-                        StartCoroutine(AvoidProcess());
+                        if (!avoid)
+                        {
+                            StartCoroutine("AvoidProcess");
+                        }
+                        break;
+                    }
+                    if (!avoid)
+                    {
+                        if ((pos - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f &&
+                            (platformTarget.exists? true : (!waitingForPlatform && transform.parent == null)))
+                            StartCoroutine("AvoidProcess");
                     }
                     Vector2 direction = Vector3.right * (int)orientation;
-                    if (mainTarget!=null)
+                    if (mainTarget.exists)
                     {
-                        if (Vector2.SqrMagnitude(mainTarget.transform.position - transform.position) < minCellSqrMagnitude)
+                        if (Vector2.SqrMagnitude(mainTarget - pos) < minCellSqrMagnitude)
                             BecomeAgressive();
                     }
-                    RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
+                    RaycastHit2D hit = Physics2D.Raycast(pos + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
                     if (hit)
                     {
                         if (hit.collider.gameObject.CompareTag("player"))
@@ -330,13 +329,10 @@ public class HumanoidController : AIController
                         if (WatchPlatform())
                         {
                             waitingForPlatform = false;
-                            if (currentTarget!=mainTarget && currentTarget!=platformObject)
-                                Destroy(currentTarget);
-                            currentTarget = platformObject;
+                            currentTarget = platformTarget;
                             if (platformConnectionType==NavCellTypeEnum.jump)
                             {
-                                Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign((currentTarget.transform.position - transform.position).x)));
-                                Vector3 pos = transform.position;
+                                Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign((currentTarget - pos).x)));
                                 //transform.position = new Vector3(currentTarget.transform.position.x + (int)orientation * navCellSize / 2f, pos.y, pos.z);
                                 Jump();
                             }
@@ -346,10 +342,10 @@ public class HumanoidController : AIController
                     break;
                 }
 
-            case BehaviourEnum.calm:
+            case BehaviorEnum.calm:
                 {
                     Vector2 direction = Vector3.right * (int)orientation;
-                    RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
+                    RaycastHit2D hit = Physics2D.Raycast(pos + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
                     if (hit)
                     {
                         if (hit.collider.gameObject.CompareTag("player"))
@@ -375,9 +371,9 @@ public class HumanoidController : AIController
     /// <returns>Возвращает факт необходимости поиска пути</returns>
     protected override bool NeedToFindPath()
     {
-        Vector3 mainPos = mainTarget.transform.position;
+        Vector2 mainPos = mainTarget;
         bool onPlatform=false;
-        bool changePosition = (grounded || onLadder) && Vector2.SqrMagnitude((Vector2)mainPos - prevTargetPosition) > minCellSqrMagnitude * 16f;
+        bool changePosition = (grounded || onLadder) && Vector2.SqrMagnitude(mainPos - prevTargetPosition) > minCellSqrMagnitude * 16f;
         if (changePosition)
         {
             NavigationCell cell1 = navMap.GetCurrentCell(mainPos), cell2 = navMap.GetCurrentCell(prevTargetPosition);
@@ -396,14 +392,14 @@ public class HumanoidController : AIController
     /// <returns>Платформа находится рядом с текущей целью ИИ?</returns>
     protected virtual bool WatchPlatform()
     {
-        if (currentPlatform == null || currentTarget == null)
+        if (!platformTarget.exists || !currentTarget.exists)
             return false;
-        Vector2 platformPos = platformTransform.position;
+        Vector2 platformPos = platformTarget;
         Vector2 platformDirection = currentPlatform.Direction;
         Vector2 pos = transform.position;
         if (pos.y < platformPos.y && Vector2.Dot(pos - platformPos, platformDirection) < 0f)
             return false;
-        return (Vector2.SqrMagnitude((Vector2)platformTransform.position - (Vector2)currentTarget.transform.position+currentPlatform.Direction*platformOffset) < navCellSize*navCellSize);
+        return (Vector2.SqrMagnitude(platformTarget + currentPlatform.Direction*platformOffset - currentTarget) < navCellSize*navCellSize);
     }
 
     /// <summary>
@@ -434,8 +430,6 @@ public class HumanoidController : AIController
         if (onLadder)
             LadderOff();//Сбросить с лестницы
         base.TakeDamage(damage);
-        if (behaviour!=BehaviourEnum.agressive)
-            BecomeAgressive();
     }
 
     /// <summary>
@@ -443,12 +437,14 @@ public class HumanoidController : AIController
     /// </summary>
     protected override void RefreshTargets()
     {
-        if (currentTarget != null && currentTarget != mainTarget && currentTarget != platformObject)
-            Destroy(currentTarget);
+
+        currentTarget.Exists = false;
         jumping = false;
         StopAvoid();
-        StopCoroutine(BecomeCalmProcess());
+        StopCoroutine("BecomeCalmProcess");
         prevTargetPosition = EVector3.zero;
+        StopFollowOptPath();
+        Waiting = false;
     }
 
     /// <summary>
@@ -457,11 +453,14 @@ public class HumanoidController : AIController
     protected override void BecomeCalm()
     {
         RefreshTargets();
-        behaviour = BehaviourEnum.calm;
-        mainTarget = null;
-        currentTarget = null;
+        behavior = BehaviorEnum.calm;
+        mainTarget.Exists = false;
         Waypoints = null;
-        behaviourActions = CalmBehaviour;
+        if (optimized)
+            behaviorActions = CalmOptBehavior;
+        else
+            behaviorActions = CalmBehavior;
+        OnChangeBehavior(new BehaviorEventArgs(BehaviorEnum.calm));
     }
 
     /// <summary>
@@ -470,14 +469,27 @@ public class HumanoidController : AIController
     protected override void BecomeAgressive()
     {
         RefreshTargets();
-        behaviour = BehaviourEnum.agressive;
-        MainTarget = SpecialFunctions.player;
-        waypoints = null;
+        behavior = BehaviorEnum.agressive;
+        MainTarget = new ETarget(SpecialFunctions.Player.transform);
+        if (onLadder || !grounded)
+        {
+            Waypoints = FindPath(mainTarget, maxAgressivePathDepth);
+            if (waypoints==null)
+                currentTarget = mainTarget;
+        }
+        else
+        {
+            waypoints = null;
+            currentTarget = mainTarget;
+        }
         if (currentPlatform != null)
             CurrentPlatform = null;
-        currentTarget = mainTarget;
-        behaviourActions = AgressiveBehaviour;
+        if (optimized)
+            behaviorActions = AgressiveOptBehavior;
+        else
+            behaviorActions = AgressiveBehavior;
         //wallCheck.RemoveWallType("character");
+        OnChangeBehavior(new BehaviorEventArgs(BehaviorEnum.agressive));
     }
 
     /// <summary>
@@ -486,11 +498,14 @@ public class HumanoidController : AIController
     protected override void BecomePatrolling()
     {
         RefreshTargets();
-        behaviour = BehaviourEnum.patrol;
+        behavior = BehaviorEnum.patrol;
         //mainTarget = null;
-        currentTarget = null;
-        behaviourActions = PatrolBehaviour;
         CurrentPlatform = null;
+        if (optimized)
+            behaviorActions = PatrolOptBehavior;
+        else
+            behaviorActions = PatrolBehavior;
+        OnChangeBehavior(new BehaviorEventArgs(BehaviorEnum.patrol));
     }
 
     /// <summary>
@@ -503,7 +518,7 @@ public class HumanoidController : AIController
         yield return new WaitForSeconds(beCalmTime);
         if (Vector2.SqrMagnitude((Vector2)transform.position - beginPosition) > minDistance)
             GoHome();
-        else if (behaviour != BehaviourEnum.calm)
+        else if (behavior != BehaviorEnum.calm)
             BecomeCalm();
         //wallCheck.WhatIsWall.Add("character");
     }
@@ -516,23 +531,25 @@ public class HumanoidController : AIController
         avoid = true;
         EVector3 _prevPos = prevPosition;
         yield return new WaitForSeconds(avoidTime);
-        if (currentTarget != null && currentTarget != mainTarget &&
+        Vector3 pos = (Vector2)transform.position;
+        if (currentTarget.exists &&
             (transform.position - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f &&
-            (currentPlatform!=null?(!waitingForPlatform && transform.parent!=platformObject):true))
+            (platformTarget.exists? (!waitingForPlatform && transform.parent != platformTarget.transform) : true))
         {
-            if (currentTarget != platformObject)
-                transform.position += (currentTarget.transform.position - transform.position).normalized * navCellSize;
+            if (currentTarget != platformTarget && currentTarget!=mainTarget)
+                transform.position += (currentTarget - pos).normalized * navCellSize;
             yield return new WaitForSeconds(avoidTime);
+            pos = (Vector2)transform.position;
             //Если не получается обойти ставшее на пути препятствие
-            if (currentTarget != null && currentTarget != mainTarget &&
-                (transform.position - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f &&
-                (currentPlatform != null ? (!waitingForPlatform && transform.parent != platformObject) : true))
+            if (currentTarget.exists && currentTarget != mainTarget &&
+                (pos - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f &&
+                (platformTarget.exists ? (!waitingForPlatform && transform.parent != platformTarget.transform) : true))
             {
-                if (mainTarget != null)
+                if (mainTarget.exists)
                 {
-                    if (behaviour==BehaviourEnum.agressive)
-                    { 
-                        Waypoints = FindPath(mainTarget.transform.position, maxAgressivePathDepth);
+                    if (behavior == BehaviorEnum.agressive)
+                    {
+                        Waypoints = FindPath(mainTarget, maxAgressivePathDepth);
                         if (waypoints == null)
                             GoHome();
                     }
@@ -546,9 +563,20 @@ public class HumanoidController : AIController
                     else
                         GoHome();
                 }
-                if (behaviour == BehaviourEnum.patrol)
+                if (behavior == BehaviorEnum.patrol)
                     StartCoroutine(ResetStartPositionProcess(transform.position));
 
+            }
+        }
+        else if (!currentTarget.exists)
+        {
+            yield return new WaitForSeconds(avoidTime);
+            pos = (Vector2)transform.position;
+            if (!currentTarget.exists)
+            {
+                GoHome();
+                if (behavior == BehaviorEnum.patrol)
+                    StartCoroutine(ResetStartPositionProcess(pos));
             }
         }
         avoid = false;
@@ -562,11 +590,12 @@ public class HumanoidController : AIController
     protected override IEnumerator ResetStartPositionProcess(Vector2 prevPosition)
     {
         yield return new WaitForSeconds(avoidTime);
-        if (Vector2.SqrMagnitude(prevPosition - (Vector2)transform.position) < minCellSqrMagnitude && behaviour == BehaviourEnum.patrol)
+        Vector2 pos = transform.position;
+        if (Vector2.SqrMagnitude(prevPosition - pos) < minCellSqrMagnitude && behavior == BehaviorEnum.patrol)
         {
-            if ((currentPlatform != null ? (!waitingForPlatform && transform.parent != platformObject) : true))
+            if ((platformTarget.exists ? (!waitingForPlatform && transform.parent != platformTarget.transform) : true))
             {
-                beginPosition = transform.position;
+                beginPosition = pos;
                 beginOrientation = orientation;
                 BecomeCalm();
             }
@@ -578,54 +607,87 @@ public class HumanoidController : AIController
     /// <summary>
     /// Агрессивное поведение
     /// </summary>
-    protected override void AgressiveBehaviour()
+    protected override void AgressiveBehavior()
     {
-        base.AgressiveBehaviour();
 
-        if (mainTarget != null && employment > 2)
+        if (mainTarget.exists && employment > 2)
         {
 
-            Vector3 targetPosition;
-            Vector3 targetDistance;
-            Vector3 pos = transform.position;
-            Vector3 mainPos = mainTarget.transform.position;
+            Vector2 targetPosition;
+            Vector2 targetDistance;
+            Vector2 pos = transform.position;
+            Vector2 mainPos = mainTarget;
             if (waypoints == null)
             {
 
                 #region directWay
 
-                targetPosition = mainTarget.transform.position;
+                targetPosition = mainTarget;
                 targetDistance = targetPosition - pos;
-                if (Vector2.SqrMagnitude(targetDistance) > attackDistance*attackDistance)
+                float sqDistance = targetDistance.sqrMagnitude;
+                if (waiting)
                 {
-                    if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront()||!grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f? true :!hero.OnLadder))
+                    if (sqDistance < waitingNearDistance)
                     {
-                        if (Mathf.Abs(targetDistance.x) > attackDistance)
-                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
-                        else
-                            StopMoving();
+                        if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront() || !grounded))
+                            Move((OrientationEnum)Mathf.RoundToInt(-Mathf.Sign(targetDistance.x)));
                     }
-                    else if ((targetPosition - pos).x * (int)orientation < 0f)
-                        Turn();
+                    else if (sqDistance < waitingFarDistance)
+                        StopMoving();
                     else
                     {
-                        StopMoving();
-                        if (Vector2.SqrMagnitude(transform.position - mainPos) > minCellSqrMagnitude * 16f &&
-                            (Vector2.SqrMagnitude(mainPos - prevTargetPosition) > minCellSqrMagnitude || !prevTargetPosition.exists))
+                        if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront() || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !hero.OnLadder))
                         {
-                            Waypoints = FindPath(targetPosition, maxAgressivePathDepth);
-                            if (waypoints == null)
-                                StopMoving();
+                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
+                        }
+                        else if ((targetPosition - pos).x * (int)orientation < 0f)
+                            Turn();
+                        else
+                        {
+                            StopMoving();
+                            if (Vector2.SqrMagnitude(pos - mainPos) > minCellSqrMagnitude * 16f &&
+                                (Vector2.SqrMagnitude(mainPos - prevTargetPosition) > minCellSqrMagnitude || !prevTargetPosition.exists))
+                            {
+                                Waypoints = FindPath(targetPosition, maxAgressivePathDepth);
+                                if (waypoints == null)
+                                    StopMoving();
+                            }
                         }
                     }
-
                 }
                 else
                 {
-                    StopMoving();
-                    if ((targetPosition - pos).x * (int)orientation < 0f)
-                        Turn();
-                    Attack();
+                    if (Vector2.SqrMagnitude(targetDistance) > attackDistance * attackDistance)
+                    {
+                        if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront() || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !hero.OnLadder))
+                        {
+                            if (Mathf.Abs(targetDistance.x) > attackDistance)
+                                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
+                            else
+                                StopMoving();
+                        }
+                        else if ((targetPosition - pos).x * (int)orientation < 0f)
+                            Turn();
+                        else
+                        {
+                            StopMoving();
+                            if (Vector2.SqrMagnitude(pos - mainPos) > minCellSqrMagnitude * 16f &&
+                                (Vector2.SqrMagnitude(mainPos - prevTargetPosition) > minCellSqrMagnitude || !prevTargetPosition.exists))
+                            {
+                                Waypoints = FindPath(targetPosition, maxAgressivePathDepth);
+                                if (waypoints == null)
+                                    StopMoving();
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        StopMoving();
+                        if ((targetPosition - pos).x * (int)orientation < 0f)
+                            Turn();
+                        Attack();
+                    }
                 }
 
                 #endregion //directWay
@@ -638,30 +700,29 @@ public class HumanoidController : AIController
 
                 if (NeedToFindPath())//Если главная цель сменила своё местоположение
                 {
-                    Waypoints = FindPath(mainTarget.transform.position, maxAgressivePathDepth);
+                    Waypoints = FindPath(mainPos, maxAgressivePathDepth);
                     //prevTargetPosition = new EVector3(mainTarget.transform.position, true);
                     return;
                 }
 
                 if (waypoints.Count > 0)
                 {
-                    if (currentTarget == null)
+                    if (!currentTarget.exists)
                     {
-                        currentTarget = new GameObject("MonsterTarget");
-                        currentTarget.transform.position = waypoints[0].cellPosition;
+                        currentTarget = new ETarget(waypoints[0].cellPosition);
                         if (waypoints[0].cellType == NavCellTypeEnum.movPlatform)
                             FindPlatform(waypoints[0].id);
                     }
 
                     bool waypointIsAchieved = false;
-                    targetPosition = currentTarget.transform.position;
+                    targetPosition = currentTarget;
                     targetDistance = targetPosition - pos;
-                    if (!waitingForPlatform && (transform.parent != platformTransform || currentPlatform == null))
+                    if (!waitingForPlatform && (transform.parent != platformTarget.transform || !platformTarget.exists))
                     {
                         if (onLadder)
                         {
                             LadderMove(Mathf.Sign(targetDistance.y));
-                            waypointIsAchieved = Mathf.Abs(currentTarget.transform.position.y - pos.y) < navCellSize / 2f;
+                            waypointIsAchieved = Mathf.Abs(currentTarget.y - pos.y) < navCellSize / 2f;
                         }
                         else if (currentPlatform != null ? !grounded : true)
                         {
@@ -669,10 +730,10 @@ public class HumanoidController : AIController
                                 Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
                             else
                             {
-                                transform.position = new Vector3(targetPosition.x, pos.y, pos.z);
+                                transform.position = new Vector3(targetPosition.x, pos.y);
                                 StopMoving();
                             }
-                            waypointIsAchieved = Vector3.SqrMagnitude(currentTarget.transform.position - transform.position) < minCellSqrMagnitude;
+                            waypointIsAchieved = Vector3.SqrMagnitude(currentTarget - transform.position) < minCellSqrMagnitude;
                         }
                     }
                     else
@@ -684,9 +745,9 @@ public class HumanoidController : AIController
                             float projection = Vector2.Dot(targetDistance, platformDirection);
                             Turn((OrientationEnum)Mathf.Sign(platformDirection.x));
                             waypointIsAchieved = Mathf.Abs(projection) < navCellSize / 2f;
-                            if (currentTarget == platformObject && transform.parent == platformTransform)
+                            if (currentTarget == platformTarget && transform.parent == platformTarget.transform)
                             {
-                                transform.position = platformTransform.position + Vector3.up * 0.08f;
+                                transform.position = platformTarget + Vector3.up * 0.08f;
                                 waypointIsAchieved = true;
                             }
                         }
@@ -696,14 +757,14 @@ public class HumanoidController : AIController
                     if (waypointIsAchieved)
                     {
                         NavigationCell currentWaypoint = waypoints[0];
-                        if (currentTarget==platformObject)
+                        if (currentTarget == platformTarget)
                         {
-                            if (waypoints.Count > 1 ? (waypoints[1].cellPosition - (Vector2)transform.position).x * (int)orientation < 0f:false)
+                            if (waypoints.Count > 1 ? (waypoints[1].cellPosition - (Vector2)transform.position).x * (int)orientation < 0f : false)
                                 Turn();
-                            transform.position = platformTransform.position + Vector3.up * .09f;
+                            transform.position = platformTarget + Vector3.up * .09f;
                         }
-                        else 
-                            Destroy(currentTarget);
+                        else
+                            currentTarget.Exists = false;
 
                         waypoints.RemoveAt(0);
 
@@ -747,14 +808,13 @@ public class HumanoidController : AIController
                             NavigationCell nextWaypoint = waypoints[0];
                             NeighborCellStruct neighborConnection = currentWaypoint.GetNeighbor(nextWaypoint.groupNumb, nextWaypoint.cellNumb);
                             //Продолжаем следование
-                            currentTarget = new GameObject("MonsterTarget");
-                            currentTarget.transform.position = nextWaypoint.cellPosition;
-                            if (nextWaypoint.cellType == NavCellTypeEnum.movPlatform && currentPlatform == null)
+                            currentTarget = new ETarget(nextWaypoint.cellPosition);
+                            if (nextWaypoint.cellType == NavCellTypeEnum.movPlatform && !platformTarget.exists)
                             {
                                 StopMoving();
                                 waitingForPlatform = true;
                                 FindPlatform(nextWaypoint.id);
-                                platformConnectionType = currentWaypoint.GetNeighbor(nextWaypoint.groupNumb, nextWaypoint.cellNumb).connectionType;
+                                platformConnectionType = neighborConnection.connectionType;
                             }
                             else if (neighborConnection.connectionType == NavCellTypeEnum.jump && (grounded || onLadder))
                             {
@@ -795,28 +855,27 @@ public class HumanoidController : AIController
     /// <summary>
     /// Поведение патрулирования
     /// </summary>
-    protected override void PatrolBehaviour()
+    protected override void PatrolBehavior()
     {
-        Vector3 pos = transform.position;
+        Vector2 pos = transform.position;
         if (waypoints != null ? waypoints.Count > 0 : false)
         {
-            if (currentTarget == null)
+            if (!currentTarget.exists)
             {
-                currentTarget = new GameObject("MonsterTarget");
-                currentTarget.transform.position = waypoints[0].cellPosition;
+                currentTarget = new ETarget(waypoints[0].cellPosition);
                 if (waypoints[0].cellType == NavCellTypeEnum.movPlatform)
                     FindPlatform(waypoints[0].id);
             }
 
             bool waypointIsAchieved = false;
-            Vector3 targetPosition = currentTarget.transform.position;
-            Vector3 targetDistance = targetPosition - pos;
-            if (!waitingForPlatform && (transform.parent != platformTransform || currentPlatform == null))
+            Vector2 targetPosition = currentTarget;
+            Vector2 targetDistance = targetPosition - pos;
+            if (!waitingForPlatform && (transform.parent != platformTarget.transform || !platformTarget.exists))
             {
                 if (onLadder)
                 {
                     LadderMove(Mathf.Sign(targetDistance.y));
-                    waypointIsAchieved = Mathf.Abs(currentTarget.transform.position.y - pos.y) < navCellSize/2f;
+                    waypointIsAchieved = Mathf.Abs(currentTarget.y - pos.y) < navCellSize/2f;
                 }
                 else if (currentPlatform != null ? !grounded : true)
                 {
@@ -824,10 +883,10 @@ public class HumanoidController : AIController
                         Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
                     else
                     {
-                        transform.position = new Vector3(targetPosition.x, pos.y, pos.z);
+                        transform.position = new Vector3(targetPosition.x, pos.y);
                         StopMoving();
                     }
-                    waypointIsAchieved = Vector3.SqrMagnitude(currentTarget.transform.position - pos) < minCellSqrMagnitude;
+                    waypointIsAchieved = Vector2.SqrMagnitude(currentTarget - pos) < minCellSqrMagnitude;
                 }
             }
             else
@@ -839,9 +898,9 @@ public class HumanoidController : AIController
                     float projection = Vector2.Dot(targetDistance, platformDirection);
                     Turn((OrientationEnum)Mathf.Sign(platformDirection.x));
                     waypointIsAchieved = Mathf.Abs(projection) < navCellSize / 2f;
-                    if (currentTarget == platformObject && transform.parent == platformTransform)
+                    if (currentTarget == platformTarget && transform.parent == platformTarget.transform)
                     {
-                        transform.position = platformTransform.position + Vector3.up * 0.08f;
+                        transform.position = platformTarget + Vector3.up * 0.08f;
                         waypointIsAchieved = true;
                     }
                 }
@@ -850,17 +909,17 @@ public class HumanoidController : AIController
             if (waypointIsAchieved)
             {
                 NavigationCell currentWaypoint = waypoints[0];
-                if (currentTarget == platformObject)
+                if (currentTarget == platformTarget)
                 {
-                    if (waypoints.Count > 1 ? (waypoints[1].cellPosition - (Vector2)pos).x * (int)orientation < 0f : false)
+                    if (waypoints.Count > 1 ? (waypoints[1].cellPosition - pos).x * (int)orientation < 0f : false)
                         Turn();
-                    transform.position = platformTransform.position + Vector3.up * .09f;
+                    transform.position = platformTarget + Vector3.up * .09f;
                 }
                 else
-                    Destroy(currentTarget);
+                    currentTarget.Exists = false;
 
                 waypoints.RemoveAt(0);
-
+                
                 if (waypoints.Count == 0)//Если маршрут кончился, перестать следовать ему
                 {
                     //Достигли конца маршрута
@@ -879,8 +938,7 @@ public class HumanoidController : AIController
                     NavigationCell nextWaypoint = waypoints[0];
                     NeighborCellStruct neighborConnection = currentWaypoint.GetNeighbor(nextWaypoint.groupNumb, nextWaypoint.cellNumb);
                     //Продолжаем следование
-                    currentTarget = new GameObject("MonsterTarget");
-                    currentTarget.transform.position = nextWaypoint.cellPosition;
+                    currentTarget = new ETarget(nextWaypoint.cellPosition);
                     if (nextWaypoint.cellType == NavCellTypeEnum.movPlatform && currentPlatform == null)
                     {
                         StopMoving();
@@ -917,19 +975,195 @@ public class HumanoidController : AIController
     #region optimization
 
     /// <summary>
-    /// Включить слух
+    /// Функция реализующая анализ окружающей персонажа обстановки, когда тот находится в оптимизированном состоянии
     /// </summary>
-    protected override void EnableHearing()
+    protected override void AnalyseOpt()
     {
-        hearing.gameObject.SetActive(true);
+        if (behavior != BehaviorEnum.calm)
+            if (!followOptPath)
+                StartCoroutine("PathPassOptProcess");
     }
 
     /// <summary>
-    /// Выключить слух
+    /// Функция, которая восстанавливает положение и состояние персонажа, пользуясь данными, полученными в оптимизированном режиме
     /// </summary>
-    protected override void DisableHearing()
+    protected override void RestoreActivePosition()
     {
-        hearing.gameObject.SetActive(false);
+        if (!currentTarget.exists)
+        {
+            Turn(beginOrientation);
+        }
+        else
+        {
+            Vector2 pos = transform.position;
+            if (platformTarget.exists)
+            {
+                transform.position = platformTarget + Vector3.up * 0.08f;
+            }
+            else if (onLadder)
+            {
+                string lLName = "ladder";
+                Collider2D col = Physics2D.OverlapArea(pos + new Vector2(-minDistance / 2f, minDistance / 2f), pos + new Vector2(minDistance / 2f, -minDistance / 2f), LayerMask.GetMask(lLName));
+                if (col == null)
+                {
+                    onLadder = false;
+                }
+                else
+                {
+                    transform.position = new Vector2(col.gameObject.transform.position.x, pos.y);
+                    if (orientation == OrientationEnum.left)
+                    {
+                        Turn(OrientationEnum.right);
+                    }
+                    rigid.velocity = Vector3.zero;
+                    rigid.gravityScale = 0f;
+                }
+            }
+            if (!onLadder)
+                Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(currentTarget.x - pos.x)));
+        }
+    }
+
+    /// <summary>
+    /// Функция, которая переносит персонажа в ту позицию, в которой он может нормально функционировать для ведения оптимизированной версии 
+    /// </summary>
+    protected override void GetOptimizedPosition()
+    {
+        if (onLadder)
+        {
+            LadderOff();
+            onLadder = true;
+        }
+        if (platformTarget.exists)
+        {
+            transform.SetParent(null);
+            if (currentTarget == platformTarget)
+            {
+                if (waypoints != null ? (waypoints.Count > 0 ? waypoints[0].cellType == NavCellTypeEnum.movPlatform : false) : false)
+                {
+                    currentTarget = new ETarget(waypoints[0].cellPosition);
+                    transform.position = waypoints[0].cellPosition;
+                }
+                else
+                {
+                    currentTarget.Exists=false;
+                }
+                CurrentPlatform = null;
+            }
+        }
+        StopAvoid();
+        if (!grounded &&!onLadder)
+        {
+            if (waypoints == null)
+            {
+                RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, navMap.mapSize.magnitude, LayerMask.GetMask(gLName));
+                if (!hit)
+                {
+                    Death();
+                }
+                else
+                {
+                    transform.position = hit.point + Vector2.up * 0.02f;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Процесс оптимизированного прохождения пути. Заключается в том, что персонаж, зная свой маршрут, появляется в его различиных позициях, не используя 
+    /// </summary>
+    /// <returns></returns>
+    protected override IEnumerator PathPassOptProcess()
+    {
+        followOptPath = true;
+        if (waypoints == null && !currentTarget.exists)
+        {
+            if (Vector2.SqrMagnitude((Vector2)transform.position - beginPosition) < minCellSqrMagnitude)
+                BecomeCalm();
+            else
+            {
+                GoHome();
+                if (waypoints == null)
+                {
+                    //Если не получается добраться до начальной позиции, то считаем, что текущая позиция становится начальной
+                    beginPosition = transform.position;
+                    beginOrientation = orientation;
+                    BecomeCalm();
+                    followOptPath = false;
+                }
+                else
+                    StartCoroutine("PathPassOptProcess");
+            }
+        }
+        else
+        {
+            while ((waypoints != null ? waypoints.Count > 0 : false) || currentTarget.exists)
+            {
+                if (!currentTarget.exists)
+                    currentTarget = new ETarget(waypoints[0].cellPosition);
+
+                Vector2 pos = transform.position;
+                Vector2 targetPos = currentTarget;
+
+                if (Vector2.SqrMagnitude(pos - targetPos) <= minCellSqrMagnitude)
+                {
+                    transform.position = targetPos;
+                    currentTarget.Exists = false;
+                    pos = transform.position;
+                    if (waypoints != null ? waypoints.Count > 0 : false)
+                    {
+                        NavigationCell currentCell = waypoints[0];
+                        waypoints.RemoveAt(0);
+                        if (waypoints.Count <= 0)
+                            break;
+                        NavigationCell nextCell = waypoints[0];
+                        currentTarget = new ETarget(nextCell.cellPosition);
+
+                        NeighborCellStruct neighborConnection = currentCell.GetNeighbor(nextCell.groupNumb, nextCell.cellNumb);
+                        int timeCoof = 1;
+                        if (currentCell.cellType == NavCellTypeEnum.ladder && (currentCell.id != nextCell.id))
+                        {
+                            onLadder = false;
+                        }
+                        if (nextCell.cellType == NavCellTypeEnum.movPlatform)
+                        {
+                            while (nextCell.cellType==NavCellTypeEnum.movPlatform && waypoints.Count>0)
+                            {
+                                nextCell = waypoints[0];
+                                waypoints.RemoveAt(0);
+                                timeCoof+=Mathf.FloorToInt(Mathf.Abs(Vector2.Distance(currentCell.cellPosition,nextCell.cellPosition))/optSpeed);
+                            }
+                            if (timeCoof > 1)
+                            {
+                                   currentTarget.Exists = false;
+                            }
+                        }
+                        else if (!onLadder ?
+                            currentCell.cellType == NavCellTypeEnum.ladder && nextCell.cellType == NavCellTypeEnum.ladder && Mathf.Approximately(nextCell.cellPosition.x - currentCell.cellPosition.x, 0f) : false)
+                        {
+                            onLadder = true;
+                        }
+               
+                        if (neighborConnection.groupNumb != -1 || timeCoof>1)
+                        {
+                            transform.position = nextCell.cellPosition;
+                            yield return new WaitForSeconds(optTimeStep*timeCoof);
+                            continue;
+                        }
+                    }
+                }
+                if (currentTarget.exists)
+                {
+                    targetPos = currentTarget;
+                    Vector2 direction = targetPos - pos;
+                    transform.position = pos + direction.normalized * Mathf.Clamp(speed, 0f, direction.magnitude);
+                }
+                yield return new WaitForSeconds(optTimeStep);
+            }
+            waypoints = null;
+            currentTarget.Exists = false;
+            followOptPath = false;
+        }
     }
 
     #endregion //optimization

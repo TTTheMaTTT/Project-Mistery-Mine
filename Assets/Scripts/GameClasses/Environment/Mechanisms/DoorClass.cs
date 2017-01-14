@@ -69,7 +69,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
     /// </summary>
     public virtual void Interact()
     {
-        HeroController player = SpecialFunctions.player.GetComponent<HeroController>();
+        HeroController player = SpecialFunctions.Player.GetComponent<HeroController>();
         if (keyID == string.Empty)
             Open();
         else if (player.Bag.Find(x => x.itemName == keyID))

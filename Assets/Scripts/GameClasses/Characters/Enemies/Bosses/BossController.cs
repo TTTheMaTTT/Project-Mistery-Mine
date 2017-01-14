@@ -38,18 +38,36 @@ public class BossController : AIController
         SpecialFunctions.gameUI.SetInactiveBossPanel();
     }
 
+    /// <summary>
+    /// Перейти в агрессивное состояние
+    /// </summary>
     protected override void BecomeAgressive()
     {
         base.BecomeAgressive();
         ConnectToUI();
     }
 
+    /// <summary>
+    /// Успокоиться
+    /// </summary>
     protected override void BecomeCalm()
     {
         base.BecomeCalm();
         DisconnectFromUI();
     }
 
+    /// <summary>
+    /// Перейти в состояние патрулирования
+    /// </summary>
+    protected override void BecomePatrolling()
+    {
+        base.BecomePatrolling();
+        DisconnectFromUI();
+    }
+
+    /// <summary>
+    /// Смерть персонажа
+    /// </summary>
     protected override void Death()
     {
         DisconnectFromUI();

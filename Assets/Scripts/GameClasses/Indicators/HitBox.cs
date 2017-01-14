@@ -17,6 +17,7 @@ public class HitBox : MonoBehaviour
     #region fields
 
     protected BoxCollider2D col;//Область удара
+    protected BoxCollider2D Col { get { if (col == null); col = GetComponent<BoxCollider2D>(); return col; } }
     private List<string> enemies;//По каким тегам искать врагов?
 
     protected List<GameObject> list=new List<GameObject>();//Список всех атакованных противников. (чтобы один удар не отнимал hp дважды)
@@ -44,6 +45,7 @@ public class HitBox : MonoBehaviour
     public void Awake()
     {
         col = GetComponent<BoxCollider2D>();
+        col.enabled = activated;
     }
 
     /// <summary>
@@ -60,6 +62,7 @@ public class HitBox : MonoBehaviour
         StopAllCoroutines();
         activated = false;
         list.Clear();
+        Col.enabled = false;
     }
 
     /// <summary>
@@ -69,6 +72,7 @@ public class HitBox : MonoBehaviour
     {
         activated = true;
         hitData = _hitData;
+        Col.enabled = true;
         if (!immobile)
             transform.localPosition = hitData.hitPosition;
         col.size = hitData.hitSize;
@@ -87,6 +91,7 @@ public class HitBox : MonoBehaviour
     public void SetHitBox(float _damage, float _actTime, float _hitForce)
     {
         activated = true;
+        Col.enabled = true;
         hitData = new HitClass(_damage,_actTime, _hitForce);
         if (hitData.actTime != -1f)
         {
@@ -103,6 +108,7 @@ public class HitBox : MonoBehaviour
         yield return new WaitForSeconds(hitTime);
         activated = false;
         list.Clear();
+        col.enabled = false;
     }
 
     /// <summary>

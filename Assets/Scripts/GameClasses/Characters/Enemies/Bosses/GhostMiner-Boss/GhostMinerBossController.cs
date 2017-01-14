@@ -26,6 +26,7 @@ public class GhostMinerBossController : BossController
     [SerializeField]protected GameObject drop;//что скидывается с босса после смерти
     protected PolygonCollider2D col;//Коллайдер персонажа
     protected WallChecker wallCheck;
+    protected HitBox selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
 
     #endregion //fields
 
@@ -58,8 +59,6 @@ public class GhostMinerBossController : BossController
     protected override void FixedUpdate()
     {
         base.FixedUpdate();
-
-        Analyse();
         Animate(new AnimationEventArgs("groundMove"));
     }
 
@@ -67,8 +66,17 @@ public class GhostMinerBossController : BossController
     {
         base.Initialize();
         col = GetComponent<PolygonCollider2D>();
-        Transform indicators = transform.FindChild("Indicators");
-        wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
+        if (indicators != null)
+        {
+            wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
+            selfHitBox = transform.FindChild("SelfHitBox").GetComponent<HitBox>();
+            if (selfHitBox != null)
+            {
+                selfHitBox.SetEnemies(enemies);
+                selfHitBox.SetHitBox(damage, -1f, 0f);
+                //selfHitBox.Immobile = true;//На всякий случай
+            }
+        }
     }
 
     /// <summary>
@@ -100,9 +108,9 @@ public class GhostMinerBossController : BossController
     protected override void Analyse()
     {
         base.Analyse();
-        if (behaviour!=BehaviourEnum.agressive)
+        if (behavior!=BehaviorEnum.agressive)
         {
-            if (Vector3.Distance(SpecialFunctions.player.transform.position, transform.position) <= sightRadius)
+            if (Vector3.Distance(SpecialFunctions.Player.transform.position, transform.position) <= sightRadius)
                 BecomeAgressive();
         }
 
@@ -110,7 +118,7 @@ public class GhostMinerBossController : BossController
         {
             while (health <=divingHealth)
                 divingHealth -= divingHealthFold;
-            if (behaviour==BehaviourEnum.agressive && !diving)
+            if (behavior==BehaviorEnum.agressive && !diving)
             {
                 SetDiving(true);
             }
@@ -170,7 +178,7 @@ public class GhostMinerBossController : BossController
         Animate(new AnimationEventArgs("attack", crit ? "CritAttack": "Attack", 0));
         employment = Mathf.Clamp(employment - 8, 0, maxEmployment);
         yield return new WaitForSeconds(crit ? preCritAttackTime : preAttackTime);
-        Vector3 playerPosition = SpecialFunctions.player.transform.position;
+        Vector3 playerPosition = SpecialFunctions.Player.transform.position;
 
         Vector3 direction = (playerPosition - transform.position).x * (int)orientation >= 0f? (playerPosition - (transform.position + 
                                                                             new Vector3(sightOffsetX * (int)orientation, sightOffsetY, 0f))).normalized: (int)orientation*Vector3.right;
@@ -221,6 +229,7 @@ public class GhostMinerBossController : BossController
     {
         GameObject _drop = Instantiate(drop, transform.position, transform.rotation) as GameObject;
         base.Death();
+
     }
 
     #region behaviourActions
@@ -228,7 +237,7 @@ public class GhostMinerBossController : BossController
     /// <summary>
     /// Агрессивное поведение
     /// </summary>
-    protected override void AgressiveBehaviour()
+    protected override void AgressiveBehavior()
     {
         Vector3 targetPosition = currentTarget.transform.position;
         if (!diving)

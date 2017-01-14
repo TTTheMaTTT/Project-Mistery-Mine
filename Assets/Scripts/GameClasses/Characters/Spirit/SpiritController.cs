@@ -16,7 +16,7 @@ public class SpiritController : CharacterController
     protected override void Initialize()
     {
         base.Initialize();
-        hero = SpecialFunctions.player.GetComponent<HeroController>();
+        hero = SpecialFunctions.Player.GetComponent<HeroController>();
         transform.SetParent(hero.transform);
         transform.localPosition = Vector3.zero;
 

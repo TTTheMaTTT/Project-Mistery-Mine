@@ -16,7 +16,7 @@ public enum GroundStateEnum {grounded = 0, crouching = 1, inAir=2 }
 /// <summary>
 /// Модель поведения ИИ
 /// </summary>
-public enum BehaviourEnum {calm=0, agressive=1, patrol=2 }
+public enum BehaviorEnum {calm=0, agressive=1, patrol=2 }
 
 /// <summary>
 /// Режим перемещения камеры

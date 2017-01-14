@@ -136,7 +136,6 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Ghost\GhostController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\GroundMoveVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\MinerGhost\HumanoidController.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\MinerGhost\MinerGhostController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\SpiderController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroVisual.cs" />
@@ -166,7 +165,8 @@
     <Compile Include="Assets\Scripts\GameClasses\Environment\MushroomScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\WaterDrops\WaterdropScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\WaterDrops\WaterdropSpawner.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Indicators\AreaTrigger.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\AreaTrigger\AreaTrigger.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\AreaTrigger\AreaTriggerSearcher.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Hearing.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\HitBox.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Interactor.cs" />

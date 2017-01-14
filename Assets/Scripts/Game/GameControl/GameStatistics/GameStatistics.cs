@@ -92,6 +92,9 @@ public class GameStatistics : MonoBehaviour, IHaveStory
         foreach (ItemCollection _collection in itemBase.collections)
             itemCollections.Add(new ItemCollection(_collection));
 
+        if (navSystem != null)
+            navSystem.InitializeDictionaries();
+
     }
 
 

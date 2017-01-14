@@ -140,3 +140,19 @@ public class StoryEventArgs : EventArgs
     public int Argument { get { return argument; } }
 
 }
+
+/// <summary>
+/// Событийные данные, используемые для событий, связанных со сменой моделей поведения
+/// </summary>
+public class BehaviorEventArgs : EventArgs
+{
+    private BehaviorEnum behaviour;
+
+    public BehaviorEventArgs(BehaviorEnum _behaviour)
+    {
+        behaviour = _behaviour;
+    }
+
+    public BehaviorEnum Behaviour { get { return behaviour; } }
+
+}

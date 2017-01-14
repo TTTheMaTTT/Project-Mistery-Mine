@@ -53,7 +53,7 @@ public class DropClass : MonoBehaviour, IInteractive
     public virtual void OnTriggerEnter2D(Collider2D other)
     {
         if (autoPick && dropped)
-            if (other.gameObject == SpecialFunctions.player)
+            if (other.gameObject == SpecialFunctions.Player)
             {
                 Interact();
             }
@@ -76,7 +76,7 @@ public class DropClass : MonoBehaviour, IInteractive
     {
         if (dropped)
         {
-            SpecialFunctions.player.GetComponent<HeroController>().SetItem(item, false);
+            SpecialFunctions.Player.GetComponent<HeroController>().SetItem(item, false);
             Destroy(gameObject);
             SpecialFunctions.statistics.ConsiderStatistics(this);
         }

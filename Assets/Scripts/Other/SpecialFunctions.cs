@@ -7,7 +7,8 @@ using System.Collections;
 /// </summary>
 public static class SpecialFunctions
 {
-    public static GameObject player { get { return GameObject.FindGameObjectWithTag("player"); } }
+    public static GameObject player = null;
+    public static GameObject Player { get { if (player == null) player = GameObject.FindGameObjectWithTag("player"); return player; } }
 
     public static CameraController camControl { get { return GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); } }
 
@@ -102,8 +103,8 @@ public static class SpecialFunctions
     /// </summary>
     public static void MoveToCheckpoint(CheckpointController checkpoint)
     {
-        Vector3 cPos = checkpoint.transform.position, pPos = player.transform.position;
-        player.transform.position = new Vector3(cPos.x, cPos.y, pPos.z);
+        Vector3 cPos = checkpoint.transform.position, pPos = Player.transform.position;
+        Player.transform.position = new Vector3(cPos.x, cPos.y, pPos.z);
     }
 
 }

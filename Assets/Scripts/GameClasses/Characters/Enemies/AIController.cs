@@ -18,7 +18,9 @@ public class AIController : CharacterController
     protected const float minSpeed = .1f;
 
     protected const string gLName = "ground";//Название слоя земли
-    protected const string cLName = "character";//Название слоя земли
+    protected const string cLName = "hero";//Название слоя персонажа
+
+    protected const float optTimeStep = .75f;//Как часто работает оптимизированная версия персонажа
 
     #endregion //consts
 
@@ -27,6 +29,13 @@ public class AIController : CharacterController
     protected delegate void ActionDelegate();
 
     #endregion //delegates
+
+    #region eventHandlers
+    
+    public EventHandler<BehaviorEventArgs> BehaviorChangeEvent;//Событие о смене модели поведения
+    public EventHandler<HealthEventArgs> healthChangedEvent;
+
+    #endregion //eventHandlers
 
     #region fields
 
@@ -46,12 +55,13 @@ public class AIController : CharacterController
         }
     }
 
-    protected GameObject mainTarget;//Что является целью ИИ
-    protected GameObject currentTarget;//Что является текущей целью ИИ
+    protected ETarget mainTarget=ETarget.zero;//Что является целью ИИ
+    protected ETarget currentTarget=ETarget.zero;//Что является текущей целью ИИ
     protected List<NavigationCell> waypoints;//Маршрут следования
-    protected virtual List<NavigationCell> Waypoints { get { return waypoints; } set { waypoints = value;} }
+    protected virtual List<NavigationCell> Waypoints { get { return waypoints; } set { StopFollowOptPath(); waypoints = value;} }
 
-    protected ActionDelegate behaviourActions;
+    protected ActionDelegate behaviorActions;
+    protected ActionDelegate analyseActions;
 
     protected AreaTrigger areaTrigger;//Триггер области вхождения монстра. Если герой находится в ней, то у монстра включаются все функции
 
@@ -70,8 +80,13 @@ public class AIController : CharacterController
     protected virtual int maxAgressivePathDepth { get { return 20; } }//Насколько сложен может быть путь ИИ, в агрессивном состоянии 
                                                                       //(этот путь используется в тех случаях, когда невозможно настичь героя прямым путём)
 
-    protected BehaviourEnum behaviour = BehaviourEnum.calm;
-    public BehaviourEnum Behaviour { get { return behaviour; } set { behaviour = value; } }
+    protected BehaviorEnum behavior = BehaviorEnum.calm;
+    public BehaviorEnum Behavior { get { return behavior; } set { behavior = value; } }
+
+    protected bool waiting=false;//Находится ли персонаж в тактическом ожидании?
+    public virtual bool Waiting { get { return waiting; } set { waiting = value; } }
+    protected virtual float waitingNearDistance { get { return 1f; } }//Если цель ближе этого расстояния, то в режиме ожидания персонаж будет убегать от неё
+    protected virtual float waitingFarDistance { get { return 1.6f; } }//Если цель дальше этого расстояния, то в режиме ожидания персонаж будет стремиться к ней
 
     [SerializeField]protected float acceleration = 1f;
 
@@ -84,8 +99,8 @@ public class AIController : CharacterController
     protected float jumpForce = 60f;//Сила, с которой паук совершает прыжок
     protected bool jumping = false;
     protected bool avoid = false;//Обходим ли препятствие в данный момент?
+    protected float optSpeed;//Скорость оптимизированной версии персонажа
 
-    protected Vector2 waypoint;//Пункт назначения, к которому стремится ИИ
     protected EVector3 prevTargetPosition = new EVector3(Vector3.zero);//Предыдущее местоположение цели
     protected EVector3 prevPosition = EVector3.zero;//Собственное предыдущее местоположение
 
@@ -94,38 +109,65 @@ public class AIController : CharacterController
 
     protected bool dead = false;
 
-    protected bool canStayOnPlatform = true;//Если true, то персонаж может использовать движущуюся платформу
-    public bool CanStayOnPlatform { get { return canStayOnPlatform; } }
-
     protected Vector2 beginPosition;//С какой точки персонаж начинает игру
     protected OrientationEnum beginOrientation;//С какой ориентацией персонаж начинает игру
+
+    protected bool optimized = false;//Находится ли персонаж в своей оптимизированной версии?
+    protected bool Optimized { get { return optimized; } set { optimized = value; if (optimized) analyseActions = AnalyseOpt; else analyseActions = Analyse; } }
+    protected bool followOptPath = false;//Следует ли персонаж в оптимизированной версии маршруту?
 
     #endregion //parametres
 
     protected virtual void FixedUpdate()
     {
-        behaviourActions.Invoke();
+        behaviorActions.Invoke();
+    }
+
+    protected virtual void Update()
+    {
+        analyseActions.Invoke();
     }
 
     protected override void Initialize()
     {
         base.Initialize();
-        BecomeCalm();
+        analyseActions = Analyse;
         beginPosition = transform.position;
         beginOrientation = orientation;
-        Transform indicators = transform.FindChild("Indicators");
+        indicators = transform.FindChild("Indicators");
         Transform areaTransform = indicators.FindChild("AreaTrigger");
-        if (areaTransform != null)
+        if (areaTransform != null? areaTransform.gameObject.activeSelf:false)
             areaTrigger = areaTransform.GetComponent<AreaTrigger>();
         if (areaTrigger != null)
         {
+            areaTrigger.TriggerHolder = gameObject;
+            areaTrigger.triggerFunctionIn += ChangeBehaviorToActive;
+            areaTrigger.triggerFunctionOut += ChangeBehaviorToOptimized;
+            areaTrigger.triggerFunctionIn += EnableColliders;
+            areaTrigger.triggerFunctionOut += DisableColliders;
             if (hitBox != null)
             {
                 areaTrigger.triggerFunctionIn += EnableHitBox;
                 areaTrigger.triggerFunctionOut += DisableHitBox;
             }
+            if (rigid != null)
+            {
+                areaTrigger.triggerFunctionIn += EnableRigidbody;
+                areaTrigger.triggerFunctionOut += DisableRigidbody;
+            }
+            if (indicators != null)
+            {
+                areaTrigger.triggerFunctionIn += EnableIndicators;
+                areaTrigger.triggerFunctionOut += DisableIndicators;
+            }
+            if (anim != null)
+            {
+                areaTrigger.triggerFunctionIn += EnableVisual;
+                areaTrigger.triggerFunctionOut += DisableVisual;
+            }
         }
         GetMap();
+        optSpeed = speed * optTimeStep;
     }
 
     /// <summary>
@@ -136,16 +178,17 @@ public class AIController : CharacterController
         avoid = true;
         EVector3 _prevPos = prevPosition;
         yield return new WaitForSeconds(avoidTime);
-        if (currentTarget != null && currentTarget != mainTarget && (transform.position - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
+        Vector3 pos = transform.position; 
+        if (currentTarget.exists && (currentTarget!= mainTarget) && (pos - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
         {
-            transform.position += (currentTarget.transform.position - transform.position).normalized * navCellSize;
+            transform.position += (currentTarget - transform.position).normalized * navCellSize;
         } 
         avoid = false;
     }
 
     protected virtual void StopAvoid()
     {
-        StopCoroutine(AvoidProcess());
+        StopCoroutine("AvoidProcess");
         avoid = false;
     }
 
@@ -157,7 +200,7 @@ public class AIController : CharacterController
     protected virtual IEnumerator ResetStartPositionProcess(Vector2 prevPosition)
     {
         yield return new WaitForSeconds(avoidTime);
-        if (Vector2.SqrMagnitude(prevPosition - (Vector2)transform.position) < minCellSqrMagnitude && behaviour==BehaviourEnum.patrol)
+        if (Vector2.SqrMagnitude(prevPosition - (Vector2)transform.position) < minCellSqrMagnitude && behavior==BehaviorEnum.patrol)
         {
             beginPosition = transform.position;
             beginOrientation = orientation;
@@ -170,8 +213,9 @@ public class AIController : CharacterController
     /// </summary>
     protected virtual void RefreshTargets()
     {
-        if (currentTarget != null && currentTarget != mainTarget)
-            Destroy(currentTarget);
+        currentTarget.Exists = false;
+        StopFollowOptPath();
+        Waiting = false;
     }
 
     /// <summary>
@@ -180,11 +224,16 @@ public class AIController : CharacterController
     protected virtual void BecomeAgressive()
     {
         RefreshTargets();
-        behaviour = BehaviourEnum.agressive;
-        mainTarget = SpecialFunctions.player;
+        behavior = BehaviorEnum.agressive;
+        mainTarget = new ETarget(SpecialFunctions.Player.transform);
         waypoints = null;
         currentTarget = mainTarget;
-        behaviourActions = AgressiveBehaviour;
+        if (optimized)
+            behaviorActions = AgressiveOptBehavior;
+        else 
+            behaviorActions = AgressiveBehavior;
+        StopCoroutine("BecomeCalmProcess");
+        OnChangeBehavior(new BehaviorEventArgs(BehaviorEnum.agressive));
     }
 
     /// <summary>
@@ -193,11 +242,14 @@ public class AIController : CharacterController
     protected virtual void BecomeCalm()
     {
         RefreshTargets();
-        behaviour = BehaviourEnum.calm;
-        mainTarget = null;
-        currentTarget = null;
+        behavior = BehaviorEnum.calm;
+        mainTarget.Exists=false;
         waypoints = null;
-        behaviourActions = CalmBehaviour;
+        if (optimized)
+            behaviorActions = CalmOptBehavior;
+        else
+            behaviorActions = CalmBehavior;
+        OnChangeBehavior(new BehaviorEventArgs(BehaviorEnum.calm));
     }
 
     /// <summary>
@@ -206,10 +258,13 @@ public class AIController : CharacterController
     protected virtual void BecomePatrolling()
     {
         RefreshTargets();
-        behaviour = BehaviourEnum.patrol;
-        mainTarget = null;
-        currentTarget = null;
-        behaviourActions = PatrolBehaviour;
+        behavior = BehaviorEnum.patrol;
+        mainTarget.Exists=false;
+        if (optimized)
+            behaviorActions = PatrolOptBehavior;
+        else
+            behaviorActions = PatrolBehavior;
+        OnChangeBehavior(new BehaviorEventArgs(BehaviorEnum.patrol));
     }
 
     /// <summary>
@@ -222,7 +277,7 @@ public class AIController : CharacterController
         yield return new WaitForSeconds(beCalmTime);
         if (Vector2.SqrMagnitude((Vector2)transform.position - beginPosition) > minDistance * minDistance)
             GoHome();
-        else if (behaviour != BehaviourEnum.calm)
+        else if (behavior != BehaviorEnum.calm)
             BecomeCalm();
     }
 
@@ -246,6 +301,10 @@ public class AIController : CharacterController
     protected virtual void GoHome()
     {
         GoToThePoint(beginPosition);
+        if (behavior == BehaviorEnum.agressive)
+        {
+            BecomePatrolling();
+        }
     }
 
     /// <summary>
@@ -267,9 +326,11 @@ public class AIController : CharacterController
     public override void TakeDamage(float damage)
     {
         base.TakeDamage(damage);
+        OnHealthChanged(new HealthEventArgs(health));
         StopMoving();
         StartCoroutine(Microstun());
-        BecomeAgressive();
+        if (behavior!=BehaviorEnum.agressive)
+            BecomeAgressive();
     }
 
     /// <summary>
@@ -294,31 +355,31 @@ public class AIController : CharacterController
         immobile = false;
     }
 
-    #region behaviourActions
+    #region behaviorActions
 
     /// <summary>
     /// Пустая функция, которая используется, чтобы показать, что персонаж ничего не совершает
     /// </summary>
-    protected void NullBehaviour()
+    protected void NullBehavior()
     {
     }
 
     /// <summary>
     /// Функция, реализующая спокойное состояние ИИ
     /// </summary>
-    protected virtual void CalmBehaviour()
+    protected virtual void CalmBehavior()
     {
     }
 
     //Функция, реализующая агрессивное состояние ИИ
-    protected virtual void AgressiveBehaviour()
+    protected virtual void AgressiveBehavior()
     {
     }
 
     /// <summary>
     /// Функция, реализующая состояние ИИ, при котором то перемещается между текущими точками следования
     /// </summary>
-    protected virtual void PatrolBehaviour()
+    protected virtual void PatrolBehavior()
     {
     }
 
@@ -341,7 +402,19 @@ public class AIController : CharacterController
         prevTargetPosition = new EVector3(endPoint, true);
 
         int depthOrder = 0, currentDepthCount = 1, nextDepthCount = 0;
-        navMap.ClearMap();
+        //navMap.ClearMap();
+        List<NavigationGroup> clearedGroups = new List<NavigationGroup>();//Список "очищенных групп" (со стёртой информации о посещённости ячеек)
+        List<NavigationGroup> cellGroups = navMap.cellGroups;
+        NavigationGroup clearedGroup = cellGroups[beginCell.groupNumb];
+        clearedGroup.ClearCells();
+        clearedGroups.Add(clearedGroup);
+        clearedGroup = cellGroups[endCell.groupNumb];
+        if (!clearedGroups.Contains(clearedGroup))
+        {
+            clearedGroup.ClearCells();
+            clearedGroups.Add(clearedGroup);
+        }
+
         Queue<NavigationCell> cellsQueue = new Queue<NavigationCell>();
         cellsQueue.Enqueue(beginCell);
         beginCell.visited = true;
@@ -353,8 +426,19 @@ public class AIController : CharacterController
             List<NavigationCell> neighbourCells = currentCell.neighbors.ConvertAll<NavigationCell>(x => navMap.GetCell(x.groupNumb, x.cellNumb));
             foreach (NavigationCell cell in neighbourCells)
             {
+                if (cell.groupNumb != currentCell.groupNumb)
+                {
+                    clearedGroup = cellGroups[cell.groupNumb];
+                    if (!clearedGroups.Contains(clearedGroup))
+                    {
+                        clearedGroup.ClearCells();
+                        clearedGroups.Add(clearedGroup);
+                    }
+                }
+
                 if (cell != null ? !cell.visited : false)
                 {
+
                     cell.visited = true;
                     cellsQueue.Enqueue(cell);
                     cell.fromCell = currentCell;
@@ -424,7 +508,7 @@ public class AIController : CharacterController
         return _path;
     }
 
-    #endregion //behaviourActions
+    #endregion //behaviorActions
 
     /// <summary>
     /// Возвращает тот тип навигацинной карты, которой пользуется данный бот
@@ -440,7 +524,7 @@ public class AIController : CharacterController
     protected virtual void GetMap()
     {
         GameStatistics statistics = SpecialFunctions.statistics;
-        if (statistics == null)
+        if (statistics == null? true: statistics.navSystem== null)
             navMap = null;
         else
         {
@@ -456,13 +540,13 @@ public class AIController : CharacterController
     /// </summary>
     protected virtual void AreaTriggerExitChangeBehavior()
     {
-        if (behaviour == BehaviourEnum.agressive)
+        if (behavior == BehaviorEnum.agressive)
         {
-            GoToThePoint(mainTarget.transform.position);
-            if (behaviour == BehaviourEnum.agressive)
+            GoToThePoint(mainTarget);
+            if (behavior == BehaviorEnum.agressive)
                 GoHome();
             else
-                StartCoroutine(BecomeCalmProcess());
+                StartCoroutine("BecomeCalmProcess");
         }
     }
 
@@ -483,16 +567,98 @@ public class AIController : CharacterController
     }
 
     /// <summary>
-    /// Включить слух
+    /// Включить собственный хитбокс
     /// </summary>
-    protected virtual void EnableHearing()
-    { }
+    protected virtual void EnableSelfHitBox()
+    {
+    }
 
     /// <summary>
-    /// Выключить слух
+    /// Выключить собственный хитбокс
     /// </summary>
-    protected virtual void DisableHearing()
-    { }
+    protected virtual void DisableSelfHitBox()
+    {
+    }
+
+    /// <summary>
+    /// Включить риджидбоди
+    /// </summary>
+    protected virtual void EnableRigidbody()
+    {
+        rigid.isKinematic = false;
+    }
+
+    /// <summary>
+    /// Выключить риджидбоди
+    /// </summary>
+    protected virtual void DisableRigidbody()
+    {
+        rigid.isKinematic = true;
+    }
+
+    /// <summary>
+    /// Включить все коллайдеры в персонаже
+    /// </summary>
+    protected virtual void EnableColliders()
+    {
+        Collider2D[] cols = GetComponents<Collider2D>();
+        foreach (Collider2D col in cols)
+            col.enabled = true;
+    }
+
+    /// <summary>
+    /// Выключить все коллайдеры в персонаже
+    /// </summary>
+    protected virtual void DisableColliders()
+    {
+        Collider2D[] cols = GetComponents<Collider2D>();
+        foreach (Collider2D col in cols)
+            col.enabled = false;
+    }
+
+    /// <summary>
+    /// Включить визуальное отображение персонажа
+    /// </summary>
+    protected virtual void EnableVisual()
+    {
+        anim.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// Включить визуальное отображение персонажа
+    /// </summary>
+    protected virtual void DisableVisual()
+    {
+        anim.gameObject.SetActive(false);
+    }
+
+    /// <summary>
+    /// Включить индикаторы
+    /// </summary>
+    protected virtual void EnableIndicators()
+    {
+        for (int i = 0; i < indicators.childCount; i++)
+        {
+            GameObject indicator = indicators.GetChild(i).gameObject;
+            WallChecker wChecker = null;
+            if ((wChecker = indicator.GetComponent<WallChecker>()) != null)
+                wChecker.ClearList();
+            indicators.GetChild(i).gameObject.SetActive(true);
+        }
+    }
+
+    /// <summary>
+    /// Выключить индикаторы
+    /// </summary>
+    protected virtual void DisableIndicators()
+    {
+        for (int i = 0; i < indicators.childCount; i++)
+        {
+            GameObject indicator = indicators.GetChild(i).gameObject;
+            if (indicator.GetComponent<AreaTrigger>() == null)
+                indicator.SetActive(false);
+        }
+    }
 
     /// <summary>
     /// Функция - пустышка
@@ -500,7 +666,214 @@ public class AIController : CharacterController
     protected virtual void NullAreaFunction()
     { }
 
+    /// <summary>
+    /// Функция реализующая анализ окружающей персонажа обстановки, когда тот находится в оптимизированном состоянии
+    /// </summary>
+    protected virtual void AnalyseOpt()
+    {
+        if (!followOptPath)
+            StartCoroutine("PathPassOptProcess");
+    }
+
+    /// <summary>
+    /// Функция, реализующая спокойное состояние ИИ (оптимизированная версия)
+    /// </summary>
+    protected virtual void CalmOptBehavior()
+    {
+    }
+
+    //Функция, реализующая агрессивное состояние ИИ (оптимизированная версия)
+    protected virtual void AgressiveOptBehavior()
+    {
+    }
+
+    /// <summary>
+    /// Функция, реализующая состояние ИИ, при котором то перемещается между текущими точками следования (оптимизированная версия)
+    /// </summary>
+    protected virtual void PatrolOptBehavior()
+    {
+    }
+
+    /// <summary>
+    /// Сменить оптимизированную версию на активную
+    /// </summary>
+    protected virtual void ChangeBehaviorToActive()
+    {
+        Optimized = false;
+        StopFollowOptPath();
+        switch (behavior)
+        {
+            case BehaviorEnum.calm:
+                {
+                    behaviorActions = CalmBehavior;
+                    break;
+                }
+            case BehaviorEnum.agressive:
+                {
+                    behaviorActions = AgressiveBehavior;
+                    break;
+                }
+            case BehaviorEnum.patrol:
+                {
+                    behaviorActions = PatrolBehavior;
+                    break;
+                }
+            default:
+                break;
+        }
+        RestoreActivePosition();
+    }
+
+    /// <summary>
+    /// Сменить оптимизированную версию на активную
+    /// </summary>
+    protected virtual void ChangeBehaviorToOptimized()
+    {
+        GetOptimizedPosition();
+        Optimized = true;
+        switch (behavior)
+        {
+            case BehaviorEnum.calm:
+                {
+                    behaviorActions = CalmOptBehavior;
+                    break;
+                }
+            case BehaviorEnum.agressive:
+                {
+                    behaviorActions = AgressiveOptBehavior;
+                    break;
+                }
+            case BehaviorEnum.patrol:
+                {
+                    behaviorActions = PatrolOptBehavior;
+                    break;
+                }
+            default:
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Функция, которая восстанавливает положение и состояние персонажа, пользуясь данными, полученными в оптимизированном режиме
+    /// </summary>
+    protected virtual void RestoreActivePosition()
+    {
+    }
+
+    /// <summary>
+    /// Функция, которая переносит персонажа в ту позицию, в которой он может нормально функционировать для ведения оптимизированной версии 
+    /// </summary>
+    protected virtual void GetOptimizedPosition()
+    {
+    }
+
+    /// <summary>
+    /// Процесс оптимизированного прохождения пути. Заключается в том, что персонаж, зная свой маршрут, появляется в его различиных позициях, не используя 
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IEnumerator PathPassOptProcess()
+    {
+        followOptPath = true;
+        if (waypoints == null && !currentTarget.exists)
+        {
+            if (Vector2.SqrMagnitude((Vector2)transform.position - beginPosition) < minCellSqrMagnitude)
+                BecomeCalm();
+            else
+            {
+                GoHome();
+                if (waypoints == null)
+                {
+                    //Если не получается добраться до начальной позиции, то считаем, что текущая позиция становится начальной
+                    beginPosition = transform.position;
+                    beginOrientation = orientation;
+                    BecomeCalm();
+                    followOptPath = false;
+                }
+                else
+                    StartCoroutine("PathPassOptProcess");
+            }
+        }
+        else
+        {
+            while ((waypoints != null ? waypoints.Count > 0 : false) || currentTarget.exists)
+            {
+                if (!currentTarget.exists)
+                    currentTarget = new ETarget(waypoints[0].cellPosition);
+
+                Vector2 pos = transform.position;
+                Vector2 targetPos = currentTarget;
+
+                if (Vector2.SqrMagnitude(pos - targetPos) <= minCellSqrMagnitude)
+                {
+                    transform.position = targetPos;
+                    pos = transform.position;
+                    currentTarget.Exists = false;
+                    if (waypoints != null ? waypoints.Count > 0 : false)
+                    {
+                        NavigationCell currentCell = waypoints[0];
+                        waypoints.RemoveAt(0);
+                        if (waypoints.Count <= 0)
+                            break;
+                        NavigationCell nextCell = waypoints[0];
+                        currentTarget = new ETarget(nextCell.cellPosition);
+                        if (currentCell.GetNeighbor(nextCell.groupNumb, nextCell.cellNumb).groupNumb != -1)
+                        {
+                            yield return new WaitForSeconds(optTimeStep);
+                            transform.position = nextCell.cellPosition;
+                            continue;
+                        }
+                    }
+                }
+                targetPos = currentTarget;
+                yield return new WaitForSeconds(optTimeStep);
+                Vector2 direction = targetPos - pos;
+                transform.position = pos + direction.normalized * Mathf.Clamp(speed, 0f, direction.magnitude);
+            }
+            waypoints = null;
+            currentTarget.Exists = false;
+            followOptPath = false;
+        }
+    }
+
+    /// <summary>
+    /// Прекратить следование маршруту в оптимизированном режиме
+    /// </summary>
+    protected virtual void StopFollowOptPath()
+    {
+        followOptPath = false;
+        StopCoroutine("PathPassOptProcess");
+    }
+
     #endregion //optimization
+
+    #region events
+
+    /// <summary>
+    /// Вызвать событие, связанное со сменой моели поведения
+    /// </summary>
+    /// <param name="e">Данные события</param>
+    protected virtual void OnChangeBehavior(BehaviorEventArgs e)
+    {
+        EventHandler<BehaviorEventArgs> handler = BehaviorChangeEvent;
+        if (handler != null)
+        {
+            handler(this, e);
+        }
+    }
+
+    /// <summary>
+    /// Событие "уровень здоровья изменился"
+    /// </summary>
+    protected virtual void OnHealthChanged(HealthEventArgs e)
+    {
+        EventHandler<HealthEventArgs> handler = healthChangedEvent;
+        if (handler != null)
+        {
+            handler(this, e);
+        }
+    }
+
+    #endregion //events
 
     #region eventHandlers
 
@@ -510,7 +883,7 @@ public class AIController : CharacterController
     protected virtual void HandleAttackProcess(object sender, HitEventArgs e)
     {
         //Если игрок случайно наткнулся на монстра и получил урон, то паук автоматически становится агрессивным
-        if (behaviour != BehaviourEnum.agressive)
+        if (behavior != BehaviorEnum.agressive)
             BecomeAgressive();
     }
 
@@ -519,7 +892,7 @@ public class AIController : CharacterController
     /// </summary>
     protected virtual void HandleHearingEvent(object sender, EventArgs e)
     {
-        if (behaviour != BehaviourEnum.agressive)
+        if (behavior != BehaviorEnum.agressive)
             BecomeAgressive();
     }
 
@@ -547,22 +920,22 @@ public class AIController : CharacterController
             if (transform.localScale.x * eData.orientation < 0f)
                 Turn((OrientationEnum)eData.orientation);
 
-            string behaviourName = eData.behaviour;
-            switch (behaviourName)
+            string behaviorName = eData.behavior;
+            switch (behaviorName)
             {
                 case "calm":
                     {
-                        behaviour = BehaviourEnum.calm;
+                        behavior = BehaviorEnum.calm;
                         break;
                     }
                 case "agressive":
                     {
-                        behaviour = BehaviourEnum.agressive;
+                        behavior = BehaviorEnum.agressive;
                         break;
                     }
                 case "patrol":
                     {
-                        behaviour = BehaviourEnum.patrol;
+                        behavior = BehaviorEnum.patrol;
                         if (eData.waypoints.Count > 0)
                         {
                             NavigationSystem navSystem = SpecialFunctions.statistics.navSystem;
@@ -578,7 +951,7 @@ public class AIController : CharacterController
                     }
                 default:
                     {
-                        behaviour = BehaviourEnum.calm;
+                        behavior = BehaviorEnum.calm;
                         BecomeCalm();
                         break;
                     }
@@ -589,5 +962,16 @@ public class AIController : CharacterController
     }
 
     #endregion //id
+
+    protected virtual void OnDrawGizmos()
+    {
+#if UNITY_EDITOR
+        if (currentTarget.exists && UnityEditor.Selection.activeObject==gameObject)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawIcon(currentTarget, "target");
+        }
+#endif //UNITY_EDITOR
+    }
 
 }

@@ -81,7 +81,7 @@ public class GameUIScript : MonoBehaviour
             heartImages.Add(panel.GetChild(i).GetComponent<Image>());
         }
 
-        HeroController player = SpecialFunctions.player.GetComponent<HeroController>();
+        HeroController player = SpecialFunctions.Player.GetComponent<HeroController>();
         player.healthChangedEvent += HandleHealthChanges;
 
         weaponImage = transform.FindChild("WeaponPanel").FindChild("WeaponImage").GetComponent<Image>();

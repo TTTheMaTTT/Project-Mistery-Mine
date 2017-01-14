@@ -10,7 +10,12 @@ public class GhostController : AIController
 
     #region fields
 
+    protected HitBox selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
+
     //protected SightFrustum sight;//Зрение персонажа
+
+    protected Hearing hearing;//Слух персонажа
+    protected Collider2D col;
 
     #endregion //fields
 
@@ -19,6 +24,7 @@ public class GhostController : AIController
     protected override float attackTime { get { return .6f; } }
     protected override float preAttackTime { get { return .4f; } }
     protected override float attackDistance { get { return .15f; } }//На каком расстоянии должен стоять паук, чтобы решить атаковать
+    //public override bool Waiting {get {return waiting;} set{waiting = value; if (col != null) col.isTrigger = !value; }}
 
     #endregion //parametres
 
@@ -30,9 +36,13 @@ public class GhostController : AIController
 
     }
 
-    protected virtual void Update()
+    protected override void Update()
     {
-        Analyse();
+        base.Update();
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            GoToThePoint(SpecialFunctions.Player.transform.position);
+        }
     }
 
     /// <summary>
@@ -40,17 +50,77 @@ public class GhostController : AIController
     /// </summary>
     protected override void Initialize()
     {
-        Transform indicators = transform.FindChild("Indicators");
+        if (indicators != null)
+        {
+            hearing = indicators.GetComponentInChildren<Hearing>();
+            if (hearing != null)
+                hearing.hearingEventHandler += HandleHearingEvent;
+        }
         //sight = indicators.GetComponentInChildren<SightFrustum>();
         //sight.sightInEventHandler += HandleSightInEvent;
         //sight.sightOutEventHandler += HandleSightOutEvent;
 
+        col = GetComponent<Collider2D>();
+
         base.Initialize();
+
+        selfHitBox = transform.FindChild("SelfHitBox").GetComponent<HitBox>();
+        if (selfHitBox != null)
+        {
+            selfHitBox.SetEnemies(enemies);
+            selfHitBox.SetHitBox(damage, -1f, 0f);
+            //selfHitBox.Immobile = true;//На всякий случай
+            selfHitBox.AttackEventHandler += HandleAttackProcess;
+        }
+
+        if (areaTrigger != null)
+        {
+            areaTrigger.triggerFunctionOut += AreaTriggerExitChangeBehavior;
+            if (selfHitBox != null)
+            {
+                areaTrigger.triggerFunctionIn += EnableSelfHitBox;
+                areaTrigger.triggerFunctionOut += DisableSelfHitBox;
+            }
+            areaTrigger.InitializeAreaTrigger();
+        }
 
         rigid.gravityScale = 0f;
 
+        BecomeCalm();
     }
 
+    /// <summary>
+    /// Перемещение
+    /// </summary>
+    protected override void Move(OrientationEnum _orientation)
+    {
+        Vector2 targetVelocity = (currentTarget - (Vector2)transform.position).normalized * speed;
+        rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
+
+        if (orientation != _orientation)
+        {
+            Turn(_orientation);
+        }
+    }
+
+    /// <summary>
+    /// Двинуться прочь от цели
+    /// </summary>
+    /// <param name="_orientation">Ориентация персонажа при перемещении</param>
+    protected virtual void MoveAway(OrientationEnum _orientation)
+    {
+        Vector2 targetVelocity = ((Vector2)transform.position - currentTarget).normalized * speed;
+        rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
+
+        if (orientation != _orientation)
+        {
+            Turn(_orientation);
+        }
+    }
+
+    /// <summary>
+    /// Прекратить перемещение
+    /// </summary>
     protected override void StopMoving()
     {
         rigid.velocity = Vector2.zero;
@@ -78,22 +148,31 @@ public class GhostController : AIController
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
+    /// <summary>
+    /// Анализ окружающей обстановки
+    /// </summary>
     protected override void Analyse()
     {
         base.Analyse();
 
-        switch (behaviour)
+        Vector2 pos = transform.position;
+        switch (behavior)
         {
-            case BehaviourEnum.agressive:
+            case BehaviorEnum.agressive:
                 {
-                    Vector2 direction = mainTarget.transform.position - transform.position;
+                    Vector2 direction = mainTarget - pos;
                     RaycastHit2D hit = Physics2D.Raycast(transform.position, direction.normalized, direction.magnitude, LayerMask.GetMask(gLName));
                     if (hit)
-                        GoToThePoint(mainTarget.transform.position);
-
+                    {
+                        if (hit.distance > direction.magnitude / 2f)
+                        {
+                            GoToThePoint(mainTarget);
+                            StartCoroutine("BecomeCalmProcess");
+                        }
+                    }
                     break;
                 }
-            case BehaviourEnum.patrol:
+            case BehaviorEnum.patrol:
                 {
                     Vector2 direction = rigid.velocity.normalized;
                     RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
@@ -108,7 +187,7 @@ public class GhostController : AIController
                     break;
                 }
 
-            case BehaviourEnum.calm:
+            case BehaviorEnum.calm:
                 {
                     Vector2 direction = Vector2.right * (int)orientation;
                     RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
@@ -132,26 +211,13 @@ public class GhostController : AIController
     }
 
     /// <summary>
-    /// Успокоится
-    /// </summary>
-    protected override void BecomeCalm()
-    {
-        base.BecomeCalm();
-        //sight.Rotate(Vector2.right * (int)orientation);
-    }
-
-    /// <summary>
     /// Выдвинуться к целевой позиции
     /// </summary>
     /// <param name="targetPosition">Целевая позиция</param>
     protected override void GoToThePoint(Vector2 targetPosition)
     {
         BecomePatrolling();
-        if (currentTarget == null)
-        {
-            currentTarget = new GameObject("GhostTarget");
-            currentTarget.transform.position = targetPosition;
-        }
+        currentTarget = new ETarget(targetPosition);
     }
 
     #region eventHandlers
@@ -161,7 +227,7 @@ public class GhostController : AIController
     /// </summary>
     protected virtual void HandleSightInEvent(object sender, EventArgs e)
     {
-        if (behaviour != BehaviourEnum.agressive)
+        if (behavior != BehaviorEnum.agressive)
             BecomeAgressive();
     }
 
@@ -170,8 +236,8 @@ public class GhostController : AIController
     /// </summary>
     protected virtual void HandleSightOutEvent(object sender, EventArgs e)
     {
-        if (behaviour == BehaviourEnum.agressive)
-            GoToThePoint(mainTarget.transform.position);//Выдвинуться туда, где в последний раз видел врага
+        if (behavior == BehaviorEnum.agressive)
+            GoToThePoint(mainTarget);//Выдвинуться туда, где в последний раз видел врага
     }
 
     #endregion //eventHandlers
@@ -181,20 +247,35 @@ public class GhostController : AIController
     /// <summary>
     /// Агрессивное поведение
     /// </summary>
-    protected override void AgressiveBehaviour()
+    protected override void AgressiveBehavior()
     {
-        base.AgressiveBehaviour();
-        if (mainTarget != null && employment > 7)
+        if (mainTarget.exists && employment > 7)
         {
-            Vector2 targetPosition = mainTarget.transform.position;
-            if ((Mathf.Abs(targetPosition.x - transform.position.x) > attackDistance) ||
-                (Mathf.Abs(targetPosition.y - transform.position.y) > (attackDistance / 2f)))
+            Vector2 targetPosition = mainTarget;
+            Vector2 pos = transform.position;
+            Vector2 direction = targetPosition - pos;
+            float sqDistance = direction.sqrMagnitude;
+            if (waiting)
             {
-                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
+                if (sqDistance < waitingNearDistance * waitingNearDistance)
+                    MoveAway((OrientationEnum)Mathf.RoundToInt(-Mathf.Sign(direction.x)));
+                else if (sqDistance < waitingFarDistance * waitingFarDistance)
+                    StopMoving();
+                else
+                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(direction.x)));
             }
             else
             {
-                Attack();
+                if ((Mathf.Abs(direction.x) > attackDistance) ||
+                    (Mathf.Abs(direction.y) > (attackDistance / 2f)))
+                {
+                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(direction.x)));
+                }
+                else
+                {
+                    StopMoving();
+                    Attack();
+                }
             }
         }
     }
@@ -202,18 +283,19 @@ public class GhostController : AIController
     /// <summary>
     /// Поведение преследования какой-либо цели
     /// </summary>
-    protected override void PatrolBehaviour()
+    protected override void PatrolBehavior()
     {
-        base.PatrolBehaviour();
+        base.PatrolBehavior();
 
-        Vector3 targetPosition = currentTarget.transform.position;
-        Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
+        Vector2 targetPosition = currentTarget;
+        Vector2 pos = transform.position;
+        Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
         //sight.Rotate(((Vector2)rigid.velocity).normalized);//В режиме патрулирования призрак смотрит в ту сторону, в которую движется
-        if (Vector3.SqrMagnitude(currentTarget.transform.position - transform.position) < minDistance * minDistance)
+        if (Vector3.SqrMagnitude(currentTarget - pos) < minDistance * minDistance)
         {
-            if (Vector2.SqrMagnitude((Vector2)targetPosition - beginPosition) > minDistance * minDistance)
+            StopMoving();
+            if (Vector2.SqrMagnitude(targetPosition - beginPosition) > minDistance * minDistance)
             {
-                DestroyImmediate(currentTarget);
                 GoHome();
             }
             else
@@ -225,5 +307,93 @@ public class GhostController : AIController
     }
 
     #endregion //behaviourActions
+
+    #region optimization
+
+    /// <summary>
+    /// Включить собственный хитбокс
+    /// </summary>
+    protected override void EnableSelfHitBox()
+    {
+        selfHitBox.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// Выключить собственный хитбокс
+    /// </summary>
+    protected override void DisableSelfHitBox()
+    {
+        selfHitBox.gameObject.SetActive(false);
+    }
+
+    /// <summary>
+    /// Функция реализующая анализ окружающей персонажа обстановки, когда тот находится в оптимизированном состоянии
+    /// </summary>
+    protected override void AnalyseOpt()
+    {
+        if (behavior!=BehaviorEnum.calm)
+            if (!followOptPath)
+                StartCoroutine("PathPassOptProcess");
+    }
+
+    /// <summary>
+    /// Процесс оптимизированного прохождения пути. Заключается в том, что персонаж, зная свой маршрут, появляется в его различиных позициях, не используя 
+    /// </summary>
+    /// <returns></returns>
+    protected override IEnumerator PathPassOptProcess()
+    {
+        followOptPath = true;
+        if (!currentTarget.exists)
+        {
+            if (Vector2.SqrMagnitude((Vector2)transform.position - beginPosition) < minCellSqrMagnitude)
+                BecomeCalm();
+            else
+            {
+                GoHome();
+                if (!currentTarget.exists)
+                {
+                    //Если не получается добраться до начальной позиции, то считаем, что текущая позиция становится начальной
+                    beginPosition = transform.position;
+                    beginOrientation = orientation;
+                    BecomeCalm();
+                    followOptPath = false;
+                }
+                else
+                    StartCoroutine("PathPassOptProcess");
+            }
+        }
+        else
+        {
+            while (currentTarget.exists)
+            {
+                Vector2 pos = transform.position;
+                Vector2 targetPos = currentTarget;
+
+                if (Vector2.SqrMagnitude(pos - targetPos) <= minCellSqrMagnitude)
+                {
+                    transform.position = targetPos;
+                    pos = transform.position;
+                    currentTarget.Exists=false;
+                    break;
+                }
+                targetPos = currentTarget;
+                yield return new WaitForSeconds(optTimeStep);
+                Vector2 direction = targetPos - pos;
+                transform.position = pos + direction.normalized * Mathf.Clamp(speed, 0f, direction.magnitude);
+            }
+            followOptPath = false;
+        }
+    }
+
+    /// <summary>
+    /// Функция, которая восстанавливает положение и состояние персонажа, пользуясь данными, полученными в оптимизированном режиме
+    /// </summary>
+    protected override void RestoreActivePosition()
+    {
+        if (currentTarget.exists)
+            Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign((currentTarget - (Vector2)transform.position).x)));
+    }
+
+    #endregion //optimization
 
 }

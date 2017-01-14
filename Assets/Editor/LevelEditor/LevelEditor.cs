@@ -3721,8 +3721,13 @@ public class LevelEditor : EditorWindow
 
         NavigationMap flyMap = navSystem.GetMap(NavMapTypeEnum.fly);
         flyMap.CreateGroups(navMapDownLeft, navMapSize, navGroupSize);
+        flyMap.mapSize = navMapSize;
+        flyMap.mapDownLeft = navMapDownLeft;
+        flyMap.cellSize = navCellSize;
+        flyMap.groupSize = navGroupSize;
 
         NavigationCell[][] newCells = NavigationSystem.GetNewCells(navMapDownLeft, navMapSize, navCellSize);
+
 
         for (int i = 0; i < cellColumnSize; i++)
         {
@@ -3743,7 +3748,7 @@ public class LevelEditor : EditorWindow
                                                 LayerMask.GetMask(groundName));
                 if (a1 || a2 || a3 || a4)
                 {
-                    NavigationGroup currentGroup = flyMap.GetCurrentGroup(currentCell.cellPosition);
+                    NavigationGroup currentGroup = flyMap.GetCurrentGroupInEditor(currentCell.cellPosition);
                     currentGroup.cells.Add(currentCell);
                 }
             }
@@ -3883,6 +3888,10 @@ public class LevelEditor : EditorWindow
 
         NavigationMap crawlMap = navSystem.GetMap(NavMapTypeEnum.crawl);
         crawlMap.CreateGroups(navMapDownLeft, navMapSize, navGroupSize);
+        crawlMap.mapSize = navMapSize;
+        crawlMap.mapDownLeft = navMapDownLeft;
+        crawlMap.cellSize = navCellSize;
+        crawlMap.groupSize = navGroupSize;
 
         GameObject platforms = GameObject.Find("platforms");
         if (platforms != null)
@@ -3965,7 +3974,7 @@ public class LevelEditor : EditorWindow
 
                 if (connectionCount > 1 && connectionCount < 4)
                 {
-                    NavigationGroup currentGroup = crawlMap.GetCurrentGroup(currentCell.cellPosition);
+                    NavigationGroup currentGroup = crawlMap.GetCurrentGroupInEditor(currentCell.cellPosition);
                     currentGroup.cells.Add(currentCell);
                     currentCell.visited = true;
                 }
@@ -4192,6 +4201,10 @@ public class LevelEditor : EditorWindow
 
         NavigationMap usualMap = navSystem.GetMap(NavMapTypeEnum.usual);
         usualMap.CreateGroups(navMapDownLeft, navMapSize, navGroupSize);
+        usualMap.mapSize = navMapSize;
+        usualMap.mapDownLeft = navMapDownLeft;
+        usualMap.cellSize = navCellSize;
+        usualMap.groupSize = navGroupSize;
 
         newCells = NavigationSystem.GetNewCells(navMapDownLeft, navMapSize, navCellSize);
 
@@ -4256,7 +4269,7 @@ public class LevelEditor : EditorWindow
                     connectionCount = 0;
                 if (connectionCount > 1 && !nearGhostPlatform)
                 {
-                    NavigationGroup currentGroup = usualMap.GetCurrentGroup(currentCell.cellPosition);
+                    NavigationGroup currentGroup = usualMap.GetCurrentGroupInEditor(currentCell.cellPosition);
                     currentGroup.cells.Add(currentCell);
                     currentCell.visited = true;
                 }
@@ -4501,29 +4514,14 @@ public class LevelEditor : EditorWindow
                     NavigationCell downCell = newCells[i - 1][j];
                     if (currentCell.cellType == NavCellTypeEnum.ladder && downCell.cellType!=NavCellTypeEnum.ladder)
                     {
-                        bool a1 = Physics2D.OverlapArea(downCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
-                                                        downCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 7f),
-                                LayerMask.GetMask(groundName));
-                        bool a2 = Physics2D.OverlapArea(downCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
-                                                        downCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 7f),
-                                                        LayerMask.GetMask(groundName));
-                        bool a3 = Physics2D.OverlapArea(downCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, -navCellSize.y / 20f * 7f),
-                                                        downCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
-                                                        LayerMask.GetMask(groundName));
-                        bool a4 = Physics2D.OverlapArea(downCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 7f),
-                                                        downCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
-                                                        LayerMask.GetMask(groundName));
-                        if (!a1 && !a2 && a3 && a4)
+                        List<NavigationCell> jumpCells = GetJumpDownCells(newCells, downCell, true);
+                        if (jumpCells != null)
                         {
-                            List<NavigationCell> jumpCells = GetJumpDownCells(newCells, downCell, true);
-                            if (jumpCells != null)
+                            foreach (NavigationCell jumpCell in jumpCells)
                             {
-                                foreach (NavigationCell jumpCell in jumpCells)
+                                if (jumpCell != null ? jumpCell.visited : false)
                                 {
-                                    if (jumpCell != null ? jumpCell.visited : false)
-                                    {
-                                        currentCell.neighbors.Add(new NeighborCellStruct(jumpCell.groupNumb, jumpCell.cellNumb, NavCellTypeEnum.usual));
-                                    }
+                                    currentCell.neighbors.Add(new NeighborCellStruct(jumpCell.groupNumb, jumpCell.cellNumb, NavCellTypeEnum.usual));
                                 }
                             }
                         }
@@ -4887,7 +4885,7 @@ public class LevelEditor : EditorWindow
                     currentCell.cellType = NavCellTypeEnum.movPlatform;
                     currentCell.id = _platform.GetID();
                     //_cells[cellIndexY][cellIndexX] = pCell;
-                    NavigationGroup currentGroup = _map.GetCurrentGroup(currentCell.cellPosition);
+                    NavigationGroup currentGroup = _map.GetCurrentGroupInEditor(currentCell.cellPosition);
                     currentGroup.cells.Add(currentCell);
                 }
 
@@ -4920,10 +4918,10 @@ public class LevelEditor : EditorWindow
 
         //Определим начальную клетку для того, чтобы обязательно замкнуть контур маршрута, если таковой имеется
         Vector2 startPosition = positions[0];
-        NavigationGroup currentGroup = _map.GetCurrentGroup(startPosition);
+        NavigationGroup currentGroup = _map.GetCurrentGroupInEditor(startPosition);
         if (currentGroup == null)
             return;
-        startCell = currentGroup.GetCurrentCell(startPosition);
+        startCell = currentGroup.GetCurrentCellInEditor(startPosition);
         if (startCell == null)
             return;
         prevCell = startCell;
@@ -4936,8 +4934,8 @@ public class LevelEditor : EditorWindow
             float distance = Vector2.SqrMagnitude(positions[i + 1] - startPosition);
             while (Vector2.SqrMagnitude(currentPosition - startPosition) < distance)
             {
-                currentGroup = _map.GetCurrentGroup(currentPosition);
-                currentCell = currentGroup.GetCurrentCell(currentPosition);
+                currentGroup = _map.GetCurrentGroupInEditor(currentPosition);
+                currentCell = currentGroup.GetCurrentCellInEditor(currentPosition);
                 if (currentCell != prevCell)
                 {
                     currentCell.neighbors.Add(new NeighborCellStruct(prevCell.groupNumb, prevCell.cellNumb, NavCellTypeEnum.movPlatform));

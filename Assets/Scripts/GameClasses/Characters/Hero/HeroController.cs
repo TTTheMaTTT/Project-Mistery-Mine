@@ -214,7 +214,7 @@ public class HeroController : CharacterController
     protected override void Initialize()
     {
         base.Initialize();
-        Transform indicators = transform.FindChild("Indicators");
+        indicators = transform.FindChild("Indicators");
         waterCheck = indicators.FindChild("WaterCheck");
         groundCheck = indicators.FindChild("GroundCheck").GetComponent<WallChecker>();
         wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();

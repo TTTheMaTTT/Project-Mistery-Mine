@@ -60,7 +60,7 @@ public class BoomerangScript : MonoBehaviour
         rigid.velocity = (currentTarget - transform.position).normalized * speed;
         rigid.gravityScale = 0f;
         phase = 1;
-        hero = SpecialFunctions.player.GetComponent<HeroController>();
+        hero = SpecialFunctions.Player.GetComponent<HeroController>();
     }
 
     /// <summary>

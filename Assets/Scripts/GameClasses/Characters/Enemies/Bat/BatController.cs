@@ -30,15 +30,15 @@ public class BatController : AIController
     protected override void FixedUpdate()
     {
         base.FixedUpdate();
-        Analyse();
     }
 
-    void Update()
+    protected override void Update()
     {
-        if (Input.GetKeyDown(KeyCode.B))
+        base.Update();
+        if (Input.GetKeyDown(KeyCode.B) && behavior!=BehaviorEnum.agressive)
         {
-            GoToThePoint(SpecialFunctions.player.transform.position);
-        }    
+            GoToThePoint(SpecialFunctions.Player.transform.position);
+        }
     }
 
     /// <summary>
@@ -46,7 +46,7 @@ public class BatController : AIController
     /// </summary>
     protected override void Initialize()
     {
-        Transform indicators = transform.FindChild("Indicators");
+        indicators = transform.FindChild("Indicators");
         hearing = indicators.GetComponentInChildren<Hearing>();
         hearing.hearingEventHandler += HandleHearingEvent;
 
@@ -55,6 +55,14 @@ public class BatController : AIController
         rigid.isKinematic = true;
 
         hitBox.AttackEventHandler += HandleAttackProcess;
+
+        if (areaTrigger != null)
+        {
+            areaTrigger.InitializeAreaTrigger();
+        }
+        
+        BecomeCalm();
+
     }
 
     /// <summary>
@@ -62,7 +70,7 @@ public class BatController : AIController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = (currentTarget.transform.position - transform.position).normalized * speed;
+        Vector2 targetVelocity = (currentTarget - transform.position).normalized * speed;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity,Time.fixedDeltaTime*acceleration);
 
         if (orientation != _orientation)
@@ -71,30 +79,89 @@ public class BatController : AIController
         }
     }
 
+    /// <summary>
+    /// Двинуться прочь от цели
+    /// </summary>
+    /// <param name="_orientation">Ориентация персонажа при перемещении</param>
+    protected virtual void MoveAway(OrientationEnum _orientation)
+    {
+        Vector2 targetVelocity = (transform.position - currentTarget).normalized * speed;
+        rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
+
+        if (orientation != _orientation)
+        {
+            Turn(_orientation);
+        }
+    }
+
+    /// <summary>
+    /// Анализ окружающей персонажа обстановки
+    /// </summary>
     protected override void Analyse()
     {
-        base.Analyse();
-        if (rigid.velocity.magnitude < minSpeed)
+        switch (behavior)
         {
-            float angle = 0f;
-            Vector2 rayDirection;
-            for (int i = 0; i < 8; i++)
-            {
-                rayDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-                if (Physics2D.Raycast(transform.position, rayDirection, batSize, whatIsGround))
+            case BehaviorEnum.agressive:
                 {
-                    rigid.AddForce(-rayDirection * pushBackForce / 2f);
+                    Vector2 pos = transform.position;
+                    if (currentTarget.exists ? Physics2D.Raycast(pos, currentTarget - pos, batSize, whatIsGround) : false)
+                    {
+                        currentTarget = FindPath();
+                    }
+
+                    if (rigid.velocity.magnitude < minSpeed)
+                    {
+                        float angle = 0f;
+                        Vector2 rayDirection;
+                        for (int i = 0; i < 8; i++)
+                        {
+                            rayDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                            if (Physics2D.Raycast(pos, rayDirection, batSize, whatIsGround))
+                            {
+                                rigid.AddForce(-rayDirection * pushBackForce / 2f);
+                                break;
+                            }
+                            angle += Mathf.PI / 4f;
+                        }
+                    }
+
+                    if (currentTarget != mainTarget)
+                    {
+                        Vector2 direction = (mainTarget - pos).normalized;
+                        RaycastHit2D hit = Physics2D.Raycast(pos + direction * batSize, direction, sightRadius);
+                        if (hit)
+                            if (hit.collider.transform == mainTarget.transform)
+                                currentTarget = mainTarget;
+                    }
+
+                    //Если текущая цель убежала достаточно далеко, то мышь просто возвращается домой
+                    if (Vector2.SqrMagnitude(mainTarget - transform.position) > r2 * r2)
+                        GoHome();
                     break;
                 }
-                angle += Mathf.PI / 4f;
-            }
-        }
 
-        if (behaviour == BehaviourEnum.agressive && mainTarget != null)
-        {
-            //Если текущая цель убежала достаточно далеко, то мышь просто возвращается домой
-            if (Vector2.SqrMagnitude(mainTarget.transform.position - transform.position) > r2 * r2)
-                GoHome();
+            case BehaviorEnum.patrol:
+                {
+                    if (rigid.velocity.magnitude < minSpeed)
+                    {
+                        float angle = 0f;
+                        Vector2 rayDirection;
+                        for (int i = 0; i < 8; i++)
+                        {
+                            rayDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                            if (Physics2D.Raycast(transform.position, rayDirection, batSize, whatIsGround))
+                            {
+                                rigid.AddForce(-rayDirection * pushBackForce / 2f);
+                                break;
+                            }
+                            angle += Mathf.PI / 4f;
+                        }
+                    }
+                    break;
+                }
+
+            default:
+                break;
         }
 
     }
@@ -106,7 +173,8 @@ public class BatController : AIController
     {
         base.BecomeAgressive();
         hitBox.SetHitBox(new HitClass(damage,-1f,attackSize,attackPosition,0f));
-        rigid.isKinematic = false;
+        if (!optimized)
+            rigid.isKinematic = false;
     }
 
     /// <summary>
@@ -124,6 +192,8 @@ public class BatController : AIController
     {
         base.BecomePatrolling();
         hearing.radius = r3;
+        if (!optimized)
+            rigid.isKinematic = false;
     }
 
     #region behaviourActions
@@ -131,7 +201,7 @@ public class BatController : AIController
     /// <summary>
     /// Функция, реализующая спокойное состояние ИИ
     /// </summary>
-    protected override void CalmBehaviour()
+    protected override void CalmBehavior()
     {
         if (!immobile)
         {
@@ -147,34 +217,39 @@ public class BatController : AIController
     }
 
     //Функция, реализующая агрессивное состояние ИИ
-    protected override void AgressiveBehaviour()
+    protected override void AgressiveBehavior()
     {
         if (!immobile)
         {
-            if (mainTarget != null)
+            if (mainTarget.exists)
             {
-                if (currentTarget != null)
+                if (currentTarget.exists)
                 {
-                    Vector3 targetPosition = currentTarget.transform.position;
-                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
-                    if (currentTarget != mainTarget && Vector3.Distance(currentTarget.transform.position, transform.position) < batSize)
+                    Vector2 targetPosition = currentTarget;
+                    Vector2 pos = transform.position;
+                    if (currentTarget == mainTarget)
                     {
-                        Destroy(currentTarget);
-                        currentTarget = FindPath();
+                        if (!waiting)
+                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+                        else
+                        {
+                            float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
+                            if (sqDistance < waitingNearDistance * waitingNearDistance)
+                                MoveAway((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(pos.x - targetPosition.x)));
+                            else if (sqDistance < waitingFarDistance * waitingFarDistance)
+                                StopMoving();
+                            else
+                                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+                        }
                     }
-
-                }
-                if (currentTarget != mainTarget)
-                {
-                    Vector2 vect = mainTarget.transform.position - transform.position;
-                    RaycastHit2D hit = Physics2D.Raycast(transform.position + new Vector3(vect.x, vect.y, 0f).normalized * batSize, vect, sightRadius);
-                    if (hit)
-                        if (hit.collider.gameObject == mainTarget)
-                            currentTarget = mainTarget;
-                }
-                if (Physics2D.Raycast(transform.position, currentTarget.transform.position - transform.position, batSize, whatIsGround))
-                {
-                    currentTarget = FindPath();
+                    else
+                    {
+                        Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+                        if (currentTarget != mainTarget && Vector2.SqrMagnitude(targetPosition - pos) < batSize * batSize)
+                        {
+                            currentTarget = FindPath();
+                        }
+                    }
                 }
             }
             Animate(new AnimationEventArgs("fly"));
@@ -184,25 +259,23 @@ public class BatController : AIController
     /// <summary>
     /// Функция, реализующая состояние ИИ, при котором тот перемещается между текущими точками следования
     /// </summary>
-    protected override void PatrolBehaviour()
+    protected override void PatrolBehavior()
     {
 
         if (waypoints != null ? waypoints.Count > 0 : false)
         {
-            if (currentTarget == null)
-            {
-                currentTarget = new GameObject("BatTarget");
-                currentTarget.transform.position = waypoints[0].cellPosition;
-            }
+            if (!currentTarget.exists)
+                currentTarget = new ETarget(waypoints[0].cellPosition);
 
-            Vector3 targetPosition = currentTarget.transform.position;
-            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
-            if (currentTarget != mainTarget && Vector3.Distance(currentTarget.transform.position, transform.position) < batSize)
+            Vector2 targetPosition = currentTarget;
+            Vector2 pos = transform.position;
+            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+            if (currentTarget != mainTarget && Vector2.SqrMagnitude(currentTarget-pos) < batSize*batSize)
             {
-                Destroy(currentTarget);
                 waypoints.RemoveAt(0);
                 if (waypoints.Count == 0)
                 {
+                    currentTarget.Exists = false;
                     //Достигли конца маршрута
                     if (Vector3.Distance(beginPosition, transform.position) < batSize)
                     {
@@ -216,8 +289,7 @@ public class BatController : AIController
                 else
                 {
                     //Продолжаем следование
-                    currentTarget = new GameObject("BatTarget");
-                    currentTarget.transform.position = waypoints[0].cellPosition;
+                    currentTarget = new ETarget(waypoints[0].cellPosition);
                 }
             }
         }
@@ -226,18 +298,66 @@ public class BatController : AIController
 
     #endregion //behaviourActions
 
+    #region optimization
+
+    /// <summary>
+    /// Включить риджидбоди
+    /// </summary>
+    protected override void EnableRigidbody()
+    {
+        if (behavior!=BehaviorEnum.calm)
+            rigid.isKinematic = false;
+    }
+
+    /// <summary>
+    /// Функция реализующая анализ окружающей персонажа обстановки, когда тот находится в оптимизированном состоянии
+    /// </summary>
+    protected override void AnalyseOpt()
+    {
+        switch (behavior)
+        {
+            case BehaviorEnum.agressive:
+                {
+                    if (!followOptPath)
+                        StartCoroutine("PathPassOptProcess");
+                    if (behavior == BehaviorEnum.agressive)
+                        if (Vector2.SqrMagnitude(mainTarget - (Vector2)transform.position) > r2 * r2)
+                            GoHome();
+                    break;
+                }
+            case BehaviorEnum.patrol:
+                {
+                    if (!followOptPath)
+                        StartCoroutine("PathPassOptProcess");
+                    break;
+                }
+            default:
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Функция, которая восстанавливает положение и состояние персонажа, пользуясь данными, полученными в оптимизированном режиме
+    /// </summary>
+    protected override void RestoreActivePosition()
+    {
+        if (currentTarget.exists)
+            Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign((currentTarget - transform.position).x)));
+    }
+
+    #endregion //optimization
+
     /// <summary>
     /// Простейший алгоритм обхода препятствий
     /// </summary>
-    protected GameObject FindPath()
+    protected ETarget FindPath()
     {
-        if (currentTarget!=null? currentTarget != mainTarget:true)
-            DestroyObject(currentTarget);
 
-        bool a1 = Physics2D.Raycast(transform.position, Vector2.up, batSize, whatIsGround) && (mainTarget.transform.position.y- transform.position.y >avoidOffset);
-        bool a2 = Physics2D.Raycast(transform.position, Vector2.right, batSize, whatIsGround) && (mainTarget.transform.position.x > transform.position.x);
-        bool a3 = Physics2D.Raycast(transform.position, Vector2.down, batSize, whatIsGround) && (mainTarget.transform.position.y - transform.position.y < avoidOffset );
-        bool a4 = Physics2D.Raycast(transform.position, Vector2.left, batSize, whatIsGround) && (mainTarget.transform.position.x < transform.position.x);
+        Vector2 pos = transform.position;
+        bool a1 = Physics2D.Raycast(pos, Vector2.up, batSize, whatIsGround) && (mainTarget.y- pos.y >avoidOffset);
+        bool a2 = Physics2D.Raycast(pos, Vector2.right, batSize, whatIsGround) && (mainTarget.x > pos.x);
+        bool a3 = Physics2D.Raycast(pos, Vector2.down, batSize, whatIsGround) && (mainTarget.y - pos.y < avoidOffset );
+        bool a4 = Physics2D.Raycast(pos, Vector2.left, batSize, whatIsGround) && (mainTarget.x < pos.x);
 
         bool open1=false, open2=false;
         Vector2 aimDirection = a1 ? Vector2.up : a2 ? Vector2.right : a3 ? Vector2.down : a4 ? Vector2.left : Vector2.zero;
@@ -247,20 +367,17 @@ public class BatController : AIController
         {
             Vector2 vect1 = new Vector2(aimDirection.y, aimDirection.x);
             Vector2 vect2 = new Vector2(-aimDirection.y, -aimDirection.x);
-            Vector2 vect = new Vector2(transform.position.x, transform.position.y);
-            Vector2 pos1 = vect;
+            Vector2 pos1 = pos;
             Vector2 pos2 =pos1;
-            while (Physics2D.Raycast(pos1, aimDirection, batSize, whatIsGround) && ((pos1-vect).magnitude<maxAvoidDistance))
+            while (Physics2D.Raycast(pos1, aimDirection, batSize, whatIsGround) && ((pos1-pos).magnitude<maxAvoidDistance))
                 pos1 += vect1 * batSize;
             open1 = !Physics2D.Raycast(pos1, aimDirection, batSize, whatIsGround);
-            while (Physics2D.Raycast(pos2, aimDirection, batSize, whatIsGround) && ((pos2 - vect).magnitude < maxAvoidDistance))
+            while (Physics2D.Raycast(pos2, aimDirection, batSize, whatIsGround) && ((pos2 - pos).magnitude < maxAvoidDistance))
                 pos2 += vect2 * batSize;
             open2 = !Physics2D.Raycast(pos2, aimDirection, batSize, whatIsGround);
-            Vector2 targetPosition = new Vector2(mainTarget.transform.position.x, mainTarget.transform.position.y);
+            Vector2 targetPosition = mainTarget;
             Vector2 newTargetPosition=(open1 && !open2)? pos1 :(open2 && !open1)? pos2 : ((targetPosition-pos1).magnitude<(targetPosition-pos2).magnitude)? pos1 :pos2;
-            GameObject point = new GameObject("point");
-            point.transform.position = newTargetPosition;
-            return point;
+            return new ETarget(newTargetPosition);
         }
     }
 
@@ -289,8 +406,11 @@ public class BatController : AIController
     /// </summary>
     protected override void HandleAttackProcess(object sender, HitEventArgs e)
     {
-        rigid.velocity = Vector2.zero;
-        rigid.AddForce((transform.position - mainTarget.transform.position).normalized * pushBackForce);//При столкновении с врагом летучая мышь отталкивается назад
+        if (mainTarget.exists)
+        {
+            rigid.velocity = Vector2.zero;
+            rigid.AddForce((transform.position - mainTarget).normalized * pushBackForce);//При столкновении с врагом летучая мышь отталкивается назад
+        }
     }
 
     #endregion //events

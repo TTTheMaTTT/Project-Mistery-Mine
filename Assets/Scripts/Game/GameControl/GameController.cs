@@ -153,7 +153,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     public void StartDialog(NPCController npc, Dialog dialog)
     {
-        Transform player = SpecialFunctions.player.transform;
+        Transform player = SpecialFunctions.Player.transform;
         dialogWindow.BeginDialog(npc, dialog);
     }
 
@@ -209,7 +209,7 @@ public class GameController : MonoBehaviour
             if (gGData != null)
             {
                 startCheckpointNumber = gGData.firstCheckpointNumber;
-                HeroController hero = SpecialFunctions.player.GetComponent<HeroController>();
+                HeroController hero = SpecialFunctions.Player.GetComponent<HeroController>();
 
                 //Сначала переместим главного героя к последнему чекпоинту
                 CheckpointController currentCheckpoint = checkpoints.Find(x => (x.checkpointNumb == startCheckpointNumber));
@@ -261,7 +261,7 @@ public class GameController : MonoBehaviour
 
         else//Если игрок сохранился на чекпоинте, то у него есть прогресс на уровне и именно его мы и загружаем
         {
-            HeroController hero = SpecialFunctions.player.GetComponent<HeroController>();
+            HeroController hero = SpecialFunctions.Player.GetComponent<HeroController>();
 
             //Сначала переместим главного героя к последнему чекпоинту
             CheckpointController currentCheckpoint = checkpoints.Find(x => (x.checkpointNumb == lData.checkpointNumber));
@@ -500,7 +500,7 @@ public class GameController : MonoBehaviour
         if (general)
         {
             _gData.ResetLevelData();
-            _gData.SetGeneralGameData(cNumber, SpecialFunctions.player.GetComponent<HeroController>(), SpecialFunctions.statistics.ItemCollections);
+            _gData.SetGeneralGameData(cNumber, SpecialFunctions.Player.GetComponent<HeroController>(), SpecialFunctions.statistics.ItemCollections);
         }
         else
         {
@@ -536,7 +536,7 @@ public class GameController : MonoBehaviour
 
             List<ItemCollection> _collection = SpecialFunctions.statistics.ItemCollections;
 
-            _gData.SetLevelData(cNumber, SpecialFunctions.player.GetComponent<HeroController>(),  _collection, drops, GetComponent<GameHistory>().history,
+            _gData.SetLevelData(cNumber, SpecialFunctions.Player.GetComponent<HeroController>(),  _collection, drops, GetComponent<GameHistory>().history,
                                                                                                         GetComponent<GameStatistics>(),enInfo,intInfo, npcInfo);
         }
         return _gData;

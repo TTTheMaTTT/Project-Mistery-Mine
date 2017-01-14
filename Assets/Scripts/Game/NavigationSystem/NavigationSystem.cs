@@ -30,6 +30,15 @@ public class NavigationSystem : ScriptableObject
         cellSize = Vector2.zero;
     }
 
+    /// <summary>
+    /// Проинициализировать словари навигационных групп внутри карт
+    /// </summary>
+    public void InitializeDictionaries()
+    {
+        foreach (NavigationMap navMap in maps)
+            navMap.MakeDictionary();
+    }
+
     public NavigationMap GetMap(NavMapTypeEnum mapType)
     {
         switch (mapType)

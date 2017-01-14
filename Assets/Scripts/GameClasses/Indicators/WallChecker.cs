@@ -57,6 +57,11 @@ public class WallChecker : MonoBehaviour {
         }
     }
 
+    public virtual void ClearList()
+    {
+        walls = new List<GameObject>();
+    }
+
     /// <summary>
     /// Функция, с помощью которой определяем, находится ли перед персонажем стена
     /// </summary>

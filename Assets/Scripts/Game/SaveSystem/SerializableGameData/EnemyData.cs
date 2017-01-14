@@ -23,7 +23,7 @@ public class EnemyData
     public float health;//Здоровье
 
     [XmlElement("Behaviour")]
-    public string behaviour;//Какую модель поведения реализует монстр в данный момент
+    public string behavior;//Какую модель поведения реализует монстр в данный момент
 
     [XmlArray("Waypoints")]
     [XmlArrayItem("Waypoint")]
@@ -38,7 +38,7 @@ public class EnemyData
         position = _ai.transform.position;
         orientation = Mathf.RoundToInt(Mathf.Sign(_ai.transform.lossyScale.x));
 
-        behaviour = _ai.Behaviour.ToString();
+        behavior = _ai.Behavior.ToString();
 
         List<NavigationCell> _waypoints = _ai.GetWaypoints();
         if (_waypoints != null ? waypoints.Count > 0 : false)

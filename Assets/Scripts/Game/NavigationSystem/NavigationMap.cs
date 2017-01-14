@@ -4,11 +4,17 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Класс, представляющий собой навигационную карту уровня. Указывает мобам (определённого типа), как им надо передвигаться
+/// Класс, представляющиый собой навигационную карту уровня. Указывает мобам (определённого типа), как им надо передвигаться
 /// </summary>
 [System.Serializable]
 public class NavigationMap
 {
+
+    #region dictionaries
+
+    public Dictionary<NavigationCellIndex, NavigationGroup> groupDictionary = new Dictionary<NavigationCellIndex, NavigationGroup>();
+
+    #endregion //dictionaries
 
     #region fields
 
@@ -16,6 +22,15 @@ public class NavigationMap
     public NavMapTypeEnum mapType;//Тип карты
 
     #endregion //fields
+
+    #region parametres
+
+    [HideInInspector]public Vector2 mapSize;//Размер карты уровня
+    [HideInInspector]public Vector2 mapDownLeft;//Положение левого нижнего угла карты уровня
+    [HideInInspector]public Vector2 cellSize;//Размер ячейки
+    [HideInInspector]public Vector2 groupSize;//Размер группы
+
+    #endregion //parametres
 
     public NavigationMap(NavMapTypeEnum _mapType)
     {
@@ -27,24 +42,24 @@ public class NavigationMap
     /// Создать группы ячеек, используя информацию о размере и положении всей карты и о дефолтном размере групп 
     /// </summary>
     /// <param name="downLeft">Положение нижней левой точки карты</param>
-    /// <param name="mapSize">Размер карты</param>
-    /// <param name="groupSize">Размер части карты, соответствующей группе ячеек</param>
-    public void CreateGroups(Vector2 downLeft, Vector2 mapSize, Vector2 groupSize)
+    /// <param name="_mapSize">Размер карты</param>
+    /// <param name="_groupSize">Размер части карты, соответствующей группе ячеек</param>
+    public void CreateGroups(Vector2 downLeft, Vector2 _mapSize, Vector2 _groupSize)
     {
         cellGroups = new List<NavigationGroup>();
         float posX = downLeft.x, posY = downLeft.y;
-        Vector2 upRight = new Vector2(downLeft.x + mapSize.x, downLeft.y + mapSize.y);
+        Vector2 upRight = new Vector2(downLeft.x + _mapSize.x, downLeft.y + _mapSize.y);
         while (posY < upRight.y)
         {
             posX = downLeft.x;
             while (posX < upRight.x)
             {
                 NavigationGroup navGroup = new NavigationGroup();
-                navGroup.SetSize(new Vector2(posX, posY), new Vector2(posX + groupSize.x, posY + groupSize.y));
+                navGroup.SetSize(new Vector2(posX, posY), new Vector2(posX + _groupSize.x, posY + _groupSize.y));
                 cellGroups.Add(navGroup);
-                posX += groupSize.x;
+                posX += _groupSize.x;
             }
-            posY += groupSize.y;
+            posY += _groupSize.y;
         }
     }
 
@@ -73,10 +88,28 @@ public class NavigationMap
     }
 
     /// <summary>
+    /// Создать словарь навигационных групп
+    /// </summary>
+    public void MakeDictionary()
+    {
+        groupDictionary = new Dictionary<NavigationCellIndex, NavigationGroup>();
+        foreach (NavigationGroup navGroup  in cellGroups)
+        {
+            Vector2 _pos = (navGroup.upRight + navGroup.downLeft) / 2f;
+            NavigationCellIndex navIndex = new NavigationCellIndex(new Vector2((_pos - mapDownLeft).x / groupSize.x, (_pos - mapDownLeft).y / groupSize.y));
+            if (!groupDictionary.ContainsKey(navIndex))
+            {
+                groupDictionary.Add(navIndex, navGroup);
+                navGroup.MakeDictionary(cellSize);
+            }
+        }
+    }
+
+    /// <summary>
     /// Пересчитать размеры всех групп
     /// </summary>
     /// <param name="cellSize">размер клетки</param>
-    public void ResetGroupSizes(Vector2 cellSize)
+    public void ResetGroupSizes(Vector2 _cellSize)
     {
         //foreach (NavigationGroup navGroup in cellGroups)
             //navGroup.SetSize(cellSize);
@@ -97,6 +130,37 @@ public class NavigationMap
     /// <param name="targetPos">Целевая позиция</param>
     /// <returns>Текущая группа ячеек</returns>
     public NavigationGroup GetCurrentGroup(Vector2 targetPos)
+    {
+
+        if (groupDictionary != null)
+        {
+            NavigationCellIndex navIndex = new NavigationCellIndex(new Vector2((targetPos - mapDownLeft).x / groupSize.x, (targetPos - mapDownLeft).y / groupSize.y));
+            if (!groupDictionary.ContainsKey(navIndex))
+                return null;
+            else
+                return groupDictionary[navIndex];
+        }
+        else
+        {
+            NavigationGroup _navGroup = null;
+            foreach (NavigationGroup navGroup in cellGroups)
+            {
+                if (navGroup.ContainsVector(targetPos))
+                {
+                    _navGroup = navGroup;
+                    break;
+                }
+            }
+            return _navGroup;
+        }
+    }
+
+    /// <summary>
+    /// Определить в какой группе ячеек находится целевая точка
+    /// </summary>
+    /// <param name="targetPos">Целевая позиция</param>
+    /// <returns>Текущая группа ячеек</returns>
+    public NavigationGroup GetCurrentGroupInEditor(Vector2 targetPos)
     {
         NavigationGroup _navGroup = null;
         foreach (NavigationGroup navGroup in cellGroups)
@@ -120,10 +184,45 @@ public class NavigationMap
         NavigationCell _cell = null;
         NavigationGroup _group = GetCurrentGroup(targetPos);
         if (_group != null)
-            _cell = _group.GetCurrentCell(targetPos);
+            _cell = _group.GetCurrentCell(targetPos, cellSize);
+        if (_cell==null)
+        {
+            for (int i = -1; i < 2; i++)
+                for (int j = -1; j < 2; j++)
+                {
+                    if (i == 0 && j == 0)
+                        continue;
+                    Vector2 _pos = targetPos + new Vector2(i * cellSize.x, j * cellSize.y);
+                    _group = GetCurrentGroup(_pos);
+                    if (_group != null)
+                        _cell = _group.GetCurrentCell(_pos, cellSize);
+                    if (_cell != null)
+                        return _cell;
+                }
+        }
         return _cell;
     }
 
+    /// <summary>
+    /// Вернуть ячейку в которой находится данная целевая точка
+    /// </summary>
+    /// <param name="targetPos">Текущая позиция</param>
+    /// <returns>Текущая ячейка</returns>
+    public NavigationCell GetCurrentCellInEditor(Vector2 targetPos)
+    {
+        NavigationCell _cell = null;
+        NavigationGroup _group = GetCurrentGroupInEditor(targetPos);
+        if (_group != null)
+            _cell = _group.GetCurrentCellInEditor(targetPos);
+        return _cell;
+    }
+
+    /// <summary>
+    /// НАйти ячейку с заданными идентификационными номерами
+    /// </summary>
+    /// <param name="groupNumb">номер группы</param>
+    /// <param name="cellNumb">номер ячейки</param>
+    /// <returns>искомая ячейка</returns>
     public NavigationCell GetCell(int groupNumb, int cellNumb)
     {
         if (groupNumb >= cellGroups.Count)
@@ -149,7 +248,18 @@ public class NavigationMap
         if (beginCell == null || endCell == null)
             return null;
 
-        ClearMap();
+        //ClearMap();
+        List<NavigationGroup> clearedGroups=new List<NavigationGroup>();//Список "очищенных групп" (со стёртой информации о посещённости ячеек)
+        NavigationGroup clearedGroup = cellGroups[beginCell.groupNumb];
+        clearedGroup.ClearCells();
+        clearedGroups.Add(clearedGroup);
+        clearedGroup = cellGroups[endCell.groupNumb];
+        if (!clearedGroups.Contains(clearedGroup))
+        {
+            clearedGroup.ClearCells();
+            clearedGroups.Add(clearedGroup);
+        }
+
         Queue<NavigationCell> cellsQueue = new Queue<NavigationCell>();
         cellsQueue.Enqueue(beginCell);
         beginCell.visited = true;
@@ -161,6 +271,15 @@ public class NavigationMap
             List<NavigationCell> neighbourCells = currentCell.neighbors.ConvertAll<NavigationCell>(x => GetCell(x.groupNumb, x.cellNumb));
             foreach (NavigationCell cell in neighbourCells)
             {
+                if (cell.groupNumb != currentCell.groupNumb)
+                {
+                    clearedGroup = cellGroups[cell.groupNumb];
+                    if (!clearedGroups.Contains(clearedGroup))
+                    {
+                        clearedGroup.ClearCells();
+                        clearedGroups.Add(clearedGroup);
+                    }
+                }
                 if (cell!=null?!cell.visited:false)
                 {
                     cell.visited = true;
@@ -229,6 +348,12 @@ public class NavigationMap
 public class NavigationGroup
 {
 
+    #region dictionaries
+
+    protected Dictionary<NavigationCellIndex, NavigationCell> cellDictionary = new Dictionary<NavigationCellIndex, NavigationCell>();
+
+    #endregion //dictionaries
+
     #region fields
 
     [SerializeField]public List<NavigationCell> cells = new List<NavigationCell>();
@@ -286,11 +411,57 @@ public class NavigationGroup
     }
 
     /// <summary>
+    /// Составить словарь из списка ячеек
+    /// </summary>
+    public void MakeDictionary(Vector2 cellSize)
+    {
+        cellDictionary = new Dictionary<NavigationCellIndex, NavigationCell>();
+        foreach (NavigationCell navCell in cells)
+        {
+            NavigationCellIndex navIndex = new NavigationCellIndex(new Vector2((navCell.cellPosition - downLeft).x / cellSize.x, (navCell.cellPosition - downLeft).y / cellSize.y));
+            if (!cellDictionary.ContainsKey(navIndex))
+                cellDictionary.Add(navIndex, navCell);
+        }
+    }
+
+    /// <summary>
     /// Вернуть ближайшую к целевой точке ячейку из группы
     /// </summary>
     /// <param name="targetPos">целевая точка</param>
     /// <returns></returns>
-    public NavigationCell GetCurrentCell(Vector2 targetPos)
+    public NavigationCell GetCurrentCell(Vector2 targetPos, Vector2 cellSize)
+    {
+        if (cellDictionary != null)
+        {
+            NavigationCellIndex navIndex = new NavigationCellIndex(new Vector2((targetPos - downLeft).x / cellSize.x, (targetPos - downLeft).y / cellSize.y));
+            if (!cellDictionary.ContainsKey(navIndex))
+                return null;
+            else
+                return cellDictionary[navIndex];
+        }
+        else
+        {
+            float minDist = Mathf.Infinity;
+            NavigationCell _cell=null;
+            foreach (NavigationCell cell in cells)
+            {
+                if (Vector2.SqrMagnitude(targetPos - cell.cellPosition) < minDist)
+                {
+                    minDist = Vector2.SqrMagnitude(targetPos - cell.cellPosition);
+                    _cell = cell;
+                }
+            }
+
+            return _cell;
+        }
+    }
+
+    /// <summary>
+    /// Вернуть ближайшую к целевой точке ячейку из группы
+    /// </summary>
+    /// <param name="targetPos">целевая точка</param>
+    /// <returns></returns>
+    public NavigationCell GetCurrentCellInEditor(Vector2 targetPos)
     {
         float minDist = Mathf.Infinity;
         NavigationCell _cell=null;
@@ -316,6 +487,8 @@ public class NavigationGroup
     }
     
 }
+
+#region cells
 
 /// <summary>
 /// Класс, представляющий собой навигационную ячейку. Мобы перемещаются между ячейками, поэтому нужно знать, как они связаны
@@ -371,27 +544,6 @@ public class NavigationCell
 
 }
 
-/*
-/// <summary>
-/// Особый тип навигационных клеток, содержащих информацию об используемых платформах
-/// </summary>
-[System.Serializable]
-public class PlatformNavigationCell: NavigationCell
-{
-    public int platformID;//идентификатор платформы, которая связана с рассматриваемой навигационной клеткой
-
-    public PlatformNavigationCell(Vector2 _cellPosition, NavCellTypeEnum _cellType): base(_cellPosition,_cellType)
-    {
-        platformID = 0;
-    }
-
-    public PlatformNavigationCell(Vector2 _cellPosition, NavCellTypeEnum _cellType, int _platformID):base(_cellPosition,_cellType)
-    {
-        platformID = _platformID;
-    }
-
-}*/
-
 /// <summary>
 /// Структура, содержащая информацию о соседней клетки
 /// </summary>
@@ -411,3 +563,27 @@ public struct NeighborCellStruct
     }
 
 }
+
+/// <summary>
+/// Двойной индекс для идентификации ячейки в словаре
+/// </summary>
+public struct NavigationCellIndex
+{
+    public int indexX;
+    public int indexY;
+
+    public NavigationCellIndex(int _indexX, int _indexY)
+    {
+        indexX = _indexX;
+        indexY = _indexY;
+    }
+
+    public NavigationCellIndex(Vector2 position)
+    {
+        indexX = Mathf.CeilToInt(position.x);
+        indexY = Mathf.CeilToInt(position.y);
+    }
+
+}
+
+#endregion //cells

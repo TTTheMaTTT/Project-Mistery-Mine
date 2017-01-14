@@ -38,6 +38,8 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     
     protected CharacterVisual anim;//Визуальное представление персонажа
 
+    protected Transform indicators;//Игровой объект, в котором находятся индикаторы
+
     #endregion //fields
 
     #region parametres
@@ -223,7 +225,10 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     {
         Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
         if (health <= 0f)
+        {
             Death();
+            return;
+        }
         else
             Animate(new AnimationEventArgs("hitted"));
     }

@@ -10,7 +10,7 @@ public class AngleCalculator : MonoBehaviour
 
 	void Start ()
     {
-        target = SpecialFunctions.player.transform;
+        target = SpecialFunctions.Player.transform;
 	}
 	
 	void Update ()
