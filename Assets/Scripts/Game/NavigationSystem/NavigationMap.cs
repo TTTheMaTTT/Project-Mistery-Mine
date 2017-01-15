@@ -3,11 +3,81 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
+#region map
+
 /// <summary>
 /// Класс, представляющиый собой навигационную карту уровня. Указывает мобам (определённого типа), как им надо передвигаться
 /// </summary>
 [System.Serializable]
 public class NavigationMap
+{
+
+    #region fields
+
+    public NavMapTypeEnum mapType;//Тип карты
+
+    #endregion //fields
+
+    #region parametres
+
+    [HideInInspector]public Vector2 mapSize;//Размер карты уровня
+    [HideInInspector]public Vector2 mapDownLeft;//Положение левого нижнего угла карты уровня
+    [HideInInspector]public Vector2 cellSize;//Размер ячейки
+
+    #endregion //parametres
+
+    public NavigationMap(NavMapTypeEnum _mapType)
+    {
+        mapType = _mapType;
+    }
+
+    /// <summary>
+    /// Пометить все ячейки на карте как непосещённые
+    /// </summary>
+    public virtual void ClearMap()
+    {
+    }
+
+    /// <summary>
+    /// Вернуть ячейку в которой находится данная целевая точка
+    /// </summary>
+    /// <param name="targetPos">Текущая позиция</param>
+    /// <returns>Текущая ячейка</returns>
+    public virtual NavigationCell GetCurrentCell(Vector2 targetPos)
+    {
+        return null;
+    }
+
+    /// <summary>
+    /// Вернуть ячейку в которой находится данная целевая точка
+    /// </summary>
+    /// <param name="targetPos">Текущая позиция</param>
+    /// <returns>Текущая ячейка</returns>
+    public virtual NavigationCell GetCurrentCellInEditor(Vector2 targetPos)
+    {
+        return null;
+    }
+
+    /// <summary>
+    /// Возвращает маршрут, используя информацию о карте. Вернёт null, если пути не существует
+    /// </summary>
+    /// <param name="beginPosition">Начальная позиция</param>
+    /// <param name="endPosition">Конечная позиция</param>
+    /// <param name="optimize">Оптимизировать ли маршрут?</param>
+    /// <returns>Массив ячеек</returns>
+    public virtual List<NavigationCell> GetPath(Vector2 beginPosition, Vector2 endPosition, bool optimize)
+    {
+        return null;
+    }
+
+}
+
+/// <summary>
+/// Навигационная карта, что содержит информацию в списках навигационных групп
+/// Используется нелетающими монстрами
+/// </summary>
+[System.Serializable]
+public class NavigationBunchedMap: NavigationMap
 {
 
     #region dictionaries
@@ -19,22 +89,17 @@ public class NavigationMap
     #region fields
 
     public List<NavigationGroup> cellGroups = new List<NavigationGroup>();//Группы клеток, что входять в данную карту
-    public NavMapTypeEnum mapType;//Тип карты
 
     #endregion //fields
 
     #region parametres
 
-    [HideInInspector]public Vector2 mapSize;//Размер карты уровня
-    [HideInInspector]public Vector2 mapDownLeft;//Положение левого нижнего угла карты уровня
-    [HideInInspector]public Vector2 cellSize;//Размер ячейки
     [HideInInspector]public Vector2 groupSize;//Размер группы
 
     #endregion //parametres
 
-    public NavigationMap(NavMapTypeEnum _mapType)
+    public NavigationBunchedMap(NavMapTypeEnum _mapType): base(_mapType)
     {
-        mapType = _mapType;
         cellGroups = new List<NavigationGroup>();
     }
 
@@ -80,7 +145,7 @@ public class NavigationMap
         {
             for (int j = 0; j < cellGroups[i].cells.Count; j++)
             {
-                NavigationCell _cell = cellGroups[i].cells[j];
+                ComplexNavigationCell _cell = cellGroups[i].cells[j];
                 _cell.cellNumb = j;
                 _cell.groupNumb = i;
             }
@@ -93,7 +158,7 @@ public class NavigationMap
     public void MakeDictionary()
     {
         groupDictionary = new Dictionary<NavigationCellIndex, NavigationGroup>();
-        foreach (NavigationGroup navGroup  in cellGroups)
+        foreach (NavigationGroup navGroup in cellGroups)
         {
             Vector2 _pos = (navGroup.upRight + navGroup.downLeft) / 2f;
             NavigationCellIndex navIndex = new NavigationCellIndex(new Vector2((_pos - mapDownLeft).x / groupSize.x, (_pos - mapDownLeft).y / groupSize.y));
@@ -112,13 +177,13 @@ public class NavigationMap
     public void ResetGroupSizes(Vector2 _cellSize)
     {
         //foreach (NavigationGroup navGroup in cellGroups)
-            //navGroup.SetSize(cellSize);
+        //navGroup.SetSize(cellSize);
     }
 
     /// <summary>
     /// Пометить все ячейки на карте как непосещённые
     /// </summary>
-    public void ClearMap()
+    public override void ClearMap()
     {
         foreach (NavigationGroup navGroup in cellGroups)
             navGroup.ClearCells();
@@ -131,7 +196,6 @@ public class NavigationMap
     /// <returns>Текущая группа ячеек</returns>
     public NavigationGroup GetCurrentGroup(Vector2 targetPos)
     {
-
         if (groupDictionary != null)
         {
             NavigationCellIndex navIndex = new NavigationCellIndex(new Vector2((targetPos - mapDownLeft).x / groupSize.x, (targetPos - mapDownLeft).y / groupSize.y));
@@ -179,13 +243,13 @@ public class NavigationMap
     /// </summary>
     /// <param name="targetPos">Текущая позиция</param>
     /// <returns>Текущая ячейка</returns>
-    public NavigationCell GetCurrentCell(Vector2 targetPos)
+    public override NavigationCell GetCurrentCell(Vector2 targetPos)
     {
-        NavigationCell _cell = null;
+        ComplexNavigationCell _cell = null;
         NavigationGroup _group = GetCurrentGroup(targetPos);
         if (_group != null)
             _cell = _group.GetCurrentCell(targetPos, cellSize);
-        if (_cell==null)
+        if (_cell == null)
         {
             for (int i = -1; i < 2; i++)
                 for (int j = -1; j < 2; j++)
@@ -208,9 +272,9 @@ public class NavigationMap
     /// </summary>
     /// <param name="targetPos">Текущая позиция</param>
     /// <returns>Текущая ячейка</returns>
-    public NavigationCell GetCurrentCellInEditor(Vector2 targetPos)
+    public override NavigationCell GetCurrentCellInEditor(Vector2 targetPos)
     {
-        NavigationCell _cell = null;
+        ComplexNavigationCell _cell = null;
         NavigationGroup _group = GetCurrentGroupInEditor(targetPos);
         if (_group != null)
             _cell = _group.GetCurrentCellInEditor(targetPos);
@@ -218,12 +282,12 @@ public class NavigationMap
     }
 
     /// <summary>
-    /// НАйти ячейку с заданными идентификационными номерами
+    /// Найти ячейку с заданными идентификационными номерами
     /// </summary>
     /// <param name="groupNumb">номер группы</param>
     /// <param name="cellNumb">номер ячейки</param>
     /// <returns>искомая ячейка</returns>
-    public NavigationCell GetCell(int groupNumb, int cellNumb)
+    public ComplexNavigationCell GetCell(int groupNumb, int cellNumb)
     {
         if (groupNumb >= cellGroups.Count)
             return null;
@@ -240,16 +304,16 @@ public class NavigationMap
     /// <param name="endPosition">Конечная позиция</param>
     /// <param name="optimize">Оптимизировать ли маршрут?</param>
     /// <returns>Массив ячеек</returns>
-    public List<NavigationCell> GetPath(Vector2 beginPosition, Vector2 endPosition, bool optimize)
+    public override List<NavigationCell> GetPath(Vector2 beginPosition, Vector2 endPosition, bool optimize)
     {
         List<NavigationCell> _path = new List<NavigationCell>();
-        NavigationCell beginCell = GetCurrentCell(beginPosition), endCell=GetCurrentCell(endPosition);
+        ComplexNavigationCell beginCell = (ComplexNavigationCell)GetCurrentCell(beginPosition), endCell = (ComplexNavigationCell)GetCurrentCell(endPosition);
 
         if (beginCell == null || endCell == null)
             return null;
 
         //ClearMap();
-        List<NavigationGroup> clearedGroups=new List<NavigationGroup>();//Список "очищенных групп" (со стёртой информации о посещённости ячеек)
+        List<NavigationGroup> clearedGroups = new List<NavigationGroup>();//Список "очищенных групп" (со стёртой информации о посещённости ячеек)
         NavigationGroup clearedGroup = cellGroups[beginCell.groupNumb];
         clearedGroup.ClearCells();
         clearedGroups.Add(clearedGroup);
@@ -260,16 +324,16 @@ public class NavigationMap
             clearedGroups.Add(clearedGroup);
         }
 
-        Queue<NavigationCell> cellsQueue = new Queue<NavigationCell>();
+        Queue<ComplexNavigationCell> cellsQueue = new Queue<ComplexNavigationCell>();
         cellsQueue.Enqueue(beginCell);
         beginCell.visited = true;
-        while (cellsQueue.Count > 0 && endCell.fromCell==null)
+        while (cellsQueue.Count > 0 && endCell.fromCell == null)
         {
-            NavigationCell currentCell = cellsQueue.Dequeue();
+            ComplexNavigationCell currentCell = cellsQueue.Dequeue();
             if (currentCell == null)
                 return null;
-            List<NavigationCell> neighbourCells = currentCell.neighbors.ConvertAll<NavigationCell>(x => GetCell(x.groupNumb, x.cellNumb));
-            foreach (NavigationCell cell in neighbourCells)
+            List<ComplexNavigationCell> neighbourCells = currentCell.neighbors.ConvertAll<ComplexNavigationCell>(x => GetCell(x.groupNumb, x.cellNumb));
+            foreach (ComplexNavigationCell cell in neighbourCells)
             {
                 if (cell.groupNumb != currentCell.groupNumb)
                 {
@@ -280,7 +344,7 @@ public class NavigationMap
                         clearedGroups.Add(clearedGroup);
                     }
                 }
-                if (cell!=null?!cell.visited:false)
+                if (cell != null ? !cell.visited : false)
                 {
                     cell.visited = true;
                     cellsQueue.Enqueue(cell);
@@ -289,33 +353,33 @@ public class NavigationMap
             }
         }
 
-        if (endCell.fromCell==null)//Невозможно достичь данной точки
+        if (endCell.fromCell == null)//Невозможно достичь данной точки
             return null;
 
         //Восстановим весь маршрут с последней ячейки
-        NavigationCell pathCell = endCell;
+        ComplexNavigationCell pathCell = endCell;
         _path.Insert(0, pathCell);
         while (pathCell.fromCell != null)
         {
             _path.Insert(0, pathCell.fromCell);
-            pathCell = pathCell.fromCell;
+            pathCell = (ComplexNavigationCell)pathCell.fromCell;
         }
 
         if (optimize)
         {
 
             //Удалим все ненужные точки
-            for (int i = 0; i < _path.Count-2; i++)
+            for (int i = 0; i < _path.Count - 2; i++)
             {
-                NavigationCell checkPoint1 = _path[i], checkPoint2 = _path[i + 1];
-                if (checkPoint1.cellType == NavCellTypeEnum.jump || checkPoint1.cellType==NavCellTypeEnum.movPlatform)
+                ComplexNavigationCell checkPoint1 = (ComplexNavigationCell)_path[i], checkPoint2 = (ComplexNavigationCell)_path[i + 1];
+                if (checkPoint1.cellType == NavCellTypeEnum.jump || checkPoint1.cellType == NavCellTypeEnum.movPlatform)
                     continue;
                 if (checkPoint1.cellType != checkPoint2.cellType)
                     continue;
                 Vector2 movDirection1 = (checkPoint2.cellPosition - checkPoint1.cellPosition).normalized;
                 Vector2 movDirection2 = Vector2.zero;
                 int index = i + 2;
-                NavigationCell checkPoint3 = _path[index];
+                ComplexNavigationCell checkPoint3 = (ComplexNavigationCell)_path[index];
                 while (Vector2.SqrMagnitude(movDirection1 - (checkPoint3.cellPosition - checkPoint2.cellPosition).normalized) < .01f &&
                        checkPoint1.cellType == checkPoint3.cellType &&
                        index < _path.Count)
@@ -324,10 +388,10 @@ public class NavigationMap
                     if (index < _path.Count)
                     {
                         checkPoint2 = checkPoint3;
-                        checkPoint3 = _path[index];
+                        checkPoint3 = (ComplexNavigationCell)_path[index];
                     }
                 }
-                for (int j = i + 1; j < index-1; j++)
+                for (int j = i + 1; j < index - 1; j++)
                 {
                     _path.RemoveAt(i + 1);
                 }
@@ -339,10 +403,213 @@ public class NavigationMap
 
 }
 
+
+/// <summary>
+/// Класс, представляющий собой карту, данные в которой хранятся в прямоугоьной матрице из простых навигационных клеток.
+/// Предназначен для использования летающими существами
+/// </summary>
+[System.Serializable]
+public class NavigationMatrixMap : NavigationMap
+{
+
+    #region fields
+
+    public List<NavigationCellRow> cellRows=new List<NavigationCellRow>();//Прямоугольный массив из навигационных клеток
+
+    #endregion //fields
+
+    #region parametres
+
+    public int cellRowSize = 0;//Размер ряда ячеек
+    public int cellColumnSize = 0;//Размер колонки ячеек
+
+    #endregion //parametres
+
+    public NavigationMatrixMap(NavMapTypeEnum _mapType) : base(_mapType)
+    {
+        cellRows = new List<NavigationCellRow>();
+    }
+
+    /// <summary>
+    /// Создаёт массив навигационных клеток, которые сответствует заданному размеру навигационных клеток и навигационной карты
+    /// </summary>
+    /// <param name="cellSize">Размер навигационной клетки</param>
+    public void CreateCells()
+    {
+        cellColumnSize = Mathf.CeilToInt(mapSize.y / cellSize.y);
+        cellRowSize = Mathf.CeilToInt(mapSize.x / cellSize.x);
+        cellRows = new List<NavigationCellRow>();
+        for ( int i=0;i< cellColumnSize;i++)
+        {
+            cellRows.Add(new NavigationCellRow());
+            for (int j = 0;j < cellRowSize; j++)
+            {
+                cellRows[i].cells.Add(new SimpleNavigationCell(mapDownLeft + new Vector2((j + 0.5f) * cellSize.x, (i + 0.5f) * cellSize.y)));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Пометить все ячейки на карте как непосещённые
+    /// </summary>
+    public override void ClearMap()
+    {
+        foreach (NavigationCellRow row in cellRows)
+            foreach (SimpleNavigationCell cell in row.cells)
+                cell.ClearCell();
+    }
+
+    /// <summary>
+    /// Вернуть ячейку в которой находится данная целевая точка
+    /// </summary>
+    /// <param name="targetPos">Текущая позиция</param>
+    /// <returns>Текущая ячейка</returns>
+    public override NavigationCell GetCurrentCell(Vector2 targetPos)
+    {
+        SimpleNavigationCell currentCell = null;
+        int indexY = Mathf.FloorToInt((targetPos.y - mapDownLeft.y) / cellSize.y);
+        int indexX= Mathf.FloorToInt((targetPos.x - mapDownLeft.x) / cellSize.x);
+        SimpleNavigationCell _cell = cellRows[indexY].cells[indexX];
+        if (_cell.canMove)
+            currentCell = _cell;
+        else
+        {
+            for (int i = -1; i < 2; i++)
+            {
+                for (int j = -1; j < 2; j++)
+                {
+                    _cell = cellRows[indexY+i].cells[indexX+j];
+                    if (_cell.canMove)
+                    {
+                        currentCell = _cell;
+                        break;
+                    }
+                }
+            }
+        }
+        return currentCell;
+    }
+
+    /// <summary>
+    /// Вернуть ячейку в которой находится данная целевая точка
+    /// </summary>
+    /// <param name="targetPos">Текущая позиция</param>
+    /// <returns>Текущая ячейка</returns>
+    public override NavigationCell GetCurrentCellInEditor(Vector2 targetPos)
+    {
+        int indexY = Mathf.FloorToInt((targetPos.y - mapDownLeft.y) / cellSize.y);
+        int indexX = Mathf.FloorToInt((targetPos.x - mapDownLeft.x) / cellSize.x);
+        return cellRows[indexY].cells[indexX];
+    }
+
+    /// <summary>
+    /// Возвращает маршрут, используя информацию о карте. Вернёт null, если пути не существует
+    /// </summary>
+    /// <param name="beginPosition">Начальная позиция</param>
+    /// <param name="endPosition">Конечная позиция</param>
+    /// <param name="optimize">Оптимизировать ли маршрут?</param>
+    /// <returns>Массив ячеек</returns>
+    public override List<NavigationCell> GetPath(Vector2 beginPosition, Vector2 endPosition, bool optimize)
+    {
+        List<NavigationCell> _path = new List<NavigationCell>();
+        SimpleNavigationCell beginCell = (SimpleNavigationCell)GetCurrentCell(beginPosition), endCell = (SimpleNavigationCell)GetCurrentCell(endPosition);
+        
+        if (beginCell == null || endCell == null)
+            return null;
+
+        Queue<SimpleNavigationCell> cellsQueue = new Queue<SimpleNavigationCell>();
+        List<SimpleNavigationCell> checkedCells = new List<SimpleNavigationCell>();
+        cellsQueue.Enqueue(beginCell);
+        beginCell.visited = true;
+        checkedCells.Add(beginCell);
+        while (cellsQueue.Count > 0 && endCell.fromCell == null)
+        {
+            SimpleNavigationCell currentCell = cellsQueue.Dequeue();
+            if (currentCell == null)
+                continue;
+            int indexY = Mathf.FloorToInt((currentCell.cellPosition.y - mapDownLeft.y) / cellSize.y);
+            int indexX = Mathf.FloorToInt((currentCell.cellPosition.x - mapDownLeft.x) / cellSize.x);
+            //Не буду делать проверку на граничные условия, так как они не могут быть достигнуты (предположим, что никогда не будет рассматриваться клетка на краю карты)
+            for (int i = -1; i < 2; i++)
+            {
+                for (int j =-1;j<2;j++)
+                {
+                    SimpleNavigationCell _cell = cellRows[indexY+i].cells[indexX+j];
+                    if (!_cell.visited && _cell.canMove)
+                    {
+                        _cell.visited = true;
+                        cellsQueue.Enqueue(_cell);
+                        _cell.fromCell = currentCell;
+                        checkedCells.Add(_cell);
+                    }
+                }
+            }
+        }
+
+
+        if (endCell.fromCell == null)//Невозможно достичь данной точки
+        {
+            foreach (SimpleNavigationCell _cell in checkedCells)
+            {
+                _cell.ClearCell();
+            }
+            return null;
+        }
+
+        //Восстановим весь маршрут с последней ячейки
+        SimpleNavigationCell pathCell = endCell;
+        _path.Insert(0, pathCell);
+        while (pathCell.fromCell != null)
+        {
+            _path.Insert(0, pathCell.fromCell);
+            pathCell = (SimpleNavigationCell)pathCell.fromCell;
+        }
+
+        foreach (SimpleNavigationCell _cell in checkedCells)
+        {
+            _cell.ClearCell();
+        }
+
+        if (optimize)
+        {
+
+            //Удалим все ненужные точки
+            for (int i = 0; i < _path.Count - 2; i++)
+            {
+                NavigationCell checkPoint1 = _path[i], checkPoint2 = _path[i + 1];
+                Vector2 movDirection1 = (checkPoint2.cellPosition - checkPoint1.cellPosition).normalized;
+                Vector2 movDirection2 = Vector2.zero;
+                int index = i + 2;
+                NavigationCell checkPoint3 = _path[index];
+                while (Vector2.SqrMagnitude(movDirection1 - (checkPoint3.cellPosition - checkPoint2.cellPosition).normalized) < .01f &&
+                        index < _path.Count)
+                {
+                    index++;
+                    if (index < _path.Count)
+                    {
+                        checkPoint2 = checkPoint3;
+                        checkPoint3 = _path[index];
+                    }
+                }
+                for (int j = i + 1; j < index - 1; j++)
+                {
+                    _path.RemoveAt(i + 1);
+                }
+            }
+        }
+
+        return _path;
+    }
+
+}
+
+
+#endregion //map
+
 /// <summary>
 /// Класс, представляющий собой группу из навигационных ячеек.
 /// Разделение по группам бывает разным, например, разделять ячейки можно по местоположению или по типу.
-/// Этот класс используется для оптимизации
+/// Этот класс используется для оптимизации. Такие группы составляют карту для нелетающих монстров
 /// </summary>
 [System.Serializable]
 public class NavigationGroup
@@ -350,20 +617,20 @@ public class NavigationGroup
 
     #region dictionaries
 
-    protected Dictionary<NavigationCellIndex, NavigationCell> cellDictionary = new Dictionary<NavigationCellIndex, NavigationCell>();
+    protected Dictionary<NavigationCellIndex, ComplexNavigationCell> cellDictionary = new Dictionary<NavigationCellIndex, ComplexNavigationCell>();
 
     #endregion //dictionaries
 
     #region fields
 
-    [SerializeField]public List<NavigationCell> cells = new List<NavigationCell>();
+    [SerializeField]public List<ComplexNavigationCell> cells = new List<ComplexNavigationCell>();//Навигационные клетки, что составляют группу
     public Vector2 downLeft, upRight;//Позиции левого нижнего и правого верхнего углов прямоугольника, который содержит в себя данную группу ячеек
 
     #endregion //fields
 
     public NavigationGroup()
     {
-        cells = new List<NavigationCell>();
+        cells = new List<ComplexNavigationCell>();
     }
 
     /// <summary>
@@ -374,7 +641,7 @@ public class NavigationGroup
     {
         float minX = Mathf.Infinity, maxX = Mathf.NegativeInfinity, minY = Mathf.Infinity, maxY = Mathf.NegativeInfinity;
 
-        foreach (NavigationCell cell in cells)
+        foreach (ComplexNavigationCell cell in cells)
         {
             if (cell.cellPosition.x - cellSize.x / 2f < minX)
                 minX = cell.cellPosition.x - cellSize.x / 2f;
@@ -415,8 +682,8 @@ public class NavigationGroup
     /// </summary>
     public void MakeDictionary(Vector2 cellSize)
     {
-        cellDictionary = new Dictionary<NavigationCellIndex, NavigationCell>();
-        foreach (NavigationCell navCell in cells)
+        cellDictionary = new Dictionary<NavigationCellIndex, ComplexNavigationCell>();
+        foreach (ComplexNavigationCell navCell in cells)
         {
             NavigationCellIndex navIndex = new NavigationCellIndex(new Vector2((navCell.cellPosition - downLeft).x / cellSize.x, (navCell.cellPosition - downLeft).y / cellSize.y));
             if (!cellDictionary.ContainsKey(navIndex))
@@ -429,7 +696,7 @@ public class NavigationGroup
     /// </summary>
     /// <param name="targetPos">целевая точка</param>
     /// <returns></returns>
-    public NavigationCell GetCurrentCell(Vector2 targetPos, Vector2 cellSize)
+    public ComplexNavigationCell GetCurrentCell(Vector2 targetPos, Vector2 cellSize)
     {
         if (cellDictionary != null)
         {
@@ -442,8 +709,8 @@ public class NavigationGroup
         else
         {
             float minDist = Mathf.Infinity;
-            NavigationCell _cell=null;
-            foreach (NavigationCell cell in cells)
+            ComplexNavigationCell _cell=null;
+            foreach (ComplexNavigationCell cell in cells)
             {
                 if (Vector2.SqrMagnitude(targetPos - cell.cellPosition) < minDist)
                 {
@@ -461,11 +728,11 @@ public class NavigationGroup
     /// </summary>
     /// <param name="targetPos">целевая точка</param>
     /// <returns></returns>
-    public NavigationCell GetCurrentCellInEditor(Vector2 targetPos)
+    public ComplexNavigationCell GetCurrentCellInEditor(Vector2 targetPos)
     {
         float minDist = Mathf.Infinity;
-        NavigationCell _cell=null;
-        foreach (NavigationCell cell in cells)
+        ComplexNavigationCell _cell=null;
+        foreach (ComplexNavigationCell cell in cells)
         {
             if (Vector2.SqrMagnitude(targetPos - cell.cellPosition) < minDist)
             {
@@ -482,7 +749,7 @@ public class NavigationGroup
     /// </summary>
     public void ClearCells()
     {
-        foreach (NavigationCell cell in cells)
+        foreach (ComplexNavigationCell cell in cells)
             cell.ClearCell();
     }
     
@@ -491,7 +758,7 @@ public class NavigationGroup
 #region cells
 
 /// <summary>
-/// Класс, представляющий собой навигационную ячейку. Мобы перемещаются между ячейками, поэтому нужно знать, как они связаны
+/// Базовый класс для различных видов навигационных ячеек. Именно они являются простейшими элементами навигационного маршрута
 /// </summary>
 [System.Serializable]
 public class NavigationCell
@@ -499,24 +766,16 @@ public class NavigationCell
 
     #region fields
 
-    public int id=-1;//ID клетки
     public Vector2 cellPosition;//Координаты центра ячейки
-    public NavCellTypeEnum cellType;//Тип клетки
-
-    [HideInInspector][SerializeField]public List<NeighborCellStruct> neighbors = new List<NeighborCellStruct>();//Соседние клетки, в которые можно прийти из данной ячейки
 
     [NonSerialized][HideInInspector]public bool visited = false;//Была ли посещена данная ячейка (используется в алгоритмах поиска путей)
     [NonSerialized][HideInInspector]public NavigationCell fromCell = null;//Из какой клетки мы пришли в данную (используется в алгоритмах поиска путей)
 
-    public int cellNumb, groupNumb;
-
     #endregion //fields
 
-    public NavigationCell(Vector2 _cellPosition, NavCellTypeEnum _cellType)
+    public NavigationCell(Vector2 _cellPosition)
     {
         cellPosition = _cellPosition;
-        cellType = _cellType;
-        neighbors = new List<NeighborCellStruct>();
         visited = false;
         fromCell = null;
     }
@@ -524,10 +783,85 @@ public class NavigationCell
     /// <summary>
     /// Очистить клетку (пометить, что она непосещённая)
     /// </summary>
-    public void ClearCell()
+    public virtual void ClearCell()
     {
         visited = false;
         fromCell = null;
+    }
+
+}
+
+/// <summary>
+/// Простая навигационная клетка. Помимо базовых данных эта клетка содержит информацию о том, можно ли впринципе посетить клетку
+/// Такие клетки используются летающими монстрами
+/// </summary>
+[System.Serializable]
+public class SimpleNavigationCell : NavigationCell
+{
+
+    #region fields
+
+    public bool canMove;//Можно ли посетить данную клетку
+
+    #endregion //fields
+
+    public SimpleNavigationCell(Vector2 _position): base(_position)
+    {
+        canMove = false;
+    }
+
+}
+
+/// <summary>
+/// Класс, представляющий ряд простых навигационных клеток. Используется для сериализации прямоугольного массив навигационных клеток
+/// </summary>
+[System.Serializable]
+public class NavigationCellRow
+{
+
+    #region fields
+
+    public List<SimpleNavigationCell> cells=new List<SimpleNavigationCell>();
+
+    #endregion //fields
+
+    public NavigationCellRow()
+    {
+        cells = new List<SimpleNavigationCell>();
+    }
+
+}
+
+/// <summary>
+/// Сложная навигационная клетка. Такие клетки используются нелетающими мобами, которые в своём навигационном маршруте могут иметь сложные участки, 
+/// которые можно описать только более сложными, чем NavigationCell и SimpleNavigationCell, конструкциями
+/// </summary>
+[System.Serializable]
+public class ComplexNavigationCell : NavigationCell
+{
+
+    #region fields
+
+    public int id = -1;//ID клетки
+    public NavCellTypeEnum cellType;//Тип клетки
+
+    [HideInInspector][SerializeField]
+    public List<NeighborCellStruct> neighbors = new List<NeighborCellStruct>();//Соседние клетки, в которые можно прийти из данной ячейки
+
+    public int cellNumb, groupNumb;
+
+    #endregion //fields
+
+    public ComplexNavigationCell(Vector2 _cellPosition):base(_cellPosition)
+    {
+        cellType = NavCellTypeEnum.usual;
+        neighbors = new List<NeighborCellStruct>();
+    }
+
+    public ComplexNavigationCell(Vector2 _cellPosition, NavCellTypeEnum _cellType):base(_cellPosition)
+    {
+        cellType = _cellType;
+        neighbors = new List<NeighborCellStruct>();
     }
 
     /// <summary>
@@ -543,6 +877,27 @@ public class NavigationCell
     }
 
 }
+
+/*
+/// <summary>
+/// Особый тип навигационных клеток, содержащих информацию об используемых платформах
+/// </summary>
+[System.Serializable]
+public class PlatformNavigationCell: NavigationCell
+{
+    public int platformID;//идентификатор платформы, которая связана с рассматриваемой навигационной клеткой
+
+    public PlatformNavigationCell(Vector2 _cellPosition, NavCellTypeEnum _cellType): base(_cellPosition,_cellType)
+    {
+        platformID = 0;
+    }
+
+    public PlatformNavigationCell(Vector2 _cellPosition, NavCellTypeEnum _cellType, int _platformID):base(_cellPosition,_cellType)
+    {
+        platformID = _platformID;
+    }
+
+}*/
 
 /// <summary>
 /// Структура, содержащая информацию о соседней клетки

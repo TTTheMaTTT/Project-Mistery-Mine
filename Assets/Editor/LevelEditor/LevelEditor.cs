@@ -3717,6 +3717,8 @@ public class LevelEditor : EditorWindow
 
         #region flyMap
 
+        /* Здесь реализован прежний подход, когда структура карты летающих существ ничем не отличалась от карт других типов
+
         //Создаём карту для летающих существ (пока что неоптимизированная версия, для проверки производительности)
 
         NavigationMap flyMap = navSystem.GetMap(NavMapTypeEnum.fly);
@@ -3878,7 +3880,43 @@ public class LevelEditor : EditorWindow
 
         //Пересчитать размеры групп, учитывая новые клетки
         foreach (NavigationGroup navGroup in flyMap.cellGroups)
-            navGroup.SetSize(navCellSize);
+            navGroup.SetSize(navCellSize);*/
+
+        //Создаём карту для летающих существ (пока что неоптимизированная версия, для проверки производительности)
+
+        NavigationMatrixMap flyMap = (NavigationMatrixMap)navSystem.GetMap(NavMapTypeEnum.fly);
+        flyMap.mapSize = navMapSize;
+        flyMap.mapDownLeft = navMapDownLeft;
+        flyMap.cellSize = navCellSize;
+        flyMap.CreateCells();
+
+        List<NavigationCellRow> simpleCells = flyMap.cellRows;
+
+        for (int i = 0; i < cellColumnSize; i++)
+        {
+            for (int j = 0; j < cellRowSize; j++)
+            {
+                SimpleNavigationCell currentCell = simpleCells[i].cells[j];
+                bool a1 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, navCellSize.y / 40f * 19f),
+                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
+                                                LayerMask.GetMask(groundName));
+                bool a2 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 40f * 19f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 40f * 19f, navCellSize.y / 20f * 9f),
+                                                LayerMask.GetMask(groundName));
+                bool a3 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(navCellSize.x / 40f * 19f, -navCellSize.y / 40f * 19f),
+                                                LayerMask.GetMask(groundName));
+                bool a4 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, -navCellSize.y / 20f * 9f),
+                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 40f * 19f),
+                                                LayerMask.GetMask(groundName));
+                if (a1 || a2 || a3 || a4)
+                    currentCell.canMove = true;
+            }
+
+
+        }
+       
+        simpleCells = null;
 
         #endregion //flyMap
 
@@ -3886,7 +3924,7 @@ public class LevelEditor : EditorWindow
 
         //Создаём карту для ползающих существ (пока что неоптимизированная версия, для проверки производительности)
 
-        NavigationMap crawlMap = navSystem.GetMap(NavMapTypeEnum.crawl);
+        NavigationBunchedMap crawlMap = (NavigationBunchedMap)navSystem.GetMap(NavMapTypeEnum.crawl);
         crawlMap.CreateGroups(navMapDownLeft, navMapSize, navGroupSize);
         crawlMap.mapSize = navMapSize;
         crawlMap.mapDownLeft = navMapDownLeft;
@@ -3899,7 +3937,7 @@ public class LevelEditor : EditorWindow
 
         float maxJumpHeight = Mathf.Floor(maxJumpDepth / navCellSize.y) * navCellSize.y;//На какую максимальную высоту может опуститься ползущее существо при осуществлении прыжка
 
-        newCells = NavigationSystem.GetNewCells(navMapDownLeft, navMapSize, navCellSize);
+        ComplexNavigationCell[][] complexCells = NavigationSystem.GetNewCells(navMapDownLeft, navMapSize, navCellSize);
 
         #region findCells
 
@@ -3908,7 +3946,7 @@ public class LevelEditor : EditorWindow
         {
             for (int j = 0; j < cellRowSize; j++)
             {
-                NavigationCell currentCell = newCells[i][j];
+                ComplexNavigationCell currentCell = complexCells[i][j];
                 int connectionCount = 0;
                 Collider2D[] checkCols = new Collider2D[0];
 
@@ -4002,7 +4040,7 @@ public class LevelEditor : EditorWindow
                 //{
                 //    bool k = false;
                 //}
-                NavigationCell currentCell = newCells[i][j];
+                ComplexNavigationCell currentCell = complexCells[i][j];
                 if (!currentCell.visited)
                     continue;
                 bool a1 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
@@ -4023,7 +4061,7 @@ public class LevelEditor : EditorWindow
 
                 if (j > 0 && i < cellColumnSize - 1)
                 {
-                    NavigationCell nextCell = newCells[i + 1][j - 1];
+                    ComplexNavigationCell nextCell = complexCells[i + 1][j - 1];
                     if (nextCell.visited)
                     {
                         bool b2 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 11f),
@@ -4047,7 +4085,7 @@ public class LevelEditor : EditorWindow
 
                 if (i < cellColumnSize - 1)
                 {
-                    NavigationCell nextCell = newCells[i + 1][j];
+                    ComplexNavigationCell nextCell = complexCells[i + 1][j];
                     if (nextCell.visited)
                     {
                         bool b1 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
@@ -4077,7 +4115,7 @@ public class LevelEditor : EditorWindow
 
                 if (i < cellColumnSize - 1 && j < cellRowSize - 1)
                 {
-                    NavigationCell nextCell = newCells[i + 1][j + 1];
+                    ComplexNavigationCell nextCell = complexCells[i + 1][j + 1];
                     if (nextCell.visited)
                     {
                         bool b1 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
@@ -4101,7 +4139,7 @@ public class LevelEditor : EditorWindow
 
                 if (j < cellRowSize - 1)
                 {
-                    NavigationCell nextCell = newCells[i][j + 1];
+                    ComplexNavigationCell nextCell = complexCells[i][j + 1];
                     if (nextCell.visited)
                     {
                         bool b1 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
@@ -4124,7 +4162,7 @@ public class LevelEditor : EditorWindow
                     }
                     else if (a3 && a4 && !a1 && !a2)//Если здесь находится уступ
                     {
-                        nextCell = GetJumpCell(newCells, currentCell, crawlSpeed, crawlJumpSpeed, g);
+                        nextCell = GetJumpCell(complexCells, currentCell, crawlSpeed, crawlJumpSpeed, g);
                         if (nextCell != null ? nextCell.visited : false)
                         {
                             currentCell.cellType = NavCellTypeEnum.jump;
@@ -4143,7 +4181,7 @@ public class LevelEditor : EditorWindow
                 {
                     if (!a3 && !a4 && a1 && a2)//Если мы рассматриваем потолок
                     {
-                        NavigationCell nextCell = GetJumpDownCell(newCells, currentCell);
+                        ComplexNavigationCell nextCell = GetJumpDownCell(complexCells, currentCell);
                         if (nextCell != null ? nextCell.visited : false)
                         {
                             currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.usual));
@@ -4158,7 +4196,7 @@ public class LevelEditor : EditorWindow
 
                 if (j > 0)
                 {
-                    NavigationCell nextCell = newCells[i][j - 1];
+                    ComplexNavigationCell nextCell = complexCells[i][j - 1];
                     bool b3 = Physics2D.OverlapArea(nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 9f),
                                                     nextCell.cellPosition + new Vector2(navCellSize.x / 20f * 11f, -navCellSize.y / 20f * 11f),
                                                     LayerMask.GetMask(groundName));
@@ -4167,7 +4205,7 @@ public class LevelEditor : EditorWindow
                                                     LayerMask.GetMask(groundName));
                     if (a3 && a4 && !a1 && !a2 && !(b3 && b4))//Если здесь находится уступ
                     {
-                        nextCell = GetJumpCell(newCells, currentCell, -crawlSpeed, crawlJumpSpeed, g);
+                        nextCell = GetJumpCell(complexCells, currentCell, -crawlSpeed, crawlJumpSpeed, g);
                         if (nextCell != null ? nextCell.visited : false)
                         {
                             currentCell.cellType = NavCellTypeEnum.jump;
@@ -4184,7 +4222,7 @@ public class LevelEditor : EditorWindow
 
         #endregion //addNeighbours
 
-        newCells = null;
+        complexCells = null;
 
         //Пересчитать размеры групп, учитывая новые клетки
         foreach (NavigationGroup navGroup in crawlMap.cellGroups)
@@ -4199,14 +4237,14 @@ public class LevelEditor : EditorWindow
 
         //Создаём карту для гуманоидов (пока что неоптимизированная версия, для проверки производительности)
 
-        NavigationMap usualMap = navSystem.GetMap(NavMapTypeEnum.usual);
+        NavigationBunchedMap usualMap = (NavigationBunchedMap)navSystem.GetMap(NavMapTypeEnum.usual);
         usualMap.CreateGroups(navMapDownLeft, navMapSize, navGroupSize);
         usualMap.mapSize = navMapSize;
         usualMap.mapDownLeft = navMapDownLeft;
         usualMap.cellSize = navCellSize;
         usualMap.groupSize = navGroupSize;
 
-        newCells = NavigationSystem.GetNewCells(navMapDownLeft, navMapSize, navCellSize);
+        complexCells = NavigationSystem.GetNewCells(navMapDownLeft, navMapSize, navCellSize);
 
         #region findCells
 
@@ -4215,7 +4253,7 @@ public class LevelEditor : EditorWindow
         {
             for (int j = 0; j < cellRowSize; j++)
             {
-                NavigationCell currentCell = newCells[i][j];
+                ComplexNavigationCell currentCell = complexCells[i][j];
                 int connectionCount = 0;
                 Collider2D[] checkCols = new Collider2D[0];
                 bool nearGhostPlatform = false;
@@ -4280,7 +4318,7 @@ public class LevelEditor : EditorWindow
         for (int i = 0; i < platforms.transform.childCount; i++)
         {
             MovingPlatform platform = platforms.transform.GetChild(i).GetComponent<MovingPlatform>();
-            DefinePlatformCells(newCells, platform, usualMap);
+            DefinePlatformCells(complexCells, platform, usualMap);
         }
 
         usualMap.CheckGroups();
@@ -4303,7 +4341,7 @@ public class LevelEditor : EditorWindow
         {
             for (int j = 0; j < cellRowSize; j++)
             {
-                NavigationCell currentCell = newCells[i][j];
+                ComplexNavigationCell currentCell = complexCells[i][j];
                 if (!currentCell.visited)
                     continue;
 
@@ -4317,7 +4355,7 @@ public class LevelEditor : EditorWindow
                         ladderID++;
                         currentCell.id = ladderID;
                     }
-                    NavigationCell nextCell = newCells[i + 1][j];
+                    ComplexNavigationCell nextCell = complexCells[i + 1][j];
                     if (nextCell.visited && nextCell.cellType == NavCellTypeEnum.ladder)
                     {
                         currentCell.neighbors.Add(new NeighborCellStruct(nextCell.groupNumb, nextCell.cellNumb, NavCellTypeEnum.ladder));
@@ -4327,10 +4365,10 @@ public class LevelEditor : EditorWindow
                     else
                     {
                         //Проверим, можно ли прыгнуть вертикально вверх от вершины текущей лестницы и зацепиться за лестицу выше
-                        List<NavigationCell> jumpCells = GetJumpCells(newCells, currentCell, 0f, usualJumpSpeed, g, false);
+                        List<ComplexNavigationCell> jumpCells = GetJumpCells(complexCells, currentCell, 0f, usualJumpSpeed, g, false);
                         if (jumpCells != null)
                         {
-                            foreach (NavigationCell jumpCell in jumpCells)
+                            foreach (ComplexNavigationCell jumpCell in jumpCells)
                             {
                                 if (jumpCell != null ? (jumpCell.visited ? jumpCell.cellPosition.y > currentCell.cellPosition.y : false) : false)
                                 {
@@ -4349,7 +4387,7 @@ public class LevelEditor : EditorWindow
 
                 if (j < cellRowSize - 1)
                 {
-                    NavigationCell nextCell = newCells[i][j + 1];
+                    ComplexNavigationCell nextCell = complexCells[i][j + 1];
                     if (nextCell.visited && currentCell.cellType != NavCellTypeEnum.movPlatform)
                     {
                         if (currentCell.cellType == NavCellTypeEnum.ladder && nextCell.cellType == currentCell.cellType)
@@ -4380,17 +4418,17 @@ public class LevelEditor : EditorWindow
                         bool b4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 7f),
                                                         currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
                                                         LayerMask.GetMask(groundName));
-                        NavigationCell upCell = i < cellColumnSize - 1 ? newCells[i + 1][j] : null;
-                        NavigationCell downCell = i > 0 && b3 && b4 ? newCells[i - 1][j] : null;
+                        ComplexNavigationCell upCell = i < cellColumnSize - 1 ? complexCells[i + 1][j] : null;
+                        ComplexNavigationCell downCell = i > 0 && b3 && b4 ? complexCells[i - 1][j] : null;
                         bool correct = currentCell.cellType == NavCellTypeEnum.ladder ? ((upCell != null ? upCell.cellType != NavCellTypeEnum.ladder : false) ||
                                                                                          (downCell != null ? downCell.cellType != NavCellTypeEnum.ladder : false)) : true;
 
                         if (correct)
                         {
-                            List<NavigationCell> jumpCells = GetJumpCells(newCells, currentCell, usualSpeed, usualJumpSpeed, g, currentCell.cellType != NavCellTypeEnum.movPlatform);
+                            List<ComplexNavigationCell> jumpCells = GetJumpCells(complexCells, currentCell, usualSpeed, usualJumpSpeed, g, currentCell.cellType != NavCellTypeEnum.movPlatform);
                             if (jumpCells != null)
                             {
-                                foreach (NavigationCell jumpCell in jumpCells)
+                                foreach (ComplexNavigationCell jumpCell in jumpCells)
                                 {
                                     if (jumpCell != null ? (jumpCell.visited ? (currentCell.cellType == NavCellTypeEnum.ladder ? ((downCell!=null? downCell.cellType!=NavCellTypeEnum.ladder:true) || 
                                                                                                                                   jumpCell.cellPosition.y > currentCell.cellPosition.y) : true) :false) : false)
@@ -4405,7 +4443,7 @@ public class LevelEditor : EditorWindow
                             }
                         }
 
-                        NavigationCell rightCell = newCells[i][j + 1];
+                        ComplexNavigationCell rightCell = complexCells[i][j + 1];
                         bool a1 = Physics2D.OverlapArea(rightCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
                                                         rightCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 7f),
                                                         LayerMask.GetMask(groundName));
@@ -4420,10 +4458,10 @@ public class LevelEditor : EditorWindow
                                                         LayerMask.GetMask(groundName));
                         if (!a1 && !a2 && a3 && a4)
                         {
-                            List<NavigationCell> jumpCells = GetJumpDownCells(newCells, rightCell, currentCell.cellType != NavCellTypeEnum.movPlatform);
+                            List<ComplexNavigationCell> jumpCells = GetJumpDownCells(complexCells, rightCell, currentCell.cellType != NavCellTypeEnum.movPlatform);
                             if (jumpCells != null)
                             {
-                                foreach (NavigationCell jumpCell in jumpCells)
+                                foreach (ComplexNavigationCell jumpCell in jumpCells)
                                 {
                                     if (jumpCell != null ? jumpCell.visited : false)
                                     {
@@ -4443,7 +4481,7 @@ public class LevelEditor : EditorWindow
 
                 if (j > 0)
                 {
-                    NavigationCell leftCell = newCells[i][j - 1];
+                    ComplexNavigationCell leftCell = complexCells[i][j - 1];
                     if (!leftCell.visited)//Если здесь находится уступ или препятствие
                     {
                         bool b3 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 7f, -navCellSize.y / 20f * 7f),
@@ -4452,17 +4490,17 @@ public class LevelEditor : EditorWindow
                         bool b4 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 20f * 7f),
                                                         currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 7f, navCellSize.y / 20f * 9f),
                                                         LayerMask.GetMask(groundName));
-                        NavigationCell upCell = i < cellColumnSize - 1 ? newCells[i + 1][j] : null;
-                        NavigationCell downCell = i > 0 && b3 && b4 ? newCells[i - 1][j] : null;
+                        ComplexNavigationCell upCell = i < cellColumnSize - 1 ? complexCells[i + 1][j] : null;
+                        ComplexNavigationCell downCell = i > 0 && b3 && b4 ? complexCells[i - 1][j] : null;
                         bool correct = currentCell.cellType == NavCellTypeEnum.ladder ? ((upCell != null ? upCell.cellType != NavCellTypeEnum.ladder : false) ||
                                                                                          (downCell != null ? downCell.cellType != NavCellTypeEnum.ladder : false)) : true;
 
                         if (correct)
                         {
-                            List<NavigationCell> jumpCells = GetJumpCells(newCells, currentCell, -usualSpeed, usualJumpSpeed, g, currentCell.cellType != NavCellTypeEnum.movPlatform);
+                            List<ComplexNavigationCell> jumpCells = GetJumpCells(complexCells, currentCell, -usualSpeed, usualJumpSpeed, g, currentCell.cellType != NavCellTypeEnum.movPlatform);
                             if (jumpCells != null)
                             {
-                                foreach (NavigationCell jumpCell in jumpCells)
+                                foreach (ComplexNavigationCell jumpCell in jumpCells)
                                 {
                                     if (jumpCell != null ? (jumpCell.visited ? (currentCell.cellType == NavCellTypeEnum.ladder ? ((downCell != null ? downCell.cellType != NavCellTypeEnum.ladder : true) || 
                                                                                                                                   jumpCell.cellPosition.y > currentCell.cellPosition.y) : true) : false) : false)
@@ -4490,10 +4528,10 @@ public class LevelEditor : EditorWindow
                                                         LayerMask.GetMask(groundName));
                         if (!a1 && !a2 && a3 && a4)
                         {
-                            List<NavigationCell> jumpCells = GetJumpDownCells(newCells, leftCell, currentCell.cellType != NavCellTypeEnum.movPlatform);
+                            List<ComplexNavigationCell> jumpCells = GetJumpDownCells(complexCells, leftCell, currentCell.cellType != NavCellTypeEnum.movPlatform);
                             if (jumpCells != null)
                             {
-                                foreach (NavigationCell jumpCell in jumpCells)
+                                foreach (ComplexNavigationCell jumpCell in jumpCells)
                                 {
                                     if (jumpCell != null ? jumpCell.visited : false)
                                     {
@@ -4511,13 +4549,13 @@ public class LevelEditor : EditorWindow
 
                 if (i > 0)
                 {
-                    NavigationCell downCell = newCells[i - 1][j];
+                    ComplexNavigationCell downCell = complexCells[i - 1][j];
                     if (currentCell.cellType == NavCellTypeEnum.ladder && downCell.cellType!=NavCellTypeEnum.ladder)
                     {
-                        List<NavigationCell> jumpCells = GetJumpDownCells(newCells, downCell, true);
+                        List<ComplexNavigationCell> jumpCells = GetJumpDownCells(complexCells, downCell, true);
                         if (jumpCells != null)
                         {
-                            foreach (NavigationCell jumpCell in jumpCells)
+                            foreach (ComplexNavigationCell jumpCell in jumpCells)
                             {
                                 if (jumpCell != null ? jumpCell.visited : false)
                                 {
@@ -4535,7 +4573,7 @@ public class LevelEditor : EditorWindow
 
         #endregion //addNeighbours
 
-        newCells = null;
+        complexCells = null;
 
         //Пересчитать размеры групп, учитывая новые клетки
         foreach (NavigationGroup navGroup in usualMap.cellGroups)
@@ -4547,6 +4585,10 @@ public class LevelEditor : EditorWindow
 
     }
 
+    /// <summary>
+    /// Взаимодействовать с объектом, который сможет отображать карту уровня прямо на сцене
+    /// </summary>
+    /// <param name="activate">Включить или выключить?</param>
     public void SetMapVisualizer(bool activate)
     {
         if (!activate)
@@ -4573,7 +4615,7 @@ public class LevelEditor : EditorWindow
     /// <param name="g1">Ускорение свободного падения</param>
     /// <returns>Искомая клетка</returns>
     /// <returns></returns>
-    public NavigationCell GetJumpCell(NavigationCell[][] _cells, NavigationCell _startCell, float vx, float vy, float g1)
+    public ComplexNavigationCell GetJumpCell(ComplexNavigationCell[][] _cells, ComplexNavigationCell _startCell, float vx, float vy, float g1)
     {
         float x1 = _startCell.cellPosition.x;
         float y0 = _startCell.cellPosition.y - navCellSize.y / 2f;//y-координата, от которой будем отсчитывать высоту падения
@@ -4582,7 +4624,7 @@ public class LevelEditor : EditorWindow
 
         Vector2 currentPosition = new Vector2(x1, y1);
 
-        NavigationCell currentCell = _startCell;
+        ComplexNavigationCell currentCell = _startCell;
         bool a1 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
                                                LayerMask.GetMask(groundName));
@@ -4662,7 +4704,7 @@ public class LevelEditor : EditorWindow
     /// <param name="g1">Ускорение свободного падения</param>
     /// <param name="considerPlatform">Учитывать ли возможность прыгнуть на движущуюся платформу?</param>
     /// <returns>Возвращает набор клеток, до которых можно добраться прыжком</returns>
-    public List<NavigationCell> GetJumpCells(NavigationCell[][] _cells, NavigationCell _startCell, float vx, float vy, float g1, bool considerPlatform)
+    public List<ComplexNavigationCell> GetJumpCells(ComplexNavigationCell[][] _cells, ComplexNavigationCell _startCell, float vx, float vy, float g1, bool considerPlatform)
     {
         float x1 = _startCell.cellPosition.x;
         float y0 = _startCell.cellPosition.y - navCellSize.y / 2f;//y-координата, от которой будем отсчитывать высоту падения
@@ -4670,9 +4712,9 @@ public class LevelEditor : EditorWindow
         string groundName = "ground";
 
         Vector2 currentPosition = new Vector2(x1, y1);
-        List<NavigationCell> jumpCells = new List<NavigationCell>();
+        List<ComplexNavigationCell> jumpCells = new List<ComplexNavigationCell>();
 
-        NavigationCell currentCell = _startCell;
+        ComplexNavigationCell currentCell = _startCell;
         bool a1 = Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 11f, navCellSize.y / 20f * 11f),
                                                currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, navCellSize.y / 20f * 9f),
                                                LayerMask.GetMask(groundName));
@@ -4766,11 +4808,11 @@ public class LevelEditor : EditorWindow
     /// <param name="_cells">Набор клеток, относительно которых мы и ориентируемся</param>
     /// <param name="_startCell">Клетка, из которой прыгаем</param>
     /// <returns>Искомая клетка</returns>
-    public NavigationCell GetJumpDownCell(NavigationCell[][] _cells, NavigationCell _startCell)
+    public ComplexNavigationCell GetJumpDownCell(ComplexNavigationCell[][] _cells, ComplexNavigationCell _startCell)
     {
         int cellIndexX = Mathf.RoundToInt((_startCell.cellPosition.x - _cells[0][0].cellPosition.x) / navCellSize.x);
         int cellIndexY = Mathf.RoundToInt((_startCell.cellPosition.y - _cells[0][0].cellPosition.y) / navCellSize.y);
-        NavigationCell currentCell;
+        ComplexNavigationCell currentCell;
         string groundName = "ground";
 
         cellIndexY--;
@@ -4800,13 +4842,13 @@ public class LevelEditor : EditorWindow
     /// <param name="_startCell">Клетка, из которой прыгаем</param>
     /// <param name="considerPlatforms">Надо ли учитывать движущиеся платформы?</param>
     /// <returns>Искомые клетки</returns>
-    public List<NavigationCell> GetJumpDownCells(NavigationCell[][] _cells, NavigationCell _startCell, bool considerPlatforms)
+    public List<ComplexNavigationCell> GetJumpDownCells(ComplexNavigationCell[][] _cells, ComplexNavigationCell _startCell, bool considerPlatforms)
     {
 
         int cellIndexX = Mathf.RoundToInt((_startCell.cellPosition.x - _cells[0][0].cellPosition.x) / navCellSize.x);
         int cellIndexY = Mathf.RoundToInt((_startCell.cellPosition.y - _cells[0][0].cellPosition.y) / navCellSize.y);
-        List<NavigationCell> jumpCells = new List<NavigationCell>();
-        NavigationCell currentCell;
+        List<ComplexNavigationCell> jumpCells = new List<ComplexNavigationCell>();
+        ComplexNavigationCell currentCell;
         string groundName = "ground";
         int prevPlatformNumber = -1;
 
@@ -4853,7 +4895,7 @@ public class LevelEditor : EditorWindow
     /// <param name="_cells">Все навигационные клетки</param>
     /// <param name="_platform">Рассматриваемая платформа с заданным маршрутом</param>
     /// <param name="_map">Навигационная карта</param>
-    void DefinePlatformCells(NavigationCell[][] _cells, MovingPlatform _platform, NavigationMap _map)
+    void DefinePlatformCells(ComplexNavigationCell[][] _cells, MovingPlatform _platform, NavigationBunchedMap _map)
     {
         float step = navCellSize.x / 4f;
         List<Vector2> positions = _platform.PlatformPositions;
@@ -4863,7 +4905,7 @@ public class LevelEditor : EditorWindow
         {
             return;
         }
-        NavigationCell currentCell;
+        ComplexNavigationCell currentCell;
 
         for (int i = 0; i < positions.Count - 1; i++)
         {
@@ -4902,7 +4944,7 @@ public class LevelEditor : EditorWindow
     /// <param name="_cells">Все навигационные клетки</param>
     /// <param name="_platform">Рассматриваемая платформа с заданным маршрутом</param>
     /// <param name="_map">Навигационная карта</param>
-    void DefinePlatformCellsNeighbors(MovingPlatform _platform, NavigationMap _map)
+    void DefinePlatformCellsNeighbors(MovingPlatform _platform, NavigationBunchedMap _map)
     {
         float step = navCellSize.x / 4f;
         List<Vector2> positions = _platform.PlatformPositions;
@@ -4912,9 +4954,9 @@ public class LevelEditor : EditorWindow
         {
             return;
         }
-        NavigationCell currentCell;
-        NavigationCell prevCell;
-        NavigationCell startCell;
+        ComplexNavigationCell currentCell;
+        ComplexNavigationCell prevCell;
+        ComplexNavigationCell startCell;
 
         //Определим начальную клетку для того, чтобы обязательно замкнуть контур маршрута, если таковой имеется
         Vector2 startPosition = positions[0];

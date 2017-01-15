@@ -734,7 +734,7 @@ public class SpiderController : AIController
                     {
                         if (jumping)
                             jumping = false;
-                        NavigationCell currentWaypoint = waypoints[0];
+                        ComplexNavigationCell currentWaypoint = (ComplexNavigationCell)waypoints[0];
                         currentTarget.Exists = false;
                         waypoints.RemoveAt(0);
 
@@ -742,10 +742,10 @@ public class SpiderController : AIController
                         {
                             bool directPath = true;
                             Vector2 cellsDirection = (waypoints[1].cellPosition - waypoints[0].cellPosition).normalized;
-                            NavCellTypeEnum cellsType = waypoints[0].cellType;
+                            NavCellTypeEnum cellsType = ((ComplexNavigationCell)waypoints[0]).cellType;
                             for (int i = 2; i < waypoints.Count; i++)
                             {
-                                if (Vector2.Angle((waypoints[i].cellPosition - waypoints[i - 1].cellPosition), cellsDirection) > minAngle || waypoints[i - 1].cellType != cellsType)
+                                if (Vector2.Angle((waypoints[i].cellPosition - waypoints[i - 1].cellPosition), cellsDirection) > minAngle || ((ComplexNavigationCell)waypoints[i - 1]).cellType != cellsType)
                                 {
                                     directPath = false;
                                     break;
@@ -770,7 +770,7 @@ public class SpiderController : AIController
                         }
                         else
                         {
-                            NavigationCell nextWaypoint = waypoints[0];
+                            ComplexNavigationCell nextWaypoint = (ComplexNavigationCell)waypoints[0];
                             //Продолжаем следование
                             currentTarget = new ETarget(nextWaypoint.cellPosition);
                             if (currentWaypoint.GetNeighbor(nextWaypoint.groupNumb, nextWaypoint.cellNumb).connectionType == NavCellTypeEnum.jump)
@@ -851,7 +851,7 @@ public class SpiderController : AIController
             {
                 if (jumping)
                     jumping = false;
-                NavigationCell currentWaypoint = waypoints[0];
+                ComplexNavigationCell currentWaypoint = (ComplexNavigationCell)waypoints[0];
                 currentTarget.Exists = false;
                 waypoints.RemoveAt(0);
                 if (waypoints.Count == 0)
@@ -869,7 +869,7 @@ public class SpiderController : AIController
                 }
                 else
                 {
-                    NavigationCell nextWaypoint = waypoints[0];
+                    ComplexNavigationCell nextWaypoint = (ComplexNavigationCell)waypoints[0];
                     //Продолжаем следование
                     currentTarget = new ETarget(nextWaypoint.cellPosition);
                     if (currentWaypoint.GetNeighbor(nextWaypoint.groupNumb, nextWaypoint.cellNumb).connectionType == NavCellTypeEnum.jump)
@@ -1105,13 +1105,14 @@ public class SpiderController : AIController
     protected void FindFrontPatrolTarget()
     {
         Vector2 pos = transform.position;
-        if (navMap == null)
+        if (navMap == null || !(navMap is NavigationBunchedMap))
             return;
-        NavigationCell currentCell = navMap.GetCurrentCell(transform.position);
+        NavigationBunchedMap _map = (NavigationBunchedMap)navMap;
+        ComplexNavigationCell currentCell = (ComplexNavigationCell)_map.GetCurrentCell(transform.position);
         if (currentCell == null)
             return;
         bool hasNext = true;
-        NavigationCell nextCell = currentCell;
+        ComplexNavigationCell nextCell = currentCell;
         while (hasNext)
         {
             Vector2 pos1 = currentCell.cellPosition;
@@ -1122,7 +1123,7 @@ public class SpiderController : AIController
             }
             foreach (NeighborCellStruct neighbor in currentCell.neighbors)
             {
-                nextCell = navMap.GetCell(neighbor.groupNumb, neighbor.cellNumb);
+                nextCell = _map.GetCell(neighbor.groupNumb, neighbor.cellNumb);
                 Vector2 pos2 = nextCell.cellPosition;
                 if (Mathf.Abs(pos1.y - pos2.y) < navCellSize / 2f && (pos2.x - pos1.x) * (int)orientation > 0 && neighbor.connectionType==NavCellTypeEnum.usual)
                 {
@@ -1304,12 +1305,12 @@ public class SpiderController : AIController
                     pos = transform.position;
                     if (waypoints != null ? waypoints.Count > 0 : false)
                     {
-                        NavigationCell currentCell = waypoints[0];
+                        ComplexNavigationCell currentCell = (ComplexNavigationCell)waypoints[0];
                         waypoints.RemoveAt(0);
                         if (waypoints.Count <= 0)
                             break;
                         jumping = false;
-                        NavigationCell nextCell = waypoints[0];
+                        ComplexNavigationCell nextCell = (ComplexNavigationCell)waypoints[0];
                         currentTarget = new ETarget(nextCell.cellPosition);
                         NeighborCellStruct neighborConnection = currentCell.GetNeighbor(nextCell.groupNumb,nextCell.cellNumb);
                         if (neighborConnection.connectionType == NavCellTypeEnum.jump)

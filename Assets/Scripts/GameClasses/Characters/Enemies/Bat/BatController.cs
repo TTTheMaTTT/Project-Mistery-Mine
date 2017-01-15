@@ -345,6 +345,68 @@ public class BatController : AIController
             Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign((currentTarget - transform.position).x)));
     }
 
+    /// <summary>
+    /// Процесс оптимизированного прохождения пути. Заключается в том, что персонаж, зная свой маршрут, появляется в его различиных позициях, не используя 
+    /// </summary>
+    /// <returns></returns>
+    protected override IEnumerator PathPassOptProcess()
+    {
+        followOptPath = true;
+        if (waypoints == null && !currentTarget.exists)
+        {
+            if (Vector2.SqrMagnitude((Vector2)transform.position - beginPosition) < minCellSqrMagnitude)
+                BecomeCalm();
+            else
+            {
+                GoHome();
+                if (waypoints == null)
+                {
+                    //Если не получается добраться до начальной позиции, то считаем, что текущая позиция становится начальной
+                    beginPosition = transform.position;
+                    beginOrientation = orientation;
+                    BecomeCalm();
+                    followOptPath = false;
+                }
+                else
+                    StartCoroutine("PathPassOptProcess");
+            }
+        }
+        else
+        {
+            while ((waypoints != null ? waypoints.Count > 0 : false) || currentTarget.exists)
+            {
+                if (!currentTarget.exists)
+                    currentTarget = new ETarget(waypoints[0].cellPosition);
+
+                Vector2 pos = transform.position;
+                Vector2 targetPos = currentTarget;
+
+                if (Vector2.SqrMagnitude(pos - targetPos) <= minCellSqrMagnitude)
+                {
+                    transform.position = targetPos;
+                    pos = transform.position;
+                    currentTarget.Exists = false;
+                    if (waypoints != null ? waypoints.Count > 0 : false)
+                    {
+                        NavigationCell currentCell = waypoints[0];
+                        waypoints.RemoveAt(0);
+                        if (waypoints.Count <= 0)
+                            break;
+                        NavigationCell nextCell = waypoints[0];
+                        currentTarget = new ETarget(nextCell.cellPosition);
+                    }
+                }
+                targetPos = currentTarget;
+                yield return new WaitForSeconds(optTimeStep);
+                Vector2 direction = targetPos - pos;
+                transform.position = pos + direction.normalized * Mathf.Clamp(speed, 0f, direction.magnitude);
+            }
+            waypoints = null;
+            currentTarget.Exists = false;
+            followOptPath = false;
+        }
+    }
+
     #endregion //optimization
 
     /// <summary>

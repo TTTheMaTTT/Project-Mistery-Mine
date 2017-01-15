@@ -31,7 +31,7 @@ public class AIController : CharacterController
     #endregion //delegates
 
     #region eventHandlers
-    
+
     public EventHandler<BehaviorEventArgs> BehaviorChangeEvent;//Событие о смене модели поведения
     public EventHandler<HealthEventArgs> healthChangedEvent;
 
@@ -55,10 +55,10 @@ public class AIController : CharacterController
         }
     }
 
-    protected ETarget mainTarget=ETarget.zero;//Что является целью ИИ
-    protected ETarget currentTarget=ETarget.zero;//Что является текущей целью ИИ
+    protected ETarget mainTarget = ETarget.zero;//Что является целью ИИ
+    protected ETarget currentTarget = ETarget.zero;//Что является текущей целью ИИ
     protected List<NavigationCell> waypoints;//Маршрут следования
-    protected virtual List<NavigationCell> Waypoints { get { return waypoints; } set { StopFollowOptPath(); waypoints = value;} }
+    protected virtual List<NavigationCell> Waypoints { get { return waypoints; } set { StopFollowOptPath(); waypoints = value; } }
 
     protected ActionDelegate behaviorActions;
     protected ActionDelegate analyseActions;
@@ -83,7 +83,7 @@ public class AIController : CharacterController
     protected BehaviorEnum behavior = BehaviorEnum.calm;
     public BehaviorEnum Behavior { get { return behavior; } set { behavior = value; } }
 
-    protected bool waiting=false;//Находится ли персонаж в тактическом ожидании?
+    protected bool waiting = false;//Находится ли персонаж в тактическом ожидании?
     public virtual bool Waiting { get { return waiting; } set { waiting = value; } }
     protected virtual float waitingNearDistance { get { return 1f; } }//Если цель ближе этого расстояния, то в режиме ожидания персонаж будет убегать от неё
     protected virtual float waitingFarDistance { get { return 1.6f; } }//Если цель дальше этого расстояния, то в режиме ожидания персонаж будет стремиться к ней
@@ -136,7 +136,7 @@ public class AIController : CharacterController
         beginOrientation = orientation;
         indicators = transform.FindChild("Indicators");
         Transform areaTransform = indicators.FindChild("AreaTrigger");
-        if (areaTransform != null? areaTransform.gameObject.activeSelf:false)
+        if (areaTransform != null ? areaTransform.gameObject.activeSelf : false)
             areaTrigger = areaTransform.GetComponent<AreaTrigger>();
         if (areaTrigger != null)
         {
@@ -178,11 +178,11 @@ public class AIController : CharacterController
         avoid = true;
         EVector3 _prevPos = prevPosition;
         yield return new WaitForSeconds(avoidTime);
-        Vector3 pos = transform.position; 
-        if (currentTarget.exists && (currentTarget!= mainTarget) && (pos - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
+        Vector3 pos = transform.position;
+        if (currentTarget.exists && (currentTarget != mainTarget) && (pos - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
         {
             transform.position += (currentTarget - transform.position).normalized * navCellSize;
-        } 
+        }
         avoid = false;
     }
 
@@ -200,7 +200,7 @@ public class AIController : CharacterController
     protected virtual IEnumerator ResetStartPositionProcess(Vector2 prevPosition)
     {
         yield return new WaitForSeconds(avoidTime);
-        if (Vector2.SqrMagnitude(prevPosition - (Vector2)transform.position) < minCellSqrMagnitude && behavior==BehaviorEnum.patrol)
+        if (Vector2.SqrMagnitude(prevPosition - (Vector2)transform.position) < minCellSqrMagnitude && behavior == BehaviorEnum.patrol)
         {
             beginPosition = transform.position;
             beginOrientation = orientation;
@@ -230,7 +230,7 @@ public class AIController : CharacterController
         currentTarget = mainTarget;
         if (optimized)
             behaviorActions = AgressiveOptBehavior;
-        else 
+        else
             behaviorActions = AgressiveBehavior;
         StopCoroutine("BecomeCalmProcess");
         OnChangeBehavior(new BehaviorEventArgs(BehaviorEnum.agressive));
@@ -243,7 +243,7 @@ public class AIController : CharacterController
     {
         RefreshTargets();
         behavior = BehaviorEnum.calm;
-        mainTarget.Exists=false;
+        mainTarget.Exists = false;
         waypoints = null;
         if (optimized)
             behaviorActions = CalmOptBehavior;
@@ -259,7 +259,7 @@ public class AIController : CharacterController
     {
         RefreshTargets();
         behavior = BehaviorEnum.patrol;
-        mainTarget.Exists=false;
+        mainTarget.Exists = false;
         if (optimized)
             behaviorActions = PatrolOptBehavior;
         else
@@ -287,9 +287,13 @@ public class AIController : CharacterController
     /// <param name="targetPosition">Точка, достичь которую стремится ИИ</param>
     protected virtual void GoToThePoint(Vector2 targetPosition)
     {
+        System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
+        watch.Start();
         if (navMap == null)
             return;
         waypoints = navMap.GetPath(transform.position, targetPosition, true);
+        watch.Stop();
+        TimeSpan t = watch.Elapsed;
         if (waypoints == null)
             return;
         BecomePatrolling();
@@ -329,7 +333,7 @@ public class AIController : CharacterController
         OnHealthChanged(new HealthEventArgs(health));
         StopMoving();
         StartCoroutine(Microstun());
-        if (behavior!=BehaviorEnum.agressive)
+        if (behavior != BehaviorEnum.agressive)
             BecomeAgressive();
     }
 
@@ -391,11 +395,12 @@ public class AIController : CharacterController
     /// <returns>Навигационные ячейки, составляющие маршрут</returns>
     protected virtual List<NavigationCell> FindPath(Vector2 endPoint, int _maxDepth)
     {
-        if (navMap == null)
+        if (navMap == null || !(navMap is NavigationBunchedMap))
             return null;
 
+        NavigationBunchedMap _map = (NavigationBunchedMap)navMap;
         List<NavigationCell> _path = new List<NavigationCell>();
-        NavigationCell beginCell = navMap.GetCurrentCell(transform.position), endCell = navMap.GetCurrentCell(endPoint);
+        ComplexNavigationCell beginCell = (ComplexNavigationCell)_map.GetCurrentCell(transform.position), endCell = (ComplexNavigationCell)_map.GetCurrentCell(endPoint);
 
         if (beginCell == null || endCell == null)
             return null;
@@ -404,7 +409,7 @@ public class AIController : CharacterController
         int depthOrder = 0, currentDepthCount = 1, nextDepthCount = 0;
         //navMap.ClearMap();
         List<NavigationGroup> clearedGroups = new List<NavigationGroup>();//Список "очищенных групп" (со стёртой информации о посещённости ячеек)
-        List<NavigationGroup> cellGroups = navMap.cellGroups;
+        List<NavigationGroup> cellGroups = _map.cellGroups;
         NavigationGroup clearedGroup = cellGroups[beginCell.groupNumb];
         clearedGroup.ClearCells();
         clearedGroups.Add(clearedGroup);
@@ -415,16 +420,16 @@ public class AIController : CharacterController
             clearedGroups.Add(clearedGroup);
         }
 
-        Queue<NavigationCell> cellsQueue = new Queue<NavigationCell>();
+        Queue<ComplexNavigationCell> cellsQueue = new Queue<ComplexNavigationCell>();
         cellsQueue.Enqueue(beginCell);
         beginCell.visited = true;
         while (cellsQueue.Count > 0 && endCell.fromCell == null)
         {
-            NavigationCell currentCell = cellsQueue.Dequeue();
+            ComplexNavigationCell currentCell = cellsQueue.Dequeue();
             if (currentCell == null)
                 return null;
-            List<NavigationCell> neighbourCells = currentCell.neighbors.ConvertAll<NavigationCell>(x => navMap.GetCell(x.groupNumb, x.cellNumb));
-            foreach (NavigationCell cell in neighbourCells)
+            List<ComplexNavigationCell> neighbourCells = currentCell.neighbors.ConvertAll<ComplexNavigationCell>(x => _map.GetCell(x.groupNumb, x.cellNumb));
+            foreach (ComplexNavigationCell cell in neighbourCells)
             {
                 if (cell.groupNumb != currentCell.groupNumb)
                 {
@@ -477,7 +482,7 @@ public class AIController : CharacterController
         //Удалим все ненужные точки
         for (int i = 0; i < _path.Count - 2; i++)
         {
-            NavigationCell checkPoint1 = _path[i], checkPoint2 = _path[i + 1];
+            ComplexNavigationCell checkPoint1 = (ComplexNavigationCell)_path[i], checkPoint2 = (ComplexNavigationCell)_path[i + 1];
             if (checkPoint1.cellType == NavCellTypeEnum.jump || checkPoint1.cellType == NavCellTypeEnum.movPlatform)
                 continue;
             if (checkPoint1.cellType != checkPoint2.cellType)
@@ -485,7 +490,7 @@ public class AIController : CharacterController
             Vector2 movDirection1 = (checkPoint2.cellPosition - checkPoint1.cellPosition).normalized;
             Vector2 movDirection2 = Vector2.zero;
             int index = i + 2;
-            NavigationCell checkPoint3 = _path[index];
+            ComplexNavigationCell checkPoint3 = (ComplexNavigationCell)_path[index];
             while (Vector2.SqrMagnitude(movDirection1 - (checkPoint3.cellPosition - checkPoint2.cellPosition).normalized) < .01f &&
                    checkPoint1.cellType == checkPoint3.cellType &&
                    index < _path.Count)
@@ -494,7 +499,7 @@ public class AIController : CharacterController
                 if (index < _path.Count)
                 {
                     checkPoint2 = checkPoint3;
-                    checkPoint3 = _path[index];
+                    checkPoint3 = (ComplexNavigationCell)_path[index];
                 }
             }
             for (int j = i + 1; j < index - 1; j++)
@@ -810,11 +815,11 @@ public class AIController : CharacterController
                     currentTarget.Exists = false;
                     if (waypoints != null ? waypoints.Count > 0 : false)
                     {
-                        NavigationCell currentCell = waypoints[0];
+                        ComplexNavigationCell currentCell = (ComplexNavigationCell)waypoints[0];
                         waypoints.RemoveAt(0);
                         if (waypoints.Count <= 0)
                             break;
-                        NavigationCell nextCell = waypoints[0];
+                        ComplexNavigationCell nextCell = (ComplexNavigationCell)waypoints[0];
                         currentTarget = new ETarget(nextCell.cellPosition);
                         if (currentCell.GetNeighbor(nextCell.groupNumb, nextCell.cellNumb).groupNumb != -1)
                         {

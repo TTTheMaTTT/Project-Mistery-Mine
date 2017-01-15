@@ -155,7 +155,7 @@ public class HumanoidController : AIController
     /// </summary>
     protected override void LadderOn()
     {
-        if (waypoints != null ? waypoints[0].cellType == NavCellTypeEnum.ladder : false)
+        if (waypoints != null ? ((ComplexNavigationCell)waypoints[0]).cellType == NavCellTypeEnum.ladder : false)
         {
             string lLName = "ladder";
             Collider2D col = Physics2D.OverlapArea(waypoints[0].cellPosition + new Vector2(-minDistance / 2f, minDistance / 2f), waypoints[0].cellPosition + new Vector2(minDistance / 2f, -minDistance / 2f), LayerMask.GetMask(lLName));
@@ -376,7 +376,7 @@ public class HumanoidController : AIController
         bool changePosition = (grounded || onLadder) && Vector2.SqrMagnitude(mainPos - prevTargetPosition) > minCellSqrMagnitude * 16f;
         if (changePosition)
         {
-            NavigationCell cell1 = navMap.GetCurrentCell(mainPos), cell2 = navMap.GetCurrentCell(prevTargetPosition);
+            ComplexNavigationCell cell1 = (ComplexNavigationCell)navMap.GetCurrentCell(mainPos), cell2 = (ComplexNavigationCell)navMap.GetCurrentCell(prevTargetPosition);
             if (cell1 == null || cell2 == null)
                 onPlatform = false;
             else
@@ -710,8 +710,8 @@ public class HumanoidController : AIController
                     if (!currentTarget.exists)
                     {
                         currentTarget = new ETarget(waypoints[0].cellPosition);
-                        if (waypoints[0].cellType == NavCellTypeEnum.movPlatform)
-                            FindPlatform(waypoints[0].id);
+                        if (((ComplexNavigationCell)waypoints[0]).cellType == NavCellTypeEnum.movPlatform)
+                            FindPlatform(((ComplexNavigationCell)waypoints[0]).id);
                     }
 
                     bool waypointIsAchieved = false;
@@ -756,7 +756,7 @@ public class HumanoidController : AIController
 
                     if (waypointIsAchieved)
                     {
-                        NavigationCell currentWaypoint = waypoints[0];
+                        ComplexNavigationCell currentWaypoint = (ComplexNavigationCell)waypoints[0];
                         if (currentTarget == platformTarget)
                         {
                             if (waypoints.Count > 1 ? (waypoints[1].cellPosition - (Vector2)transform.position).x * (int)orientation < 0f : false)
@@ -772,10 +772,10 @@ public class HumanoidController : AIController
                         {
                             bool directPath = true;
                             Vector2 cellsDirection = (waypoints[1].cellPosition - waypoints[0].cellPosition).normalized;
-                            NavCellTypeEnum cellsType = waypoints[0].cellType;
+                            NavCellTypeEnum cellsType = ((ComplexNavigationCell)waypoints[0]).cellType;
                             for (int i = 2; i < waypoints.Count; i++)
                             {
-                                if (Vector2.Angle((waypoints[i].cellPosition - waypoints[i - 1].cellPosition), cellsDirection) > minAngle || waypoints[i - 1].cellType != cellsType)
+                                if (Vector2.Angle((waypoints[i].cellPosition - waypoints[i - 1].cellPosition), cellsDirection) > minAngle || ((ComplexNavigationCell)waypoints[i - 1]).cellType != cellsType)
                                 {
                                     directPath = false;
                                     break;
@@ -805,7 +805,7 @@ public class HumanoidController : AIController
                         }
                         else 
                         {
-                            NavigationCell nextWaypoint = waypoints[0];
+                            ComplexNavigationCell nextWaypoint = (ComplexNavigationCell)waypoints[0];
                             NeighborCellStruct neighborConnection = currentWaypoint.GetNeighbor(nextWaypoint.groupNumb, nextWaypoint.cellNumb);
                             //Продолжаем следование
                             currentTarget = new ETarget(nextWaypoint.cellPosition);
@@ -863,8 +863,8 @@ public class HumanoidController : AIController
             if (!currentTarget.exists)
             {
                 currentTarget = new ETarget(waypoints[0].cellPosition);
-                if (waypoints[0].cellType == NavCellTypeEnum.movPlatform)
-                    FindPlatform(waypoints[0].id);
+                if (((ComplexNavigationCell)waypoints[0]).cellType == NavCellTypeEnum.movPlatform)
+                    FindPlatform(((ComplexNavigationCell)waypoints[0]).id);
             }
 
             bool waypointIsAchieved = false;
@@ -908,7 +908,7 @@ public class HumanoidController : AIController
 
             if (waypointIsAchieved)
             {
-                NavigationCell currentWaypoint = waypoints[0];
+                ComplexNavigationCell currentWaypoint = (ComplexNavigationCell)waypoints[0];
                 if (currentTarget == platformTarget)
                 {
                     if (waypoints.Count > 1 ? (waypoints[1].cellPosition - pos).x * (int)orientation < 0f : false)
@@ -935,7 +935,7 @@ public class HumanoidController : AIController
                 }
                 else
                 {
-                    NavigationCell nextWaypoint = waypoints[0];
+                    ComplexNavigationCell nextWaypoint = (ComplexNavigationCell)waypoints[0];
                     NeighborCellStruct neighborConnection = currentWaypoint.GetNeighbor(nextWaypoint.groupNumb, nextWaypoint.cellNumb);
                     //Продолжаем следование
                     currentTarget = new ETarget(nextWaypoint.cellPosition);
@@ -1039,7 +1039,7 @@ public class HumanoidController : AIController
             transform.SetParent(null);
             if (currentTarget == platformTarget)
             {
-                if (waypoints != null ? (waypoints.Count > 0 ? waypoints[0].cellType == NavCellTypeEnum.movPlatform : false) : false)
+                if (waypoints != null ? (waypoints.Count > 0 ? ((ComplexNavigationCell)waypoints[0]).cellType == NavCellTypeEnum.movPlatform : false) : false)
                 {
                     currentTarget = new ETarget(waypoints[0].cellPosition);
                     transform.position = waypoints[0].cellPosition;
@@ -1112,11 +1112,11 @@ public class HumanoidController : AIController
                     pos = transform.position;
                     if (waypoints != null ? waypoints.Count > 0 : false)
                     {
-                        NavigationCell currentCell = waypoints[0];
+                        ComplexNavigationCell currentCell = (ComplexNavigationCell)waypoints[0];
                         waypoints.RemoveAt(0);
                         if (waypoints.Count <= 0)
                             break;
-                        NavigationCell nextCell = waypoints[0];
+                        ComplexNavigationCell nextCell = (ComplexNavigationCell)waypoints[0];
                         currentTarget = new ETarget(nextCell.cellPosition);
 
                         NeighborCellStruct neighborConnection = currentCell.GetNeighbor(nextCell.groupNumb, nextCell.cellNumb);
@@ -1129,7 +1129,7 @@ public class HumanoidController : AIController
                         {
                             while (nextCell.cellType==NavCellTypeEnum.movPlatform && waypoints.Count>0)
                             {
-                                nextCell = waypoints[0];
+                                nextCell = (ComplexNavigationCell)waypoints[0];
                                 waypoints.RemoveAt(0);
                                 timeCoof+=Mathf.FloorToInt(Mathf.Abs(Vector2.Distance(currentCell.cellPosition,nextCell.cellPosition))/optSpeed);
                             }

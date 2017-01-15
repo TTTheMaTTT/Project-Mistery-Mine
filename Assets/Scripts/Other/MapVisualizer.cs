@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Объект, ответственный за визуализацию карт
@@ -32,9 +33,10 @@ public class MapVisualizer : MonoBehaviour
             {
                 case NavMapTypeEnum.usual:
                     {
-                        foreach (NavigationGroup navGroup in map.cellGroups)
+                        NavigationBunchedMap _map = (NavigationBunchedMap)map;
+                        foreach (NavigationGroup navGroup in _map.cellGroups)
                         {
-                            foreach (NavigationCell navCell in navGroup.cells)
+                            foreach (ComplexNavigationCell navCell in navGroup.cells)
                             {
                                 DrawCell(navCell.cellPosition, cellSize, navCell.cellType == NavCellTypeEnum.usual ? Color.green :
                                                                             navCell.cellType == NavCellTypeEnum.movPlatform ? Color.cyan :
@@ -46,11 +48,15 @@ public class MapVisualizer : MonoBehaviour
                     }
                 case NavMapTypeEnum.fly:
                     {
-                        foreach (NavigationGroup navGroup in map.cellGroups)
+                        NavigationMatrixMap _map = (NavigationMatrixMap)map;
+                        List<NavigationCellRow> cellRows = _map.cellRows;
+                        for (int i=0;i<_map.cellColumnSize;i++)
                         {
-                            foreach (NavigationCell navCell in navGroup.cells)
+                            for (int j=0; j<_map.cellRowSize;j++)
                             {
-                                DrawCell(navCell.cellPosition, cellSize, Color.green);
+                                SimpleNavigationCell navCell = cellRows[i].cells[j];
+                                if (navCell.canMove)
+                                    DrawCell(navCell.cellPosition, cellSize, Color.green);
                             }
                         }
                         /*if (map.cellGroups.Count > 0)
@@ -63,9 +69,10 @@ public class MapVisualizer : MonoBehaviour
                     }
                 case NavMapTypeEnum.crawl:
                     {
-                        foreach (NavigationGroup navGroup in map.cellGroups)
+                        NavigationBunchedMap _map = (NavigationBunchedMap)map;
+                        foreach (NavigationGroup navGroup in _map.cellGroups)
                         {
-                            foreach (NavigationCell navCell in navGroup.cells)
+                            foreach (ComplexNavigationCell navCell in navGroup.cells)
                             {
                                 DrawCell(navCell.cellPosition, cellSize, navCell.cellType == NavCellTypeEnum.usual ? Color.green :
                                                                          navCell.cellType == NavCellTypeEnum.jump ? Color.red : Color.black);
