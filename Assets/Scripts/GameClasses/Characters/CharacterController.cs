@@ -34,7 +34,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     protected List<string> enemies = new List<string>();//Список тегов игровых объектов, которых данный персонаж считает за врагов и может атаковать
 
     protected Rigidbody2D rigid;
-    protected HitBox hitBox;//То, чем атакует персонаж
+    protected HitBoxController hitBox;//То, чем атакует персонаж
     
     protected CharacterVisual anim;//Визуальное представление персонажа
 
@@ -80,7 +80,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         rigid = GetComponent<Rigidbody2D>();
 
         if (transform.FindChild("HitBox")!=null)
-            hitBox = transform.FindChild("HitBox").GetComponent<HitBox>();
+            hitBox = transform.FindChild("HitBox").GetComponent<HitBoxController>();
 
         if (hitBox!=null)
             hitBox.SetEnemies(enemies);

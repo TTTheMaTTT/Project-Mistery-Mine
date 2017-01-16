@@ -27,7 +27,7 @@ public class BoomerangClass : BowClass
     /// <summary>
     /// Бросок бумеранга
     /// </summary>
-    public override void Shoot(HitBox hitBox, Vector3 position, int orientation, LayerMask whatIsAim, List<string> enemies)
+    public override void Shoot(HitBoxController hitBox, Vector3 position, int orientation, LayerMask whatIsAim, List<string> enemies)
     {
         canShoot = false;
         RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(position, orientation * Vector3.right, shootDistance, whatIsAim),

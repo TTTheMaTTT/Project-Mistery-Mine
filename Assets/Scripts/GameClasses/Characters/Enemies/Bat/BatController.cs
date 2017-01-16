@@ -13,7 +13,7 @@ public class BatController : AIController
     protected const float pushBackForce = 100f;
     private const float batSize = .2f;
 
-    private const float r1 = 0.45f, r2 = 4f, r3 = .9f;
+    private const float r1 = 0.6f, r2 = 4f, r3 = 1.2f;
 
     private const float maxAvoidDistance = 10f, avoidOffset = .5f;
 
@@ -185,13 +185,13 @@ public class BatController : AIController
         base.BecomeCalm();
         hitBox.ResetHitBox();
         rigid.isKinematic = true;
-        hearing.radius = r1;
+        hearing.Radius = r1;
     }
 
     protected override void BecomePatrolling()
     {
         base.BecomePatrolling();
-        hearing.radius = r3;
+        hearing.Radius = r3;
         if (!optimized)
             rigid.isKinematic = false;
     }

@@ -29,7 +29,7 @@ public class HeroController : CharacterController
     protected const float suffocateTime = .3f;//Сколько времени должно пройти, чтобы запас воздуха уменьшился на 1 или здоровье ГГ на .5
     protected const int maxAirSupply = 10;
 
-    protected const float highWallCheckPosition = -0.0108f, lowWallCheclPosition = -0.0544f;
+    protected const float highWallCheckPosition = 0.04f, lowWallCheckPosition = 0f;
     protected const float highWallCheckSize = .08f, lowWallCheckSize = .05f;
 
     #endregion //consts
@@ -246,7 +246,7 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Analyse()
     {
-        if (groundCheck.WallInFront())
+        if (groundCheck.WallInFront)
             groundState = GroundStateEnum.grounded;
         else
             groundState = GroundStateEnum.inAir;
@@ -330,11 +330,10 @@ public class HeroController : CharacterController
     {
         col1.enabled = !crouching;
         col2.enabled = crouching;
-        BoxCollider2D wCheckCol = wallCheck.GetComponent<BoxCollider2D>();
-        Vector2 size = wCheckCol.size;
-        Vector3 pos = wallCheck.transform.localPosition;
-        wallCheck.transform.localPosition = new Vector2(pos.x, crouching ? lowWallCheclPosition : highWallCheckPosition);
-        wCheckCol.size = new Vector2(size.x, crouching ? lowWallCheckSize : highWallCheckSize);
+        Vector2 size = wallCheck.Size;
+        Vector2 pos = wallCheck.DefaultPosition;
+        wallCheck.DefaultPosition = new Vector2(pos.x, crouching ? lowWallCheckPosition : highWallCheckPosition);
+        wallCheck.Size = new Vector2(size.x, crouching ? lowWallCheckSize : highWallCheckSize);
     }
 
     /// <summary>
@@ -364,7 +363,7 @@ public class HeroController : CharacterController
     {
         bool crouching = (groundState == GroundStateEnum.crouching);
         float currentSpeed = speed * ((underWater || crouching) ? waterCoof : 1f);
-        rigid.velocity = new Vector3((wallCheck.WallInFront()) ? 0f : Input.GetAxis("Horizontal") * currentSpeed, rigid.velocity.y);
+        rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : Input.GetAxis("Horizontal") * currentSpeed, rigid.velocity.y);
         if (orientation != _orientation)
         {
             Turn(_orientation);
@@ -428,7 +427,17 @@ public class HeroController : CharacterController
         if (employment >= 8)
         {
             base.Turn(_orientation);
+            wallCheck.SetPosition(0f, (int)orientation);
         }
+    }
+
+    /// <summary>
+    /// Повернуться
+    /// </summary>
+    protected override void Turn()
+    {
+        base.Turn();
+        wallCheck.SetPosition(0f, (int)orientation);
     }
 
     protected override void Jump()

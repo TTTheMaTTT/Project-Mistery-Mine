@@ -10,7 +10,7 @@ public class GhostController : AIController
 
     #region fields
 
-    protected HitBox selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
+    protected HitBoxController selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
 
     //protected SightFrustum sight;//Зрение персонажа
 
@@ -64,7 +64,7 @@ public class GhostController : AIController
 
         base.Initialize();
 
-        selfHitBox = transform.FindChild("SelfHitBox").GetComponent<HitBox>();
+        selfHitBox = transform.FindChild("SelfHitBox").GetComponent<HitBoxController>();
         if (selfHitBox != null)
         {
             selfHitBox.SetEnemies(enemies);

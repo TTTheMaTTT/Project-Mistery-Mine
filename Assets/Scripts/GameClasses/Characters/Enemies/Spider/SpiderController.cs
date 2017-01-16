@@ -21,7 +21,7 @@ public class SpiderController : AIController
 
     protected WallChecker wallCheck, precipiceCheck;
     //protected SightFrustum sight;//Зрение персонажа
-    protected HitBox selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
+    protected HitBoxController selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
 
     protected override List<NavigationCell> Waypoints
     {
@@ -75,6 +75,8 @@ public class SpiderController : AIController
                 rigid.gravityScale = 0f;
             else
                 rigid.gravityScale = 1f;
+            wallCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
+            precipiceCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
         }
     }
     protected Vector2 movementDirection = Vector2.right;//В какую сторону движется паук, если он повёрнут вправо
@@ -114,6 +116,7 @@ public class SpiderController : AIController
             wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
             precipiceCheck = indicators.FindChild("PrecipiceCheck").GetComponent<WallChecker>();
 
+
             /*Transform sightParent = indicators.FindChild("Sight");
             sight = sightParent!=null? sightParent.GetComponentInChildren<SightFrustum>():null;
             if (sight != null)
@@ -129,7 +132,7 @@ public class SpiderController : AIController
 
         base.Initialize();
 
-        selfHitBox = transform.FindChild("SelfHitBox").GetComponent<HitBox>();
+        selfHitBox = transform.FindChild("SelfHitBox").GetComponent<HitBoxController>();
         if (selfHitBox != null)
         {
             selfHitBox.SetEnemies(enemies);
@@ -169,7 +172,7 @@ public class SpiderController : AIController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = wallCheck.WallInFront() ? new Vector2(0f, rigid.velocity.y) : (rigid.gravityScale == 0f ? movementDirection * (int)orientation * speed : new Vector2((int)orientation * speed, rigid.velocity.y));
+        Vector2 targetVelocity = wallCheck.WallInFront ? new Vector2(0f, rigid.velocity.y) : (rigid.gravityScale == 0f ? movementDirection * (int)orientation * speed : new Vector2((int)orientation * speed, rigid.velocity.y));
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)
@@ -178,10 +181,34 @@ public class SpiderController : AIController
         }
     }
 
+    /// <summary>
+    /// Остановить перемещение
+    /// </summary>
     protected override void StopMoving()
     {
         Vector2 projection = Vector2.Dot(rigid.velocity, movementDirection) * movementDirection;
         rigid.velocity -= projection;
+    }
+
+    /// <summary>
+    /// Повернуться
+    /// </summary>
+    protected override void Turn()
+    {
+        base.Turn();
+        wallCheck.SetPosition(transform.eulerAngles.z/180f*Mathf.PI, (int)orientation);
+        precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
+    }
+
+    /// <summary>
+    /// Повернуться
+    /// </summary>
+    /// <param name="_orientation">В какую сторону должен смотреть персонаж</param>
+    protected override void Turn(OrientationEnum _orientation)
+    {
+        base.Turn(_orientation);
+        wallCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
+        precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
     }
 
     /*
@@ -363,7 +390,7 @@ public class SpiderController : AIController
                     if ((pos - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && !avoid && currentTarget != mainTarget)
                     {
                         StartCoroutine("AvoidProcess");
-                        if (!jumping && !precipiceCheck.WallInFront())
+                        if (!jumping && !precipiceCheck.WallInFront)
                             StartCoroutine("WrongOrientationProcess");
                     }
                     break;
@@ -383,7 +410,7 @@ public class SpiderController : AIController
                         if ((pos - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
                         {
                             StartCoroutine("AvoidProcess");
-                            if (!jumping && !precipiceCheck.WallInFront())
+                            if (!jumping && !precipiceCheck.WallInFront)
                                 StartCoroutine("WrongOrientationProcess");
                         }
                     }
@@ -481,7 +508,7 @@ public class SpiderController : AIController
             //sight.ChangeSightMod();
         }
         prevTargetPosition = new EVector3(Vector3.zero);
-        wallCheck.RemoveWallType("character");
+        wallCheck.WhatIsWall.Remove("character");
         /*if (sight != null)
         {
             sight.WhatToSight = LayerMask.GetMask("ground");
@@ -495,7 +522,7 @@ public class SpiderController : AIController
     protected override void BecomePatrolling()
     {
         base.BecomePatrolling();
-        wallCheck.RemoveWallType("character");
+        wallCheck.WhatIsWall.Remove("character");
         gameObject.layer = LayerMask.NameToLayer("characterWithoutPlatform");
         /*if (sight != null ? sight.enabled : false)
         {
@@ -594,10 +621,10 @@ public class SpiderController : AIController
     {
         base.CalmBehavior();
         Vector2 pos = transform.position;
-        if (!currentTarget.exists)
+        if (currentTarget.exists)
         {
             Vector2 targetPos = currentTarget;
-            if ((Vector2.Distance(targetPos, pos) < attackDistance) || (wallCheck.WallInFront() || !(precipiceCheck.WallInFront())))
+            if ((Vector2.Distance(targetPos, pos) < attackDistance) || (wallCheck.WallInFront || !(precipiceCheck.WallInFront)))
             {
                 Turn();
                 Patrol();
@@ -628,7 +655,7 @@ public class SpiderController : AIController
                     float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
                     if (sqDistance < waitingNearDistance * waitingNearDistance)
                     {
-                        if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront()))
+                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront))
                             Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(pos.x - targetPosition.x)));
                         else if ((pos.x - targetPosition.x) * (int)orientation < 0f)
                             Turn();
@@ -637,7 +664,7 @@ public class SpiderController : AIController
                         StopMoving();
                     else
                     {
-                        if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront()))
+                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront))
                             Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
                         else if ((targetPosition - pos).x * (int)orientation < 0f)
                             Turn();
@@ -666,7 +693,7 @@ public class SpiderController : AIController
 
                     if (Vector2.SqrMagnitude(targetPosition-pos) > attackDistance*attackDistance)
                     {
-                        if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront()))
+                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront))
                             Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
                         else if ((targetPosition - pos).x * (int)orientation < 0f)
                             Turn();
@@ -795,7 +822,7 @@ public class SpiderController : AIController
                     if (!jumping)
                     {
                         //Учёт земных поверхностей, к которым может прикрепиться паук
-                        if (wallCheck.WallInFront())
+                        if (wallCheck.WallInFront)
                         {
                             RaycastHit2D hit = Physics2D.Raycast(pos, (int)orientation * movementDirection, navCellSize, LayerMask.GetMask(gLName));
                             if (hit)
@@ -803,7 +830,7 @@ public class SpiderController : AIController
                                 ChangeOrientation(hit.collider);
                             }
                         }
-                        else if (!precipiceCheck.WallInFront())
+                        else if (!precipiceCheck.WallInFront)
                         {
                             RaycastHit2D hit = Physics2D.Raycast(pos - (int)orientation * Vector2.right * navCellSize / 2f, -spiderOrientation, navCellSize, LayerMask.GetMask(gLName));
                             if (hit)
@@ -894,7 +921,7 @@ public class SpiderController : AIController
             if (!jumping)
             {
                 //Учёт земных поверхностей, к которым может прикрепиться паук
-                if (wallCheck.WallInFront())
+                if (wallCheck.WallInFront)
                 {
                     RaycastHit2D hit = Physics2D.Raycast(pos, (int)orientation * movementDirection, navCellSize, LayerMask.GetMask(gLName));
                     if (hit)
@@ -902,7 +929,7 @@ public class SpiderController : AIController
                         ChangeOrientation(hit.collider);
                     }
                 }
-                else if (!precipiceCheck.WallInFront())
+                else if (!precipiceCheck.WallInFront)
                 {
                     RaycastHit2D hit = Physics2D.Raycast(pos - (int)orientation * movementDirection * navCellSize / 2f, -spiderOrientation, navCellSize, LayerMask.GetMask(gLName));
                     if (hit)
@@ -1243,7 +1270,7 @@ public class SpiderController : AIController
     {
         StopAvoid();
         SpiderOrientation = Vector2.up;
-        if (!precipiceCheck.WallInFront())
+        if (!precipiceCheck.WallInFront)
         {
             if (waypoints == null)
             {
@@ -1602,7 +1629,7 @@ public class SpiderController : AIController
     {
         Vector2 currentPosition = transform.position;
         yield return new WaitForSeconds(0.5f);
-        if (!precipiceCheck.WallInFront() && !jumping && Vector2.SqrMagnitude((Vector2)transform.position - currentPosition) < minCellSqrMagnitude)
+        if (!precipiceCheck.WallInFront && !jumping && Vector2.SqrMagnitude((Vector2)transform.position - currentPosition) < minCellSqrMagnitude)
             SpiderOrientation = Vector2.up;
     }
 

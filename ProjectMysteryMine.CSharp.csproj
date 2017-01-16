@@ -168,7 +168,9 @@
     <Compile Include="Assets\Scripts\GameClasses\Indicators\AreaTrigger\AreaTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\AreaTrigger\AreaTriggerSearcher.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Hearing.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Indicators\HitBox.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\HitControl\HitBox.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\HitControl\HitBoxCollider.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\HitControl\HitBoxController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Interactor.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\SecretPlaceTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\SightFrustum.cs" />

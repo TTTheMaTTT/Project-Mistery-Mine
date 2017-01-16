@@ -60,7 +60,7 @@ public class HumanoidController : AIController
 
     [SerializeField]protected float ladderSpeed = 0.8f;//Скорость передвижения по лестнице
     protected bool onLadder = false;//Находится ли монстр на лестнице
-    protected bool grounded { get { return groundCheck ? groundCheck.WallInFront() : true; } }//Находится ли монстр на земле
+    protected bool grounded { get { return groundCheck ? groundCheck.WallInFront : true; } }//Находится ли монстр на земле
 
     #region platform
 
@@ -140,7 +140,7 @@ public class HumanoidController : AIController
     /// <param name="_orientation">Направление движения (влево/вправо)</param>
     protected override void Move(OrientationEnum _orientation)
     {
-        bool wallInFront = wallCheck.WallInFront();
+        bool wallInFront = wallCheck.WallInFront;
         Vector2 targetVelocity =  wallInFront? new Vector2(0f, rigid.velocity.y) : new Vector2((int)orientation * speed, rigid.velocity.y);
         rigid.velocity = wallInFront? Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration):targetVelocity;
 
@@ -148,6 +148,27 @@ public class HumanoidController : AIController
         {
             Turn(_orientation);
         }
+    }
+
+    /// <summary>
+    /// Повернуться
+    /// </summary>
+    /// <param name="_orientation">В какую сторону должен смотреть персонаж после поворота</param>
+    protected override void Turn(OrientationEnum _orientation)
+    {
+        base.Turn(_orientation);
+        wallCheck.SetPosition(0f, (int)orientation);
+        precipiceCheck.SetPosition(0f, (int)orientation);
+    }
+
+    /// <summary>
+    /// Повернуться
+    /// </summary>
+    protected override void Turn()
+    {
+        base.Turn();
+        wallCheck.SetPosition(0f, (int)orientation);
+        precipiceCheck.SetPosition(0f, (int)orientation);
     }
 
     /// <summary>
@@ -629,14 +650,14 @@ public class HumanoidController : AIController
                 {
                     if (sqDistance < waitingNearDistance)
                     {
-                        if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront() || !grounded))
+                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
                             Move((OrientationEnum)Mathf.RoundToInt(-Mathf.Sign(targetDistance.x)));
                     }
                     else if (sqDistance < waitingFarDistance)
                         StopMoving();
                     else
                     {
-                        if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront() || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !hero.OnLadder))
+                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !hero.OnLadder))
                         {
                             Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
                         }
@@ -659,7 +680,7 @@ public class HumanoidController : AIController
                 {
                     if (Vector2.SqrMagnitude(targetDistance) > attackDistance * attackDistance)
                     {
-                        if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront() || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !hero.OnLadder))
+                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !hero.OnLadder))
                         {
                             if (Mathf.Abs(targetDistance.x) > attackDistance)
                                 Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));

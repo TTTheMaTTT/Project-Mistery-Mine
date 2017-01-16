@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <SavesInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Saves>
-    <SaveInfo HasData="true">
+    <SaveInfo HasData="false">
       <SaveName />
-      <SaveTime>1/8/2017 4:52:43 PM</SaveTime>
-      <LoadSceneName>MainMenu</LoadSceneName>
+      <SaveTime />
+      <LoadSceneName>cave_lvl1</LoadSceneName>
     </SaveInfo>
     <SaveInfo HasData="false">
       <SaveName />

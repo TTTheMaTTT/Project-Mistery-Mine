@@ -12,7 +12,7 @@ public class SwordClass : WeaponClass
     /// <summary>
     /// Совершить атаку
     /// </summary>
-    public virtual void Attack(HitBox hitBox, Vector3 position)
+    public virtual void Attack(HitBoxController hitBox, Vector3 position)
     {
         hitBox.SetHitBox(new HitClass(damage, attackTime, attackSize, attackPosition, attackForce));
     }

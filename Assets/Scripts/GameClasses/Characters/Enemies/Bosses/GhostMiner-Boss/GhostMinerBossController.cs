@@ -102,6 +102,18 @@ public class GhostMinerBossController : BossController
         rigid.velocity = new Vector2(0f, 0f);
     }
 
+    protected override void Turn()
+    {
+        base.Turn();
+        wallCheck.SetPosition(0f, (int)orientation);
+    }
+
+    protected override void Turn(OrientationEnum _orientation)
+    {
+        base.Turn(_orientation);
+        wallCheck.SetPosition(0f, (int)orientation);
+    }
+
     /// <summary>
     /// Анализировать окружающую обстановку
     /// </summary>
@@ -247,7 +259,7 @@ public class GhostMinerBossController : BossController
                 float distance = Vector3.SqrMagnitude(targetPosition - transform.position);
                 if (distance > attackDistance * attackDistance)
                 {
-                    if (!wallCheck.WallInFront())
+                    if (!wallCheck.WallInFront)
                         Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
                     else if ((targetPosition - transform.position).x * (int)orientation < 0f)
                         Turn();
@@ -286,7 +298,7 @@ public class GhostMinerBossController : BossController
                 case 2:
                     {
                         //"Заныривает" под противника
-                        if (!wallCheck.WallInFront())
+                        if (!wallCheck.WallInFront)
                             Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
                         else if ((targetPosition - transform.position).x * (int)orientation < 0f)
                             Turn();

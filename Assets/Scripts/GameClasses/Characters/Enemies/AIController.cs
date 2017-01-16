@@ -288,12 +288,9 @@ public class AIController : CharacterController
     protected virtual void GoToThePoint(Vector2 targetPosition)
     {
         System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
-        watch.Start();
         if (navMap == null)
             return;
         waypoints = navMap.GetPath(transform.position, targetPosition, true);
-        watch.Stop();
-        TimeSpan t = watch.Elapsed;
         if (waypoints == null)
             return;
         BecomePatrolling();
@@ -647,7 +644,7 @@ public class AIController : CharacterController
             GameObject indicator = indicators.GetChild(i).gameObject;
             WallChecker wChecker = null;
             if ((wChecker = indicator.GetComponent<WallChecker>()) != null)
-                wChecker.ClearList();
+                wChecker.WallInFront=false;
             indicators.GetChild(i).gameObject.SetActive(true);
         }
     }

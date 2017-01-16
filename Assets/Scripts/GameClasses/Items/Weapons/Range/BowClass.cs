@@ -33,7 +33,7 @@ public class BowClass : WeaponClass
     /// <summary>
     /// Функция выстрела из оружия
     /// </summary>
-    public virtual void Shoot(HitBox hitBox, Vector3 position, int orientation, LayerMask whatIsAim, List<string> enemies)
+    public virtual void Shoot(HitBoxController hitBox, Vector3 position, int orientation, LayerMask whatIsAim, List<string> enemies)
     {
         hitBox.StartCoroutine(DontShootProcess());
                 RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(position, orientation * Vector3.right, shootDistance, whatIsAim),
