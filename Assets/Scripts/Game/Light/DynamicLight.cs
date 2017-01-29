@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using pseudoSinCos;//библиотека, что способна быстро расчитывать углы, без использования тяжёлых синусов и косинусов
+//using pseudoSinCos;//библиотека, что способна быстро расчитывать углы, без использования тяжёлых синусов и косинусов
 #if UNITY_EDITOR
 using UnityEditor;
 #endif //UNITY_EDITOR
@@ -66,7 +66,7 @@ public class DynamicLight : MonoBehaviour
 
         staticLight1 = false;
         cam = GameObject.FindGameObjectWithTag("MainCamera");
-		PseudoSinCos.initPseudoSinCos();
+	//	PseudoSinCos.initPseudoSinCos();
 		
 		//Шаг 1 - Первоначальная настройка меша света
 
@@ -336,8 +336,8 @@ public class DynamicLight : MonoBehaviour
                 theta = 0;
 
 			verts v = new verts();
-			//v.pos = new Vector3((Mathf.Sin(theta)), (Mathf.Cos(theta)), 0); // реализация в радианах (медленно, но точно)
-			v.pos = new Vector3((PseudoSinCos.SinArray[theta]), (PseudoSinCos.CosArray[theta]), 0); // реализация в градусах (быстро, но с погрешностями)
+			v.pos = new Vector3((Mathf.Sin(theta)), (Mathf.Cos(theta)), 0); // реализация в радианах (медленно, но точно)
+			//v.pos = new Vector3((PseudoSinCos.SinArray[theta]), (PseudoSinCos.CosArray[theta]), 0); // реализация в градусах (быстро, но с погрешностями)
 
 			v.angle = GetVectorAngle(true,v.pos.x, v.pos.y);
 			v.pos *= lightRadius;
