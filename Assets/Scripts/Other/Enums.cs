@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 
 //Список всех енамов
@@ -9,6 +10,11 @@ using System.Collections;
 public enum OrientationEnum {left=-1, right=1 }
 
 /// <summary>
+/// Енам, показывающий одно из четырёх направлений
+/// </summary>
+public enum FourDirectionEnum: byte { up=0, left=1,down=2,right=3};
+
+/// <summary>
 /// Ориентация персонажа относительно поверхности земли
 /// </summary>
 public enum GroundStateEnum {grounded = 0, crouching = 1, inAir=2 }
@@ -17,6 +23,11 @@ public enum GroundStateEnum {grounded = 0, crouching = 1, inAir=2 }
 /// Модель поведения ИИ
 /// </summary>
 public enum BehaviorEnum {calm=0, agressive=1, patrol=2 }
+
+/// <summary>
+/// Енам, описывающий отношение ИИ к главному герою
+/// </summary>
+public enum LoyaltyEnum { enemy=-1, neutral = 0, ally = 1}
 
 /// <summary>
 /// Режим перемещения камеры
@@ -53,3 +64,18 @@ public enum NavCellTypeEnum {usual=0, ladder=1, movPlatform=2,jump=3 }
 /// Типа карты, предназначенный для определённых типов мобов (обычная карта гуманоида, карта полёта, карта ползания)
 /// </summary>
 public enum NavMapTypeEnum {usual=0, fly=1, crawl=2 }
+
+/// <summary>
+/// Тип урона, который может нанести или получить персонаж
+/// </summary>
+[Flags]
+public enum DamageType: byte
+{
+    Physical=0x01,
+    Crushing=0x02,
+    Fire=0x04,
+    Water=0x08,
+    Cold=0x16,
+    Poison=0x32
+}
+

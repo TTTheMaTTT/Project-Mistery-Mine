@@ -14,7 +14,6 @@ public class HeroVisual : GroundMoveVisual
     private const float shootTime = .4f, flipTime = .4f;
 
     protected const int invulTimes = 3;
-    protected const float invulBlinkTime = .2f;
 
     #endregion //consts
 
@@ -24,64 +23,11 @@ public class HeroVisual : GroundMoveVisual
     protected override void FormDictionaries()
     {
         base.FormDictionaries();
-        visualFunctions.Add("airMove", AirMove);
-        visualFunctions.Add("ladderMove", LadderMove);
-        visualFunctions.Add("setLadderMove", SetLadderMove);
         visualFunctions.Add("shoot", Shoot);
         visualFunctions.Add("flip", Flip);
         visualFunctions.Add("fall", Fall);
         visualFunctions.Add("waterSplash", WaterSplash);
-    }
-
-    /// <summary>
-    /// Функция, отвечающая за перемещение персонажа по лестнице
-    /// </summary>
-    protected virtual void LadderMove(string id, int argument)
-    {
-        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("LadderMove"))
-            anim.Play("LadderMove");
-        if (Mathf.Abs(rigid.velocity.y) >= minSpeed)
-        {
-            anim.speed=1f;
-        }
-        else
-        {
-            anim.speed=0f;
-        }
-    }
-
-    /// <summary>
-    /// Перейти в режим визуализации перемещения по лестнице, или выйти из него
-    /// </summary>
-    protected virtual void SetLadderMove(string id, int argument)
-    {
-        if (argument == 1)
-        {
-            anim.Play("LadderMove");
-        }
-        else
-        {
-            anim.speed=1f;
-        }
-    }
-
-    /// <summary>
-    /// Функция, отвечающая за перемещение персонажа в воздухе
-    /// </summary>
-    protected virtual void AirMove(string id, int argument)
-    {
-        if (employment <= 6)
-        {
-            return;
-        }
-        if (rigid.velocity.y >= 0)
-        {
-            anim.Play("Jump");
-        }
-        else
-        {
-            anim.Play("Fall");
-        }
+        visualFunctions.Add("battleCry", BattleCry);
     }
 
     protected override void GroundMove(string id, int argument)
@@ -120,7 +66,7 @@ public class HeroVisual : GroundMoveVisual
             anim.Play("Attack");
         else
             anim.Play(id + "Attack");
-        StartCoroutine(VisualRoutine(5, argument/10f));
+        StartVisualRoutine(5, argument/10f);
     }
 
     /// <summary>
@@ -136,7 +82,7 @@ public class HeroVisual : GroundMoveVisual
             anim.Play("Shoot");
         else
             anim.Play(id + "Shoot");
-        StartCoroutine(VisualRoutine(5, argument/10f));
+        StartVisualRoutine(5, argument/10f);
     }
 
     /// <summary>
@@ -149,7 +95,7 @@ public class HeroVisual : GroundMoveVisual
             return;
         }
         anim.Play("Flip");
-        StartCoroutine(VisualRoutine(5, flipTime));
+        StartVisualRoutine(5, flipTime);
     }
 
     /// <summary>
@@ -157,23 +103,29 @@ public class HeroVisual : GroundMoveVisual
     /// </summary>
     protected override void Hitted(string id, int argument)
     {
-        StopAllCoroutines();
-        employment = maxEmployment;
-        anim.Play("Hitted");
-        StartCoroutine(VisualRoutine(5, hittedTime));
+        if (argument==0 && employment > 0)//Считаем, что employment равен нулю только при заморозке, когда персонаж не может быть анимируем
+        {
+            StopAllCoroutines();
+            employment = maxEmployment;
+            anim.Play("Hitted");
+            StartVisualRoutine(5, hittedTime);
+        }
         if (effectSystem != null)
             effectSystem.ResetEffects();
     }
-    
-    public virtual void Blink()
-    {
-        StartCoroutine(BlinkProcess());
-    }
 
+    /// <summary>
+    /// Начать процесс мигания при инвуле
+    /// </summary>
+    public virtual void InvulBlink()
+    {
+        StartCoroutine(InvulProcess());
+    }
+     
     /// <summary>
     /// Процесс мигания
     /// </summary>
-    protected virtual IEnumerator BlinkProcess()
+    protected virtual IEnumerator InvulProcess()
     {
         SpriteRenderer sprite = GetComponent<SpriteRenderer>();
         for (int i = 0; i < invulTimes; i++)
@@ -191,6 +143,12 @@ public class HeroVisual : GroundMoveVisual
     protected override void Death(string id, int argument)
     {
         StopAllCoroutines();
+        StopStun(id, argument);
+        StopBurning(id, argument);
+        StopPoison(id, argument);
+        StopCold(id, argument);
+        StopWet(id, argument);
+        StopFrozen(id, argument);
         if (effectSystem != null)
             effectSystem.ResetEffects();
         employment = 0;
@@ -215,6 +173,14 @@ public class HeroVisual : GroundMoveVisual
         {
             effectSystem.SpawnEffect("dust");
             effectSystem.FallEffect();
+        }
+    }
+
+    protected virtual void BattleCry(string id, int argument)
+    {
+        if (effectSystem != null)
+        {
+            effectSystem.SpawnEffect("BattleCry");
         }
     }
 

@@ -1,5 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif //UNITY_EDITOR
 
 /// <summary>
 /// Контроллер босса призраков-шахтёров
@@ -39,13 +42,11 @@ public class GhostMinerBossController : BossController
     protected float diveOutSpeed = .3f;//Скорость персонажа, когда он совершает особую атаку    
 
     //Тайминги атак
-    protected override float attackTime { get { return .6f; } }
-    protected override float preAttackTime { get{ return .6f; }}
-    protected float preCritAttackTime = .9f;
+    protected float preCritAttackTime = 1.5f;
 
     protected override float attackDistance { get { return 1f; } }//На каком расстоянии персонаж начинает атаковать
-    [SerializeField]protected Vector2 coalHitSize = new Vector2(.1f,.1f);//Размер хитбокса снаряда
-    [SerializeField]protected float coalForce = 80f;//Сила удара углём
+
+    [SerializeField]protected HitParametres coalAttackParametres;//Параметры атаки углём
     protected bool crit;
 
     protected bool diving = false;
@@ -73,7 +74,7 @@ public class GhostMinerBossController : BossController
             if (selfHitBox != null)
             {
                 selfHitBox.SetEnemies(enemies);
-                selfHitBox.SetHitBox(damage, -1f, 0f);
+                selfHitBox.SetHitBox(AttackParametres.damage, -1f, 0f);
                 //selfHitBox.Immobile = true;//На всякий случай
             }
         }
@@ -119,11 +120,13 @@ public class GhostMinerBossController : BossController
     /// </summary>
     protected override void Analyse()
     {
-        base.Analyse();
         if (behavior!=BehaviorEnum.agressive)
         {
             if (Vector3.Distance(SpecialFunctions.Player.transform.position, transform.position) <= sightRadius)
+            {
+                MainTarget = new ETarget(SpecialFunctions.player.transform);
                 BecomeAgressive();
+            }
         }
 
         if (health <= divingHealth)
@@ -187,9 +190,12 @@ public class GhostMinerBossController : BossController
     /// </summary>
     protected override IEnumerator AttackProcess()
     {
-        Animate(new AnimationEventArgs("attack", crit ? "CritAttack": "Attack", 0));
+        if (crit)
+            Animate(new AnimationEventArgs("attack", "CritAttack", Mathf.RoundToInt(10 * (preCritAttackTime + coalAttackParametres.endAttackTime))));
+        else
+            Animate(new AnimationEventArgs("attack", "Attack", Mathf.RoundToInt(10 * (coalAttackParametres.preAttackTime + coalAttackParametres.endAttackTime))));
         employment = Mathf.Clamp(employment - 8, 0, maxEmployment);
-        yield return new WaitForSeconds(crit ? preCritAttackTime : preAttackTime);
+        yield return new WaitForSeconds(crit ? preCritAttackTime : coalAttackParametres.preAttackTime);
         Vector3 playerPosition = SpecialFunctions.Player.transform.position;
 
         Vector3 direction = (playerPosition - transform.position).x * (int)orientation >= 0f? (playerPosition - (transform.position + 
@@ -198,11 +204,13 @@ public class GhostMinerBossController : BossController
                                                   Quaternion.identity) as GameObject;
         Rigidbody2D coalRigid = newCoal.GetComponent<Rigidbody2D>();
         coalRigid.velocity = direction * coalSpeed;
-        HitBox coalHitBox = coalRigid.GetComponentInChildren<HitBox>();
+        HitBoxController coalHitBox = coalRigid.GetComponentInChildren<HitBox>();
         if (coalHitBox != null)
         {
             coalHitBox.SetEnemies(enemies);
-            coalHitBox.SetHitBox(new HitClass(crit? damage*1.5f:damage, -1f, coalHitSize, Vector2.zero, coalForce));
+            coalHitBox.SetHitBox(new HitParametres(coalAttackParametres));
+            coalHitBox.allyHitBox = false;
+            //coalHitBox.SetHitBox(new HitClass(crit? damage*1.5f:damage, -1f, coalHitSize, Vector2.zero, coalForce));
         }
         employment = Mathf.Clamp(employment + 5, 0, maxEmployment);
 
@@ -217,15 +225,22 @@ public class GhostMinerBossController : BossController
     protected virtual IEnumerator EmploymentProcess(int _employment)
     {
         employment = Mathf.Clamp(employment - _employment, 0, maxEmployment);
-        yield return new WaitForSeconds(attackTime + preAttackTime);
+        yield return new WaitForSeconds(coalAttackParametres.preAttackTime);
         employment = Mathf.Clamp(employment + _employment, 0, maxEmployment);
     }
 
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage)
+    public override void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
     {
+        if (_dType != DamageType.Physical)
+        {
+            if (((DamageType)vulnerability & _dType) == _dType)
+                damage *= 1.25f;
+            else if (_dType == attackParametres.damageType)
+                damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
+        }
         Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
         if (health <= 0f)
             Death();
@@ -311,9 +326,9 @@ public class GhostMinerBossController : BossController
                             divingPhase++;
                             divingPosition = transform.position + diveDownOffset * Vector3.up;
 
-                            Animate(new AnimationEventArgs("attack", "SpecialAttack", 0));
+                            Animate(new AnimationEventArgs("attack", "SpecialAttack", Mathf.RoundToInt(10 * (attackParametres.preAttackTime + attackParametres.actTime + attackParametres.endAttackTime))));
                             employment = Mathf.Clamp(employment - 8, 0, maxEmployment);
-                            hitBox.SetHitBox(new HitClass(damage, -1f, attackSize, attackPosition, hitForce));
+                            hitBox.SetHitBox(new HitParametres(attackParametres));
                             rigid.velocity = Vector2.zero;
                         }
 
@@ -346,5 +361,45 @@ public class GhostMinerBossController : BossController
     }
 
     #endregion //behaviourActions
+
+    #region effects
+
+    /// <summary>
+    /// На призрака не действуют особые эффекты урона
+    /// </summary>
+    protected override void BecomeStunned(float _time)
+    { }
+
+    /// <summary>
+    /// На призрака не действуют особые эффекты урона
+    /// </summary>
+    protected override void BecomeBurning(float _time)
+    { }
+
+    /// <summary>
+    /// На призрака не действуют особые эффекты урона
+    /// </summary>
+    protected override void BecomeCold(float _time)
+    { }
+
+    /// <summary>
+    /// На призрака не действуют особые эффекты урона
+    /// </summary>
+    protected override void BecomeWet(float _time)
+    { }
+
+    /// <summary>
+    /// На призрака не действуют особые эффекты урона
+    /// </summary>
+    protected override void BecomePoisoned(float _time)
+    { }
+
+    /// <summary>
+    /// На призрака не действуют особые эффекты урона
+    /// </summary>
+    protected override void BecomeFrozen(float _time)
+    { }
+
+    #endregion //effects
 
 }

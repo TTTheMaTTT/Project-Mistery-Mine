@@ -2,6 +2,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif //UNITY_EDITOR
 
 /// <summary>
 /// Базовый класс для персонажей, управляемых ИИ
@@ -12,13 +15,16 @@ public class AIController : CharacterController
     #region consts
 
     protected const float sightOffset = 0.1f;
-    protected const float microStun = .1f;
+    protected const float microStun = .4f;
     protected const float minDistance = .04f;
     protected const float minAngle = 1f;
     protected const float minSpeed = .1f;
 
     protected const string gLName = "ground";//Название слоя земли
-    protected const string cLName = "hero";//Название слоя персонажа
+    protected const string wLName = "Water";//Название слоя воды
+
+    protected float underwaterCheckOffset = 0.053f;//Вертикальное смещение точки проверки на местонахождение под водой относительно положения персонажа
+    protected const float waterRadius = .01f;
 
     protected const float optTimeStep = .75f;//Как часто работает оптимизированная версия персонажа
 
@@ -33,6 +39,7 @@ public class AIController : CharacterController
     #region eventHandlers
 
     public EventHandler<BehaviorEventArgs> BehaviorChangeEvent;//Событие о смене модели поведения
+    public EventHandler<LoyaltyEventArgs> LoyaltyChangeEvent;//Событие о смене стороны конфликта
     public EventHandler<HealthEventArgs> healthChangedEvent;
 
     #endregion //eventHandlers
@@ -56,7 +63,44 @@ public class AIController : CharacterController
     }
 
     protected ETarget mainTarget = ETarget.zero;//Что является целью ИИ
+    protected CharacterController targetCharacter = null;//Какой персонаж является главной целью ИИ
+    protected virtual CharacterController TargetCharacter
+    {
+        get
+        {
+            return targetCharacter;
+        }
+        set
+        {
+            if (targetCharacter != null)
+                targetCharacter.CharacterDeathEvent -= HandleTargetDeathEvent;
+            targetCharacter = value;
+            if (targetCharacter != null)
+                targetCharacter.CharacterDeathEvent += HandleTargetDeathEvent;   
+        }
+    }
+
+    public virtual ETarget MainTarget
+    {
+        get
+        {
+            return mainTarget;
+        }
+        set
+        {
+            mainTarget = value;
+            prevTargetPosition = EVector3.zero;
+            if (mainTarget.transform != null)
+            {
+                TargetCharacter = mainTarget.transform.GetComponent<CharacterController>();
+            }
+            else
+                TargetCharacter = null;
+        }
+    }
+
     protected ETarget currentTarget = ETarget.zero;//Что является текущей целью ИИ
+    public virtual ETarget CurrentTarget { get { return currentTarget; } }
     protected List<NavigationCell> waypoints;//Маршрут следования
     protected virtual List<NavigationCell> Waypoints { get { return waypoints; } set { StopFollowOptPath(); waypoints = value; } }
 
@@ -71,17 +115,81 @@ public class AIController : CharacterController
 
     #region parametres
 
-    protected virtual float attackTime { get { return .6f; } }
-    protected virtual float preAttackTime { get { return .3f; } }
+    [SerializeField]protected HitParametres attackParametres;//Какие параметры атаки, производимой персонажем
+    public HitParametres AttackParametres { get { return attackParametres; } set { attackParametres = value; } }
+
     protected virtual float attackDistance { get { return .2f; } }//На каком расстоянии должен стоять ИИ, чтобы решить атаковать
     protected virtual float sightRadius { get { return 1.9f; } }
     protected virtual float beCalmTime { get { return 10f; } }//Время через которое ИИ перестаёт преследовать игрока, если он ушёл из их поля зрения
     protected virtual float avoidTime { get { return 1f; } }//Время, спустя которое можно судить о необходимости обхода препятствия
-    protected virtual int maxAgressivePathDepth { get { return 20; } }//Насколько сложен может быть путь ИИ, в агрессивном состоянии 
+    protected virtual int maxAgressivePathDepth { get { return 40; } }//Насколько сложен может быть путь ИИ, в агрессивном состоянии 
                                                                       //(этот путь используется в тех случаях, когда невозможно настичь героя прямым путём)
+
+    protected virtual float allyDistance { get { return .25f; } }//На каком расстоянии держится от своего союзника персонаж (возвращается квадрат расстояния
+    protected virtual float allyTime { get { return 1.5f; } }
+    protected bool followAlly = true;
 
     protected BehaviorEnum behavior = BehaviorEnum.calm;
     public BehaviorEnum Behavior { get { return behavior; } set { behavior = value; } }
+
+    protected string cLName = "hero";//Название слоя персонажа
+    [SerializeField]protected LoyaltyEnum loyalty = LoyaltyEnum.enemy;//Как относится ИИ к главному герою
+    public virtual LoyaltyEnum Loyalty
+    {
+        get
+        {
+            return loyalty;
+        }
+        set
+        {
+            OnChangeLoyalty(new LoyaltyEventArgs(value));
+            if (loyalty == LoyaltyEnum.ally && value != LoyaltyEnum.ally)
+                return;//Если персонаж стал союзником, то считаем, что он не сможет снова сменить свою лояльность
+            loyalty = value;
+            if (value == LoyaltyEnum.enemy)
+            {
+                gameObject.layer = LayerMask.NameToLayer("character");
+                gameObject.tag = "enemy";
+                cLName = "hero";
+                enemies.Remove("enemy");
+                enemies.Add("player");
+                enemies.Add("ally");
+                Animate(new AnimationEventArgs("stopAlly"));
+                if (hitBox != null)
+                {
+                    hitBox.allyHitBox = false;
+                    hitBox.SetEnemies(enemies);
+                }
+            }
+            else if (value==LoyaltyEnum.ally)
+            {
+                gameObject.layer = LayerMask.NameToLayer("hero");
+                gameObject.tag = "ally";
+                cLName = "character";
+                enemies.Remove("player");
+                enemies.Add("enemy");
+                enemies.Remove("ally");
+                attackParametres.damage = maxHealth / 10f;//Урон должен быть соизмеримым с здоровьм персонажа
+                maxHealth = SpecialFunctions.Player.GetComponent<HeroController>().MaxHealth;
+                health = maxHealth;
+                dead = false;
+                Animate(new AnimationEventArgs("startAlly"));
+                if (hitBox != null)
+                {
+                    hitBox.allyHitBox = true;
+                    hitBox.SetEnemies(enemies);
+                }
+                beginPosition = new ETarget(SpecialFunctions.Player.transform);//Союзники стремятся находится рядом с главным героем
+                if (areaTrigger != null)
+                {
+                    areaTrigger.triggerFunctionOut += AreaTriggerExitDeath;
+                }
+                BecomeCalm();
+                MainTarget = ETarget.zero;
+            }
+            OnChangeLoyalty(new LoyaltyEventArgs(value));
+        }
+    }
 
     protected bool waiting = false;//Находится ли персонаж в тактическом ожидании?
     public virtual bool Waiting { get { return waiting; } set { waiting = value; } }
@@ -90,13 +198,10 @@ public class AIController : CharacterController
 
     [SerializeField]protected float acceleration = 1f;
 
-    [SerializeField] protected float damage = 1f;
-    [SerializeField] protected float hitForce = 0f;
-    [SerializeField] protected Vector2 attackSize = new Vector2(.07f, .07f);
-    [SerializeField] protected Vector2 attackPosition = new Vector2(0f, 0f);
+    [SerializeField] [HideInInspector]protected byte vulnerability = 0;
+    public byte Vulnerability { get { return vulnerability; }  set { vulnerability = value; } }
 
-    [SerializeField]
-    protected float jumpForce = 60f;//Сила, с которой паук совершает прыжок
+    [SerializeField]protected float jumpForce = 60f;//Сила, с которой ИИ совершает прыжок
     protected bool jumping = false;
     protected bool avoid = false;//Обходим ли препятствие в данный момент?
     protected float optSpeed;//Скорость оптимизированной версии персонажа
@@ -107,9 +212,7 @@ public class AIController : CharacterController
     protected float navCellSize, minCellSqrMagnitude;
     protected virtual float NavCellSize { get { return navCellSize; } set { navCellSize = value; minCellSqrMagnitude = navCellSize * navCellSize / 4f; } }
 
-    protected bool dead = false;
-
-    protected Vector2 beginPosition;//С какой точки персонаж начинает игру
+    protected ETarget beginPosition;//С какой точки персонаж начинает производить свою деятельность
     protected OrientationEnum beginOrientation;//С какой ориентацией персонаж начинает игру
 
     protected bool optimized = false;//Находится ли персонаж в своей оптимизированной версии?
@@ -132,7 +235,7 @@ public class AIController : CharacterController
     {
         base.Initialize();
         analyseActions = Analyse;
-        beginPosition = transform.position;
+        beginPosition = new ETarget(transform.position);
         beginOrientation = orientation;
         indicators = transform.FindChild("Indicators");
         Transform areaTransform = indicators.FindChild("AreaTrigger");
@@ -170,6 +273,50 @@ public class AIController : CharacterController
         optSpeed = speed * optTimeStep;
     }
 
+    protected virtual void Start()
+    {
+        Loyalty = loyalty;
+    }
+
+    /// <summary>
+    /// Двинуться прочь от текущей цели (используется неходящими по земле персонажами)
+    /// </summary>
+    protected virtual void MoveAway(OrientationEnum _orientation)
+    { }
+
+    /// <summary>
+    /// Совершить атаку
+    /// </summary>
+    protected override void Attack()
+    {
+        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(10 * (attackParametres.preAttackTime + attackParametres.actTime + attackParametres.endAttackTime))));
+        StartCoroutine("AttackProcess");
+    }
+
+    /// <summary>
+    /// Процесс атаки
+    /// </summary>
+    protected override IEnumerator AttackProcess()
+    {
+        employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
+        yield return new WaitForSeconds(attackParametres.preAttackTime);
+        hitBox.SetHitBox(new HitParametres(attackParametres));
+        yield return new WaitForSeconds(attackParametres.actTime + attackParametres.endAttackTime);
+        employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
+    }
+
+    /// <summary>
+    /// Функция, ответственная за анализ окружающей обстановки
+    /// </summary>
+    protected override void Analyse()
+    {
+        bool _underWater = Physics2D.OverlapCircle((Vector2)transform.position + Vector2.up * underwaterCheckOffset, waterRadius, LayerMask.GetMask(wLName));
+        if (underWater != _underWater)
+        {
+            Underwater = _underWater;
+        }
+    }
+
     /// <summary>
     /// Процесс обхода препятствия
     /// </summary>
@@ -202,7 +349,7 @@ public class AIController : CharacterController
         yield return new WaitForSeconds(avoidTime);
         if (Vector2.SqrMagnitude(prevPosition - (Vector2)transform.position) < minCellSqrMagnitude && behavior == BehaviorEnum.patrol)
         {
-            beginPosition = transform.position;
+            beginPosition = new ETarget(transform.position);
             beginOrientation = orientation;
             BecomeCalm();
         }
@@ -213,6 +360,7 @@ public class AIController : CharacterController
     /// </summary>
     protected virtual void RefreshTargets()
     {
+        employment = maxEmployment;
         currentTarget.Exists = false;
         StopFollowOptPath();
         Waiting = false;
@@ -223,9 +371,10 @@ public class AIController : CharacterController
     /// </summary>
     protected virtual void BecomeAgressive()
     {
+        if (!mainTarget.Exists)
+            return;
         RefreshTargets();
         behavior = BehaviorEnum.agressive;
-        mainTarget = new ETarget(SpecialFunctions.Player.transform);
         waypoints = null;
         currentTarget = mainTarget;
         if (optimized)
@@ -244,6 +393,7 @@ public class AIController : CharacterController
         RefreshTargets();
         behavior = BehaviorEnum.calm;
         mainTarget.Exists = false;
+        TargetCharacter = null;
         waypoints = null;
         if (optimized)
             behaviorActions = CalmOptBehavior;
@@ -259,7 +409,8 @@ public class AIController : CharacterController
     {
         RefreshTargets();
         behavior = BehaviorEnum.patrol;
-        mainTarget.Exists = false;
+        //mainTarget.Exists = false;
+        TargetCharacter = null;
         if (optimized)
             behaviorActions = PatrolOptBehavior;
         else
@@ -287,7 +438,6 @@ public class AIController : CharacterController
     /// <param name="targetPosition">Точка, достичь которую стремится ИИ</param>
     protected virtual void GoToThePoint(Vector2 targetPosition)
     {
-        System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
         if (navMap == null)
             return;
         waypoints = navMap.GetPath(transform.position, targetPosition, true);
@@ -301,10 +451,23 @@ public class AIController : CharacterController
     /// </summary>
     protected virtual void GoHome()
     {
+        MainTarget = ETarget.zero;
         GoToThePoint(beginPosition);
         if (behavior == BehaviorEnum.agressive)
         {
             BecomePatrolling();
+        }
+    }
+
+    /// <summary>
+    /// Среагировать на услышанный боевой клич
+    /// </summary>
+    /// <param name="cryPosition">Место, откуда издался клич</param>
+    public virtual void HearBattleCry(Vector2 cryPosition)
+    {
+        if (behavior!=BehaviorEnum.agressive)
+        {
+            GoToThePoint(cryPosition);
         }
     }
 
@@ -316,22 +479,84 @@ public class AIController : CharacterController
         waypoints = new List<NavigationCell>();
     }
 
+    /// <summary>
+    /// Возвращает навигационный маршрут персонажа
+    /// </summary>
     public List<NavigationCell> GetWaypoints()
     {
         return waypoints;
     }
 
     /// <summary>
+    /// Функция, вызываемая при получении урона, оповещающая о субъекте нападения
+    /// </summary>
+    /// <param name="attacker">Кто атаковал персонажа</param>
+    public virtual void TakeAttackerInformation(GameObject attacker)
+    {
+        if (attacker != null)
+        {
+            if (mainTarget.transform != attacker.transform)
+                MainTarget = new ETarget(attacker.transform);
+            if (behavior!=BehaviorEnum.agressive)
+                BecomeAgressive();
+        }
+    }
+
+    /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage)
+    public override void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
     {
-        base.TakeDamage(damage);
+        if (_dType != DamageType.Physical)
+        {
+            if (((DamageType)vulnerability & _dType) == _dType)
+                damage *= 1.25f;
+            else if (_dType == attackParametres.damageType)
+                damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
+        }
+        base.TakeDamage(damage, _dType, _microstun);
         OnHealthChanged(new HealthEventArgs(health));
         StopMoving();
-        StartCoroutine(Microstun());
-        if (behavior != BehaviorEnum.agressive)
-            BecomeAgressive();
+        if (_microstun)
+        {
+            if (GetBuff("StunnedProcess") == null && GetBuff("FrozenProcess") == null)
+            {
+                StopCoroutine("Microstun");
+                StartCoroutine("Microstun");
+            }
+            StopCoroutine("AttackProcess");
+            employment = maxEmployment;
+        }
+    }
+
+    /// <summary>
+    /// Функция получения урона (в данной функции параметр ignoreInvul показывает, вводится ли персонаж в микростан при ударе или нет).
+    /// </summary>
+    /// <param name="damage">величина урона</param>
+    /// <param name="_dType">тип урона</param>
+    /// <param name="ignoreInvul">показывает, вводится ли персонаж в микростан при ударе или нет</param>
+    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, bool _microstun)
+    {
+        if (_dType != DamageType.Physical)
+        {
+            if (((DamageType)vulnerability & _dType) == _dType)
+                damage *= 1.25f;
+            else if (_dType == attackParametres.damageType)
+                damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
+        }
+        base.TakeDamage(damage, _dType);
+        OnHealthChanged(new HealthEventArgs(health));
+        StopMoving();
+        if (_microstun)
+        {
+            if (GetBuff("StunnedProcess") == null && GetBuff("FrozenProcess") == null)
+            {
+                StopCoroutine("Microstun");
+                StartCoroutine("Microstun");
+            }
+            StopCoroutine("AttackProcess");
+            employment = maxEmployment;
+        }
     }
 
     /// <summary>
@@ -341,10 +566,18 @@ public class AIController : CharacterController
     {
         if (!dead)
         {
-            dead = true;
             base.Death();
+            if (!dead)
+                return;
             SpecialFunctions.statistics.ConsiderStatistics(this);
-            Animate(new AnimationEventArgs("death"));
+            string _id = "";
+            if (GetBuff("FrozenProcess") != null)
+                _id = "ice";
+            else if (GetBuff("StunnedProcess") != null && GetBuff("BurningProcess") != null)
+                _id = "fire";
+            Animate(new AnimationEventArgs("death", _id, 0));
+            if (targetCharacter != null)
+                targetCharacter.CharacterDeathEvent -= HandleTargetDeathEvent;
             Destroy(gameObject);
         }
     }
@@ -353,7 +586,19 @@ public class AIController : CharacterController
     {
         immobile = true;
         yield return new WaitForSeconds(microStun);
-        immobile = false;
+        if (GetBuff("StunnedProcess")==null)
+            immobile = false;
+    }
+
+    /// <summary>
+    /// Процесс, обеспечивающий частоту учёта смены положения союзника, за которым следует персонаж
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IEnumerator ConsiderAllyPathProcess()
+    {
+        followAlly = false;
+        yield return new WaitForSeconds(allyTime);
+        followAlly = true;
     }
 
     #region behaviorActions
@@ -510,6 +755,24 @@ public class AIController : CharacterController
         return _path;
     }
 
+    /// <summary>
+    /// Сменить главную цель
+    /// </summary>
+    protected virtual void ChangeMainTarget()
+    {
+        MainTarget = ETarget.zero;
+        Transform obj = SpecialFunctions.battleField.GetNearestCharacter(transform.position, loyalty == LoyaltyEnum.ally);
+        if (obj != null)
+        {
+            MainTarget = new ETarget(obj);
+            GoToThePoint(mainTarget);
+        }
+        else
+        {
+            GoHome();
+        }
+    }
+
     #endregion //behaviorActions
 
     /// <summary>
@@ -550,6 +813,14 @@ public class AIController : CharacterController
             else
                 StartCoroutine("BecomeCalmProcess");
         }
+    }
+
+    /// <summary>
+    /// Смерть персонажа в связи с его выходом из триггера поля боя
+    /// </summary>
+    protected virtual void AreaTriggerExitDeath()
+    {
+        Death();
     }
 
     /// <summary>
@@ -627,7 +898,7 @@ public class AIController : CharacterController
     }
 
     /// <summary>
-    /// Включить визуальное отображение персонажа
+    /// Выключить визуальное отображение персонажа
     /// </summary>
     protected virtual void DisableVisual()
     {
@@ -783,10 +1054,10 @@ public class AIController : CharacterController
             else
             {
                 GoHome();
-                if (waypoints == null)
+                if (waypoints == null && beginPosition.transform==null)
                 {
-                    //Если не получается добраться до начальной позиции, то считаем, что текущая позиция становится начальной
-                    beginPosition = transform.position;
+                    //Если не получается добраться до начальной позиции (И если эта начальная позиция - не главный герой, за которым следует союзник), то считаем, что текущая позиция становится начальной
+                    beginPosition = new ETarget(transform.position);
                     beginOrientation = orientation;
                     BecomeCalm();
                     followOptPath = false;
@@ -851,12 +1122,25 @@ public class AIController : CharacterController
     #region events
 
     /// <summary>
-    /// Вызвать событие, связанное со сменой моели поведения
+    /// Вызвать событие, связанное со сменой модели поведения
     /// </summary>
     /// <param name="e">Данные события</param>
     protected virtual void OnChangeBehavior(BehaviorEventArgs e)
     {
         EventHandler<BehaviorEventArgs> handler = BehaviorChangeEvent;
+        if (handler != null)
+        {
+            handler(this, e);
+        }
+    }
+
+    /// <summary>
+    /// Вызвать событие, связанное со сменой стороны конфликта
+    /// </summary>
+    /// <param name="e">Данные события</param>
+    protected virtual void OnChangeLoyalty(LoyaltyEventArgs e)
+    {
+        EventHandler<LoyaltyEventArgs> handler = LoyaltyChangeEvent;
         if (handler != null)
         {
             handler(this, e);
@@ -884,18 +1168,36 @@ public class AIController : CharacterController
     /// </summary>
     protected virtual void HandleAttackProcess(object sender, HitEventArgs e)
     {
-        //Если игрок случайно наткнулся на монстра и получил урон, то паук автоматически становится агрессивным
+        //Если игрок случайно наткнулся на монстра и получил урон, то персонаж автоматически становится агрессивным
         if (behavior != BehaviorEnum.agressive)
+        {
+            MainTarget = new ETarget(e.Target.transform);
             BecomeAgressive();
+        }
     }
 
     /// <summary>
     /// Обработка события "Услышал врага"
     /// </summary>
-    protected virtual void HandleHearingEvent(object sender, EventArgs e)
+    protected virtual void HandleHearingEvent(object sender, HearingEventArgs e)
     {
         if (behavior != BehaviorEnum.agressive)
+        {
+            MainTarget = new ETarget(e.Target.transform);
             BecomeAgressive();
+        }
+    }
+
+    /// <summary>
+    /// Узнать о смерти текущей цели и переключится на следующую
+    /// </summary>
+    /// <param name="sender">Что вызвало событие</param>
+    /// <param name="e">Данные о событии</param>
+    protected virtual void HandleTargetDeathEvent(object sender, StoryEventArgs e)
+    {
+        if (dead)
+            return;
+        ChangeMainTarget();
     }
 
     #endregion //eventHandlers
@@ -927,26 +1229,26 @@ public class AIController : CharacterController
             {
                 case "calm":
                     {
-                        behavior = BehaviorEnum.calm;
+                        BecomeCalm();
                         break;
                     }
                 case "agressive":
                     {
-                        behavior = BehaviorEnum.agressive;
+                        BecomeAgressive();
                         break;
                     }
                 case "patrol":
                     {
-                        behavior = BehaviorEnum.patrol;
+                        BecomePatrolling();
                         if (eData.waypoints.Count > 0)
                         {
                             NavigationSystem navSystem = SpecialFunctions.statistics.navSystem;
                             if (navSystem != null)
                             {
-                                NavigationMap navMap = navSystem.GetMap(GetMapType());
                                 waypoints = new List<NavigationCell>();
                                 for (int i = 0; i < eData.waypoints.Count; i++)
                                     waypoints.Add(navMap.GetCurrentCell(eData.waypoints[i]));
+                                transform.position = waypoints[0].cellPosition;
                             }
                         }
                         break;
@@ -958,7 +1260,22 @@ public class AIController : CharacterController
                         break;
                     }
             }
-            
+
+            TargetData currentTargetData = eData.currentTargetData;
+            TargetData mainTargetData = eData.mainTargetData;
+
+            if (currentTargetData.targetName != string.Empty)
+                currentTarget = new ETarget(GameObject.Find(currentTargetData.targetName).transform);
+            else
+                currentTarget = new ETarget(currentTargetData.position);
+
+            if (mainTargetData.targetName != string.Empty)
+                MainTarget = new ETarget(GameObject.Find(mainTargetData.targetName).transform);
+            else
+                MainTarget = new ETarget(mainTargetData.position);
+
+            SetBuffs(eData.bListData);
+
             Health = eData.health;
         }
     }
@@ -977,3 +1294,88 @@ public class AIController : CharacterController
     }
 
 }
+
+/// <summary>
+/// Редактор персонажей с ИИ
+/// </summary>
+#if UNITY_EDITOR
+[CustomEditor(typeof(AIController),true)]
+public class AIControllerEditor : Editor
+{
+
+    #region fields
+
+    protected HitParametres hitData;
+
+    #endregion //fields
+
+    #region parametres
+
+    protected DamageType prevDamageType;
+
+    #endregion //parametres
+
+    public void OnEnable()
+    {
+        AIController ai = (AIController)target;
+        hitData = ai.AttackParametres;
+        prevDamageType = hitData.damageType;
+    }
+
+    public override void OnInspectorGUI()
+    {
+        AIController ai = (AIController)target;
+        hitData = ai.AttackParametres;
+        base.OnInspectorGUI();
+        if (hitData.damageType != prevDamageType)
+        {
+            prevDamageType = hitData.damageType;
+            switch (prevDamageType)
+            {
+                case DamageType.Physical:
+                    {
+                        ai.Vulnerability = (byte)(DamageType.Cold | DamageType.Crushing | DamageType.Fire | DamageType.Poison | DamageType.Water);
+                        hitData.effectChance=0f;
+                        break;
+                    }
+                case DamageType.Crushing:
+                    {
+                        ai.Vulnerability = 0;
+                        hitData.effectChance = 30f;
+                        break;
+                    }
+                case DamageType.Fire:
+                    {
+                        ai.Vulnerability = (byte)DamageType.Water;
+                        hitData.effectChance = 20f;
+                        break;
+                    }
+                case DamageType.Cold:
+                    {
+                        ai.Vulnerability = (byte)DamageType.Fire;
+                        hitData.effectChance = 20f;
+                        break;
+                    }
+                case DamageType.Water:
+                    {
+                        ai.Vulnerability = (byte)DamageType.Fire;
+                        hitData.effectChance = 50f;
+                        break;
+                    }
+                case DamageType.Poison:
+                    {
+                        ai.Vulnerability = (byte)DamageType.Crushing;
+                        hitData.effectChance = 15f;
+                        break;
+                    }
+                default:
+                    break;
+            }
+            ai.AttackParametres = hitData;
+        }
+        ai.Vulnerability = (byte)(DamageType)EditorGUILayout.EnumMaskPopup(new GUIContent("vulnerability"),(DamageType)ai.Vulnerability);
+        EditorUtility.SetDirty(ai);
+    }
+
+}
+#endif //UNITY_EDITOR

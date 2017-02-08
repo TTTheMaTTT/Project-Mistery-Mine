@@ -20,8 +20,6 @@ public class BatBossController: BossController
 
     protected Hearing hearing;//Слух персонажа
 
-    public LayerMask whatIsGround = LayerMask.GetMask("ground");
-
     public GameObject drop;//Что выпадает из летучей мыши, если её 2 раза ударить
 
     #endregion //fields
@@ -52,6 +50,7 @@ public class BatBossController: BossController
         hitBox.AttackEventHandler += HandleAttackProcess;
         hearing = indicators.GetComponentInChildren<Hearing>();
         hearing.hearingEventHandler += HandleHearingEvent;
+        hearing.AllyHearing = false;
 
         if (areaTrigger != null)
         {
@@ -60,7 +59,7 @@ public class BatBossController: BossController
             areaTrigger.triggerFunctionOut += AreaTriggerExitChangeBehavior;
             areaTrigger.InitializeAreaTrigger();
         }
-
+        
 
         BecomeCalm();
 
@@ -80,9 +79,11 @@ public class BatBossController: BossController
         }
     }
 
+    /// <summary>
+    /// Функция, ответственная за анализ окружающей персонажа обстановки
+    /// </summary>
     protected override void Analyse()
     {
-        base.Analyse();
         Vector2 pos = transform.position;
         if (rigid.velocity.magnitude < minSpeed)
         {
@@ -91,7 +92,7 @@ public class BatBossController: BossController
             for (int i = 0; i < 8; i++)
             {
                 rayDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-                if (Physics2D.Raycast(pos, rayDirection, batSize, whatIsGround))
+                if (Physics2D.Raycast(pos, rayDirection, batSize, LayerMask.GetMask(gLName)))
                 {
                     rigid.AddForce(-rayDirection * pushBackForce / 2f);
                     break;
@@ -111,7 +112,7 @@ public class BatBossController: BossController
                         if (hit.collider.transform == mainTarget.transform)
                             currentTarget = mainTarget;
                 }
-                if (Physics2D.Raycast(pos, currentTarget - pos, batSize, whatIsGround))
+                if (Physics2D.Raycast(pos, currentTarget - pos, batSize, LayerMask.GetMask(gLName)))
                 {
                     currentTarget = FindPath();
                 }
@@ -125,8 +126,9 @@ public class BatBossController: BossController
     protected override void BecomeAgressive()
     {
         base.BecomeAgressive();
-        hitBox.SetHitBox(new HitClass(damage, -1f, attackSize, attackPosition, 0f));
+        hitBox.SetHitBox(attackParametres);
         rigid.isKinematic = false;
+        hearing.enabled = false;
     }
 
     /// <summary>
@@ -137,6 +139,7 @@ public class BatBossController: BossController
         base.BecomeCalm();
         hitBox.ResetHitBox();
         rigid.isKinematic = true;
+        hearing.enabled = true;
     }
 
     /// <summary>
@@ -147,20 +150,31 @@ public class BatBossController: BossController
         base.BecomePatrolling();
         hitBox.ResetHitBox();
         rigid.isKinematic = false;
+        hearing.enabled = true;
     }
 
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage)
+    public override void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
     {
+        if (_dType != DamageType.Physical)
+        {
+            if (((DamageType)vulnerability & _dType) == _dType)
+                damage *= 1.25f;
+            else if (_dType == attackParametres.damageType)
+                damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
+        }
         Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
         if (health <= 0f)
             Death();
         else
             Animate(new AnimationEventArgs("hitted"));
-        BecomeAgressive();
-        damageCount++;
+        if (behavior != BehaviorEnum.agressive && _microstun)
+        {
+            BecomeAgressive();
+            damageCount++;
+        }
         if (damageCount >= 2)
         {
             Instantiate(drop, transform.position, transform.rotation);
@@ -188,10 +202,10 @@ public class BatBossController: BossController
     {
         Vector2 pos = transform.position;
 
-        bool a1 = Physics2D.Raycast(pos, Vector2.up, batSize, whatIsGround) && (mainTarget.y - pos.y > avoidOffset);
-        bool a2 = Physics2D.Raycast(pos, Vector2.right, batSize, whatIsGround) && (mainTarget.x > pos.x);
-        bool a3 = Physics2D.Raycast(pos, Vector2.down, batSize, whatIsGround) && (mainTarget.y - pos.y < avoidOffset);
-        bool a4 = Physics2D.Raycast(pos, Vector2.left, batSize, whatIsGround) && (mainTarget.x < pos.x);
+        bool a1 = Physics2D.Raycast(pos, Vector2.up, batSize, LayerMask.GetMask(gLName)) && (mainTarget.y - pos.y > avoidOffset);
+        bool a2 = Physics2D.Raycast(pos, Vector2.right, batSize, LayerMask.GetMask(gLName)) && (mainTarget.x > pos.x);
+        bool a3 = Physics2D.Raycast(pos, Vector2.down, batSize, LayerMask.GetMask(gLName)) && (mainTarget.y - pos.y < avoidOffset);
+        bool a4 = Physics2D.Raycast(pos, Vector2.left, batSize, LayerMask.GetMask(gLName)   ) && (mainTarget.x < pos.x);
 
         bool open1 = false, open2 = false;
         Vector2 aimDirection = a1 ? Vector2.up : a2 ? Vector2.right : a3 ? Vector2.down : a4 ? Vector2.left : Vector2.zero;
@@ -203,12 +217,12 @@ public class BatBossController: BossController
             Vector2 vect2 = new Vector2(-aimDirection.y, -aimDirection.x);
             Vector2 pos1 = pos;
             Vector2 pos2 = pos1;
-            while (Physics2D.Raycast(pos1, aimDirection, batSize, whatIsGround) && ((pos1 - pos).magnitude < maxAvoidDistance))
+            while (Physics2D.Raycast(pos1, aimDirection, batSize, LayerMask.GetMask(gLName)) && ((pos1 - pos).magnitude < maxAvoidDistance))
                 pos1 += vect1 * batSize;
-            open1 = !Physics2D.Raycast(pos1, aimDirection, batSize, whatIsGround);
-            while (Physics2D.Raycast(pos2, aimDirection, batSize, whatIsGround) && ((pos2 - pos).magnitude < maxAvoidDistance))
+            open1 = !Physics2D.Raycast(pos1, aimDirection, batSize, LayerMask.GetMask(gLName));
+            while (Physics2D.Raycast(pos2, aimDirection, batSize, LayerMask.GetMask(gLName)) && ((pos2 - pos).magnitude < maxAvoidDistance))
                 pos2 += vect2 * batSize;
-            open2 = !Physics2D.Raycast(pos2, aimDirection, batSize, whatIsGround);
+            open2 = !Physics2D.Raycast(pos2, aimDirection, batSize, LayerMask.GetMask(gLName));
             Vector2 newTargetPosition = (open1 && !open2) ? pos1 : (open2 && !open1) ? pos2 : ((mainTarget - pos1).magnitude < (mainTarget - pos2).magnitude) ? pos1 : pos2;
             return new ETarget(newTargetPosition);
         }

@@ -8,12 +8,24 @@ using System.Collections;
 public static class SpecialFunctions
 {
     public static GameObject player = null;
-    public static GameObject Player { get { if (player == null) player = GameObject.FindGameObjectWithTag("player"); return player; } }
+    public static BattleField battleField = null;
+    public static GameObject Player
+    {
+        get
+        {
+            if (player == null)
+            {
+                player = GameObject.FindGameObjectWithTag("player");
+                battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
+            }
+            return player;
+        }
+    }
 
     public static CameraController camControl { get { return GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); } }
 
     public static GameController gameController { get { return GameObject.FindGameObjectWithTag("gameController").GetComponent<GameController>(); } }
-
+    
     public static History history { get { return gameController.GetComponent<GameHistory>().history; } }
 
     public static GameStatistics statistics { get { return gameController.GetComponent<GameStatistics>(); } }
@@ -68,6 +80,14 @@ public static class SpecialFunctions
     public static void SetText(string _info, float textTime)
     {
         gameUI.SetMessage(_info, textTime);
+    }
+
+    /// <summary>
+    /// Функция, выводящая заданный тект в поле сообщений о секретах и эффектах
+    /// </summary>
+    public static void SetSecretText(float textTime, string _text = "Вы нашли секретное место!")
+    {
+        gameUI.SetSecretMessage(textTime,_text);
     }
 
     /// <summary>

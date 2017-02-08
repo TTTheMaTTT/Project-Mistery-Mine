@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -13,6 +14,12 @@ public class ChestController : MonoBehaviour, IInteractive
     private const float pushForceY = 50f, pushForceX = 25f;//С какой силой выбрасывается содержимое сундука при его открытии?
 
     #endregion //consts
+
+    #region eventHandlers
+
+    public EventHandler<EventArgs> ChestOpenEvent;//Событие о том, что был открыт этот сундук
+
+    #endregion //eventHandlers
 
     #region fields
 
@@ -49,7 +56,7 @@ public class ChestController : MonoBehaviour, IInteractive
             GameObject _drop = Instantiate(drop.gameObject, transform.position + Vector3.up * .05f, transform.rotation) as GameObject;
             if (_drop.GetComponent<Rigidbody2D>() != null)
             {
-                _drop.GetComponent<Rigidbody2D>().AddForce(new Vector2(Random.RandomRange(-pushForceX, pushForceX), pushForceY));
+                _drop.GetComponent<Rigidbody2D>().AddForce(new Vector2(UnityEngine.Random.RandomRange(-pushForceX, pushForceX), pushForceY));
             }
             /*GameObject obj = new GameObject(drop.item.itemName);
             obj.transform.position = transform.position;
@@ -63,6 +70,7 @@ public class ChestController : MonoBehaviour, IInteractive
         SetOutline(false);
         if (anim != null)
             anim.Play("Opened");
+        OnChestOpened(new EventArgs());
         DestroyImmediate(this);
     }
 
@@ -82,6 +90,22 @@ public class ChestController : MonoBehaviour, IInteractive
     }
 
     #endregion //IInteractive
+
+    #region events
+
+    /// <summary>
+    /// Событие "сундук был открыт"
+    /// </summary>
+    protected virtual void OnChestOpened(EventArgs e)
+    {
+        EventHandler<EventArgs> handler = ChestOpenEvent;
+        if (handler != null)
+        {
+            handler(this, e);
+        }
+    }
+
+    #endregion //events
 
     #region IHaveID
 

@@ -401,6 +401,113 @@ public class NavigationBunchedMap: NavigationMap
         return _path;
     }
 
+    /// <summary>
+    /// Возвращает маршрут, используя информацию о карте. Вернёт null, если пути не существует. Возвращаемый путь не содержит пути по лестницам и платформам
+    /// </summary>
+    /// <param name="beginPosition">Начальная позиция</param>
+    /// <param name="endPosition">Конечная позиция</param>
+    /// <param name="optimize">Оптимизировать ли маршрут?</param>
+    /// <returns>Массив ячеек</returns>
+    public virtual List<NavigationCell> GetSimplePath(Vector2 beginPosition, Vector2 endPosition, bool optimize)
+    {
+        List<NavigationCell> _path = new List<NavigationCell>();
+        ComplexNavigationCell beginCell = (ComplexNavigationCell)GetCurrentCell(beginPosition), endCell = (ComplexNavigationCell)GetCurrentCell(endPosition);
+
+        if (beginCell == null || endCell == null)
+            return null;
+
+        //ClearMap();
+        List<NavigationGroup> clearedGroups = new List<NavigationGroup>();//Список "очищенных групп" (со стёртой информации о посещённости ячеек)
+        NavigationGroup clearedGroup = cellGroups[beginCell.groupNumb];
+        clearedGroup.ClearCells();
+        clearedGroups.Add(clearedGroup);
+        clearedGroup = cellGroups[endCell.groupNumb];
+        if (!clearedGroups.Contains(clearedGroup))
+        {
+            clearedGroup.ClearCells();
+            clearedGroups.Add(clearedGroup);
+        }
+
+        Queue<ComplexNavigationCell> cellsQueue = new Queue<ComplexNavigationCell>();
+        cellsQueue.Enqueue(beginCell);
+        beginCell.visited = true;
+        while (cellsQueue.Count > 0 && endCell.fromCell == null)
+        {
+            ComplexNavigationCell currentCell = cellsQueue.Dequeue();
+            if (currentCell == null)
+                return null;
+            List<ComplexNavigationCell> neighbourCells = currentCell.neighbors.ConvertAll<ComplexNavigationCell>(x => GetCell(x.groupNumb, x.cellNumb));
+            for (int i=0;i<neighbourCells.Count;i++)
+            {
+                ComplexNavigationCell cell = neighbourCells[i];
+                if (cell.cellType == NavCellTypeEnum.movPlatform || currentCell.neighbors[i].connectionType == NavCellTypeEnum.ladder)
+                    continue;//Не рассматриваем клетки платформ и лестничные пути
+                if (cell.groupNumb != currentCell.groupNumb)
+                {
+                    clearedGroup = cellGroups[cell.groupNumb];
+                    if (!clearedGroups.Contains(clearedGroup))
+                    {
+                        clearedGroup.ClearCells();
+                        clearedGroups.Add(clearedGroup);
+                    }
+                }
+                if (cell != null ? !cell.visited : false)
+                {
+                    cell.visited = true;
+                    cellsQueue.Enqueue(cell);
+                    cell.fromCell = currentCell;
+                }
+            }
+        }
+
+        if (endCell.fromCell == null)//Невозможно достичь данной точки
+            return null;
+
+        //Восстановим весь маршрут с последней ячейки
+        ComplexNavigationCell pathCell = endCell;
+        _path.Insert(0, pathCell);
+        while (pathCell.fromCell != null)
+        {
+            _path.Insert(0, pathCell.fromCell);
+            pathCell = (ComplexNavigationCell)pathCell.fromCell;
+        }
+
+        if (optimize)
+        {
+
+            //Удалим все ненужные точки
+            for (int i = 0; i < _path.Count - 2; i++)
+            {
+                ComplexNavigationCell checkPoint1 = (ComplexNavigationCell)_path[i], checkPoint2 = (ComplexNavigationCell)_path[i + 1];
+                if (checkPoint1.cellType == NavCellTypeEnum.jump || checkPoint1.cellType == NavCellTypeEnum.movPlatform)
+                    continue;
+                if (checkPoint1.cellType != checkPoint2.cellType)
+                    continue;
+                Vector2 movDirection1 = (checkPoint2.cellPosition - checkPoint1.cellPosition).normalized;
+                Vector2 movDirection2 = Vector2.zero;
+                int index = i + 2;
+                ComplexNavigationCell checkPoint3 = (ComplexNavigationCell)_path[index];
+                while (Vector2.SqrMagnitude(movDirection1 - (checkPoint3.cellPosition - checkPoint2.cellPosition).normalized) < .01f &&
+                       checkPoint1.cellType == checkPoint3.cellType &&
+                       index < _path.Count)
+                {
+                    index++;
+                    if (index < _path.Count)
+                    {
+                        checkPoint2 = checkPoint3;
+                        checkPoint3 = (ComplexNavigationCell)_path[index];
+                    }
+                }
+                for (int j = i + 1; j < index - 1; j++)
+                {
+                    _path.RemoveAt(i + 1);
+                }
+            }
+        }
+
+        return _path;
+    }
+
 }
 
 

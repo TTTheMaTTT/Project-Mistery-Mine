@@ -71,7 +71,7 @@ public class BoomerangScript : MonoBehaviour
         currentTarget = newTarget;
     }
 
-    public virtual void SetHitBox(HitClass _hit, List<string> enemies)
+    public virtual void SetHitBox(HitParametres _hit, List<string> enemies)
     {
         hitBox.SetEnemies(enemies);
         hitBox.SetHitBox(_hit);

@@ -26,6 +26,10 @@ public class CharacterEffectSystem : MonoBehaviour
         scal = transform.localScale;
     }
 
+    /// <summary>
+    /// Создать игровой объект, представляющий собой реализацию того или иного эффекта
+    /// </summary>
+    /// <param name="_effectName">название эффекта (или имя реализующего эффект объекта)</param>
     public void SpawnEffect(string _effectName)
     {
         CharacterEffect _effect = effects.Find(x => (x.effectName == _effectName));
@@ -34,7 +38,27 @@ public class CharacterEffectSystem : MonoBehaviour
             GameObject particle = Instantiate(_effect.particle) as GameObject;
             //particle.transform.parent = transform;
             particle.transform.position = new Vector3(_effect.effectPosition.x * Mathf.Sign(transform.lossyScale.x),_effect.effectPosition.y,0f)+transform.position;
-            Destroy(particle,_effect.lifeTime);
+            if (_effect.child)
+                particle.transform.parent = transform;
+            if (_effect.lifeTime>0f)
+                Destroy(particle,_effect.lifeTime);
+        }
+    }
+
+    /// <summary>
+    /// Убрать эффект, находящийся внутри персонажа
+    /// </summary>
+    /// <param name="_effectName">название эффекта (или имя реализующего эффект объекта)</param>
+    public void RemoveEffect(string _effectName)
+    {
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            GameObject _effect = transform.GetChild(i).gameObject;
+            if (_effect.name.Contains(_effectName))
+            {
+                Destroy(_effect);
+                break;
+            }
         }
     }
 
@@ -43,7 +67,7 @@ public class CharacterEffectSystem : MonoBehaviour
     /// </summary>
     public virtual void FallEffect()
     {
-        StartCoroutine(FallProcess());
+        StartCoroutine("FallProcess");
     }
 
     /// <summary>
@@ -63,7 +87,7 @@ public class CharacterEffectSystem : MonoBehaviour
     /// </summary>
     public virtual void ResetEffects()
     {
-        StopAllCoroutines();
+        StopCoroutine("FallProcess");
         transform.localPosition = pos;
         transform.localScale = scal;
     }
@@ -80,4 +104,5 @@ public class CharacterEffect
     public GameObject particle;//Испускаемая частица при воспроизведении эффекта 
     public float lifeTime;//Как долго длится эффект
     public Vector2 effectPosition;//Где располагается объект относительно персонажа
+    public bool child = false;//Является ли эффект дочерним объектом по отношению к создаваемому его игровому объекту1
 }

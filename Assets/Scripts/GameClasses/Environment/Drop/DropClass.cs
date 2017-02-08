@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 
 /// <summary>
@@ -13,6 +14,12 @@ public class DropClass : MonoBehaviour, IInteractive
     private const float dropTime = .8f;//Сколько времени предмет "выпадает"
 
     #endregion //consts
+
+    #region eventHandlers
+
+    public EventHandler<EventArgs> DropIsGot;//Событие "Дроп был взят" 
+
+    #endregion //eventHandlers
 
     #region fields
 
@@ -77,6 +84,7 @@ public class DropClass : MonoBehaviour, IInteractive
         if (dropped)
         {
             SpecialFunctions.Player.GetComponent<HeroController>().SetItem(item, false);
+            OnDropGet(new EventArgs());
             Destroy(gameObject);
             SpecialFunctions.statistics.ConsiderStatistics(this);
         }
@@ -132,5 +140,20 @@ public class DropClass : MonoBehaviour, IInteractive
     }
 
     #endregion //IHaveID
+
+    #region events
+
+    /// <summary>
+    /// Событие "Дроп был взят"
+    /// </summary>
+    protected void OnDropGet(EventArgs e)
+    {
+        if (DropIsGot!=null)
+        {
+            DropIsGot(this, e);
+        }
+    }
+
+    #endregion //events
 
 }

@@ -116,8 +116,13 @@ public class WallChecker : MonoBehaviour {
 
     public virtual void FixedUpdate()
     {
+        wallInFront = CheckWall();
+    }
+
+    public virtual bool CheckWall()
+    {
         Vector2 pos = transform.position;
-        wallInFront = Physics2D.OverlapBox(pos + position, size, angle, LayerMask.GetMask(whatIsWall.ToArray()));
+        return Physics2D.OverlapBox(pos + position, size, angle, LayerMask.GetMask(whatIsWall.ToArray()));
     }
 
     /// <summary>
@@ -125,8 +130,9 @@ public class WallChecker : MonoBehaviour {
     /// </summary>
     /// <param name="angle">На какой угол повернут главный объект</param>
     /// <param name="scaleX">В какую сторону смотрит главный объект</param>
-    public virtual void SetPosition(float angle, float scaleX)
+    public virtual void SetPosition(float _angle, float scaleX)
     {
+        angle = _angle;
         Vector2 vectX = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
         Vector2 vectY = new Vector2(-Mathf.Sin(angle), Mathf.Cos(angle));
         position = scaleX * vectX * defaultPosition.x + vectY * defaultPosition.y;
@@ -137,7 +143,7 @@ public class WallChecker : MonoBehaviour {
 #if UNITY_EDITOR
         if (UnityEditor.Selection.activeObject == gameObject)
         {
-            float angle = transform.eulerAngles.z / 180f * Mathf.PI;
+            angle = transform.eulerAngles.z / 180f * Mathf.PI;
             Vector2 vectX = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle))/2f;
             Vector2 vectY = new Vector2(-Mathf.Sin(angle), Mathf.Cos(angle))/2f;
             Vector2 pos = transform.position;

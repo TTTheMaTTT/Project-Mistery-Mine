@@ -33,6 +33,8 @@ public class MapVisualizer : MonoBehaviour
             {
                 case NavMapTypeEnum.usual:
                     {
+                        if (!(map is NavigationBunchedMap))
+                            break;
                         NavigationBunchedMap _map = (NavigationBunchedMap)map;
                         foreach (NavigationGroup navGroup in _map.cellGroups)
                         {

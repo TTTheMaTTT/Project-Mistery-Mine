@@ -125,6 +125,8 @@ public class LevelEditor : EditorWindow
     private static GameObject currentObstacle;//Какой вид препятствия используется в данный момент
 
     private static float obstacleDamage;//Какой урон наносит данный вид препятствия
+    private static DamageType obstacleDamageType;//Какой тип урона наносит данный вид препятствия
+    [Range(0f, 100f)]private static float obstacleEffectChance;//Какой шанс произвести эффект, зависящий от типа урона
     private static float damageBoxSize = .16f;//Размер области атаки по оси Y
     private static float damageBoxOffset = 0f;//Насколько сдвинут хитбокс по оси Y
     private static float obstacleOffset;//Смещение по вертикальной оси при расположении препятствий
@@ -1363,10 +1365,7 @@ public class LevelEditor : EditorWindow
                         if (obstacleType == ObstacleEnum.plants)
                         {
                             ObstacleScript obScript = obstacle.AddComponent<ObstacleScript>();
-                            obScript.HitData = new HitClass(obstacleDamage, -1f, col.size, col.offset, 0f);
-                            obScript.HitData.damage = obstacleDamage;
-                            obScript.HitData.hitSize = col.size;
-                            obScript.HitData.hitPosition = col.offset;
+                            obScript.HitData = new HitParametres(obstacleDamage, -1f, col.size, col.offset,0f, obstacleDamageType, obstacleEffectChance);
                             obScript.Enemies = new List<string>() { "player" };
                             obstacle.AddComponent<HitBox>();
                         }
@@ -1438,7 +1437,8 @@ public class LevelEditor : EditorWindow
             ObstacleScript obstacleScript = _obstacle.GetComponent<ObstacleScript>();
             if (obstacleScript != null)
             {
-                obstacleScript.HitData.hitSize = new Vector2(col.size.x, col.size.y);
+                HitParametres hitParams = obstacleScript.HitData;
+                obstacleScript.HitData = new HitParametres(hitParams.damage,0f,col.size,col.offset,0f,hitParams.damageType, hitParams.effectChance);
             }
 
             //И засунем в объект дочерние объекты обратно
@@ -3314,6 +3314,8 @@ public class LevelEditor : EditorWindow
         obstacleOffset = EditorGUILayout.FloatField("obstacle offset", obstacleOffset);
 
         obstacleDamage = EditorGUILayout.FloatField("obstacle damage", obstacleDamage);
+        obstacleDamageType = (DamageType)EditorGUILayout.EnumPopup("damage type", obstacleDamageType);
+        obstacleEffectChance = EditorGUILayout.FloatField("effect chance", obstacleEffectChance);
         damageBoxSize = EditorGUILayout.FloatField("damage size", damageBoxSize);
         damageBoxOffset = EditorGUILayout.FloatField("damage offset", damageBoxOffset);
 

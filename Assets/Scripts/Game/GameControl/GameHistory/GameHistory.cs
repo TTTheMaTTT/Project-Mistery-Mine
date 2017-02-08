@@ -32,7 +32,7 @@ public class GameHistory : MonoBehaviour, IHaveStory
     /// <returns></returns>
     public virtual List<string> actionNames()
     {
-        return new List<string>() { "changeQuestData", "removeObject" };
+        return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect" };
     }
 
     /// <summary>
@@ -43,7 +43,8 @@ public class GameHistory : MonoBehaviour, IHaveStory
     {
         return new Dictionary<string, List<string>>() {
                                                     { "changeQuestData", new List<string>() {"add","continue","complete" } },
-                                                    { "removeObject", new List<string>(){ } } };
+                                                    { "removeObject", new List<string>(){ } },
+                                                    { "startInvestigationEffect",new List<string>() { } } };
     }
 
     /// <summary>
@@ -56,7 +57,8 @@ public class GameHistory : MonoBehaviour, IHaveStory
                                                     { "changeQuestData", (SpecialFunctions.statistics.database != null?
                                                                                         SpecialFunctions.statistics.database.quests.ConvertAll<string>(x=>x.questName):
                                                                                         new List<string>())},
-                                                    {"removeOject", new List<string>()} };
+                                                    {"removeOject", new List<string>()},
+                                                    {"startInvestigationEffect",new List<string>() { } } };
     }
 
     public virtual Dictionary<string, List<string>> conditionIDs()
@@ -180,9 +182,9 @@ public class History
     /// </summary>
     public void FormStoryBase()
     {
-
         storyActionBase.Add("changeQuestData", ChangeQuestData);
         storyActionBase.Add("removeObject", RemoveHistoryObject);
+        storyActionBase.Add("startInvestigationEffect", StartInvestigationEffect);
 
         storyConditionBase.Clear();
         storyConditionBase.Add("compare", Compare);
@@ -362,6 +364,14 @@ public class History
     #endregion //interface
 
     #region storyActions
+
+    /// <summary>
+    /// Вызвать исследовательский эффект
+    /// </summary>
+    public void StartInvestigationEffect(StoryAction _action)
+    {
+        SpecialFunctions.gameController.AddRandomGameEffect();
+    }
 
     /// <summary>
     /// Изменить данные о квестах

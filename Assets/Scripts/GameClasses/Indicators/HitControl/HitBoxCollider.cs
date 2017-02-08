@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Особый тип хитбокса, который может атаковать только игрока и не через коллайдерные функции (OnTriggerStay), а через FixedUpdate()
@@ -14,12 +15,6 @@ public class HitBoxCollider : MonoBehaviour
 
     #endregion //delegates
 
-    #region consts
-
-    protected const string hLayer = "hero";
-
-    #endregion //consts
-
     #region parametres
 
     UpdateAction updateAction;
@@ -28,6 +23,10 @@ public class HitBoxCollider : MonoBehaviour
 
     protected bool immobile;
     public bool Immobile { set { immobile = value; } }
+    
+    public bool againstHero = true;//Если true, то хитбокс может атаковать только героя
+    protected string enemyLayer = "hero";
+    public bool allyHitBox { get { return enemyLayer == "character"; }  set { enemyLayer = value ? "character" : "hero"; } }
 
     protected bool alwaysAttack = false;//Если true, то хитбокс будет пытаться нанести атаку вне зависимости от того было ли переключение или нет (постоянна ли атака хитбокса, или это хитбокс одного удара?)
     public bool AlwaysAttack { set { alwaysAttack = value; } }
@@ -68,14 +67,23 @@ public class HitBoxCollider : MonoBehaviour
             Vector2 pos = transform.position;
             Vector2 _pos = immobile ? Vector2.zero : new Vector2(position.x * Mathf.Sign(transform.lossyScale.x), position.y);
             //Collider2D col = Physics2D.OverlapArea(pos + _pos + size, pos + _pos - size, LayerMask.GetMask(hLayer));
-            Collider2D col = Physics2D.OverlapBox(pos+_pos, size, transform.eulerAngles.z, LayerMask.GetMask(hLayer));
-            if (col)
+            Collider2D[] cols = Physics2D.OverlapBoxAll(pos+_pos, size, transform.eulerAngles.z, LayerMask.GetMask(enemyLayer));
+            bool damaged = false;
+            for (int i=0;i<cols.Length;i++)
             {
-                IDamageable target = col.gameObject.GetComponent<IDamageable>();
-                attacked = true;
+                if (againstHero ? !cols[i].gameObject.CompareTag("player") : false)
+                    continue;
+                GameObject obj = cols[i].gameObject;
+                IDamageable target = obj.GetComponent<IDamageable>();
+                if (target == null)
+                    continue;
+                
                 float prevHP = target.GetHealth();
-                OnAttack(new HitEventArgs(prevHP));
+                OnAttack(new HitEventArgs(prevHP, obj));
+                damaged = true;
             }
+            if (damaged)
+                attacked = true;
         }
     }
 
@@ -87,14 +95,20 @@ public class HitBoxCollider : MonoBehaviour
         if (alwaysAttack || !attacked)
         {
             Vector2 pos = transform.position;
-            Collider2D col = Physics2D.OverlapBox(pos,size,transform.eulerAngles.z, LayerMask.GetMask(hLayer));
-            if (col)
+            Collider2D[] cols = Physics2D.OverlapBoxAll(pos,size,transform.eulerAngles.z, LayerMask.GetMask(enemyLayer));
+            bool damaged = false;
+            for (int i=0;i< cols.Length;i++)
             {
-                IDamageable target = col.gameObject.GetComponent<IDamageable>();
-                attacked = true;
+                if (againstHero ? !cols[i].gameObject.CompareTag("player") : false)
+                    continue ;
+                GameObject obj = cols[i].gameObject;
+                IDamageable target = obj.GetComponent<IDamageable>();
                 float prevHP = target.GetHealth();
-                OnAttack(new HitEventArgs(prevHP));
+                OnAttack(new HitEventArgs(prevHP, obj));
+                damaged= true;
             }
+            if (damaged)
+                attacked = true;
         }
     }
 
@@ -108,8 +122,6 @@ public class HitBoxCollider : MonoBehaviour
     {
         attacked = false;
         enabled = _activated;
-        string hitName = gameObject.name;
-        bool k = true;
     }
 
     #region events

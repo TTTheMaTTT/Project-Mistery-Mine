@@ -10,11 +10,26 @@ public class SwordClass : WeaponClass
     public float attackForce;
 
     /// <summary>
+    /// Функция, что возвращает новый экземпляр класса, который имеет те же данные, что и экземпляр, выполняющий этот метод
+    /// </summary>
+    public override WeaponClass GetWeapon()
+    {
+        return new SwordClass(this);
+    }
+
+    public SwordClass(SwordClass _sword) : base(_sword)
+    {
+        attackPosition = _sword.attackPosition;
+        attackSize = _sword.attackSize;
+        attackForce = _sword.attackForce;
+    }
+
+    /// <summary>
     /// Совершить атаку
     /// </summary>
     public virtual void Attack(HitBoxController hitBox, Vector3 position)
     {
-        hitBox.SetHitBox(new HitClass(damage, attackTime, attackSize, attackPosition, attackForce));
+        hitBox.SetHitBox(new HitParametres(damage, attackTime, attackSize, attackPosition, attackForce, attackType, effectChance));
     }
 
 }

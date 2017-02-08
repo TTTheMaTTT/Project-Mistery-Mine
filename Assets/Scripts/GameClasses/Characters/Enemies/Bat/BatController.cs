@@ -11,11 +11,11 @@ public class BatController : AIController
     #region consts
 
     protected const float pushBackForce = 100f;
-    private const float batSize = .2f;
+    protected const float batSize = .2f;
 
-    private const float r1 = 0.6f, r2 = 4f, r3 = 1.2f;
+    protected const float r1 = 0.6f, r2 = 4f, r3 = 1.2f;
 
-    private const float maxAvoidDistance = 10f, avoidOffset = .5f;
+    protected const float maxAvoidDistance = 10f, avoidOffset = .5f;
 
     #endregion //consts
 
@@ -27,18 +27,29 @@ public class BatController : AIController
 
     #endregion //fields
 
-    protected override void FixedUpdate()
+    #region parametres
+
+    public override LoyaltyEnum Loyalty
     {
-        base.FixedUpdate();
+        get
+        {
+            return base.Loyalty;
+        }
+
+        set
+        {
+            base.Loyalty = value;
+            if (hearing != null)
+                hearing.AllyHearing = (value == LoyaltyEnum.ally);
+        }
     }
 
-    protected override void Update()
+    #endregion //parametres
+
+    protected override void FixedUpdate()
     {
-        base.Update();
-        if (Input.GetKeyDown(KeyCode.B) && behavior!=BehaviorEnum.agressive)
-        {
-            GoToThePoint(SpecialFunctions.Player.transform.position);
-        }
+        if (!immobile)
+            base.FixedUpdate();
     }
 
     /// <summary>
@@ -54,7 +65,8 @@ public class BatController : AIController
         rigid.gravityScale = 0f;
         rigid.isKinematic = true;
 
-        hitBox.AttackEventHandler += HandleAttackProcess;
+        if (hitBox!=null)
+            hitBox.AttackEventHandler += HandleAttackProcess;
 
         if (areaTrigger != null)
         {
@@ -80,10 +92,18 @@ public class BatController : AIController
     }
 
     /// <summary>
+    /// Остановить передвижение
+    /// </summary>
+    protected override void StopMoving()
+    {
+        rigid.velocity = Vector2.zero;
+    }
+
+    /// <summary>
     /// Двинуться прочь от цели
     /// </summary>
     /// <param name="_orientation">Ориентация персонажа при перемещении</param>
-    protected virtual void MoveAway(OrientationEnum _orientation)
+    protected override void MoveAway(OrientationEnum _orientation)
     {
         Vector2 targetVelocity = (transform.position - currentTarget).normalized * speed;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
@@ -99,11 +119,13 @@ public class BatController : AIController
     /// </summary>
     protected override void Analyse()
     {
+        base.Analyse();
+        Vector2 pos = transform.position;
+
         switch (behavior)
         {
             case BehaviorEnum.agressive:
                 {
-                    Vector2 pos = transform.position;
                     if (currentTarget.exists ? Physics2D.Raycast(pos, currentTarget - pos, batSize, whatIsGround) : false)
                     {
                         currentTarget = FindPath();
@@ -157,9 +179,38 @@ public class BatController : AIController
                             angle += Mathf.PI / 4f;
                         }
                     }
+
+                    if (loyalty == LoyaltyEnum.ally && !mainTarget.exists) //Если нет основной цели и летучая мышь - союзник героя, то она следует к нему
+                    {
+                        float sqDistance = Vector2.SqrMagnitude(beginPosition - pos);
+                        if (sqDistance > allyDistance * 1.2f && followAlly)
+                        {
+                            if (Vector2.SqrMagnitude(beginPosition - (Vector2)prevTargetPosition) > minCellSqrMagnitude)
+                            {
+                                prevTargetPosition = new EVector3(pos);//Динамическое преследование героя-союзника
+                                GoHome();
+                                StartCoroutine("ConsiderAllyPathProcess");
+                            }
+                        }
+                        else if (sqDistance < allyDistance)
+                            BecomeCalm();
+                    }
+
                     break;
                 }
-
+            case BehaviorEnum.calm:
+                {
+                    if (loyalty == LoyaltyEnum.ally)
+                    {
+                        if (Vector2.SqrMagnitude(beginPosition - pos) > allyDistance * 1.2f)
+                        {
+                            GoHome();    
+                        }
+                        if ((int)orientation * (beginPosition - pos).x < 0f)
+                            Turn();//Всегда быть повёрнутым к герою-союзнику
+                    }
+                    break;
+                }
             default:
                 break;
         }
@@ -172,9 +223,11 @@ public class BatController : AIController
     protected override void BecomeAgressive()
     {
         base.BecomeAgressive();
-        hitBox.SetHitBox(new HitClass(damage,-1f,attackSize,attackPosition,0f));
+        if (hitBox!=null)
+            hitBox.SetHitBox(new HitParametres(attackParametres));
         if (!optimized)
             rigid.isKinematic = false;
+        hearing.enabled = false;//В агрессивном состоянии персонажу не нужен слух
     }
 
     /// <summary>
@@ -183,17 +236,23 @@ public class BatController : AIController
     protected override void BecomeCalm()
     {
         base.BecomeCalm();
-        hitBox.ResetHitBox();
+        if (hitBox!=null)
+            hitBox.ResetHitBox();
         rigid.isKinematic = true;
         hearing.Radius = r1;
+        hearing.enabled = true;
     }
 
+    /// <summary>
+    /// Перейти в состояние патрулирования
+    /// </summary>
     protected override void BecomePatrolling()
     {
         base.BecomePatrolling();
         hearing.Radius = r3;
         if (!optimized)
             rigid.isKinematic = false;
+        hearing.enabled = true;
     }
 
     #region behaviourActions
@@ -203,57 +262,56 @@ public class BatController : AIController
     /// </summary>
     protected override void CalmBehavior()
     {
-        if (!immobile)
+        if (rigid.velocity.magnitude < minSpeed)
         {
-            if (rigid.velocity.magnitude < minSpeed)
-            {
+            if (loyalty!=LoyaltyEnum.ally)
                 Animate(new AnimationEventArgs("idle"));
-            }
-            else
-            {
-                Animate(new AnimationEventArgs("fly"));
-            }
+        }
+        else
+        {
+            Animate(new AnimationEventArgs("fly"));
         }
     }
 
     //Функция, реализующая агрессивное состояние ИИ
     protected override void AgressiveBehavior()
     {
-        if (!immobile)
+        if (mainTarget.exists)
         {
-            if (mainTarget.exists)
+            if (currentTarget.exists)
             {
-                if (currentTarget.exists)
+                Vector2 targetPosition = currentTarget;
+                Vector2 pos = transform.position;
+                if (currentTarget == mainTarget)
                 {
-                    Vector2 targetPosition = currentTarget;
-                    Vector2 pos = transform.position;
-                    if (currentTarget == mainTarget)
-                    {
-                        if (!waiting)
-                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-                        else
-                        {
-                            float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
-                            if (sqDistance < waitingNearDistance * waitingNearDistance)
-                                MoveAway((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(pos.x - targetPosition.x)));
-                            else if (sqDistance < waitingFarDistance * waitingFarDistance)
-                                StopMoving();
-                            else
-                                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-                        }
-                    }
+                    if (!waiting)
+                        Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
                     else
                     {
-                        Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-                        if (currentTarget != mainTarget && Vector2.SqrMagnitude(targetPosition - pos) < batSize * batSize)
+                        float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
+                        if (sqDistance < waitingNearDistance * waitingNearDistance)
+                            MoveAway((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(pos.x - targetPosition.x)));
+                        else if (sqDistance < waitingFarDistance * waitingFarDistance)
                         {
-                            currentTarget = FindPath();
+                            StopMoving();
+                            if ((int)orientation * (targetPosition - pos).x < 0f)
+                                Turn();
                         }
+                        else
+                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+                    }
+                }
+                else
+                {
+                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+                    if (currentTarget != mainTarget && Vector2.SqrMagnitude(targetPosition - pos) < batSize * batSize)
+                    {
+                        currentTarget = FindPath();
                     }
                 }
             }
-            Animate(new AnimationEventArgs("fly"));
         }
+        Animate(new AnimationEventArgs("fly"));
     }
 
     /// <summary>
@@ -359,10 +417,10 @@ public class BatController : AIController
             else
             {
                 GoHome();
-                if (waypoints == null)
+                if (waypoints == null && beginPosition.transform==null)
                 {
-                    //Если не получается добраться до начальной позиции, то считаем, что текущая позиция становится начальной
-                    beginPosition = transform.position;
+                    //Если не получается добраться до начальной позиции (и если эта позиция - не главный герой, за которым следует союзник), то считаем, что текущая позиция становится начальной
+                    beginPosition = new ETarget(transform.position);
                     beginOrientation = orientation;
                     BecomeCalm();
                     followOptPath = false;
@@ -451,7 +509,7 @@ public class BatController : AIController
         return NavMapTypeEnum.fly;
     }
 
-    #region events
+    #region eventHandlers
 
     /*
     /// <summary>
@@ -473,8 +531,12 @@ public class BatController : AIController
             rigid.velocity = Vector2.zero;
             rigid.AddForce((transform.position - mainTarget).normalized * pushBackForce);//При столкновении с врагом летучая мышь отталкивается назад
         }
+        else
+        {
+            base.HandleAttackProcess(sender, e);
+        }
     }
 
-    #endregion //events
+    #endregion //eventHandlers
 
 }
