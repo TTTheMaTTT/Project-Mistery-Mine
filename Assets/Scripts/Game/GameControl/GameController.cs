@@ -18,7 +18,7 @@ public class GameController : MonoBehaviour
     protected const float ancestorsRevengeProbability = .1f;
 
     protected const float tribalLeaderTime = 30f;//Время и шанс эффекта "Вождь племени"
-    protected const float tribalLeaderProbability =1f;
+    protected const float tribalLeaderProbability =.07f;
 
     protected const float battleCryProbability = .05f;//Шанс и радиус действия эффекта "Боевой клич"
     protected const float battleCryRadius = 6f;
