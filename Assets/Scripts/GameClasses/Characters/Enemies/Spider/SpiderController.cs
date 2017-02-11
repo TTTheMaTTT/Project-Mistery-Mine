@@ -21,7 +21,7 @@ public class SpiderController : AIController
 
     protected WallChecker wallCheck, precipiceCheck;
     //protected SightFrustum sight;//Зрение персонажа
-    protected HitBox selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
+    protected HitBoxController selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
 
     protected override List<NavigationCell> Waypoints
     {
@@ -31,14 +31,21 @@ public class SpiderController : AIController
         }
         set
         {
+            StopFollowOptPath();
             waypoints = value;
             if (value != null)
             {
-                if (currentTarget != null ? (currentTarget != mainTarget) : false)
+                currentTarget.Exists = false;
+                gameObject.layer = LayerMask.NameToLayer("characterWithoutPlatform");
+            }
+            else
+            {
+                StopAvoid();
+                if (mainTarget.exists && behavior == BehaviorEnum.agressive)
                 {
-                    Destroy(currentTarget);
-                    currentTarget = null;
+                    currentTarget = mainTarget;
                 }
+                gameObject.layer = LayerMask.NameToLayer(loyalty == LoyaltyEnum.ally ? "hero" : "character");
             }
         }
     }
@@ -52,6 +59,10 @@ public class SpiderController : AIController
     protected Vector2 spiderOrientation = new Vector2(0f, 1f);//нормаль поверхности, на которой стоит паук
     protected virtual Vector2 SpiderOrientation
     {
+        get
+        {
+            return spiderOrientation;
+        }
         set
         {
             spiderOrientation = value;
@@ -69,12 +80,46 @@ public class SpiderController : AIController
                     sight.RotateLocal(0f);
                 }
             }*/
+
+            //На какой угол надо повернуть паука
+            float angle = Vector2.Angle(Vector2.up, spiderOrientation) * Mathf.Sign(-spiderOrientation.x);
+
+            transform.eulerAngles = new Vector3(0f, 0f, angle);//Повернём паука
+            if (spiderOrientation.y < 0 || Mathf.Abs(spiderOrientation.x) > Mathf.Abs(spiderOrientation.y))
+                rigid.gravityScale = 0f;
+            else
+                rigid.gravityScale = 1f;
+            wallCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
+            precipiceCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
         }
     }
     protected Vector2 movementDirection = Vector2.right;//В какую сторону движется паук, если он повёрнут вправо
 
+    protected override float attackDistance { get { return .15f; } }//На каком расстоянии должен стоять ИИ, чтобы решить атаковать
+
+    public override LoyaltyEnum Loyalty
+    {
+        get
+        {
+            return base.Loyalty;
+        }
+
+        set
+        {
+            bool noPlatform = (LayerMask.LayerToName(gameObject.layer) == "characterWithoutPlatform");
+            base.Loyalty = value;
+            if (selfHitBox != null)
+            {
+                selfHitBox.allyHitBox = (value == LoyaltyEnum.ally);
+                selfHitBox.SetEnemies(enemies);
+            }
+            if (noPlatform)
+                gameObject.layer = LayerMask.NameToLayer("characterWithoutPlatform");
+        }
+    }
+
     //protected bool calmDown = false;//Успокаивается ли персонаж
-    [SerializeField]protected bool neutral = true;//Является ли паук изначально нейтральным
+    //[SerializeField]protected bool neutral = true;//Является ли паук изначально нейтральным
 
     #endregion //parametres
 
@@ -87,25 +132,17 @@ public class SpiderController : AIController
         Animate(new AnimationEventArgs("groundMove"));
     }
 
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.B))
-        {
-            GoToThePoint(SpecialFunctions.player.transform.position);
-        }
-        Analyse();
-    }
-
     /// <summary>
     /// Инициализация
     /// </summary>
     protected override void Initialize()
     {
-        Transform indicators = transform.FindChild("Indicators");
+        indicators = transform.FindChild("Indicators");
         if (indicators != null)
         {
             wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
             precipiceCheck = indicators.FindChild("PrecipiceCheck").GetComponent<WallChecker>();
+
 
             /*Transform sightParent = indicators.FindChild("Sight");
             sight = sightParent!=null? sightParent.GetComponentInChildren<SightFrustum>():null;
@@ -122,11 +159,11 @@ public class SpiderController : AIController
 
         base.Initialize();
 
-        selfHitBox = transform.FindChild("SelfHitBox").GetComponent<HitBox>();
+        selfHitBox = transform.FindChild("SelfHitBox").GetComponent<HitBoxController>();
         if (selfHitBox != null)
         {
             selfHitBox.SetEnemies(enemies);
-            selfHitBox.SetHitBox(damage, -1f, 0f);
+            selfHitBox.SetHitBox(attackParametres.damage, -1f, 0f,attackParametres.damageType);
             //selfHitBox.Immobile = true;//На всякий случай
             selfHitBox.AttackEventHandler += HandleAttackProcess;
         }
@@ -144,9 +181,10 @@ public class SpiderController : AIController
                 areaTrigger.triggerFunctionIn += EnableSight;
                 areaTrigger.triggerFunctionOut += DisableSight;
             }*/
+            areaTrigger.InitializeAreaTrigger();
         }
 
-        Patrol();
+        BecomeCalm();
     }
 
     protected override void FormDictionaries()
@@ -161,7 +199,7 @@ public class SpiderController : AIController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = wallCheck.WallInFront()? new Vector2(0f,rigid.velocity.y):(rigid.gravityScale == 0f ? movementDirection * (int)orientation * speed : new Vector2((int)orientation * speed, rigid.velocity.y));
+        Vector2 targetVelocity = wallCheck.WallInFront ? new Vector2(0f, rigid.velocity.y) : (rigid.gravityScale == 0f ? movementDirection * (int)orientation * speed : new Vector2((int)orientation * speed, rigid.velocity.y));
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)
@@ -170,10 +208,34 @@ public class SpiderController : AIController
         }
     }
 
+    /// <summary>
+    /// Остановить перемещение
+    /// </summary>
     protected override void StopMoving()
     {
         Vector2 projection = Vector2.Dot(rigid.velocity, movementDirection) * movementDirection;
         rigid.velocity -= projection;
+    }
+
+    /// <summary>
+    /// Повернуться
+    /// </summary>
+    protected override void Turn()
+    {
+        base.Turn();
+        wallCheck.SetPosition(transform.eulerAngles.z/180f*Mathf.PI, (int)orientation);
+        precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
+    }
+
+    /// <summary>
+    /// Повернуться
+    /// </summary>
+    /// <param name="_orientation">В какую сторону должен смотреть персонаж</param>
+    protected override void Turn(OrientationEnum _orientation)
+    {
+        base.Turn(_orientation);
+        wallCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
+        precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
     }
 
     /*
@@ -195,7 +257,7 @@ public class SpiderController : AIController
 
     protected override void StopAvoid()
     {
-        StopCoroutine(AvoidProcess());
+        StopCoroutine("AvoidProcess");
         avoid = false;
     }
     */
@@ -205,7 +267,9 @@ public class SpiderController : AIController
     /// </summary>
     protected virtual void Patrol()
     {
-        waypoint = new Vector3((int)orientation * patrolDistance, 0f,0f) + transform.position;
+        Vector2 waypoint = new Vector3((int)orientation * patrolDistance, 0f, 0f) + transform.position;
+        currentTarget = new ETarget(waypoint);
+
     }
 
     /// <summary>
@@ -229,7 +293,7 @@ public class SpiderController : AIController
         {
             Vector2 point1 = colPoints[i];
             Vector2 point2 = i < colPoints.Length - 1 ? colPoints[i + 1] : colPoints[0];
-            Vector2 normal = GetNormal(point1, point2);
+            Vector2 normal = GetNormal(point1, point2, targetCollider);
             if (Mathf.Abs(Vector2.Angle(spiderOrientation, normal)) >= minAngle)
             {
                 Vector2 _connectionPoint = GetConnectionPoint(point1, point2, transform.position);
@@ -247,25 +311,36 @@ public class SpiderController : AIController
             return;
 
         Vector2 surfacePoint1 = colPoints[pointIndex], surfacePoint2 = colPoints[pointIndex < colPoints.Length - 1 ? pointIndex + 1 : 0];
-        Vector2 _spiderOrientation = GetNormal(surfacePoint1, surfacePoint2);
+        Vector2 _spiderOrientation = GetNormal(surfacePoint1, surfacePoint2, targetCollider);
 
-        //На какой угол надо повернуть паука
-        float angle = Vector2.Angle(spiderOrientation, _spiderOrientation)*(spiderOrientation.x*_spiderOrientation.y-spiderOrientation.y*_spiderOrientation.x);
-       
-        if (Mathf.Abs(angle) < minAngle)
-            return;
-
-        transform.eulerAngles = new Vector3(0f, 0f, transform.eulerAngles.z + angle);//Повернём паука
         SpiderOrientation = _spiderOrientation;
 
         transform.position = connectionPoint + spiderOffset * spiderOrientation;//Расположить паука
         StopMoving();
-        if (spiderOrientation.y < 0 || Mathf.Abs(spiderOrientation.x) > Mathf.Abs(spiderOrientation.y))
-            rigid.gravityScale = 0f;
-        else
-            rigid.gravityScale = 1f;
     }
-    
+
+    /// <summary>
+    /// Сменить ориентацию паука и "прикрепить" его к  заданной поверхности
+    /// </summary>
+    /// <param name="surfacePoint1">Первая точка поверхности</param>
+    /// <param name="surfacePoint2">Вторая точка поверхности</param>
+    /// <param name="connectionPoint">Точка крепления</param>
+    /// <param name="_col">Коллайдер, к которому крепимся</param>
+    protected void ChangeOrientation(Vector2 surfacePoint1, Vector2 surfacePoint2, Vector2 connectionPoint, Collider2D _col)
+    {
+        Vector2 _spiderOrientation = GetNormal(surfacePoint1, surfacePoint2, _col);
+
+        //На какой угол надо повернуть паука
+        float angle = Vector2.Angle(spiderOrientation, _spiderOrientation) * Mathf.Sign(spiderOrientation.x * _spiderOrientation.y - spiderOrientation.y * _spiderOrientation.x);
+
+        if (Mathf.Abs(angle) < minAngle)
+            return;
+
+        SpiderOrientation = _spiderOrientation;
+        transform.position = connectionPoint + spiderOffset * spiderOrientation;//Расположить паука
+        StopMoving();
+    }
+
     /// <summary>
     /// Спрыгнуть вниз
     /// </summary>
@@ -284,101 +359,130 @@ public class SpiderController : AIController
     {
         SpiderOrientation = Vector2.up;
         rigid.velocity = new Vector3(rigid.velocity.x, 0f, 0f);
-        rigid.AddForce(new Vector2(jumpForce*0.5f, jumpForce));
+        rigid.AddForce(new Vector2(jumpForce * 0.5f, jumpForce));
         //rigid.velocity = new Vector2((int)orientation * speed, rigid.velocity.y);//Сразу придать персонажу максимальную горизонтальную скорость для преодоления препятствия
     }
 
     #endregion //movement
 
     /// <summary>
-    /// Совершить атаку
-    /// </summary>
-    protected override void Attack()
-    {
-        Animate(new AnimationEventArgs("attack"));
-        StartCoroutine(AttackProcess());
-    }
-
-    /// <summary>
-    /// Процесс атаки
-    /// </summary>
-    protected override IEnumerator AttackProcess()
-    {
-        employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
-        yield return new WaitForSeconds(preAttackTime);
-        hitBox.SetHitBox(new HitClass(damage, attackTime, attackSize, attackPosition, hitForce));
-        yield return new WaitForSeconds(attackTime);
-        employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
-    }
-
-    /// <summary>
     /// Провести анализ окружающей обстановки
     /// </summary>
     protected override void Analyse()
     {
-        base.Analyse();
-            
-        switch (behaviour)
-        {
-           case BehaviourEnum.agressive:
-                {
 
-                    Vector2 direction = mainTarget.transform.position - transform.position;
-                    RaycastHit2D hit = Physics2D.Raycast(transform.position, direction.normalized, direction.magnitude, LayerMask.GetMask(gLName));
+        Vector2 pos = transform.position;
+        switch (behavior)
+        {
+            case BehaviorEnum.agressive:
+                {
+                    Vector2 direction = mainTarget- pos;
+                    RaycastHit2D hit = Physics2D.Raycast(pos, direction.normalized, direction.magnitude, LayerMask.GetMask(gLName));
                     if (hit)
                     {
                         if (direction.magnitude > sightOffset / 2f)
                         {
-                            GoToThePoint(mainTarget.transform.position);
-                            if (behaviour == BehaviourEnum.agressive)
+                            GoToThePoint(mainTarget);
+                            if (behavior == BehaviorEnum.agressive)
                             {
                                 GoHome();
                                 break;
                             }
                             else
-                                StartCoroutine(BecomeCalmProcess());
+                                StartCoroutine("BecomeCalmProcess");
                         }
                     }
-                    if (currentTarget == null)
-                        break;
-                    if ((transform.position - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && !avoid && currentTarget != mainTarget)
+                    //if (currentTarget == null)
+                    //break;
+                    if ((pos - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && !avoid && currentTarget != mainTarget)
                     {
-                        StartCoroutine(AvoidProcess());
+                        StartCoroutine("AvoidProcess");
+                        if (!jumping && !precipiceCheck.WallInFront)
+                            StartCoroutine("WrongOrientationProcess");
                     }
                     break;
                 }
-            case BehaviourEnum.patrol:
+            case BehaviorEnum.patrol:
                 {
-                    if (currentTarget == null)
-                        break;
-                    if ((transform.position-prevPosition).sqrMagnitude<speed*Time.fixedDeltaTime/10f  && !avoid)
+                    if (!currentTarget.exists)
                     {
-                        StartCoroutine(AvoidProcess());
+                        if (!avoid)
+                        {
+                            StartCoroutine("AvoidProcess");
+                        }
+                        break;
                     }
-                    Vector2 direction = spiderOrientation.y<-1*Mathf.Abs(spiderOrientation.x)? Vector2.down: movementDirection*(int)orientation;
-                    RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position+sightOffset*direction, direction, sightRadius, LayerMask.GetMask(gLName,cLName));
+                    if (!avoid)
+                    {
+                        if ((pos - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
+                        {
+                            StartCoroutine("AvoidProcess");
+                            if (!jumping && !precipiceCheck.WallInFront)
+                                StartCoroutine("WrongOrientationProcess");
+                        }
+                    }
+                    Vector2 direction = spiderOrientation.y < -1 * Mathf.Abs(spiderOrientation.x) ? Vector2.down : movementDirection * (int)orientation;
+                    RaycastHit2D hit = Physics2D.Raycast(pos + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
                     if (hit)
                     {
-                        if (hit.collider.gameObject.CompareTag("player"))
+                        if (enemies.Contains(hit.collider.gameObject.tag))
                         {
+                            MainTarget = new ETarget(hit.collider.transform);
                             BecomeAgressive();
                         }
                     }
 
+                    if (loyalty == LoyaltyEnum.ally ? !mainTarget.exists && !jumping : false) //Если нет основной цели и стоящий на земле паук - союзник героя, то он следует к нему
+                    {
+                        float sqDistance = Vector2.SqrMagnitude(beginPosition - pos);
+                        if (sqDistance > allyDistance * 1.2f && followAlly)
+                        {
+                            if (Vector2.SqrMagnitude(beginPosition - (Vector2)prevTargetPosition) > minCellSqrMagnitude)
+                            {
+                                prevTargetPosition = new EVector3(pos);//Динамическое преследование героя-союзника
+                                Waypoints = FindPath(beginPosition, maxAgressivePathDepth * 3);
+                                StartCoroutine("ConsiderAllyPathProcess");
+                            }
+                        }
+                        else if (sqDistance < allyDistance)
+                        {
+                            StopMoving();
+                            BecomeCalm();
+                        }
+                    }
+
                     break;
                 }
 
-            case BehaviourEnum.calm:
+            case BehaviorEnum.calm:
                 {
                     Vector2 direction = spiderOrientation.y < -1 * Mathf.Abs(spiderOrientation.x) ? Vector2.down : movementDirection * (int)orientation;
-                    RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
+                    RaycastHit2D hit = Physics2D.Raycast(pos + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
                     if (hit)
                     {
-                        if (hit.collider.gameObject.CompareTag("player"))
+                        if (enemies.Contains(hit.collider.gameObject.tag))
                         {
+                            MainTarget = new ETarget(hit.collider.transform);
                             BecomeAgressive();
                         }
                     }
+
+                    if (loyalty == LoyaltyEnum.ally)
+                    {
+                        if (Vector2.SqrMagnitude(beginPosition - pos) > allyDistance * 1.2f)
+                        {
+                            if (Vector2.SqrMagnitude(beginPosition - (Vector2)prevTargetPosition) > minCellSqrMagnitude)
+                            {
+                                prevTargetPosition = new EVector3(pos);
+                                Waypoints = FindPath(beginPosition, maxAgressivePathDepth * 3);
+                                if (waypoints != null)
+                                    BecomePatrolling();
+                            }
+                        }
+                        if ((int)orientation * (beginPosition - pos).x < 0f)
+                            Turn();//Всегда быть повёрнутым к герою-союзнику
+                    }
+
                     break;
                 }
 
@@ -388,7 +492,7 @@ public class SpiderController : AIController
                 }
         }
 
-        prevPosition = new EVector3(transform.position, true);
+        prevPosition = new EVector3(pos, true);
     }
 
     /// <summary>
@@ -397,26 +501,36 @@ public class SpiderController : AIController
     /// <returns>Есть ли необходимость отыскания пути</returns>
     protected override bool NeedToFindPath()
     {
-        return Vector2.SqrMagnitude((Vector2)mainTarget.transform.position - prevTargetPosition) > navCellSize * navCellSize;
+        return Vector2.SqrMagnitude(mainTarget - (Vector2)prevTargetPosition) > navCellSize * navCellSize;
     }
 
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage)
+    public override void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
     {
-        base.TakeDamage(damage);
-        if (behaviour!=BehaviourEnum.agressive)
-            BecomeAgressive();
-        JumpDown();//Сбросить паука со стены ударом
+        base.TakeDamage(damage, _dType, _microstun);
+        if (_microstun)
+            JumpDown();//Сбросить паука со стены ударом
     }
 
+    /// <summary>
+    /// Функция, возвращающая информацию об ориентации паука
+    /// </summary>
+    public Vector2 GetSpiderOrientation()
+    {
+        return spiderOrientation;
+    }
+
+    /// <summary>
+    /// Обновить информацию, важную для моделей поведения
+    /// </summary>
     protected override void RefreshTargets()
     {
         base.RefreshTargets();
         jumping = false;
         avoid = false;
-        StopCoroutine(BecomeCalmProcess());
+        StopCoroutine("BecomeCalmProcess");
     }
 
     /// <summary>
@@ -425,9 +539,11 @@ public class SpiderController : AIController
     protected override void BecomeCalm()
     {
         base.BecomeCalm();
-        gameObject.layer = LayerMask.NameToLayer("character");
+        if (!optimized && loyalty!=LoyaltyEnum.ally)
+            Patrol();
+        gameObject.layer = LayerMask.NameToLayer(loyalty==LoyaltyEnum.ally?"hero":"character");
         //if (sight != null ? sight.enabled : false)
-            //sight.RotateLocal(0f);
+        //sight.RotateLocal(0f);
     }
 
     /// <summary>
@@ -436,17 +552,18 @@ public class SpiderController : AIController
     protected override void BecomeAgressive()
     {
         base.BecomeAgressive();
-        gameObject.layer = LayerMask.NameToLayer("character");
+        gameObject.layer = LayerMask.NameToLayer(loyalty == LoyaltyEnum.ally ? "hero" : "character");
         jumping = false;
         avoid = false;
-        if (neutral)
+        if (loyalty==LoyaltyEnum.neutral)
         {
-            neutral = false;//Паук теперь всегда будет нападать на игрока и будет искать его
+            Loyalty = LoyaltyEnum.enemy;//Паук теперь всегда будет нападать на игрока и будет искать его
             //sight.enabled = true;
             //sight.ChangeSightMod();
         }
         prevTargetPosition = new EVector3(Vector3.zero);
-        wallCheck.RemoveWallType("character");
+        wallCheck.WhatIsWall.Remove("character");
+        wallCheck.WhatIsWall.Remove("hero");
         /*if (sight != null)
         {
             sight.WhatToSight = LayerMask.GetMask("ground");
@@ -460,7 +577,8 @@ public class SpiderController : AIController
     protected override void BecomePatrolling()
     {
         base.BecomePatrolling();
-        wallCheck.RemoveWallType("character");
+                wallCheck.WhatIsWall.Remove("character");
+        wallCheck.WhatIsWall.Remove("hero");
         gameObject.layer = LayerMask.NameToLayer("characterWithoutPlatform");
         /*if (sight != null ? sight.enabled : false)
         {
@@ -468,7 +586,7 @@ public class SpiderController : AIController
             sight.RotateLocal(0f);
             sight.SetSightMod(false);
         }*/
-           
+
     }
 
     /// <summary>
@@ -482,6 +600,7 @@ public class SpiderController : AIController
         if (Vector2.SqrMagnitude((Vector2)transform.position - beginPosition) > minDistance)
             GoHome();
         wallCheck.WhatIsWall.Add("character");
+        wallCheck.WhatIsWall.Add("hero");
         /*if (sight != null)
         {
             sight.WhatToSight = LayerMask.GetMask("character", "ground");
@@ -498,26 +617,60 @@ public class SpiderController : AIController
         EVector3 _prevPos = prevPosition;
         yield return new WaitForSeconds(avoidTime);
         //Если не сдвигаемся с места, то нужно обойти препятствие
-        if (currentTarget != null && currentTarget != mainTarget && (transform.position - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
+        Vector3 pos = (Vector2)transform.position;
+        if ((pos - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && avoid)
         {
-            transform.position += (currentTarget.transform.position - transform.position).normalized * navCellSize;
-            yield return new WaitForSeconds(avoidTime);
-            //Если всё равно не получается обойти ставшее на пути препятствие
-            if (currentTarget != null && currentTarget != mainTarget && (transform.position - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
+            if (currentTarget.exists && currentTarget != mainTarget)
             {
-                if (mainTarget != null)
-                    GoHome();
-                else
+                transform.position += (currentTarget - pos).normalized * navCellSize;
+                yield return new WaitForSeconds(avoidTime);
+                pos = (Vector2)transform.position;
+                //Если всё равно не получается обойти ставшее на пути препятствие
+                if (currentTarget != null && currentTarget != mainTarget && (pos - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && avoid)
                 {
-                    if (waypoints != null ? waypoints.Count > 0 : false)
-                        GoToThePoint(waypoints[waypoints.Count - 1].cellPosition);
+                    if (mainTarget.exists)
+                    {
+                        if (behavior == BehaviorEnum.agressive)
+                        {
+                            Waypoints = FindPath(mainTarget, maxAgressivePathDepth);
+                            if (waypoints == null)
+                                GoHome();
+                        }
+                        else
+                            GoHome();
+                    }
                     else
-                        GoHome();
-                }
+                    {
+                        if (waypoints != null ? waypoints.Count > 0 : false)
+                            GoToThePoint(waypoints[waypoints.Count - 1].cellPosition);
+                        else
+                            GoHome();
+                    }
+                    if (behavior == BehaviorEnum.patrol)
+                        StartCoroutine(ResetStartPositionProcess(transform.position));
 
+                }
+            }
+            else if (!currentTarget.exists)
+            {
+                yield return new WaitForSeconds(avoidTime);
+                pos = (Vector2)transform.position;
+                if (!currentTarget.exists)
+                {
+                    GoHome();
+                    if (behavior == BehaviorEnum.patrol)
+                        StartCoroutine(ResetStartPositionProcess(pos));
+                }
             }
         }
         avoid = false;
+
+    }
+
+    protected override void StopAvoid()
+    {
+        base.StopAvoid();
+        StopCoroutine("WrongOrientationProcess");
     }
 
     #region behaviourActions
@@ -525,111 +678,178 @@ public class SpiderController : AIController
     /// <summary>
     /// Спокойное поведение
     /// </summary>
-    protected override void CalmBehaviour()
+    protected override void CalmBehavior()
     {
-        base.CalmBehaviour();
-        if ((Vector2.Distance(waypoint, transform.position) < attackDistance) || (wallCheck.WallInFront() || !(precipiceCheck.WallInFront())))
+        base.CalmBehavior();
+        Vector2 pos = transform.position;
+        if (Loyalty != LoyaltyEnum.ally)
         {
-            Turn();
-            Patrol();
-        }
-        else
-        {
-            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(waypoint.x - transform.position.x)));
+            if (currentTarget.exists)
+            {
+                Vector2 targetPos = currentTarget;
+                if ((Vector2.Distance(targetPos, pos) < attackDistance) || (wallCheck.WallInFront || !(precipiceCheck.WallInFront)))
+                {
+                    Turn();
+                    Patrol();
+                }
+                else
+                {
+                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPos.x - pos.x)));
+                }
+            }
         }
     }
 
     /// <summary>
     /// Агрессивное поведение
     /// </summary>
-    protected override void AgressiveBehaviour()
+    protected override void AgressiveBehavior()
     {
-        base.AgressiveBehaviour();
-        if (mainTarget != null && employment > 2)
+        base.AgressiveBehavior();
+        if (mainTarget.exists && employment > 2)
         {
-            Vector3 targetPosition = mainTarget.transform.position;
+            Vector2 targetPosition = mainTarget;
+            Vector2 pos = transform.position;
             if (waypoints == null)
             {
-                if (Vector2.Distance(targetPosition, transform.position) > attackDistance)
+
+                #region directWay
+
+                if (waiting)
                 {
-                    if (!wallCheck.WallInFront() && (precipiceCheck.WallInFront()))
-                        Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
-                    else if ((targetPosition - transform.position).x * (int)orientation < 0f)
-                        Turn();
+                    #region waiting
+
+                    float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
+                    if (sqDistance < waitingNearDistance * waitingNearDistance)
+                    {
+                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront))
+                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(pos.x - targetPosition.x)));
+                        else if ((pos.x - targetPosition.x) * (int)orientation < 0f)
+                            Turn();
+                    }
+                    else if (sqDistance < waitingFarDistance * waitingFarDistance)
+                    {
+                        StopMoving();
+                        if ((int)orientation * (targetPosition - pos).x < 0f)
+                            Turn();
+                    }
                     else
                     {
-                        if (Vector2.SqrMagnitude(transform.position - mainTarget.transform.position) > minCellSqrMagnitude * 16f &&
-                            (Vector2.SqrMagnitude(mainTarget.transform.position - prevTargetPosition) > minCellSqrMagnitude || !prevTargetPosition.exists))
+                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront))
+                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+                        else if ((targetPosition - pos).x * (int)orientation < 0f)
+                            Turn();
+                        else
                         {
-                            //prevTargetPosition = new EVector3(mainTarget.transform.position, true);
-                            Waypoints = FindPath(targetPosition, maxAgressivePathDepth);
-                            if (waypoints != null)
-                                gameObject.layer = LayerMask.NameToLayer("characterWithoutPlatform");
+                            if (Vector2.SqrMagnitude(pos - mainTarget) > minCellSqrMagnitude * 16f &&
+                                (Vector2.SqrMagnitude(mainTarget - (Vector2)prevTargetPosition) > minCellSqrMagnitude || !prevTargetPosition.exists))
+                            {
+                                //prevTargetPosition = new EVector3(mainTarget.transform.position, true);
+                                Waypoints = FindPath(targetPosition, maxAgressivePathDepth);
+                                if (waypoints==null)
+                                    StopMoving();
+                            }
                             else
                                 StopMoving();
                         }
-                        else
-                            StopMoving();
                     }
+
+                    #endregion //waiting
                 }
                 else
                 {
-                    if ((targetPosition - transform.position).x * (int)orientation < 0f)
-                        Turn();
-                    Attack();
+                    #region active
+
+                    if (employment > 8)
+                    {
+
+                        if (Vector2.SqrMagnitude(targetPosition - pos) > attackDistance * attackDistance)
+                        {
+                            if (!wallCheck.WallInFront && (precipiceCheck.WallInFront))
+                                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+                            else if ((targetPosition - pos).x * (int)orientation < 0f)
+                                Turn();
+                            else
+                            {
+                                if (Vector2.SqrMagnitude(pos - mainTarget) > minCellSqrMagnitude * 16f &&
+                                    (Vector2.SqrMagnitude(mainTarget - (Vector2)prevTargetPosition) > minCellSqrMagnitude || !prevTargetPosition.exists))
+                                {
+                                    //prevTargetPosition = new EVector3(mainTarget.transform.position, true);
+                                    Waypoints = FindPath(targetPosition, maxAgressivePathDepth);
+                                    if (waypoints == null)
+                                        StopMoving();
+                                }
+                                else
+                                    StopMoving();
+                            }
+                        }
+                        else
+                        {
+                            if ((targetPosition - pos).x * (int)orientation < 0f)
+                                Turn();
+                            StopMoving();
+                            Attack();
+                        }
+                    }
+
+                    if (spiderOrientation.y < 0 || spiderOrientation.y < Mathf.Abs(spiderOrientation.x))
+                        if (Mathf.Abs(targetPosition.x - pos.x) < attackDistance / 2f)
+                            JumpDown();
+
+                    #endregion //active
                 }
 
-                if (spiderOrientation.y < 0 || spiderOrientation.y<Mathf.Abs(spiderOrientation.x))
-                    if (Mathf.Abs(targetPosition.x - transform.position.x) < attackDistance / 2f)
-                        JumpDown();
+                #endregion //directWay
 
             }
             else
             {
+
+                #region complexWay
+
                 if (waypoints.Count > 0)
                 {
-                    if (currentTarget == null)
+                    if (!currentTarget.exists)
                     {
-                        currentTarget = new GameObject("SpiderTarget");
-                        currentTarget.transform.position = waypoints[0].cellPosition;
+                        currentTarget = new ETarget(waypoints[0].cellPosition);
                     }
 
-                    targetPosition = currentTarget.transform.position;
-                    Vector3 direction = targetPosition - transform.position;
+                    targetPosition = currentTarget;
+                    Vector2 direction = targetPosition - pos;
                     float projectionLength = Vector2.Dot(direction, movementDirection);
-                    if (Mathf.Abs(projectionLength) > spiderOffset || Vector2.SqrMagnitude(transform.position-targetPosition)<spiderOffset*2f)
+                    if (Mathf.Abs(projectionLength) > spiderOffset || Vector2.SqrMagnitude(direction) < spiderOffset * 2f)
                         Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(projectionLength)));
                     //else
                     //{
-                        //StopMoving();
-                        //transform.position += movementDirection * proectionLength;
+                    //StopMoving();
+                    //transform.position += movementDirection * proectionLength;
                     //}
                     if (!jumping)
                     {
                         if (NeedToFindPath())
                         {
-                            waypoints=FindPath(mainTarget.transform.position, maxAgressivePathDepth);
-                            prevTargetPosition = new EVector3(mainTarget.transform.position, true);
+                            waypoints = FindPath(mainTarget, maxAgressivePathDepth);
+                            prevTargetPosition = new EVector3(mainTarget, true);
                             return;
                         }
                     }
 
-                    if (currentTarget != mainTarget && Vector3.SqrMagnitude(currentTarget.transform.position-transform.position) < navCellSize*navCellSize/4f)
+                    if (currentTarget != mainTarget && Vector2.SqrMagnitude(currentTarget - pos) < navCellSize * navCellSize / 4f)
                     {
                         if (jumping)
                             jumping = false;
-                        NavigationCell currentWaypoint = waypoints[0];
-                        Destroy(currentTarget);
+                        ComplexNavigationCell currentWaypoint = (ComplexNavigationCell)waypoints[0];
+                        currentTarget.Exists = false;
                         waypoints.RemoveAt(0);
 
                         if (waypoints.Count > 2)
                         {
                             bool directPath = true;
                             Vector2 cellsDirection = (waypoints[1].cellPosition - waypoints[0].cellPosition).normalized;
-                            NavCellTypeEnum cellsType = waypoints[0].cellType;
+                            NavCellTypeEnum cellsType = ((ComplexNavigationCell)waypoints[0]).cellType;
                             for (int i = 2; i < waypoints.Count; i++)
                             {
-                                if (Vector2.Angle((waypoints[i].cellPosition - waypoints[i - 1].cellPosition), cellsDirection) > minAngle || waypoints[i - 1].cellType != cellsType)
+                                if (Vector2.Angle((waypoints[i].cellPosition - waypoints[i - 1].cellPosition), cellsDirection) > minAngle || ((ComplexNavigationCell)waypoints[i - 1]).cellType != cellsType)
                                 {
                                     directPath = false;
                                     break;
@@ -639,35 +859,33 @@ public class SpiderController : AIController
                             if (directPath)
                             {
                                 //Если путь прямой, несложный, то паук может самостоятельно добраться до игрока, не используя маршрута, и атаковать его
-                                waypoints = null;
+                                Waypoints = null;
                                 prevTargetPosition = EVector3.zero;
                                 return;
                             }
                         }
-                        
+
 
                         if (waypoints.Count == 0)
                         {
-                            waypoints = null;
+                            Waypoints = null;
                             prevTargetPosition = EVector3.zero;
                             return;
                         }
                         else
                         {
-                            NavigationCell nextWaypoint = waypoints[0];
+                            ComplexNavigationCell nextWaypoint = (ComplexNavigationCell)waypoints[0];
                             //Продолжаем следование
-                            currentTarget = new GameObject("SpiderTarget");
-                            currentTarget.transform.position = nextWaypoint.cellPosition;
-                            if (currentWaypoint.GetNeighbor(nextWaypoint.groupNumb, nextWaypoint.cellNumb).connectionType==NavCellTypeEnum.jump)
+                            currentTarget = new ETarget(nextWaypoint.cellPosition);
+                            if (currentWaypoint.GetNeighbor(nextWaypoint.groupNumb, nextWaypoint.cellNumb).connectionType == NavCellTypeEnum.jump)
                             {
                                 //Перепрыгиваем препятствие
-                                Vector3 pos = transform.position;
                                 Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(nextWaypoint.cellPosition.x - currentWaypoint.cellPosition.x)));
-                                transform.position = new Vector3(currentWaypoint.cellPosition.x + (int)orientation*navCellSize / 2f, pos.y, pos.z);
+                                transform.position = new Vector3(currentWaypoint.cellPosition.x + (int)orientation * navCellSize / 2f, pos.y,0f);
                                 jumping = true;
                                 Jump();
                             }
-                            else if (spiderOrientation.y<0f)
+                            else if (spiderOrientation.y < 0f)
                             {
                                 if (currentWaypoint.cellPosition.x == nextWaypoint.cellPosition.x && nextWaypoint.cellPosition.y < currentWaypoint.cellPosition.y - 2 * navCellSize)
                                 {
@@ -681,17 +899,17 @@ public class SpiderController : AIController
                     if (!jumping)
                     {
                         //Учёт земных поверхностей, к которым может прикрепиться паук
-                        if (wallCheck.WallInFront())
+                        if (wallCheck.WallInFront)
                         {
-                            RaycastHit2D hit = Physics2D.Raycast(transform.position, (int)orientation * movementDirection, navCellSize, LayerMask.GetMask(gLName));
+                            RaycastHit2D hit = Physics2D.Raycast(pos, (int)orientation * movementDirection, navCellSize, LayerMask.GetMask(gLName));
                             if (hit)
                             {
                                 ChangeOrientation(hit.collider);
                             }
                         }
-                        else if (!precipiceCheck.WallInFront())
+                        else if (!precipiceCheck.WallInFront)
                         {
-                            RaycastHit2D hit = Physics2D.Raycast(transform.position - (int)orientation * Vector3.right * navCellSize / 2f, -spiderOrientation, navCellSize, LayerMask.GetMask(gLName));
+                            RaycastHit2D hit = Physics2D.Raycast(pos - (int)orientation * Vector2.right * navCellSize / 2f, -spiderOrientation, navCellSize, LayerMask.GetMask(gLName));
                             if (hit)
                             {
                                 ChangeOrientation(hit.collider);
@@ -700,32 +918,32 @@ public class SpiderController : AIController
                     }
                 }
             }
+
+            #endregion //complexWay
+
         }
     }
 
     /// <summary>
     /// Поведение патрулирования
     /// </summary>
-    protected override void PatrolBehaviour()
+    protected override void PatrolBehavior()
     {
         if (waypoints != null ? waypoints.Count > 0 : false)
         {
-            if (currentTarget == null)
-            {
-                currentTarget = new GameObject("SpiderTarget");
-                currentTarget.transform.position = waypoints[0].cellPosition;
-            }
+            if (!currentTarget.exists)
+                currentTarget = new ETarget(waypoints[0].cellPosition);
 
-
-            Vector3 targetPosition = currentTarget.transform.position;
-            Vector3 direction = targetPosition - transform.position;
-            float proectionLength = Vector2.Dot(direction, movementDirection);
-            if (Mathf.Abs(proectionLength) > spiderOffset || Vector2.SqrMagnitude(transform.position - targetPosition) < spiderOffset * 2f)
-                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(proectionLength)));
+            Vector2 pos = transform.position;
+            Vector2 targetPosition = currentTarget;
+            Vector2 direction = targetPosition - pos;
+            float projectionLength = Vector2.Dot(direction, movementDirection);
+            if (Mathf.Abs(projectionLength) > spiderOffset || Vector2.SqrMagnitude(pos - targetPosition) < spiderOffset * 2f)
+                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(projectionLength)));
             else
-            //{
+                //{
                 StopMoving();
-                //transform.position += movementDirection * proectionLength;
+            //transform.position += movementDirection * proectionLength;
             //}
 
             /*if (transform.parent != null)
@@ -736,17 +954,18 @@ public class SpiderController : AIController
                         Jump();//Мы не хотим, чтобы паук стоял на платформе, когда он патрулирует
                 }
             }*/
-            if (currentTarget != mainTarget && Vector3.SqrMagnitude(currentTarget.transform.position-transform.position) < navCellSize*navCellSize/4f)
+            if (currentTarget != mainTarget && Vector3.SqrMagnitude(currentTarget - pos) < navCellSize * navCellSize / 4f)
             {
                 if (jumping)
                     jumping = false;
-                NavigationCell currentWaypoint = waypoints[0];  
-                Destroy(currentTarget);
+                ComplexNavigationCell currentWaypoint = (ComplexNavigationCell)waypoints[0];
+                currentTarget.Exists = false;
                 waypoints.RemoveAt(0);
                 if (waypoints.Count == 0)
                 {
+                    StopMoving();
                     //Достигли конца маршрута
-                    if (Vector3.Distance(beginPosition, currentWaypoint.cellPosition) < navCellSize)
+                    if (Vector3.SqrMagnitude(beginPosition-currentWaypoint.cellPosition) < minCellSqrMagnitude)
                     {
                         transform.position = beginPosition;
                         Turn(beginOrientation);
@@ -758,20 +977,18 @@ public class SpiderController : AIController
                 }
                 else
                 {
-                    NavigationCell nextWaypoint = waypoints[0];
+                    ComplexNavigationCell nextWaypoint = (ComplexNavigationCell)waypoints[0];
                     //Продолжаем следование
-                    currentTarget = new GameObject("SpiderTarget");
-                    currentTarget.transform.position = nextWaypoint.cellPosition;
+                    currentTarget = new ETarget(nextWaypoint.cellPosition);
                     if (currentWaypoint.GetNeighbor(nextWaypoint.groupNumb, nextWaypoint.cellNumb).connectionType == NavCellTypeEnum.jump)
                     {
                         //Перепрыгиваем препятствие
-                        Vector3 pos = transform.position;
                         Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(nextWaypoint.cellPosition.x - currentWaypoint.cellPosition.x)));
-                        transform.position = new Vector3(currentWaypoint.cellPosition.x + (int)orientation * navCellSize / 2f, pos.y, pos.z);
+                        transform.position = new Vector3(currentWaypoint.cellPosition.x + (int)orientation * navCellSize / 2f, pos.y);
                         jumping = true;
                         Jump();
                     }
-                    else if (spiderOrientation.y<0f)
+                    else if (spiderOrientation.y < 0f)
                     {
                         if (currentWaypoint.cellPosition.x == nextWaypoint.cellPosition.x && nextWaypoint.cellPosition.y < currentWaypoint.cellPosition.y - 2 * navCellSize)
                         {
@@ -785,17 +1002,17 @@ public class SpiderController : AIController
             if (!jumping)
             {
                 //Учёт земных поверхностей, к которым может прикрепиться паук
-                if (wallCheck.WallInFront())
+                if (wallCheck.CheckWall())
                 {
-                    RaycastHit2D hit = Physics2D.Raycast(transform.position, (int)orientation * movementDirection, navCellSize, LayerMask.GetMask(gLName));
+                    RaycastHit2D hit = Physics2D.Raycast(pos, (int)orientation * movementDirection, navCellSize, LayerMask.GetMask(gLName));
                     if (hit)
                     {
                         ChangeOrientation(hit.collider);
                     }
                 }
-                else if (!precipiceCheck.WallInFront())
+                else if (!precipiceCheck.CheckWall())
                 {
-                    RaycastHit2D hit = Physics2D.Raycast((Vector2)transform.position - (int)orientation * movementDirection * navCellSize / 2f, -spiderOrientation, navCellSize, LayerMask.GetMask(gLName));
+                    RaycastHit2D hit = Physics2D.Raycast(pos - (int)orientation * movementDirection * navCellSize / 2f, -spiderOrientation, navCellSize, LayerMask.GetMask(gLName));
                     if (hit)
                     {
                         ChangeOrientation(hit.collider);
@@ -921,6 +1138,37 @@ public class SpiderController : AIController
 
     #region optimization
 
+    /// <summary>
+    /// Сменить оптимизированную версию на активную
+    /// </summary>
+    protected override void ChangeBehaviorToOptimized()
+    {
+        GetOptimizedPosition();
+        Optimized = true;
+        switch (behavior)
+        {
+            case BehaviorEnum.calm:
+                {
+                    behaviorActions = CalmOptBehavior;
+                    if (currentTarget.exists)
+                        FindFrontPatrolTarget();
+                    break;
+                }
+            case BehaviorEnum.agressive:
+                {
+                    behaviorActions = AgressiveOptBehavior;
+                    break;
+                }
+            case BehaviorEnum.patrol:
+                {
+                    behaviorActions = PatrolOptBehavior;
+                    break;
+                }
+            default:
+                break;
+        }
+    }
+
     /*
     /// <summary>
     /// Включить зрение
@@ -946,7 +1194,7 @@ public class SpiderController : AIController
     /// <summary>
     /// Включить собственный хитбокс
     /// </summary>
-    protected virtual void EnableSelfHitBox()
+    protected override void EnableSelfHitBox()
     {
         selfHitBox.gameObject.SetActive(true);
     }
@@ -954,9 +1202,205 @@ public class SpiderController : AIController
     /// <summary>
     /// Выключить собственный хитбокс
     /// </summary>
-    protected virtual void DisableSelfHitBox()
+    protected override void DisableSelfHitBox()
     {
         selfHitBox.gameObject.SetActive(false);
+    }
+
+    /// <summary>
+    /// Функция, которая отыскивает навигационную ячейку, находящаяся в доступных пауку пределах (паук стоит на земле и не использует стены и потолок, а также не прыгает) и ставит её текущей целью паука.
+    /// </summary>
+    protected void FindFrontPatrolTarget()
+    {
+        Vector2 pos = transform.position;
+        if (navMap == null || !(navMap is NavigationBunchedMap))
+            return;
+        NavigationBunchedMap _map = (NavigationBunchedMap)navMap;
+        ComplexNavigationCell currentCell = (ComplexNavigationCell)_map.GetCurrentCell(transform.position);
+        if (currentCell == null)
+            return;
+        bool hasNext = true;
+        ComplexNavigationCell nextCell = currentCell;
+        while (hasNext)
+        {
+            Vector2 pos1 = currentCell.cellPosition;
+            hasNext = false;
+            if (Mathf.Abs(pos1.x - pos.x) > patrolDistance)
+            {
+                break;
+            }
+            foreach (NeighborCellStruct neighbor in currentCell.neighbors)
+            {
+                nextCell = _map.GetCell(neighbor.groupNumb, neighbor.cellNumb);
+                Vector2 pos2 = nextCell.cellPosition;
+                if (Mathf.Abs(pos1.y - pos2.y) < navCellSize / 2f && (pos2.x - pos1.x) * (int)orientation > 0 && neighbor.connectionType==NavCellTypeEnum.usual)
+                {
+                    currentCell = nextCell;
+                    hasNext = true;
+                    break;
+                }
+            }
+        }
+        currentTarget = new ETarget(currentCell.cellPosition);
+    }
+
+    /// <summary>
+    /// Функция реализующая анализ окружающей персонажа обстановки, когда тот находится в оптимизированном состоянии
+    /// </summary>
+    protected override void AnalyseOpt()
+    {
+        if (behavior != BehaviorEnum.calm)
+        {
+            if (!followOptPath)
+                StartCoroutine("PathPassOptProcess");
+        }
+        else
+        {
+            if (!currentTarget.exists)
+            {
+                StopCoroutine("PathPassOptProcess");//На всякий случай
+                Turn();
+                FindFrontPatrolTarget();
+                if (currentTarget.exists)
+                    StartCoroutine("PathPassOptProcess");
+            }
+            else if (!followOptPath)
+                StartCoroutine("PathPassOptProcess");
+        }
+    }
+
+    /// <summary>
+    /// Функция, которая восстанавливает положение и состояние персонажа, пользуясь данными, полученными в оптимизированном режиме
+    /// </summary>
+    protected override void RestoreActivePosition()
+    {
+        if (behavior == BehaviorEnum.calm || !currentTarget.exists)
+        {
+            SpiderOrientation = Vector2.up;
+            Turn(beginOrientation);
+        }
+        else
+        {
+            if (jumping)
+            {
+                SpiderOrientation = Vector2.up;
+                jumping = false;
+            }
+            else 
+            {
+                RestoreSpiderOrientation();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Функция, которая переносит персонажа в ту позицию, в которой он может нормально функционировать в оптимизированной версии 
+    /// </summary>
+    protected override void GetOptimizedPosition()
+    {
+        StopAvoid();
+        SpiderOrientation = Vector2.up;
+        if (rigid.gravityScale>0f && !Physics2D.Raycast((Vector2)transform.position - (int)orientation * Vector2.right * navCellSize / 2f, -spiderOrientation, navCellSize, LayerMask.GetMask(gLName)))
+        {
+            if (waypoints == null)
+            {
+                RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, navMap.mapSize.magnitude, LayerMask.GetMask(gLName));
+                if (!hit)
+                {
+                    Death();
+                }
+                else
+                {
+                    transform.position = hit.point + Vector2.up * spiderOffset;
+                }
+            }
+        }
+        //if (behavior == BehaviorEnum.calm)
+            //FindFrontPatrolTarget();
+    }
+
+    /// <summary>
+    /// Процесс оптимизированного прохождения пути. Заключается в том, что персонаж, зная свой маршрут, появляется в его различиных позициях, не используя 
+    /// </summary>
+    /// <returns></returns>
+    protected override IEnumerator PathPassOptProcess()
+    {
+        followOptPath = true;
+        if (waypoints == null && !currentTarget.exists)
+        {
+            if (Vector2.SqrMagnitude((Vector2)transform.position - beginPosition) < minCellSqrMagnitude)
+                BecomeCalm();
+            else
+            {
+                GoHome();
+                if (waypoints == null && beginPosition.transform==null)
+                {
+                    //Если не получается добраться до начальной позиции, то считаем, что текущая позиция становится начальной
+                    beginPosition = new ETarget(transform.position);
+                    beginOrientation = orientation;
+                    BecomeCalm();
+                    followOptPath = false;
+                }
+                else
+                    StartCoroutine("PathPassOptProcess");
+            }
+        }
+        else
+        {
+            while ((waypoints != null ? waypoints.Count > 0 : false) || currentTarget.exists)
+            {
+                if (!currentTarget.exists)
+                {
+                    currentTarget = new ETarget(waypoints[0].cellPosition);
+                }
+
+                Vector2 pos = transform.position;
+                Vector2 targetPos = currentTarget;
+
+                if (Vector2.SqrMagnitude(pos - targetPos) <= minCellSqrMagnitude)
+                {
+                    transform.position = targetPos;
+                    currentTarget.Exists = false;
+                    pos = transform.position;
+                    if (waypoints != null ? waypoints.Count > 0 : false)
+                    {
+                        ComplexNavigationCell currentCell = (ComplexNavigationCell)waypoints[0];
+                        waypoints.RemoveAt(0);
+                        if (waypoints.Count <= 0)
+                            break;
+                        jumping = false;
+                        ComplexNavigationCell nextCell = (ComplexNavigationCell)waypoints[0];
+                        currentTarget = new ETarget(nextCell.cellPosition);
+                        NeighborCellStruct neighborConnection = currentCell.GetNeighbor(nextCell.groupNumb,nextCell.cellNumb);
+                        if (neighborConnection.connectionType == NavCellTypeEnum.jump)
+                        {
+                            jumping = true;
+                        }
+                        else if (neighborConnection.groupNumb!=-1 &&
+                                currentCell.cellPosition.x == nextCell.cellPosition.x && nextCell.cellPosition.y < currentCell.cellPosition.y - 2 * navCellSize)
+                        {
+                            jumping = true;
+                        }
+                        if (neighborConnection.groupNumb != -1)
+                        {
+                            transform.position = nextCell.cellPosition;
+                            yield return new WaitForSeconds(optTimeStep);
+                            continue;                            
+                        }
+                    }
+                }
+                if (currentTarget.exists)
+                {
+                    targetPos = currentTarget;
+                    Vector2 direction = targetPos - pos;
+                    transform.position = pos + direction.normalized * Mathf.Clamp(speed, 0f, direction.magnitude);
+                }
+                yield return new WaitForSeconds(optTimeStep);
+            }
+            waypoints = null;
+            currentTarget.Exists = false;
+            followOptPath = false;
+        }
     }
 
     #endregion //optimization
@@ -984,7 +1428,7 @@ public class SpiderController : AIController
             //if (waypoints != null)
             //{
                 GoToThePoint(mainTarget.transform.position);//Выдвинуться туда, где в последний раз видел врага
-                StartCoroutine(BecomeCalmProcess());
+                StartCoroutine("BecomeCalmProcess");
             //}
             //else
                //GoHome();
@@ -1005,6 +1449,95 @@ public class SpiderController : AIController
     */
 
     #endregion //eventHandlers
+
+    #region id
+
+    /// <summary>
+    /// Получить данные о враге с целью сохранить их
+    /// </summary>
+    public override EnemyData GetAIData()
+    {
+        SpiderData eData = new SpiderData(this);
+        return eData;
+    }
+
+    /// <summary>
+    /// Настроить персонажа в соответствии с загруженными данными
+    /// </summary>
+    public override void SetAIData(EnemyData eData)
+    {
+        if (eData != null)
+        {
+            transform.position = eData.position;
+            SpiderOrientation=((SpiderData)eData).spiderOrientation;
+            if (transform.localScale.x * eData.orientation < 0f)
+                Turn((OrientationEnum)eData.orientation);
+
+            string behaviorName = eData.behavior;
+            switch (behaviorName)
+            {
+                case "calm":
+                    {
+                        BecomeCalm();
+                        break;
+                    }
+                case "agressive":
+                    {
+                        BecomeAgressive();
+                        if (eData.waypoints.Count > 0)
+                        {
+                            waypoints = new List<NavigationCell>();
+                            for (int i = 0; i < eData.waypoints.Count; i++)
+                                waypoints.Add(navMap.GetCurrentCell(eData.waypoints[i]));
+                            ComplexNavigationCell nextCell = (ComplexNavigationCell)waypoints[0];
+                            if (nextCell.cellType == NavCellTypeEnum.jump)
+                                transform.position = nextCell.cellPosition;
+                        }
+                        break;
+                    }
+                case "patrol":
+                    {
+                        BecomePatrolling();
+                        if (eData.waypoints.Count > 0)
+                        {
+                            waypoints = new List<NavigationCell>();
+                            for (int i = 0; i < eData.waypoints.Count; i++)
+                                waypoints.Add(navMap.GetCurrentCell(eData.waypoints[i]));
+                            ComplexNavigationCell nextCell = (ComplexNavigationCell)waypoints[0];
+                            if (nextCell.cellType==NavCellTypeEnum.jump)
+                                transform.position = nextCell.cellPosition;
+                        }
+                        break;
+                    }
+                default:
+                    {
+                        behavior = BehaviorEnum.calm;
+                        BecomeCalm();
+                        break;
+                    }
+            }
+
+            TargetData currentTargetData = eData.currentTargetData;
+            TargetData mainTargetData = eData.mainTargetData;
+
+            if (currentTargetData.targetName != string.Empty)
+                currentTarget = new ETarget(GameObject.Find(currentTargetData.targetName).transform);
+            else
+                currentTarget = new ETarget(currentTargetData.position);
+
+            if (mainTargetData.targetName != string.Empty)
+                MainTarget = new ETarget(GameObject.Find(mainTargetData.targetName).transform);
+            else
+                mainTarget = new ETarget(mainTargetData.position);
+            if (behavior != BehaviorEnum.agressive)
+                TargetCharacter = null;
+
+            SetBuffs(eData.bListData);
+            Health = eData.health;
+        }
+    }
+
+    #endregion //id
 
     /// <summary>
     /// Вернуть тип, используемой карты навигации
@@ -1122,7 +1655,7 @@ public class SpiderController : AIController
     /// Узнать точку пересечения заданной прямой и ортогонального ей вектора, пущенного из точки
     /// </summary>
     /// <param name="point1">первая точка, принадлежащая заданной прямой</param>
-    /// <param name="point2">вторая точка, принадлежащая щаланной прямой</param>
+    /// <param name="point2">вторая точка, принадлежащая заданной прямой</param>
     /// <param name="fromPoint">точка, откуда мы ищем точку пересечения</param>
     /// <returns>Точка пересечения</returns>
     protected Vector2 GetConnectionPoint(Vector2 point1, Vector2 point2, Vector2 fromPoint)
@@ -1146,7 +1679,8 @@ public class SpiderController : AIController
         }
         //Если точка крепления по какой-то причине оказалась не между двумя точками заданной прямой, то установить точкой крепления ближайшую из этой точек
         if ((connectionPoint.x - point1.x) * (connectionPoint.x - point2.x) > 0 || (connectionPoint.y - point1.y) * (connectionPoint.y - point2.y) > 0)
-            connectionPoint = (Vector2.SqrMagnitude(connectionPoint - point1) < Vector2.SqrMagnitude(connectionPoint - point2) ? point1 : point2);
+            connectionPoint = (Vector2.SqrMagnitude(connectionPoint - point1) < Vector2.SqrMagnitude(connectionPoint - point2) ? point1 + (point2-point1).normalized*spiderOffset : 
+                                                                                                                                 point2+(point1 - point2).normalized * spiderOffset);
 
         return connectionPoint;
     }
@@ -1159,7 +1693,6 @@ public class SpiderController : AIController
     /// <returns>Вектор нормали</returns>
     protected Vector2 GetNormal(Vector2 surfacePoint1, Vector2 surfacePoint2)
     {
-        string gLName = "ground";
 
         Vector2 direction = (surfacePoint2 - surfacePoint1).normalized;
         Vector2 normal = new Vector2(1, 0);
@@ -1167,8 +1700,27 @@ public class SpiderController : AIController
             normal = new Vector2(0, 1);
         else
             normal = (normal - Vector2.Dot(normal, direction) * direction).normalized;
-        if (Physics2D.Raycast((surfacePoint2 + surfacePoint1) / 2f + normal / 10f, normal, .02f, LayerMask.GetMask(gLName)))
-            normal *= -1;
+
+        return normal;
+    }
+
+    /// <summary>
+    /// Возвращает вектор нормали заданной поверхности земли
+    /// </summary>
+    /// <param name="surfacePoint1">Первая точка, заданной прямой</param>
+    /// <param name="surfacePoint2">Вторая точка, заданной прямой</param>
+    /// <returns>Вектор нормали</returns>
+    protected Vector2 GetNormal(Vector2 surfacePoint1, Vector2 surfacePoint2, Collider2D gCol)
+    {
+        Vector2 direction = (surfacePoint2 - surfacePoint1).normalized;
+        Vector2 normal = new Vector2(1, 0);
+        if (Mathf.Approximately(Mathf.Abs(Vector2.Dot(normal, direction)), 1f))
+            normal = new Vector2(0, 1);
+        else
+            normal = (normal - Vector2.Dot(normal, direction) * direction).normalized;
+        Vector2 _point = (surfacePoint1 + surfacePoint2) / 2f+normal * 0.02f;
+        if (gCol.OverlapPoint(_point))
+            normal *= -1f;
 
         return normal;
     }
@@ -1189,6 +1741,77 @@ public class SpiderController : AIController
             normal *= -1;
 
         return normal;
+    }
+
+    /// <summary>
+    /// Восстановить пространственную ориентацию паука
+    /// </summary>
+    protected virtual void RestoreSpiderOrientation()
+    {
+        Vector2 pos = transform.position;
+        Vector2 direction = currentTarget - pos;
+        Collider2D[] cols = Physics2D.OverlapAreaAll(pos + new Vector2(-navCellSize, navCellSize), pos + new Vector2(navCellSize, -navCellSize), LayerMask.GetMask(gLName));
+        if (cols == null)
+        {
+            SpiderOrientation = Vector2.up;
+            Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(currentTarget.x - pos.x)));
+            return;
+        }
+
+        //Найдём ту сторону того коллайдера, которая имеет наименьшее расстояние до текущего положения паука
+        float mDistance = Mathf.Infinity;
+        Vector2[] chosenPoints = null;
+        int chosenIndex = -1;
+        Vector2 connectionPoint = Vector2.zero;
+        Vector2[] colPoints = null;
+        Collider2D chosenCol = null;
+
+        for (int i = 0; i < cols.Length; i++)
+        {
+
+            colPoints = GetColliderPoints(cols[i]);
+
+            if (colPoints.Length <= 0)
+                continue;
+
+            for (int j = 0; j < colPoints.Length; j++)
+            {
+                Vector2 point1 = colPoints[j];
+                Vector2 point2 = j < colPoints.Length - 1 ? colPoints[j + 1] : colPoints[0];
+                Vector2 normal = GetNormal(point1, point2);
+                Vector2 _connectionPoint = GetConnectionPoint(point1, point2, transform.position);
+                float newDistance = Vector2.SqrMagnitude(_connectionPoint - (Vector2)transform.position);
+                if (newDistance < mDistance)
+                {
+                    connectionPoint = _connectionPoint;
+                    mDistance = newDistance;
+                    chosenPoints = colPoints;
+                    chosenIndex = j;
+                    chosenCol = cols[i];
+                }
+            }
+        }
+
+        if (chosenIndex < 0)
+            return;
+
+        Vector2 surfacePoint1 = chosenPoints[chosenIndex], surfacePoint2 = chosenPoints[chosenIndex < chosenPoints.Length - 1 ? chosenIndex + 1 : 0];
+
+        ChangeOrientation(surfacePoint1, surfacePoint2, connectionPoint, chosenCol);
+        float projectionLength = Vector2.Dot(direction, movementDirection);
+        Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(projectionLength)));
+    }
+
+    /// <summary>
+    /// Процесс, который вызывается, когда паук находится в непраильной ориентации
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IEnumerator WrongOrientationProcess()
+    {
+        Vector2 currentPosition = transform.position;
+        yield return new WaitForSeconds(0.5f);
+        if (!precipiceCheck.WallInFront && !jumping && Vector2.SqrMagnitude((Vector2)transform.position - currentPosition) < minCellSqrMagnitude)
+            SpiderOrientation = Vector2.up;
     }
 
     #endregion //other

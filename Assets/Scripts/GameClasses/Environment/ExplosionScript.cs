@@ -12,6 +12,7 @@ public class ExplosionScript : MonoBehaviour
 
     protected const float lifeTime = .5f, setFireTime = 0.25f;
     protected const float fireOffset = -.07f;
+    protected const float fireChance = 20f;
 
     #endregion //consts
 
@@ -41,7 +42,7 @@ public class ExplosionScript : MonoBehaviour
         hitBox = GetComponent<HitBox>();
         hitBox.Immobile = true;
         hitBox.SetEnemies(enemies);
-        hitBox.SetHitBox(new HitClass(damage, -1f, Vector2.zero, transform.position, 0f));
+        hitBox.SetHitBox(new HitParametres(damage, -1f, Vector2.zero, transform.position, 0f,DamageType.Fire, fireChance));
         groundCheck = transform.FindChild("GroundCheck");
         isSet = false;
     }

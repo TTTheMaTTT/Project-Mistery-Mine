@@ -14,6 +14,7 @@ public class CollectionDropClass : DropClass
     {
         if (dropped)
         {
+            OnDropGet(new System.EventArgs());
             SpecialFunctions.statistics.ConsiderCollectionItem(item);
             Destroy(gameObject);
             SpecialFunctions.statistics.ConsiderStatistics(this);

@@ -35,6 +35,9 @@ public class GroundMoveVisual : CharacterVisual
         visualFunctions.Add("groundMove", GroundMove);
         visualFunctions.Add("moveForward", MoveForward);
         visualFunctions.Add("attack", Attack);
+        visualFunctions.Add("airMove", AirMove);
+        visualFunctions.Add("ladderMove", LadderMove);
+        visualFunctions.Add("setLadderMove", SetLadderMove);
     }
 
     /// <summary>
@@ -56,6 +59,57 @@ public class GroundMoveVisual : CharacterVisual
         }
     }
 
+    /// <summary>
+    /// Функция, отвечающая за перемещение персонажа по лестнице
+    /// </summary>
+    protected virtual void LadderMove(string id, int argument)
+    {
+        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("LadderMove"))
+            anim.Play("LadderMove");
+        if (Mathf.Abs(rigid.velocity.y) >= minSpeed)
+        {
+            anim.speed = 1f;
+        }
+        else
+        {
+            anim.speed = 0f;
+        }
+    }
+
+    /// <summary>
+    /// Перейти в режим визуализации перемещения по лестнице, или выйти из него
+    /// </summary>
+    protected virtual void SetLadderMove(string id, int argument)
+    {
+        if (argument == 1)
+        {
+            anim.Play("LadderMove");
+        }
+        else
+        {
+            anim.speed = 1f;
+        }
+    }
+
+    /// <summary>
+    /// Функция, отвечающая за перемещение персонажа в воздухе
+    /// </summary>
+    protected virtual void AirMove(string id, int argument)
+    {
+        if (employment <= 6)
+        {
+            return;
+        }
+        if (rigid.velocity.y >= 0)
+        {
+            anim.Play("Jump");
+        }
+        else
+        {
+            anim.Play("Fall");
+        }
+    }
+
     protected virtual void MoveForward(string id, int argument)
     {
         anim.Play("Run");
@@ -71,7 +125,7 @@ public class GroundMoveVisual : CharacterVisual
             return;
         }
         anim.Play("Attack");
-        StartCoroutine(VisualRoutine(5, .5f));
+        StartVisualRoutine(5, argument != 0? argument/10f : attackTime);
     }
 
 }

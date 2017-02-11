@@ -7,12 +7,25 @@ using System.Collections;
 /// </summary>
 public static class SpecialFunctions
 {
-    public static GameObject player { get { return GameObject.FindGameObjectWithTag("player"); } }
+    public static GameObject player = null;
+    public static BattleField battleField = null;
+    public static GameObject Player
+    {
+        get
+        {
+            if (player == null)
+            {
+                player = GameObject.FindGameObjectWithTag("player");
+                battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
+            }
+            return player;
+        }
+    }
 
     public static CameraController camControl { get { return GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); } }
 
     public static GameController gameController { get { return GameObject.FindGameObjectWithTag("gameController").GetComponent<GameController>(); } }
-
+    
     public static History history { get { return gameController.GetComponent<GameHistory>().history; } }
 
     public static GameStatistics statistics { get { return gameController.GetComponent<GameStatistics>(); } }
@@ -70,6 +83,14 @@ public static class SpecialFunctions
     }
 
     /// <summary>
+    /// Функция, выводящая заданный тект в поле сообщений о секретах и эффектах
+    /// </summary>
+    public static void SetSecretText(float textTime, string _text = "Вы нашли секретное место!")
+    {
+        gameUI.SetSecretMessage(textTime,_text);
+    }
+
+    /// <summary>
     /// Функция, обрабатывающая событие нахождения секретного места
     /// </summary>
     public static void FindSecretPlace(float textTime)
@@ -102,8 +123,8 @@ public static class SpecialFunctions
     /// </summary>
     public static void MoveToCheckpoint(CheckpointController checkpoint)
     {
-        Vector3 cPos = checkpoint.transform.position, pPos = player.transform.position;
-        player.transform.position = new Vector3(cPos.x, cPos.y, pPos.z);
+        Vector3 cPos = checkpoint.transform.position, pPos = Player.transform.position;
+        Player.transform.position = new Vector3(cPos.x, cPos.y, pPos.z);
     }
 
 }

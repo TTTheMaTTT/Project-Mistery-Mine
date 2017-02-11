@@ -12,15 +12,13 @@ public class BatBossController: BossController
     protected const float pushBackForce = 500f;
     private const float batSize = .5f;
 
-    private const float maxAvoidDistance = 30f, avoideOffset = 1.5f;
+    private const float maxAvoidDistance = 30f, avoidOffset = 1.5f;
 
     #endregion //consts
 
     #region fields
 
     protected Hearing hearing;//Слух персонажа
-
-    public LayerMask whatIsGround = LayerMask.GetMask("ground");
 
     public GameObject drop;//Что выпадает из летучей мыши, если её 2 раза ударить
 
@@ -35,6 +33,11 @@ public class BatBossController: BossController
 
     #endregion //parametres
 
+    protected override void Update()
+    {
+        base.Update();
+    }
+
     /// <summary>
     /// Инициализация
     /// </summary>
@@ -45,9 +48,20 @@ public class BatBossController: BossController
         rigid.isKinematic = true;
 
         hitBox.AttackEventHandler += HandleAttackProcess;
-        Transform indicators = transform.FindChild("Indicators");
         hearing = indicators.GetComponentInChildren<Hearing>();
         hearing.hearingEventHandler += HandleHearingEvent;
+        hearing.AllyHearing = false;
+
+        if (areaTrigger != null)
+        {
+            areaTrigger.triggerFunctionIn = NullAreaFunction;
+            areaTrigger.triggerFunctionOut = NullAreaFunction;
+            areaTrigger.triggerFunctionOut += AreaTriggerExitChangeBehavior;
+            areaTrigger.InitializeAreaTrigger();
+        }
+        
+
+        BecomeCalm();
 
     }
 
@@ -56,7 +70,7 @@ public class BatBossController: BossController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = (currentTarget.transform.position - transform.position).normalized * speed;
+        Vector2 targetVelocity = (currentTarget - transform.position).normalized * speed;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)
@@ -65,9 +79,12 @@ public class BatBossController: BossController
         }
     }
 
+    /// <summary>
+    /// Функция, ответственная за анализ окружающей персонажа обстановки
+    /// </summary>
     protected override void Analyse()
     {
-        base.Analyse();
+        Vector2 pos = transform.position;
         if (rigid.velocity.magnitude < minSpeed)
         {
             float angle = 0f;
@@ -75,12 +92,30 @@ public class BatBossController: BossController
             for (int i = 0; i < 8; i++)
             {
                 rayDirection = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-                if (Physics2D.Raycast(transform.position, rayDirection, batSize, whatIsGround))
+                if (Physics2D.Raycast(pos, rayDirection, batSize, LayerMask.GetMask(gLName)))
                 {
                     rigid.AddForce(-rayDirection * pushBackForce / 2f);
                     break;
                 }
                 angle += Mathf.PI / 4f;
+            }
+        }
+        if (behavior == BehaviorEnum.agressive)
+        {
+            if (currentTarget.exists)
+            {
+                if (currentTarget != mainTarget)
+                {
+                    Vector2 direction = (mainTarget - pos).normalized;
+                    RaycastHit2D hit = Physics2D.Raycast(pos + direction.normalized * batSize, direction, sightRadius);
+                    if (hit)
+                        if (hit.collider.transform == mainTarget.transform)
+                            currentTarget = mainTarget;
+                }
+                if (Physics2D.Raycast(pos, currentTarget - pos, batSize, LayerMask.GetMask(gLName)))
+                {
+                    currentTarget = FindPath();
+                }
             }
         }
     }
@@ -91,8 +126,9 @@ public class BatBossController: BossController
     protected override void BecomeAgressive()
     {
         base.BecomeAgressive();
-        hitBox.SetHitBox(new HitClass(damage, -1f, attackSize, attackPosition, 0f));
+        hitBox.SetHitBox(attackParametres);
         rigid.isKinematic = false;
+        hearing.enabled = false;
     }
 
     /// <summary>
@@ -103,20 +139,42 @@ public class BatBossController: BossController
         base.BecomeCalm();
         hitBox.ResetHitBox();
         rigid.isKinematic = true;
+        hearing.enabled = true;
+    }
+
+    /// <summary>
+    /// Перейти в состояние патрулирования
+    /// </summary>
+    protected override void BecomePatrolling()
+    {
+        base.BecomePatrolling();
+        hitBox.ResetHitBox();
+        rigid.isKinematic = false;
+        hearing.enabled = true;
     }
 
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage)
+    public override void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
     {
+        if (_dType != DamageType.Physical)
+        {
+            if (((DamageType)vulnerability & _dType) == _dType)
+                damage *= 1.25f;
+            else if (_dType == attackParametres.damageType)
+                damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
+        }
         Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
         if (health <= 0f)
             Death();
         else
             Animate(new AnimationEventArgs("hitted"));
-        BecomeAgressive();
-        damageCount++;
+        if (behavior != BehaviorEnum.agressive && _microstun)
+        {
+            BecomeAgressive();
+            damageCount++;
+        }
         if (damageCount >= 2)
         {
             Instantiate(drop, transform.position, transform.rotation);
@@ -125,17 +183,29 @@ public class BatBossController: BossController
     }
 
     /// <summary>
+    /// Выдвинуться к целевой позиции
+    /// </summary>
+    /// <param name="targetPosition">Целевая позиция</param>
+    protected override void GoToThePoint(Vector2 targetPosition)
+    {
+        BecomePatrolling();
+        if (currentTarget.exists)
+        {
+            currentTarget = new ETarget( targetPosition);
+        }
+    }
+
+    /// <summary>
     /// Простейший алгоритм обхода препятствий
     /// </summary>
-    protected GameObject FindPath()
+    protected ETarget FindPath()
     {
-        if (currentTarget != null ? currentTarget != mainTarget : true)
-            DestroyObject(currentTarget);
+        Vector2 pos = transform.position;
 
-        bool a1 = Physics2D.Raycast(transform.position, Vector2.up, batSize, whatIsGround) && (mainTarget.transform.position.y - transform.position.y > avoideOffset);
-        bool a2 = Physics2D.Raycast(transform.position, Vector2.right, batSize, whatIsGround) && (mainTarget.transform.position.x > transform.position.x);
-        bool a3 = Physics2D.Raycast(transform.position, Vector2.down, batSize, whatIsGround) && (mainTarget.transform.position.y - transform.position.y < avoideOffset);
-        bool a4 = Physics2D.Raycast(transform.position, Vector2.left, batSize, whatIsGround) && (mainTarget.transform.position.x < transform.position.x);
+        bool a1 = Physics2D.Raycast(pos, Vector2.up, batSize, LayerMask.GetMask(gLName)) && (mainTarget.y - pos.y > avoidOffset);
+        bool a2 = Physics2D.Raycast(pos, Vector2.right, batSize, LayerMask.GetMask(gLName)) && (mainTarget.x > pos.x);
+        bool a3 = Physics2D.Raycast(pos, Vector2.down, batSize, LayerMask.GetMask(gLName)) && (mainTarget.y - pos.y < avoidOffset);
+        bool a4 = Physics2D.Raycast(pos, Vector2.left, batSize, LayerMask.GetMask(gLName)   ) && (mainTarget.x < pos.x);
 
         bool open1 = false, open2 = false;
         Vector2 aimDirection = a1 ? Vector2.up : a2 ? Vector2.right : a3 ? Vector2.down : a4 ? Vector2.left : Vector2.zero;
@@ -145,22 +215,17 @@ public class BatBossController: BossController
         {
             Vector2 vect1 = new Vector2(aimDirection.y, aimDirection.x);
             Vector2 vect2 = new Vector2(-aimDirection.y, -aimDirection.x);
-            Vector2 vect = new Vector2(transform.position.x, transform.position.y);
-            Vector2 pos1 = vect;
+            Vector2 pos1 = pos;
             Vector2 pos2 = pos1;
-            while (Physics2D.Raycast(pos1, aimDirection, batSize, whatIsGround) && ((pos1 - vect).magnitude < maxAvoidDistance))
+            while (Physics2D.Raycast(pos1, aimDirection, batSize, LayerMask.GetMask(gLName)) && ((pos1 - pos).magnitude < maxAvoidDistance))
                 pos1 += vect1 * batSize;
-            open1 = !Physics2D.Raycast(pos1, aimDirection, batSize, whatIsGround);
-            while (Physics2D.Raycast(pos2, aimDirection, batSize, whatIsGround) && ((pos2 - vect).magnitude < maxAvoidDistance))
+            open1 = !Physics2D.Raycast(pos1, aimDirection, batSize, LayerMask.GetMask(gLName));
+            while (Physics2D.Raycast(pos2, aimDirection, batSize, LayerMask.GetMask(gLName)) && ((pos2 - pos).magnitude < maxAvoidDistance))
                 pos2 += vect2 * batSize;
-            open2 = !Physics2D.Raycast(pos2, aimDirection, batSize, whatIsGround);
-            Vector2 targetPosition = new Vector2(mainTarget.transform.position.x, mainTarget.transform.position.y);
-            Vector2 newTargetPosition = (open1 && !open2) ? pos1 : (open2 && !open1) ? pos2 : ((targetPosition - pos1).magnitude < (targetPosition - pos2).magnitude) ? pos1 : pos2;
-            GameObject point = new GameObject("point");
-            point.transform.position = newTargetPosition;
-            return point;
+            open2 = !Physics2D.Raycast(pos2, aimDirection, batSize, LayerMask.GetMask(gLName));
+            Vector2 newTargetPosition = (open1 && !open2) ? pos1 : (open2 && !open1) ? pos2 : ((mainTarget - pos1).magnitude < (mainTarget - pos2).magnitude) ? pos1 : pos2;
+            return new ETarget(newTargetPosition);
         }
-        return mainTarget;
     }
 
     #region behaviourActions
@@ -168,7 +233,7 @@ public class BatBossController: BossController
     /// <summary>
     /// Спокойное поведение
     /// </summary>
-    protected override void CalmBehaviour()
+    protected override void CalmBehavior()
     {
         if (!immobile)
         {
@@ -186,36 +251,20 @@ public class BatBossController: BossController
     /// <summary>
     /// Агрессивное поведение
     /// </summary>
-    protected override void AgressiveBehaviour()
+    protected override void AgressiveBehavior()
     {
         if (!immobile)
         {
-            if ( mainTarget != null)
+            Vector2 pos = transform.position;
+            if ( mainTarget.exists)
             {
-                if (currentTarget != null)
+                if (currentTarget.exists)
                 {
-                    Vector3 targetPosition = currentTarget.transform.position;
-                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - transform.position.x)));
-                    if (currentTarget != mainTarget && Vector3.Distance(currentTarget.transform.position, transform.position) < batSize)
-                    {
-                        DestroyImmediate(currentTarget);
+                    Vector3 targetPosition = currentTarget;
+                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+                    if (currentTarget != mainTarget && Vector3.SqrMagnitude(currentTarget - pos) < batSize * batSize)
                         currentTarget = FindPath();
-                    }
-
                 }
-                if (currentTarget != mainTarget)
-                {
-                    Vector2 vect = mainTarget.transform.position - transform.position;
-                    RaycastHit2D hit = Physics2D.Raycast(transform.position + new Vector3(vect.x, vect.y, 0f).normalized * batSize, vect, sightRadius);
-                    if (hit)
-                        if (hit.collider.gameObject == mainTarget)
-                            currentTarget = mainTarget;
-                }
-                if (Physics2D.Raycast(transform.position, currentTarget.transform.position - transform.position, batSize, whatIsGround))
-                {
-                    currentTarget = FindPath();
-                }
-                Analyse();
             }
 
             if ( rigid.velocity.magnitude < minSpeed)
@@ -227,6 +276,27 @@ public class BatBossController: BossController
                 Animate(new AnimationEventArgs("fly"));
             }
         }
+    }
+
+    /// <summary>
+    /// Поведение преследования какой-либо цели
+    /// </summary>
+    protected override void PatrolBehavior()
+    {
+        base.PatrolBehavior();
+
+        Vector2 targetPosition = currentTarget;
+        Vector2 pos = transform.position;
+        Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+        if (Vector2.SqrMagnitude(currentTarget - pos) < minDistance * minDistance)
+        {
+            StopMoving();
+            if (Vector2.SqrMagnitude(targetPosition - beginPosition) > minDistance * minDistance)
+                GoHome();
+            else
+                BecomeCalm();
+        }
+        Animate(new AnimationEventArgs("fly"));
     }
 
     #endregion //behaviourActions

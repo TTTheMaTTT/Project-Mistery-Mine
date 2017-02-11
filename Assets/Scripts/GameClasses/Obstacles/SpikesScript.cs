@@ -64,7 +64,7 @@ public class SpikesScript : MonoBehaviour
                     if (!list.Contains(other.gameObject))
                     {
                         list.Add(other.gameObject);
-                        target.TakeDamage(damage,true);
+                        target.TakeDamage(damage, DamageType.Physical,true,true);
                     }
                 }
             }

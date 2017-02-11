@@ -25,9 +25,25 @@ public class BoomerangClass : BowClass
     #endregion //parametres
 
     /// <summary>
+    /// Функция, что возвращает новый экземпляр класса, который имеет те же данные, что и экземпляр, выполняющий этот метод
+    /// </summary>
+    public override WeaponClass GetWeapon()
+    {
+        return new BoomerangClass(this);
+    }
+
+    public BoomerangClass(BoomerangClass _boomerang) : base(_boomerang)
+    {
+        speed = _boomerang.speed;
+        acceleration = _boomerang.acceleration;
+        hitSize = _boomerang.hitSize;
+        hitForce = _boomerang.hitForce;
+    }
+
+    /// <summary>
     /// Бросок бумеранга
     /// </summary>
-    public override void Shoot(HitBox hitBox, Vector3 position, int orientation, LayerMask whatIsAim, List<string> enemies)
+    public override void Shoot(HitBoxController hitBox, Vector3 position, int orientation, LayerMask whatIsAim, List<string> enemies)
     {
         canShoot = false;
         RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(position, orientation * Vector3.right, shootDistance, whatIsAim),
@@ -64,7 +80,7 @@ public class BoomerangClass : BowClass
         {
             boomerangScript.SetTarget(endPoint);
             boomerangScript.SetBoomerang(speed, acceleration);
-            boomerangScript.SetHitBox(new HitClass(damage,-1f,hitSize,Vector2.zero,hitForce), enemies);
+            boomerangScript.SetHitBox(new HitParametres(damage,-1f,hitSize,Vector2.zero,hitForce, attackType, effectChance), enemies);
         }
     }
 

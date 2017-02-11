@@ -31,9 +31,25 @@ public class BowClass : WeaponClass
     #endregion //parametres
 
     /// <summary>
+    /// Функция, что возвращает новый экземпляр класса, который имеет те же данные, что и экземпляр, выполняющий этот метод
+    /// </summary>
+    public override WeaponClass GetWeapon()
+    {
+        return new BowClass(this);
+    }
+
+    public BowClass(BowClass _bow): base(_bow)
+    {
+        arrow = _bow.arrow;
+        arrowMaterial = _bow.arrowMaterial;
+        shootDistance = _bow.shootDistance;
+        canShoot = _bow.canShoot;
+    }
+
+    /// <summary>
     /// Функция выстрела из оружия
     /// </summary>
-    public virtual void Shoot(HitBox hitBox, Vector3 position, int orientation, LayerMask whatIsAim, List<string> enemies)
+    public virtual void Shoot(HitBoxController hitBox, Vector3 position, int orientation, LayerMask whatIsAim, List<string> enemies)
     {
         hitBox.StartCoroutine(DontShootProcess());
                 RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(position, orientation * Vector3.right, shootDistance, whatIsAim),
@@ -55,7 +71,9 @@ public class BowClass : WeaponClass
                     if (enemies.Contains(targetObj.tag))
                     {
                         hitIndex = i;
-                        target.TakeDamage(damage);
+                        target.TakeDamage(damage,attackType);
+                        if (attackType != DamageType.Physical ? Random.Range(0f, 100f) <= effectChance : false)
+                            target.TakeDamageEffect(attackType);
                         break;
                     }
                 }
@@ -81,7 +99,7 @@ public class BowClass : WeaponClass
     }
 
     /// <summary>
-    /// ПроцессЮ в течении которого нельзя стрелять
+    /// Процесс, в течении которого нельзя стрелять
     /// </summary>
     protected virtual IEnumerator DontShootProcess()
     {

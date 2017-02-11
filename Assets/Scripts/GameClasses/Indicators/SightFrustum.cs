@@ -167,7 +167,7 @@ public class SightFrustum : MonoBehaviour
     /// </summary>
     protected void OnSightInEvent(EventArgs e)
     {
-        target = SpecialFunctions.player;
+        target = SpecialFunctions.Player;
         EventHandler<EventArgs> handler = sightInEventHandler;
         if (handler != null)
         {

@@ -177,7 +177,7 @@ public class DialogWindowScript : MonoBehaviour
         speechText = panel.FindChild("SpeechText").GetComponent<Text>();
         portrait = transform.FindChild("PortraitImage").FindChild("Portrait").GetComponent<Image>();
 
-        hero = SpecialFunctions.player.transform;
+        hero = SpecialFunctions.Player.transform;
         cam = SpecialFunctions.camControl;
         CurrentSpeech = null;
     }

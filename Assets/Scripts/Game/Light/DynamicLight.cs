@@ -66,7 +66,7 @@ public class DynamicLight : MonoBehaviour
 
         staticLight1 = false;
         cam = GameObject.FindGameObjectWithTag("MainCamera");
-	//	PseudoSinCos.initPseudoSinCos();
+		//PseudoSinCos.initPseudoSinCos();
 		
 		//Шаг 1 - Первоначальная настройка меша света
 
