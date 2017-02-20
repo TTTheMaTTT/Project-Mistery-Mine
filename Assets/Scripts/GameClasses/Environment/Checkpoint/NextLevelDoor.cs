@@ -38,7 +38,7 @@ public class NextLevelDoor : DoorClass
             {
                 Open();
             }
-            else if (player.Bag.Find(x => x.itemName == keyID))
+            else if (player.Equipment.bag.Find(x => x.itemName == keyID))
                 Open();
             else
                 SpecialFunctions.SetText(closedDoorMessage, 2.5f);

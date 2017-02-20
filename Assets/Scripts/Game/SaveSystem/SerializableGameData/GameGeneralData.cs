@@ -29,7 +29,7 @@ public class GameGeneralData
     public GameGeneralData(int cNumb, HeroController player, List<ItemCollection> _collections)
     {
         firstCheckpointNumber = cNumb;
-        eInfo = new EquipmentInfo(player.CurrentWeapon, player.Bag);
+        eInfo = new EquipmentInfo(player.CurrentWeapon, player.Equipment);
 
         cInfo = new List<CollectionInfo>();
         for (int i = 0; i < _collections.Count; i++)

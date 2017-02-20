@@ -1,0 +1,46 @@
+
+
+[2017-02-09 13:18:42] Log session started
+[2017-02-09 13:18:42] [0,0] SetSteamID( [U:1:0] )
+[2017-02-09 13:18:42] CCMInterface::OnNetworkDeviceStateChange -- Saw device up, connecting to Steam
+[2017-02-09 13:18:43] [0,0] SetSteamID( [U:1:0] )
+[2017-02-09 13:18:43] [0,0] SetSteamID( [U:1:0] )
+[2017-02-09 13:18:45] CCMInterface::YieldingConnect -- no CMs cached locally, calling ISteamDirectory/GetCMList web api. . .
+[2017-02-09 13:18:45] CCMInterface::YieldingConnect -- got 100 CMs from ISteamDirectory/GetCMList.
+[2017-02-09 13:18:45] [1,4] Connect() starting connection (eNetQOSLevelHigh, 155.133.242.9:27018, UDP)
+[2017-02-09 13:18:46] [1,4] ConnectionCompleted() (185.25.180.14:27018, UDP)
+[2017-02-09 13:18:47] [1,4] RecvMsgClientLogOnResponse() : [U:1:28536016] 'Invalid Password'
+[2017-02-09 13:18:47] [1,4] AsyncDisconnect()
+[2017-02-09 13:18:47] [0,0] ConnectionDisconnected('Disconnected By Remote Host') : 'Invalid Password' (185.25.180.14:27018, UDP)
+[2017-02-09 13:18:47] [0,0] ConnectionDisconnected() not auto reconnecting due to eResultLogonSession specifies no reconnect
+[2017-02-09 13:18:47] [0,0] ResetVoiceRecording() (was recording: 0) (last get voice time: 5 seconds ago)
+[2017-02-09 13:18:47] [0,0] Log session ended
+
+
+[2017-02-11 03:21:14] Log session started
+[2017-02-11 03:21:14] [0,0] SetSteamID( [U:1:0] )
+[2017-02-11 03:21:14] CCMInterface::OnNetworkDeviceStateChange -- Saw device up, connecting to Steam
+[2017-02-11 03:27:35] [0,0] SetSteamID( [U:1:0] )
+[2017-02-11 03:27:35] [0,0] SetSteamID( [U:1:0] )
+[2017-02-11 03:27:35] CCMInterface::YieldingConnect -- no CMs cached locally, calling ISteamDirectory/GetCMList web api. . .
+[2017-02-11 03:27:36] CCMInterface::YieldingConnect -- got 100 CMs from ISteamDirectory/GetCMList.
+[2017-02-11 03:27:36] [1,4] Connect() starting connection (eNetQOSLevelHigh, 185.25.180.14:27018, UDP)
+[2017-02-11 03:27:37] [1,4] ConnectionCompleted() (162.254.196.41:27020, UDP)
+[2017-02-11 03:27:37] [1,4] RecvMsgClientLogOnResponse() : [U:1:122204173] 'Account Logon Denied'
+[2017-02-11 03:27:37] [1,4] AsyncDisconnect()
+[2017-02-11 03:27:37] [0,0] ConnectionDisconnected('Disconnected By Remote Host') : 'Account Logon Denied' (162.254.196.41:27020, UDP)
+[2017-02-11 03:27:37] [0,0] ConnectionDisconnected() not auto reconnecting due to eResultLogonSession specifies no reconnect
+[2017-02-11 03:28:25] [0,0] SetSteamID( [U:1:0] )
+[2017-02-11 03:28:25] [1,8] Connect() starting connection (eNetQOSLevelHigh, 185.25.180.14:27018, UDP)
+[2017-02-11 03:28:26] [1,8] ConnectionCompleted() (162.254.196.43:27018, UDP)
+[2017-02-11 03:28:26] [1,8] RecvMsgClientLogOnResponse() : [U:1:122204173] 'OK'
+
+
+[2017-02-11 03:32:29] Log session started
+[2017-02-11 03:32:29] [0,0] SetSteamID( [U:1:0] )
+[2017-02-11 03:32:29] CCMInterface::OnNetworkDeviceStateChange -- Saw device up, connecting to Steam
+[2017-02-11 03:32:47] [0,0] SetSteamID( [U:1:122204173] )
+[2017-02-11 03:32:47] [0,0] SetSteamID( [U:1:122204173] )
+[2017-02-11 03:32:47] [1,2] Connect() starting connection (eNetQOSLevelHigh, 185.25.180.14:27018, UDP)
+[2017-02-11 03:32:48] [1,2] ConnectionCompleted() (185.25.180.14:27020, UDP)
+[2017-02-11 03:32:48] [1,2] RecvMsgClientLogOnResponse() : [U:1:122204173] 'OK'

@@ -160,6 +160,7 @@ public class GameController : MonoBehaviour
 
     protected void Initialize()
     {
+        SpecialFunctions.InitializeObjects();
         InitializeDictionaries();
         datapath = (Application.dataPath) + "/StreamingAssets/Saves/Profile";
         savesInfoPath = (Application.dataPath) + "/StreamingAssets/SavesInfo.xml";
@@ -167,10 +168,12 @@ public class GameController : MonoBehaviour
         Transform interfaceWindows = SpecialFunctions.gameInterface.transform;
         dialogWindow = interfaceWindows.GetComponentInChildren<DialogWindowScript>();
         gameMenu = interfaceWindows.GetComponentInChildren<GameMenuScript>();
+        //if (gameMenu != null)
+            //Debug.LogError("GameMenu initialized");
         levelCompleteScreen = interfaceWindows.GetComponentInChildren<LevelCompleteScreenScript>();
         SpecialFunctions.PlayGame();
         if (SceneManager.GetActiveScene().name != "MainMenu")
-            Cursor.visible = false;
+            Cursor.visible = true;
         if (PlayerPrefs.HasKey("Profile Number"))
             profileNumber = PlayerPrefs.GetInt("Profile Number");
         else
@@ -253,6 +256,8 @@ public class GameController : MonoBehaviour
         sInfo.hasData = true;
         savesInfo.currentProfileNumb = profileNumber;
         sInfo.loadSceneName = levelName;
+        if (generally)
+            SpecialFunctions.nextLevelName = levelName;
         Serializator.SaveXmlSavesInfo(savesInfo, savesInfoPath);
     }
 
@@ -296,17 +301,19 @@ public class GameController : MonoBehaviour
                 EquipmentInfo eInfo = gGData.eInfo;
                 if (eInfo != null && gStats != null)
                 {
+                    EquipmentClass equip = Hero.Equipment;
+                    SpecialFunctions.equipWindow.ClearCells();
+                    equip.bag.Clear();
+                    foreach (string itemName in eInfo.bagItems)
+                        if (gStats.ItemDict.ContainsKey(itemName))
+                            equip.bag.Add(gStats.ItemDict[itemName]);
+                    equip.weapons.Clear();
+                    foreach (string itemName in eInfo.weapons)
+                        if (gStats.WeaponDict.ContainsKey(itemName))
+                            Hero.SetItem(gStats.WeaponDict[itemName]);
                     if (gStats.WeaponDict.ContainsKey(eInfo.weapon))
                     {
-                        Hero.SetItem(gStats.WeaponDict[eInfo.weapon],true);
-                    }
-                    foreach (string itemName in eInfo.bagItems)
-                    {
-                        Hero.Bag.Clear();
-                        if (gStats.ItemDict.ContainsKey(itemName))
-                        {
-                            Hero.Bag.Add(gStats.ItemDict[itemName]);
-                        }
+                        Hero.CurrentWeapon = gStats.WeaponDict[eInfo.weapon];
                     }
                 }
 
@@ -349,17 +356,19 @@ public class GameController : MonoBehaviour
             EquipmentInfo eInfo = lData.eInfo;
             if (eInfo != null && gStats != null)
             {
+                EquipmentClass equip = Hero.Equipment;
+                SpecialFunctions.equipWindow.ClearCells();
+                equip.bag.Clear();
+                foreach (string itemName in eInfo.bagItems)
+                    if (gStats.ItemDict.ContainsKey(itemName))
+                        equip.bag.Add(gStats.ItemDict[itemName]);
+                equip.weapons.Clear();
+                foreach (string itemName in eInfo.weapons)
+                    if (gStats.WeaponDict.ContainsKey(itemName))
+                        Hero.SetItem(gStats.WeaponDict[itemName]);
                 if (gStats.WeaponDict.ContainsKey(eInfo.weapon))
                 {
-                    Hero.SetItem(gStats.WeaponDict[eInfo.weapon],true);
-                }
-                foreach (string itemName in eInfo.bagItems)
-                {
-                    Hero.Bag.Clear();
-                    if (gStats.ItemDict.ContainsKey(itemName))
-                    {
-                        hero.Bag.Add(gStats.ItemDict[itemName]);
-                    }
+                    Hero.CurrentWeapon = gStats.WeaponDict[eInfo.weapon];
                 }
             }
 
@@ -480,7 +489,7 @@ public class GameController : MonoBehaviour
                 foreach (InterObjData interData in intInfo)
                 {
                     int objId = interData.objId;
-                    if (objId < intObjects.Count ? intObjects[objId] != null : false)
+                    if (objId < intObjects.Count && objId>0 ? intObjects[objId] != null : false)
                     {
                         IInteractive iInter = intObjects[objId].GetComponent<IInteractive>();
                         IMechanism iMech = intObjects[objId].GetComponent<IMechanism>();
@@ -512,7 +521,7 @@ public class GameController : MonoBehaviour
                         else if (intObjects[i].GetComponent<CheckpointController>() != null)
                         {
                             CheckpointController checkpoint = intObjects[i].GetComponent<CheckpointController>();
-                            checkpoint.DestroyCheckpoint();
+                            checkpoint.ChangeCheckpoint();
                         }
                         else if (intObjects[i].GetComponent<SecretPlaceTrigger>())
                         {
@@ -1054,7 +1063,7 @@ public class GameController : MonoBehaviour
     /// <param name="_time">Длительность эффекта</param>
     IEnumerator AncientDarknessProcess()
     {
-        SpriteLightKitImageEffect lightManager = SpecialFunctions.camControl.GetComponent<SpriteLightKitImageEffect>();
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.СamController.GetComponent<SpriteLightKitImageEffect>();
         int prevIntensity = Mathf.RoundToInt(lightManager.intensity * 100f);
         Hero.AddBuff(new BuffClass("AncientDarkness", Time.fixedTime, ancientDarknessTime, prevIntensity, (lightManager.HDRRatio > .1f ? "changed" : "")));
         activeGameEffects.Add("AncientDarkness");
@@ -1081,7 +1090,7 @@ public class GameController : MonoBehaviour
         if (!activeGameEffects.Contains("AncientDarkness"))
             return;
         StopCoroutine("AncientDarknessProcess");
-        SpriteLightKitImageEffect lightManager = SpecialFunctions.camControl.GetComponent<SpriteLightKitImageEffect>();
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.СamController.GetComponent<SpriteLightKitImageEffect>();
         lightManager.intensity = argument / 100f;
         if (id == "changed")
             lightManager.HDRRatio += .1f;

@@ -83,7 +83,7 @@ public class DropClass : MonoBehaviour, IInteractive
     {
         if (dropped)
         {
-            SpecialFunctions.Player.GetComponent<HeroController>().SetItem(item, false);
+            SpecialFunctions.Player.GetComponent<HeroController>().SetItem(item);
             OnDropGet(new EventArgs());
             Destroy(gameObject);
             SpecialFunctions.statistics.ConsiderStatistics(this);

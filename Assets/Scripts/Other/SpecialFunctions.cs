@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using Steamworks;
 
 /// <summary>
 /// Функция, хранящая в себе методы, что могут быть использованы всеми скриптами в игре
@@ -22,10 +23,11 @@ public static class SpecialFunctions
         }
     }
 
-    public static CameraController camControl { get { return GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); } }
+    public static CameraController camControl;
+    public static CameraController СamController { get { camControl = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); return camControl; } }
 
     public static GameController gameController { get { return GameObject.FindGameObjectWithTag("gameController").GetComponent<GameController>(); } }
-    
+
     public static History history { get { return gameController.GetComponent<GameHistory>().history; } }
 
     public static GameStatistics statistics { get { return gameController.GetComponent<GameStatistics>(); } }
@@ -33,8 +35,25 @@ public static class SpecialFunctions
     public static GameObject gameInterface { get { return GameObject.FindGameObjectWithTag("interface"); } }
 
     public static GameUIScript gameUI { get { return gameInterface.GetComponentInChildren<GameUIScript>(); } }
+    public static EquipmentMenu equipWindow { get { return gameInterface.GetComponentInChildren<EquipmentMenu>(); } }
 
     public static LoadMenuScript loadMenu { get { return GameObject.Find("SaveScreen").GetComponent<LoadMenuScript>(); } }
+
+    public static bool totalPaused = false;//Пауза, которая не может быть снята функцией PlayGame()
+    public static bool levelEnd = false;//Закончен ли уровень
+    public static string nextLevelName = "";//Название следующего уровня
+
+    /// <summary>
+    /// Проинициализировать важные игровые объекты перед началом игры
+    /// </summary>
+    public static void InitializeObjects()
+    {
+        totalPaused = false;
+        levelEnd = false;
+        camControl= GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>();
+        player = GameObject.FindGameObjectWithTag("player");
+        battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
+    }
 
     /// <summary>
     /// Функция, которая позволяет использовать ComparativeClass и по сути ей можно заменять 
@@ -53,14 +72,21 @@ public static class SpecialFunctions
                         (opr==string.Empty));
     }
 
+    /// <summary>
+    /// Поставить игру на паузу
+    /// </summary>
     public static void PauseGame()
     {
         Time.timeScale = 0f;
     }
 
+    /// <summary>
+    /// Возобновить ход игры
+    /// </summary>
     public static void PlayGame()
     {
-        Time.timeScale = 1f;
+        if (!totalPaused)
+            Time.timeScale = 1f;
     }
 
     /// <summary>
@@ -125,6 +151,15 @@ public static class SpecialFunctions
     {
         Vector3 cPos = checkpoint.transform.position, pPos = Player.transform.position;
         Player.transform.position = new Vector3(cPos.x, cPos.y, pPos.z);
+    }
+
+    /// <summary>
+    /// Функция, сбрасывающая все достижения (нужно для тестов системы ачивок)
+    /// </summary>
+    public static void ResetAchievements()
+    {
+        SteamUserStats.ResetAllStats(true);
+        SteamUserStats.RequestCurrentStats();
     }
 
 }

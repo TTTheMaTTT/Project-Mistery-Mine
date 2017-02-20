@@ -264,6 +264,20 @@ public class NavigationBunchedMap: NavigationMap
                         return _cell;
                 }
         }
+        if (_cell == null)//Если всё равно не нашли клетку, то, вероятно, целевая позиция находится в воздухе, значит, надо искать ближайшую клетку под ней
+        {
+            int i = 1;
+            while (i < 11)
+            {
+                Vector2 _pos = targetPos + Vector2.down*cellSize.y*i;
+                _group = GetCurrentGroup(_pos);
+                if (_group != null)
+                    _cell = _group.GetCurrentCell(_pos, cellSize);
+                if (_cell != null)
+                    return _cell;
+                i++;
+            }
+        }
         return _cell;
     }
 

@@ -96,6 +96,7 @@ public class LevelCompleteScreenScript : MonoBehaviour
         }
 
         canvas.enabled = true;
+        SpecialFunctions.totalPaused = true;
     }
 
     /// <summary>
@@ -112,6 +113,14 @@ public class LevelCompleteScreenScript : MonoBehaviour
     public void GoToTheMainMenu()
     {
         SceneManager.LoadScene(mainMenuName);
+    }
+
+    /// <summary>
+    /// Открыть окно инвентаря для смены оружия
+    /// </summary>
+    public void OpenEquipmentWindow()
+    {
+        SpecialFunctions.equipWindow.OpenWindow();
     }
 
 }

@@ -381,7 +381,8 @@ public class CharacterVisual : MonoBehaviour
     public virtual void Blink(bool blinkProcess=true)
     {
         SetColor(color1 * colorCoof1 + color2 * colorCoof2);
-        StartCoroutine(BlinkProcess());
+        StopCoroutine("BlinkProcess");
+        StartCoroutine("BlinkProcess");
     }
 
     /// <summary>

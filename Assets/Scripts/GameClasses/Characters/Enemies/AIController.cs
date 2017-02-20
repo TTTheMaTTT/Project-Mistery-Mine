@@ -122,7 +122,7 @@ public class AIController : CharacterController
     protected virtual float sightRadius { get { return 1.9f; } }
     protected virtual float beCalmTime { get { return 10f; } }//Время через которое ИИ перестаёт преследовать игрока, если он ушёл из их поля зрения
     protected virtual float avoidTime { get { return 1f; } }//Время, спустя которое можно судить о необходимости обхода препятствия
-    protected virtual int maxAgressivePathDepth { get { return 40; } }//Насколько сложен может быть путь ИИ, в агрессивном состоянии 
+    protected virtual int maxAgressivePathDepth { get { return 60; } }//Насколько сложен может быть путь ИИ, в агрессивном состоянии 
                                                                       //(этот путь используется в тех случаях, когда невозможно настичь героя прямым путём)
 
     protected virtual float allyDistance { get { return .25f; } }//На каком расстоянии держится от своего союзника персонаж (возвращается квадрат расстояния
@@ -451,6 +451,7 @@ public class AIController : CharacterController
     /// </summary>
     protected virtual void GoHome()
     {
+        StopMoving();
         MainTarget = ETarget.zero;
         GoToThePoint(beginPosition);
         if (behavior == BehaviorEnum.agressive)

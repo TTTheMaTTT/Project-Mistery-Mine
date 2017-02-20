@@ -30,6 +30,7 @@ public class SwordClass : WeaponClass
     public virtual void Attack(HitBoxController hitBox, Vector3 position)
     {
         hitBox.SetHitBox(new HitParametres(damage, attackTime, attackSize, attackPosition, attackForce, attackType, effectChance));
+        chargeValue = 0f;
     }
 
 }

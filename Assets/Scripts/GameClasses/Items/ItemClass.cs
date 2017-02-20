@@ -7,6 +7,7 @@ using System.Collections;
 public class ItemClass : ScriptableObject
 {
     public string itemName;
+    public string itemTextName;//Название, которое используется при отображении в игре
 
     public Sprite itemImage;
 

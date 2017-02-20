@@ -26,6 +26,7 @@ public class BowClass : WeaponClass
 
     public float shootDistance;//Дальность выстрела
     public float shootRate;//Скорострельность, а точнее время, между выстрелами
+    public float shootOffset;//Смещение выстрела
     public bool canShoot = true;//Можно ли стрелять в данный момент?
 
     #endregion //parametres
@@ -44,6 +45,8 @@ public class BowClass : WeaponClass
         arrowMaterial = _bow.arrowMaterial;
         shootDistance = _bow.shootDistance;
         canShoot = _bow.canShoot;
+        shootOffset = _bow.shootOffset;
+        shootRate = _bow.shootRate;
     }
 
     /// <summary>
@@ -51,14 +54,15 @@ public class BowClass : WeaponClass
     /// </summary>
     public virtual void Shoot(HitBoxController hitBox, Vector3 position, int orientation, LayerMask whatIsAim, List<string> enemies)
     {
+        Vector2 shootPosition = (Vector2)position + Vector2.up * shootOffset;
         hitBox.StartCoroutine(DontShootProcess());
-                RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(position, orientation * Vector3.right, shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(position + shootDelta* Vector3.up, orientation * Vector3.right, shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(position + Vector3.up*shootDelta/2f, orientation * Vector3.right, shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(position + Vector3.up*(-shootDelta/2f),orientation * Vector3.right, shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(position + Vector3.up*(-shootDelta), orientation * Vector3.right, shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(position +  Vector3.up*(- 1.5f*shootDelta), orientation * Vector3.right,shootDistance, whatIsAim)};
-        Vector2 endPoint = position + orientation * Vector3.right * (shootDistance + .1f);
+                RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(shootPosition, orientation * Vector3.right, shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(shootPosition + shootDelta* Vector2.up, orientation * Vector3.right, shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(shootPosition + Vector2.up*shootDelta/2f, orientation * Vector3.right, shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(shootPosition + Vector2.up*(-shootDelta/2f),orientation * Vector3.right, shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(shootPosition + Vector2.up*(-shootDelta), orientation * Vector3.right, shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(shootPosition +  Vector2.up*(- 1.5f*shootDelta), orientation * Vector3.right,shootDistance, whatIsAim)};
+        Vector2 endPoint = shootPosition + orientation * Vector2.right * (shootDistance + .1f);
         if (hits[0] || hits[1] || hits[2] || hits[3] || hits[4] || hits[5])
         {
             IDamageable target = null;
@@ -71,9 +75,12 @@ public class BowClass : WeaponClass
                     if (enemies.Contains(targetObj.tag))
                     {
                         hitIndex = i;
-                        target.TakeDamage(damage,attackType);
                         if (attackType != DamageType.Physical ? Random.Range(0f, 100f) <= effectChance : false)
                             target.TakeDamageEffect(attackType);
+                        AIController ai = targetObj.GetComponent<AIController>();
+                        if (ai!=null)
+                            ai.TakeAttackerInformation(SpecialFunctions.player);
+                        target.TakeDamage(damage,attackType);
                         break;
                     }
                 }
@@ -88,11 +95,14 @@ public class BowClass : WeaponClass
             if (hitIndex != -1)
                 endPoint = hits[hitIndex].point;
         }
+        chargeValue = 0f;
+        SpecialFunctions.camControl.PushCamera(orientation * Vector2.left * .015f);
+
         line = hitBox.gameObject.AddComponent<LineRenderer>();
         line.material = arrowMaterial;
         line.SetWidth(.01f, .01f);
         line.SetVertexCount(2);
-        line.SetPosition(0, position);
+        line.SetPosition(0, shootPosition);
         line.SetPosition(1, new Vector3(endPoint.x, endPoint.y, position.z));
         line.SetColors(new Color(1f, 1f, 1f, .5f), new Color(1f, 1f, 1f, .5f));
         Destroy(line, .1f);
