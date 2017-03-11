@@ -131,7 +131,7 @@ public class HitBoxController : MonoBehaviour
         AIController ai = null;
         if ((ai = obj.GetComponent<AIController>()) != null)
             ai.TakeAttackerInformation(attacker);
-        target.TakeDamage(hitData.damage, hitData.damageType);
+        target.TakeDamage(hitData.damage, hitData.damageType, hitData.attackPower);
         OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
 
     }

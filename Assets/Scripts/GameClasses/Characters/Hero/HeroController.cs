@@ -107,6 +107,7 @@ public class HeroController : CharacterController
                     StopCoroutine("WetProcess");
                     Animate(new AnimationEventArgs("stopWet"));
                 }
+                speedCoof *= waterCoof;
                 rigid.gravityScale = .6f;
                 waterIndicator.StartCoroutine(SuffocateProcess());
             }
@@ -120,6 +121,7 @@ public class HeroController : CharacterController
                     AirSupply = maxAirSupply;
                 }
                 waterIndicator.StopAllCoroutines();
+                speedCoof /= waterCoof;
             }
             Animate(new AnimationEventArgs("waterSplash"));
         }
@@ -359,7 +361,7 @@ public class HeroController : CharacterController
 
             if (fallSpeed > minDamageFallSpeed)
             {
-                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed), DamageType.Physical, true, true);
+                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed), DamageType.Physical, true, 1);
             }
             if (fallSpeed > minDamageFallSpeed / 10f)
                 Animate(new AnimationEventArgs("fall"));
@@ -421,7 +423,7 @@ public class HeroController : CharacterController
     /// </summary>
     protected IEnumerator SuffocateProcess()
     {
-        //Сначала заканчивается запас здоровья
+        //Сначала заканчивается запас воздуха
         int _airSupply = airSupply;
         for (int i = 0; i < _airSupply; i++)
         {
@@ -432,7 +434,7 @@ public class HeroController : CharacterController
         while (true)
         {
             yield return new WaitForSeconds(suffocateTime*4f);
-            TakeDamage(1f, DamageType.Physical,true,false);
+            TakeDamage(1f, DamageType.Physical,true,0);
         }
     }
 
@@ -442,8 +444,7 @@ public class HeroController : CharacterController
     protected override void Move(OrientationEnum _orientation)
     {
         bool crouching = (groundState == GroundStateEnum.crouching);
-        float currentSpeed = speed * ((underWater || crouching) ? waterCoof : 1f);
-        rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : Input.GetAxis("Horizontal") * currentSpeed, rigid.velocity.y);
+        rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : Input.GetAxis("Horizontal") * speed*speedCoof, rigid.velocity.y);
         if (orientation != _orientation)
         {
             Turn(_orientation);
@@ -495,14 +496,14 @@ public class HeroController : CharacterController
     protected override void LadderMove(float direction)
     {
         rigid.velocity = new Vector3(0f,
-                                     Physics2D.OverlapCircle(transform.position + Mathf.Sign(direction) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? direction * ladderSpeed : 0f);
+                         Physics2D.OverlapCircle(transform.position + Mathf.Sign(direction) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? direction * ladderSpeed * speedCoof : 0f);
     }
 
     /// <summary>
     /// Развернуться
     /// </summary>
     /// <param name="_orientation">В какую сторону должен смотреть персонаж после поворота</param>
-    protected override void Turn(OrientationEnum _orientation)
+    public override void Turn(OrientationEnum _orientation)
     {
         if (employment >= 8)
         {
@@ -659,7 +660,7 @@ public class HeroController : CharacterController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool _microstun = true)
+    public override void TakeDamage(float damage, DamageType _dType, int attackPower=0)
     {
         if (!invul)
         {
@@ -670,15 +671,17 @@ public class HeroController : CharacterController
                 return;
             }
             else
-                Animate(new AnimationEventArgs("hitted", "", _microstun ? 0 : 1));
-            if (_microstun)
+                Animate(new AnimationEventArgs("hitted", "", attackPower>balance ? 0 : 1));
+            bool stunned = GetBuff("StunnedProcess") != null;
+            if (attackPower>balance || stunned)
             {
                 //StopCoroutine("AttackProcess");
                 //dontShoot = false;
                 if (onLadder)
                     LadderOff();
-                StartCoroutine(InvulProcess(invulTime, true));
             }
+            if (attackPower>0)
+                StartCoroutine(InvulProcess(invulTime, true));
             anim.Blink();
         }
     }
@@ -686,7 +689,7 @@ public class HeroController : CharacterController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, bool _microstun)
+    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower=0)
     {
         if (ignoreInvul || !invul)
         {
@@ -697,17 +700,19 @@ public class HeroController : CharacterController
                 return;
             }
             else
-                Animate(new AnimationEventArgs("hitted", "", _microstun ? 0 : 1));
+                Animate(new AnimationEventArgs("hitted", "", attackPower > balance ? 0 : 1));
             SpriteRenderer sprite = GetComponentInChildren<SpriteRenderer>();
             if (sprite != null) sprite.enabled = true;
-            if (_microstun)
+            bool stunned = GetBuff("StunnedProcess") != null;
+            if (attackPower > balance || stunned)
             {
                 //StopCoroutine("AttackProcess");
                 //dontShoot = false;
                 if (onLadder)
                     LadderOff();
-                StartCoroutine(InvulProcess(invulTime, true));
             }
+            if (attackPower>0)
+                StartCoroutine(InvulProcess(invulTime, true));
             anim.Blink();
         }
     }
@@ -941,10 +946,10 @@ public class HeroController : CharacterController
     protected virtual IEnumerator TribalRitualProcess()
     {
         AddBuff(new BuffClass("TribalRitual", Time.fixedTime,tribalRitualTime));
-        speed *= tribalRitualCoof;
+        speedCoof *= tribalRitualCoof;
         yield return new WaitForSeconds(tribalRitualTime);
         RemoveBuff("TribalRitual");
-        speed /= tribalRitualCoof;
+        speedCoof /= tribalRitualCoof;
     }
 
     /// <summary>
@@ -955,7 +960,7 @@ public class HeroController : CharacterController
         if (GetBuff("TribalRitual") == null)
             return;
         RemoveBuff("TribalRitual");
-        speed /= tribalRitualCoof;
+        speedCoof /= tribalRitualCoof;
         StopCoroutine("TribalRitualProcess");
     }
 

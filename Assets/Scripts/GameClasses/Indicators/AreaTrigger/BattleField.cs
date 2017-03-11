@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -9,10 +10,17 @@ using System.Collections.Generic;
 public class BattleField : MonoBehaviour
 {
 
+    #region eventHandlers
+
+    public EventHandler<EventArgs> NoEnemiesRemainEventHandler;//Обработчик события "Врагов больше не осталось"
+
+    #endregion eventHandlers
+
     #region fields
 
     protected List<CharacterController> allies = new List<CharacterController>();//Какие персонажи, являющиеся союзниками главного героя (вкоючая самого ГГ) находятся в области.
     protected List<AIController> enemies = new List<AIController>();//Какие монстры в агрессивном состоянии находятся в области
+    public int enemiesCount { get { return enemies.Count; } }
     protected List<AIController> agressiveEnemies = new List<AIController>();//Какие монстры нападают на героя в данный момент
 
     public List<CharacterController> Allies { get { return allies; } }
@@ -25,6 +33,7 @@ public class BattleField : MonoBehaviour
     [SerializeField]
     protected int agressiveMonstersLimit = 8;//Максимальное число агрессивных монстров в области
     protected bool canCount;
+    public float Radius { get { CircleCollider2D col = GetComponent<CircleCollider2D>(); if (col != null) return col.radius; else return 0f; } }
 
     #endregion //parametres
 
@@ -144,8 +153,10 @@ public class BattleField : MonoBehaviour
                     if (enemies.Contains(ai))
                         enemies.Remove(ai);
                     if (agressiveEnemies.Contains(ai))
-                        enemies.Remove(ai);
+                        agressiveEnemies.Remove(ai);
                     CheckAgressiveEnemies();
+                    if (enemies.Count == 0)
+                        OnNoEnemiesRemains();
                 }
             }
             aTrigger.TriggerOut();
@@ -236,6 +247,19 @@ public class BattleField : MonoBehaviour
         }
     }
 
+    #region events
+
+    /// <summary>
+    /// Событие "Больше врагов не осталось"
+    /// </summary>
+    protected virtual void OnNoEnemiesRemains()
+    {
+        if (NoEnemiesRemainEventHandler != null)
+            NoEnemiesRemainEventHandler(this, new EventArgs());
+    }
+
+    #endregion //events
+
     #region eventHandlers
 
     /// <summary>
@@ -273,6 +297,8 @@ public class BattleField : MonoBehaviour
         }
         if (allies.Contains(ai))
             allies.Remove(ai);
+        if (enemies.Count == 0)
+            OnNoEnemiesRemains();
     }
 
     /// <summary>
@@ -301,6 +327,8 @@ public class BattleField : MonoBehaviour
                 agressiveEnemies.Remove(ai);
                 CheckAgressiveEnemies();
             }
+            if (enemies.Count == 0)
+                OnNoEnemiesRemains();
         }
     }
 
@@ -324,6 +352,8 @@ public class BattleField : MonoBehaviour
                 allies.Add(ai);
             ai.BehaviorChangeEvent -= HandleEnemyChangeBehaviorEvent;
             ai.healthChangedEvent -= HandleEnemyDamageEvent;
+            if (enemies.Count == 0)
+                OnNoEnemiesRemains();
         }
         else if (e.Loyalty == LoyaltyEnum.enemy)
         {
@@ -338,6 +368,8 @@ public class BattleField : MonoBehaviour
                 allies.Remove(ai);
             ai.BehaviorChangeEvent += HandleEnemyChangeBehaviorEvent;
             ai.healthChangedEvent -= HandleEnemyDamageEvent;
+            if (enemies.Count == 0)
+                OnNoEnemiesRemains();
         }
     }
 

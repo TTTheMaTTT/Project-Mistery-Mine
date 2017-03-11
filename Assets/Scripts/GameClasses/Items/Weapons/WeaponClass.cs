@@ -10,6 +10,7 @@ public abstract class WeaponClass : ItemClass
     public float attackTime, preAttackTime, endAttackTime;//Время самой атаки и время подготовки к ней, а также время завершения атаки
     public DamageType attackType = DamageType.Physical;//Каким типом атакует это оружие
     public float effectChance;//Каков шанс произвести особый эффект типа урона?
+    public int attackPower;//Как сильно атака сбивает
 
     public bool chargeable = false;//Можно ли заряжать оружие
     protected float chargeValue = 0f;
@@ -26,6 +27,7 @@ public abstract class WeaponClass : ItemClass
     public WeaponClass(WeaponClass _weapon)
     {
         itemName = _weapon.itemName;
+        itemTextName = _weapon.itemTextName;
         itemImage = _weapon.itemImage;
         damage = _weapon.damage;
         attackTime = _weapon.attackTime;
@@ -33,6 +35,7 @@ public abstract class WeaponClass : ItemClass
         endAttackTime = _weapon.endAttackTime;
         attackType = _weapon.attackType;
         effectChance = _weapon.effectChance;
+        attackPower = _weapon.attackPower;
         chargeValue = 0f;
         chargeable = _weapon.chargeable;
     }

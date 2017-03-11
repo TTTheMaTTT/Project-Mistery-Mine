@@ -117,7 +117,7 @@ public class GhostController : AIController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = (currentTarget - (Vector2)transform.position).normalized * speed;
+        Vector2 targetVelocity = (currentTarget - (Vector2)transform.position).normalized * speed * speedCoof;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)
@@ -132,7 +132,7 @@ public class GhostController : AIController
     /// <param name="_orientation">Ориентация персонажа при перемещении</param>
     protected override void MoveAway(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = ((Vector2)transform.position - currentTarget).normalized * speed;
+        Vector2 targetVelocity = ((Vector2)transform.position - currentTarget).normalized * speed * speedCoof;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)
@@ -187,17 +187,17 @@ public class GhostController : AIController
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
-    public override void TakeDamage(float damage, DamageType _dType, bool _microstun = true)
+    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
     {
-        base.TakeDamage(damage, _dType, _microstun);
-        if (_microstun)
+        base.TakeDamage(damage, _dType, attackPower);
+        if (attackPower>balance)
             Animate(new AnimationEventArgs("stop"));
     }
 
-    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, bool _microstun)
+    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower = 0)
     {
-        base.TakeDamage(damage, _dType, ignoreInvul, _microstun);
-        if (_microstun)
+        base.TakeDamage(damage, _dType, ignoreInvul, attackPower);
+        if (attackPower>balance)
             Animate(new AnimationEventArgs("stop"));
     }
 
@@ -543,7 +543,7 @@ public class GhostController : AIController
                 targetPos = currentTarget;
                 yield return new WaitForSeconds(optTimeStep);
                 Vector2 direction = targetPos - pos;
-                transform.position = pos + direction.normalized * Mathf.Clamp(speed, 0f, direction.magnitude);
+                transform.position = pos + direction.normalized * Mathf.Clamp(optSpeed, 0f, direction.magnitude);
             }
             followOptPath = false;
         }

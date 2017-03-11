@@ -56,7 +56,7 @@ public class BoxController : MonoBehaviour, IDamageable
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
+    public void TakeDamage(float damage, DamageType _dType, int attackPower=0)
     {
         health -= damage;
         StopAllCoroutines();
@@ -68,7 +68,7 @@ public class BoxController : MonoBehaviour, IDamageable
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public void TakeDamage(float damage,DamageType _dType, bool ignoreInvul, bool _microstun)
+    public void TakeDamage(float damage,DamageType _dType, bool ignoreInvul, int attackPower=0)
     {
         health -= damage;
         StopAllCoroutines();
@@ -180,7 +180,7 @@ public class BoxController : MonoBehaviour, IDamageable
     /// </summary>
     public InterObjData GetData()
     {
-        BoxData bData = new BoxData(id, health);
+        BoxData bData = new BoxData(id, health,gameObject.name);
         return bData;
     }
 

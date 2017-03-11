@@ -19,6 +19,7 @@ public class GameStatistics : MonoBehaviour, IHaveStory
     #region consts
 
     protected const string mapsPath = "Assets/Database/Maps/";//В этой папке находятся навигационные карты
+    protected const string databasePath = "Assets/Database/Databases/";//В этой папке находятся базы данных
 
     #endregion //consts
 
@@ -54,6 +55,32 @@ public class GameStatistics : MonoBehaviour, IHaveStory
 
     public DatabaseClass database;//База данных в игре
     public ItemBaseClass itemBase;//База предметов в игре
+    private HistoryBaseClass historyBase;//База данных по игровым историям
+    public HistoryBaseClass HistoryBase
+    {
+        get
+        {
+            #if UNITY_EDITOR
+            if (historyBase == null)
+            {
+                if (!File.Exists(databasePath + "HistoryBase.asset"))
+                {
+                    historyBase= new HistoryBaseClass();
+                    AssetDatabase.CreateAsset(historyBase, databasePath + "HistoryBase.asset");
+                    AssetDatabase.SaveAssets();
+                }
+                else
+                {
+                    historyBase = AssetDatabase.LoadAssetAtPath<HistoryBaseClass>(databasePath + "HistoryBase.asset");
+                }
+            }
+            #endif
+
+            return historyBase;
+        }
+    }
+
+    public GameHistoryProgressClass gameHistoryProgress;//Данные о историях, имеющих влияние на протяжении всей игры 
 
     #endregion //fields
 
@@ -94,6 +121,9 @@ public class GameStatistics : MonoBehaviour, IHaveStory
 
         if (navSystem != null)
             navSystem.InitializeDictionaries();
+
+        gameHistoryProgress = new GameHistoryProgressClass();
+        gameHistoryProgress.ClearDictionary();
 
     }
 
@@ -144,6 +174,19 @@ public class GameStatistics : MonoBehaviour, IHaveStory
             return database.quests.Find(x => x.questName == _questName);
         else
             return null;
+    }
+
+    /// <summary>
+    /// Вернуть названия всех развязок сюжета
+    /// </summary>
+    public List<string> GetStoryProgressNames()
+    {
+        List<string> progressNames = new List<string>() {GameHistoryProgressClass.DefaultProgress};
+        foreach (StoryProgressBaseClass story in HistoryBase.stories)
+            foreach (string progressName in story.storyProgressNames)
+                if (!progressNames.Contains(progressName))
+                    progressNames.Add(progressName);    
+        return progressNames;
     }
 
     /// <summary>
@@ -241,7 +284,13 @@ public class GameStatistics : MonoBehaviour, IHaveStory
     {
         return new Dictionary<string, List<string>> { { "", new List<string>() },
                                                       { "compare", new List<string>() },
-                                                      { "compareStatistics", statistics.ConvertAll<string>(x=>x.statisticName)} };
+                                                      { "compareStatistics", statistics.ConvertAll<string>(x=>x.statisticName)},
+                                                      { "compareHistoryProgress",HistoryBase.stories.ConvertAll(x=>x.storyName)} };
+    }
+
+    public StoryAction.StoryActionDelegate GetStoryAction(string s)
+    {
+        return null;
     }
 
     #endregion //IHaveStory

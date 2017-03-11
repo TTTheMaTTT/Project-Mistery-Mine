@@ -224,3 +224,19 @@ public class LoyaltyEventArgs : EventArgs
     public LoyaltyEnum Loyalty { get { return loyalty; } }
 
 }
+
+/// <summary>
+/// Событийные данные о начавшемся, либо законченном диалоге
+/// </summary>
+public class DialogEventArgs : EventArgs
+{
+    private bool begin = true;//Если true - диалог начался, иначе - закончился
+
+    public bool Begin {get{return begin;}}
+
+    public DialogEventArgs(bool _begin)
+    {
+        begin = _begin;
+    }
+
+}

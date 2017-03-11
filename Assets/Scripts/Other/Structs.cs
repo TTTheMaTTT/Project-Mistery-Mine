@@ -121,3 +121,103 @@ public struct ETarget
     }
 
 }
+
+/// <summary>
+/// Структура, хранящая информацию о простой кривой Безье
+/// </summary>
+[System.Serializable]
+public struct BezierSimpleCurve
+{
+    public Vector2 p0;
+    public Vector2 p1;
+    public Vector2 p2;
+    public Vector2 p3;
+
+    public bool draw;
+
+    public BezierSimpleCurve(Vector2 _p0, Vector2 _p1, Vector2 _p2, Vector2 _p3)
+    {
+        p0 = _p0;
+        p1 = _p1;
+        p2 = _p2;
+        p3 = _p3;
+        draw = false;
+    }
+
+    public BezierSimpleCurve(BezierSimpleCurve _curve, Vector2 offset)
+    {
+        p0 = offset+_curve.p0;
+        p1 = offset+_curve.p1;
+        p2 = offset+_curve.p2;
+        p3 = offset+_curve.p3;
+        draw = _curve.draw;
+    }
+
+    public BezierSimpleCurve(BezierSimpleCurve _curve, Vector2 offset, float direction)
+    {
+        p0 = offset + new Vector2(_curve.p0.x * direction, _curve.p0.y);
+        p1 = offset + new Vector2(_curve.p1.x * direction, _curve.p1.y);
+        p2 = offset + new Vector2(_curve.p2.x * direction, _curve.p2.y);
+        p3 = offset + new Vector2(_curve.p3.x * direction, _curve.p3.y);
+        draw = _curve.draw;
+    }
+
+    public BezierSimpleCurve(BezierSimpleCurve _curve, bool _draw)
+    {
+        p0 = _curve.p0;
+        p1 = _curve.p1;
+        p2 = _curve.p2;
+        p3 = _curve.p3;
+        draw = _draw;
+    }
+
+    public BezierSimpleCurve(BezierSimpleCurve _curve, Vector2 offset, bool _draw)
+    {
+        p0 = offset + _curve.p0;
+        p1 = offset + _curve.p1;
+        p2 = offset + _curve.p2;
+        p3 = offset + _curve.p3;
+        draw = _draw;
+    }
+
+    public BezierSimpleCurve(BezierSimpleCurve _curve, Vector2 offset, float direction, bool _draw)
+    {
+        p0 = offset + new Vector2(_curve.p0.x * direction, _curve.p0.y);
+        p1 = offset + new Vector2(_curve.p1.x * direction, _curve.p1.y);
+        p2 = offset + new Vector2(_curve.p2.x * direction, _curve.p2.y);
+        p3 = offset + new Vector2(_curve.p3.x * direction, _curve.p3.y);
+        draw = _draw;
+    }
+
+    public BezierSimpleCurve(Vector2 _p0, Vector2 _p1, Vector2 _p2, Vector2 _p3, bool _draw)
+    {
+        p0 = _p0;
+        p1 = _p1;
+        p2 = _p2;
+        p3 = _p3;
+        draw = _draw;
+    }
+
+    public static BezierSimpleCurve zero { get { return new BezierSimpleCurve(Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero); } }
+
+    // Вернуть точку данной кривой Безье, используя параметр t
+    public Vector2 GetBezierPoint(float t)
+    {
+        t = Mathf.Clamp(t, 0f, 1f);
+
+        float t1 = 1 - t;
+        return t1 * t1 * t1 * p0 + 3 * t * t1 * t1 * p1 +
+               3 * t * t * t1 * p2 + t * t * t * p3;
+    }
+
+    public static bool operator ==(BezierSimpleCurve e1, BezierSimpleCurve e2)
+    {
+        return (e1.p0 == e2.p0)&&(e1.p1==e2.p1) && (e1.p2 == e2.p2) && (e1.p3 == e2.p3);
+    }
+
+    public static bool operator !=(BezierSimpleCurve e1, BezierSimpleCurve e2)
+    {
+        return (e1.p0 != e2.p0) || (e1.p1 != e2.p1) || (e1.p2 != e2.p2) || (e1.p3 != e2.p3);
+    }
+
+}

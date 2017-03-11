@@ -4317,10 +4317,13 @@ public class LevelEditor : EditorWindow
 
         }
 
-        for (int i = 0; i < platforms.transform.childCount; i++)
+        if (platforms != null)
         {
-            MovingPlatform platform = platforms.transform.GetChild(i).GetComponent<MovingPlatform>();
-            DefinePlatformCells(complexCells, platform, usualMap);
+            for (int i = 0; i < platforms.transform.childCount; i++)
+            {
+                MovingPlatform platform = platforms.transform.GetChild(i).GetComponent<MovingPlatform>();
+                DefinePlatformCells(complexCells, platform, usualMap);
+            }
         }
 
         usualMap.CheckGroups();
@@ -4331,11 +4334,14 @@ public class LevelEditor : EditorWindow
 
         #region addNeighbors
 
-        //Определим соседние ячейки для платформенных маршрутов
-        for (int i = 0; i < platforms.transform.childCount; i++)
+        if (platforms != null)
         {
-            MovingPlatform platform = platforms.transform.GetChild(i).GetComponent<MovingPlatform>();
-            DefinePlatformCellsNeighbors(platform, usualMap);
+            //Определим соседние ячейки для платформенных маршрутов
+            for (int i = 0; i < platforms.transform.childCount; i++)
+            {
+                MovingPlatform platform = platforms.transform.GetChild(i).GetComponent<MovingPlatform>();
+                DefinePlatformCellsNeighbors(platform, usualMap);
+            }
         }
 
         //Теперь определим, какие навигационные ячейки соседствуют друг с другом

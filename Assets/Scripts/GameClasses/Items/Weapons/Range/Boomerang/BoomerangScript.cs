@@ -11,7 +11,7 @@ public class BoomerangScript : MonoBehaviour
     #region consts
 
     protected const float eps = .008f;
-    protected const float groundRadius = .05f;
+    protected const float groundRadius = .01f;
     protected const string gLName = "ground";
 
     #endregion //consts
@@ -71,10 +71,11 @@ public class BoomerangScript : MonoBehaviour
         currentTarget = newTarget;
     }
 
-    public virtual void SetHitBox(HitParametres _hit, List<string> enemies)
+    public virtual void SetHitBox(HitParametres _hit, List<string> enemies, GameObject attacker)
     {
         hitBox.SetEnemies(enemies);
         hitBox.SetHitBox(_hit);
+        hitBox.Attacker = attacker;
     }
 
     protected virtual void ChangePhase()

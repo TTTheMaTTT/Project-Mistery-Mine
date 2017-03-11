@@ -85,7 +85,7 @@ public class GhostMinerBossController : BossController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = new Vector2((int)_orientation * speed, rigid.velocity.y);
+        Vector2 targetVelocity = new Vector2((int)_orientation * speed * speedCoof, rigid.velocity.y);
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)
@@ -109,7 +109,7 @@ public class GhostMinerBossController : BossController
         wallCheck.SetPosition(0f, (int)orientation);
     }
 
-    protected override void Turn(OrientationEnum _orientation)
+    public override void Turn(OrientationEnum _orientation)
     {
         base.Turn(_orientation);
         wallCheck.SetPosition(0f, (int)orientation);
@@ -232,7 +232,7 @@ public class GhostMinerBossController : BossController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
+    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
     {
         if (_dType != DamageType.Physical)
         {
@@ -299,7 +299,7 @@ public class GhostMinerBossController : BossController
                 case 1:
                     {
                         //Сначала босс опускается под землю
-                        rigid.velocity = direction * speed * 2;
+                        rigid.velocity = direction * speed * speedCoof * 2;
                         if (Mathf.Abs(transform.position.y - divingPosition.y) < divingPrecision)
                         {
                             Vector3 pos = transform.position;
@@ -337,7 +337,7 @@ public class GhostMinerBossController : BossController
                 case 3:
                     {
                         //И выходит из-под земли с атакой
-                        rigid.velocity = direction * diveOutSpeed;
+                        rigid.velocity = direction * diveOutSpeed * speedCoof;
                         if (Mathf.Abs(transform.position.y - divingPosition.y) < divingPrecision)
                         {
                             Vector3 pos = transform.position;

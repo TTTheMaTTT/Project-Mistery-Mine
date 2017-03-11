@@ -16,6 +16,7 @@ using System.Xml.Serialization;
 [XmlInclude(typeof(InterObjData))]
 [XmlInclude(typeof(QuestInfo))]
 [XmlInclude(typeof(StoryInfo))]
+[XmlInclude(typeof(GameProgressData))]
 public class LevelData
 {
 
@@ -56,6 +57,9 @@ public class LevelData
     [XmlElement("History Data")]
     public StoryInfo sInfo;//Информация об игровой истории
 
+    [XmlElement("GameStoryData")]
+    public GameProgressData progressInfo;//Информация о сюжетном прогрессе
+
     public LevelData()
     {
     }
@@ -77,6 +81,7 @@ public class LevelData
         cInfo = new List<CollectionInfo>();
         for (int i = 0; i < _collection.Count; i++)
             cInfo.Add(new CollectionInfo(_collection[i]));
+        progressInfo = new GameProgressData(gStats.gameHistoryProgress);
 
     }
 

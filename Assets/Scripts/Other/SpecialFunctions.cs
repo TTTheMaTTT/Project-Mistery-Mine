@@ -35,6 +35,8 @@ public static class SpecialFunctions
     public static GameObject gameInterface { get { return GameObject.FindGameObjectWithTag("interface"); } }
 
     public static GameUIScript gameUI { get { return gameInterface.GetComponentInChildren<GameUIScript>(); } }
+    public static DialogWindowScript dialogWindow { get { return gameInterface.GetComponentInChildren<DialogWindowScript>(); } }
+
     public static EquipmentMenu equipWindow { get { return gameInterface.GetComponentInChildren<EquipmentMenu>(); } }
 
     public static LoadMenuScript loadMenu { get { return GameObject.Find("SaveScreen").GetComponent<LoadMenuScript>(); } }
@@ -142,6 +144,22 @@ public static class SpecialFunctions
     public static void SetDark()
     {
         gameUI.SetDark();
+    }
+
+    /// <summary>
+    /// Установить скорость затухания
+    /// </summary>
+    public static void SetFadeSpeed(float _fadeSpeed)
+    {
+        gameUI.FadeSpeed = _fadeSpeed;
+    }
+
+    /// <summary>
+    /// Установить дефолтную скорость затухания
+    /// </summary>
+    public static void SetDefaultFadeSpeed()
+    {
+        gameUI.SetDefaultFadeSpeed();
     }
 
     /// <summary>

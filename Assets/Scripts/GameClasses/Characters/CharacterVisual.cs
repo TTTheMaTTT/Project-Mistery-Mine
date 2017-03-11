@@ -89,6 +89,7 @@ public class CharacterVisual : MonoBehaviour
         visualFunctions = new Dictionary<string, AnimatorDelegate>();
         visualFunctions.Add("hitted", Hitted);
         visualFunctions.Add("stop", StopVisualRoutine);
+        visualFunctions.Add("spawnEffect", SpawnEffect);
         visualFunctions.Add("startBurning", StartBurning);
         visualFunctions.Add("startStun", StartStun);
         visualFunctions.Add("startPoison", StartPoison);
@@ -216,6 +217,15 @@ public class CharacterVisual : MonoBehaviour
     {
         RemoveColor(burningColor);
         effectSystem.RemoveEffect("BurnFire");
+    }
+
+    /// <summary>
+    /// Создать эффект с данным названием
+    /// </summary>
+    /// <param name="id">название эффекта</param>
+    protected virtual void SpawnEffect(string id, int argument)
+    {
+        effectSystem.SpawnEffect(id);
     }
 
     /// <summary>

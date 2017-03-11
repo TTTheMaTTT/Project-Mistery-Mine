@@ -81,11 +81,18 @@ public class GolemController : AIController
         if (areaTrigger != null)
         {
             areaTrigger.triggerFunctionOut += AreaTriggerExitChangeBehavior;
-            areaTrigger.InitializeAreaTrigger();
         }
 
         BecomeCalm();
 
+    }
+
+    protected override void Start()
+    {
+        base.Start();
+
+        if (areaTrigger!=null)
+            areaTrigger.InitializeAreaTrigger();
     }
 
     #region movement
@@ -96,7 +103,7 @@ public class GolemController : AIController
     /// <param name="_orientation">Направление движения (влево/вправо)</param>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = precipiceCheck.WallInFront ? new Vector2((int)orientation * speed, rigid.velocity.y): new Vector2(0f, rigid.velocity.y);
+        Vector2 targetVelocity = precipiceCheck.WallInFront ? new Vector2((int)orientation * speed * speedCoof, rigid.velocity.y): new Vector2(0f, rigid.velocity.y);
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
         if (orientation != _orientation)
         {
@@ -108,7 +115,7 @@ public class GolemController : AIController
     /// Повернуться
     /// </summary>
     /// <param name="_orientation">В какую сторону должен смотреть персонаж после поворота</param>
-    protected override void Turn(OrientationEnum _orientation)
+    public override void Turn(OrientationEnum _orientation)
     {
         base.Turn(_orientation);
         precipiceCheck.SetPosition(0f, (int)orientation);
@@ -127,27 +134,29 @@ public class GolemController : AIController
 
     #region attack
 
+    /*
     /// <summary>
-    /// Функця получения урона
+    /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool _microstun = true)
+    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
     {
         if (GetBuff("StunnedProcess") != null || GetBuff("FrozenProcess") != null)
-            base.TakeDamage(damage, _dType, _microstun);
+            base.TakeDamage(damage, _dType, attackPower);
         else
-            base.TakeDamage(damage, _dType, false);
+            base.TakeDamage(damage, _dType, 0);
     }
 
     /// <summary>
     /// Функция получения урона, которая, возможно, игнорирует состояние инвула
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, bool _microstun)
+    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower = 0)
     {
         if (GetBuff("StunnedProcess") != null || GetBuff("FrozenProcess") != null)
-            base.TakeDamage(damage, _dType, _microstun);
+            base.TakeDamage(damage, _dType, attackPower);
         else
-            base.TakeDamage(damage, _dType, false);
+            base.TakeDamage(damage, _dType, 0);
     }
+    */
 
     /// <summary>
     /// Функция смерти
@@ -408,7 +417,7 @@ public class GolemController : AIController
     /// <summary>
     /// Направиться к изначальной позиции
     /// </summary>
-    protected override void GoHome()
+    public override void GoHome()
     {
         MainTarget = ETarget.zero;
         BecomePatrolling();

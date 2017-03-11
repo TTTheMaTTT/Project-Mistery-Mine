@@ -36,7 +36,7 @@ public class LevelEndController : MonoBehaviour
     protected IEnumerator NextLevelProcess()
     {
         PlayerPrefs.SetInt("Checkpoint Number", checkpointNumber);
-        PlayerPrefs.SetFloat("Hero Health", SpecialFunctions.Player.GetComponent<HeroController>().GetHealth());
+        //PlayerPrefs.SetFloat("Hero Health", SpecialFunctions.Player.GetComponent<HeroController>().GetHealth());
         SpecialFunctions.gameController.SaveGame(checkpointNumber,true, nextLevelName);
         SpecialFunctions.SetFade(true);
         yield return new WaitForSeconds(nextLevelTime);

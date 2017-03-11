@@ -44,6 +44,11 @@ public class BatController : AIController
         }
     }
 
+    protected override float attackDistance { get { return .6f; } }
+    [SerializeField] private float attackForce=200f;//С какой силой летучая мышь устремляется к противнику для совершения атаки
+    [SerializeField] private float cooldown=3f;
+    private bool canAttack=true;
+
     #endregion //parametres
 
     protected override void FixedUpdate()
@@ -70,6 +75,7 @@ public class BatController : AIController
 
         if (areaTrigger != null)
         {
+            areaTrigger.triggerFunctionOut += AreaTriggerExitChangeBehavior;
             areaTrigger.InitializeAreaTrigger();
         }
         
@@ -82,7 +88,7 @@ public class BatController : AIController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = (currentTarget - transform.position).normalized * speed;
+        Vector2 targetVelocity = (currentTarget - transform.position).normalized * speed*speedCoof;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity,Time.fixedDeltaTime*acceleration);
 
         if (orientation != _orientation)
@@ -105,13 +111,74 @@ public class BatController : AIController
     /// <param name="_orientation">Ориентация персонажа при перемещении</param>
     protected override void MoveAway(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = (transform.position - currentTarget).normalized * speed;
+        Vector2 targetVelocity = (transform.position - currentTarget).normalized * speed*speedCoof;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)
         {
             Turn(_orientation);
         }
+    }
+
+    /// <summary>
+    /// Совершить атаку
+    /// </summary>
+    protected override void Attack()
+    {
+        StartCoroutine("AttackProcess");
+    }
+
+    /// <summary>
+    /// Процесс атаки
+    /// </summary>
+    /// <returns></returns>
+    protected override IEnumerator AttackProcess()
+    {
+        StartCoroutine(CooldownProcess());
+        employment = Mathf.Clamp(employment - 4, 0, maxEmployment);
+        yield return new WaitForSeconds(attackParametres.preAttackTime);
+        StopMoving();
+        rigid.AddForce((MainTarget - transform.position).normalized * attackForce*speedCoof);
+        hitBox.SetHitBox(new HitParametres(attackParametres));
+        employment = Mathf.Clamp(employment + 1, 0, maxEmployment);
+        yield return new WaitForSeconds(attackParametres.actTime);
+        StopMoving();
+        employment = Mathf.Clamp(employment - 1, 0, maxEmployment);
+        yield return new WaitForSeconds(attackParametres.endAttackTime);
+        employment = Mathf.Clamp(employment + 4, 0, maxEmployment);
+    }
+
+    /// <summary>
+    /// Процесс после неудавшейся атаки, когда мышь ничего не может 
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IEnumerator AttackShockProcess()
+    {
+        employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
+        yield return new WaitForSeconds(1.5f);
+        employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
+    }
+
+    /// <summary>
+    /// Процесс, в течение которого мышь не может совершать атаки
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IEnumerator CooldownProcess()
+    {
+        canAttack = false;
+        yield return new WaitForSeconds(cooldown);
+        canAttack = true;
+    }
+
+    /// <summary>
+    /// Принудительно прекратить атаку
+    /// </summary>
+    protected override void StopAttack()
+    {
+        base.StopAttack();
+        employment = maxEmployment;
+        StopCoroutine("AttackShockProcess");
+        StartCoroutine("AttackShockProcess");
     }
 
     /// <summary>
@@ -131,7 +198,7 @@ public class BatController : AIController
                         currentTarget = FindPath();
                     }
 
-                    if (rigid.velocity.magnitude < minSpeed)
+                    if (rigid.velocity.magnitude < minSpeed && employment>7)
                     {
                         float angle = 0f;
                         Vector2 rayDirection;
@@ -141,6 +208,7 @@ public class BatController : AIController
                             if (Physics2D.Raycast(pos, rayDirection, batSize, whatIsGround))
                             {
                                 rigid.AddForce(-rayDirection * pushBackForce / 2f);
+                                StopAttack();
                                 break;
                             }
                             angle += Mathf.PI / 4f;
@@ -223,11 +291,11 @@ public class BatController : AIController
     protected override void BecomeAgressive()
     {
         base.BecomeAgressive();
-        if (hitBox!=null)
-            hitBox.SetHitBox(new HitParametres(attackParametres));
         if (!optimized)
             rigid.isKinematic = false;
         hearing.enabled = false;//В агрессивном состоянии персонажу не нужен слух
+        StartCoroutine(CooldownProcess());
+        Animate(new AnimationEventArgs("fly"));
     }
 
     /// <summary>
@@ -236,8 +304,6 @@ public class BatController : AIController
     protected override void BecomeCalm()
     {
         base.BecomeCalm();
-        if (hitBox!=null)
-            hitBox.ResetHitBox();
         rigid.isKinematic = true;
         hearing.Radius = r1;
         hearing.enabled = true;
@@ -276,41 +342,57 @@ public class BatController : AIController
     //Функция, реализующая агрессивное состояние ИИ
     protected override void AgressiveBehavior()
     {
-        if (mainTarget.exists)
+        if (employment < 8 || !mainTarget.exists || !currentTarget.exists)
+            return;
+
+        Vector2 targetPosition = currentTarget;
+        Vector2 pos = transform.position;
+        if (currentTarget == mainTarget)
         {
-            if (currentTarget.exists)
+            if (!waiting)
             {
-                Vector2 targetPosition = currentTarget;
-                Vector2 pos = transform.position;
-                if (currentTarget == mainTarget)
+                Vector2 targetDistance = targetPosition - pos;
+                float sqDistance = targetDistance.sqrMagnitude;
+                if (canAttack ? sqDistance < attackDistance * attackDistance : false)
                 {
-                    if (!waiting)
-                        Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-                    else
-                    {
-                        float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
-                        if (sqDistance < waitingNearDistance * waitingNearDistance)
-                            MoveAway((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(pos.x - targetPosition.x)));
-                        else if (sqDistance < waitingFarDistance * waitingFarDistance)
-                        {
-                            StopMoving();
-                            if ((int)orientation * (targetPosition - pos).x < 0f)
-                                Turn();
-                        }
-                        else
-                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-                    }
+                    StopMoving();
+                    if (targetDistance.x * (int)orientation < 0f)
+                        Turn();
+                    Attack();
                 }
+                else if (sqDistance > attackDistance * attackDistance / 2f)
+                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
                 else
                 {
-                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-                    if (currentTarget != mainTarget && Vector2.SqrMagnitude(targetPosition - pos) < batSize * batSize)
-                    {
-                        currentTarget = FindPath();
-                    }
+                    StopMoving();
+                    if (targetDistance.x * (int)orientation < 0f)
+                        Turn();
                 }
             }
+            else
+            {
+                float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
+                if (sqDistance < waitingNearDistance * waitingNearDistance)
+                    MoveAway((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(pos.x - targetPosition.x)));
+                else if (sqDistance < waitingFarDistance * waitingFarDistance)
+                {
+                    StopMoving();
+                    if ((int)orientation * (targetPosition - pos).x < 0f)
+                        Turn();
+                }
+                else
+                    Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+            }
         }
+        else
+        {
+            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
+            if (currentTarget != mainTarget && Vector2.SqrMagnitude(targetPosition - pos) < batSize * batSize)
+            {
+                currentTarget = FindPath();
+            }
+        }
+
         Animate(new AnimationEventArgs("fly"));
     }
 
@@ -439,7 +521,7 @@ public class BatController : AIController
                     currentTarget = new ETarget(waypoints[0].cellPosition);
 
                 Vector2 pos = transform.position;
-                Vector2 targetPos = currentTarget;
+                Vector2 targetPos = currentTarget;                
 
                 if (Vector2.SqrMagnitude(pos - targetPos) <= minCellSqrMagnitude)
                 {
@@ -459,7 +541,7 @@ public class BatController : AIController
                 targetPos = currentTarget;
                 yield return new WaitForSeconds(optTimeStep);
                 Vector2 direction = targetPos - pos;
-                transform.position = pos + direction.normalized * Mathf.Clamp(speed, 0f, direction.magnitude);
+                transform.position = pos + direction.normalized * Mathf.Clamp(optSpeed, 0f, direction.magnitude);
             }
             waypoints = null;
             currentTarget.Exists = false;
@@ -537,6 +619,7 @@ public class BatController : AIController
         {
             base.HandleAttackProcess(sender, e);
         }
+        StopAttack();
     }
 
     #endregion //eventHandlers

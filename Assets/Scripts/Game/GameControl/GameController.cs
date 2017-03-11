@@ -65,7 +65,7 @@ public class GameController : MonoBehaviour
 
     #region eventHandlers
 
-    public EventHandler<StoryEventArgs> StartGameEvent;
+    public EventHandler<StoryEventArgs> StartGameEvent, EndGameEvent;
 
     #endregion //eventHandlers
 
@@ -105,6 +105,7 @@ public class GameController : MonoBehaviour
     string savesInfoPath;
 
     int startCheckpointNumber = 0;
+    static int monstersIdCount = 0, objectsIdCount=0, npcsIdCount=0;//Количество персонажей с id-шниками
 
     int secretsFoundNumber = 0, secretsTotalNumber = 0;//Сколько секретных мест на уровне было найдено и сколько их всего
 
@@ -145,6 +146,9 @@ public class GameController : MonoBehaviour
 
         //Пройдёмся по всем объектам уровня, дадим им id и посмотрим, как изменятся эти объекты в соответсвтии с сохранениями
         GetLists(!idSetted);
+        monstersIdCount = monsters.Count;
+        npcsIdCount = NPCs.Count;
+        objectsIdCount = intObjects.Count;
 
         #endregion //RegisterObjects
 
@@ -156,10 +160,18 @@ public class GameController : MonoBehaviour
 
         SpecialFunctions.history.Initialize();
         SpecialFunctions.StartStoryEvent(this, StartGameEvent, new StoryEventArgs());
+        Resources.UnloadUnusedAssets();
+
+        Debug.LogWarning(GetComponent<GameStatistics>().gameHistoryProgress.GetStoryProgress("spiderStory"));
+
     }
 
     protected void Initialize()
     {
+        Resources.UnloadUnusedAssets();
+        monstersIdCount = 0;
+        objectsIdCount = 0;
+        npcsIdCount = 0;
         SpecialFunctions.InitializeObjects();
         InitializeDictionaries();
         datapath = (Application.dataPath) + "/StreamingAssets/Saves/Profile";
@@ -230,8 +242,12 @@ public class GameController : MonoBehaviour
     /// </summary>
     public void StartDialog(NPCController npc, Dialog dialog)
     {
-        Transform player = SpecialFunctions.Player.transform;
         dialogWindow.BeginDialog(npc, dialog);
+    }
+
+    public void StartDialog(Dialog dialog)
+    {
+        dialogWindow.BeginDialog(dialog);
     }
 
     /// <summary>
@@ -282,6 +298,7 @@ public class GameController : MonoBehaviour
         GameGeneralData gGData = gData.gGData;
         LevelData lData = gData.lData;
         GameStatistics gStats = GetComponent<GameStatistics>();
+        Summoner summoner = GetComponent<Summoner>();
 
         #region GeneralLoad
 
@@ -332,7 +349,8 @@ public class GameController : MonoBehaviour
 
                 Hero.SetBuffs(new BuffListData(new List<BuffClass>()));
 
-                GetComponent<GameStatistics>().ResetStatistics();
+                gStats.ResetStatistics();
+                gStats.gameHistoryProgress.SetStoryProgressData(gGData.progressInfo);
 
                 #endregion //heroEquipment
 
@@ -403,6 +421,8 @@ public class GameController : MonoBehaviour
                 history.LoadHistory(sInfo, qInfo);
             }
 
+            gStats.gameHistoryProgress.SetStoryProgressData(lData.progressInfo);
+
             #endregion //Quests&Story
 
             #region levelStatistics
@@ -459,16 +479,50 @@ public class GameController : MonoBehaviour
             #region Enemies
 
             List<EnemyData> enInfo = lData.enInfo;
+            Dictionary<string, GameObject> monsterObjects = new Dictionary<string, GameObject>();
 
             if (enInfo != null && monsters != null)
             {
                 foreach (EnemyData enData in enInfo)
                 {
                     int objId = enData.objId;
-                    if (objId < monsters.Count? monsters[objId]!=null:false)
+                    if (objId < monsters.Count ? monsters[objId] != null : false)
                     {
                         monsters[objId].SetAIData(enData);
                         monsters[objId] = null;
+                    }
+                    else if (objId >= monsters.Count)
+                    {
+                        GameObject newMonster = null;
+                        GameObject _obj = null;
+                        SummonClass summon = null;
+                        if (summoner != null)
+                            summon = summoner.GetSummon(enData.objName);
+                        if (summon != null)
+                        {
+                            _obj = summon.summon;
+                            _obj.SetActive(true);
+                        }
+                        else
+                        {
+                            if (!monsterObjects.ContainsKey(enData.objName))
+                            {
+                                newMonster = Resources.Load(enData.objName) as GameObject;
+                                monsterObjects.Add(enData.objName, newMonster);
+                            }
+                            else
+                                newMonster = monsterObjects[enData.objName];
+                            if (newMonster != null)
+                                _obj = Instantiate(newMonster, enData.position, Quaternion.identity);
+                             
+                        }
+                        if (_obj == null)
+                            continue;
+                        AIController _ai = _obj.GetComponent<AIController>();
+                        if (_ai != null)
+                            _ai.SetAIData(enData);
+                        if (objId >= monstersIdCount)
+                            monstersIdCount = objId + 1;
                     }
                 }
                 for (int i = 0; i < monsters.Count; i++)
@@ -483,30 +537,52 @@ public class GameController : MonoBehaviour
             #region InteractiveObjects
 
             List<InterObjData> intInfo = lData.intInfo;
+            Dictionary<string, GameObject> interObjects = new Dictionary<string, GameObject>();
 
             if (intInfo != null && intObjects != null)
             {
                 foreach (InterObjData interData in intInfo)
                 {
                     int objId = interData.objId;
-                    if (objId < intObjects.Count && objId>0 ? intObjects[objId] != null : false)
+
+                    if (objId < intObjects.Count && objId >= 0 ? intObjects[objId] != null : false)
                     {
-                        IInteractive iInter = intObjects[objId].GetComponent<IInteractive>();
-                        IMechanism iMech = intObjects[objId].GetComponent<IMechanism>();
-                        IDamageable iDmg = intObjects[objId].GetComponent<IDamageable>();
-                        if (iInter != null)
-                        {
-                            iInter.SetData(interData);
-                        }
-                        else if (iMech != null)
-                        {
-                            iMech.SetData(interData);
-                        }
-                        else if (iDmg != null)
-                        {
-                            iDmg.SetData(interData);
-                        }
+                        IHaveID inter = intObjects[objId].GetComponent<IHaveID>();
+                        if (inter != null)
+                            inter.SetData(interData);
                         intObjects[objId] = null;
+                    }
+                    else if (objId >= intObjects.Count)
+                    {
+                        GameObject newObject = null;
+                        GameObject _obj = null;
+                        SummonClass summon = null;
+                        if (summoner != null)
+                            summon = summoner.GetSummon(interData.objName);
+                        if (summon != null)
+                        {
+                            _obj = summon.summon;
+                            _obj.SetActive(true);
+                        }
+                        else
+                        {
+                            if (!interObjects.ContainsKey(interData.objName))
+                            {
+                                newObject = Resources.Load(interData.objName + ".prefab") as GameObject;
+                                interObjects.Add(interData.objName, newObject);
+                            }
+                            else
+                                newObject = interObjects[interData.objName];
+                            if (newObject != null)
+                                _obj = Instantiate(newObject, interData.position, Quaternion.identity);
+                        }
+                        if (_obj == null)
+                            continue;
+                        IHaveID _inter = _obj.GetComponent<IHaveID>();
+                        if (_inter != null)
+                            _inter.SetData(interData);
+                        if (objId >= objectsIdCount)
+                            objectsIdCount = objId + 1;
                     }
                 }
                 for (int i = 0; i < intObjects.Count; i++)
@@ -527,7 +603,7 @@ public class GameController : MonoBehaviour
                         {
                             SecretPlaceTrigger secretPlace = intObjects[i].GetComponent<SecretPlaceTrigger>();
                             FindSecretPlace();
-                            Destroy(secretPlace);
+                            secretPlace.RevealTruth();
                         }
                         else
                             DestroyImmediate(intObjects[i]);
@@ -540,6 +616,7 @@ public class GameController : MonoBehaviour
             #region NPCs
 
             List<NPCData> npcInfo = lData.npcInfo;
+            Dictionary<string, GameObject> npcObjects = new Dictionary<string, GameObject>();
 
             if (npcInfo != null && NPCs != null)
             {
@@ -550,6 +627,39 @@ public class GameController : MonoBehaviour
                     {
                         NPCs[objId].SetData(npcData);
                         NPCs[objId] = null;
+                    }
+                    else if (objId >= NPCs.Count)
+                    {
+                        GameObject newNPC = null;
+                        GameObject _obj = null;
+                        SummonClass summon = null;
+                        if (summoner != null)
+                            summon = summoner.GetSummon(npcData.objName);
+                        if (summon != null)
+                        {
+                            _obj = summon.summon;
+                            _obj.SetActive(true);
+                        }
+                        else
+                        {
+                            if (!npcObjects.ContainsKey(npcData.objName))
+                            {
+                                newNPC = Resources.Load(npcData.objName + ".prefab") as GameObject;
+                                npcObjects.Add(npcData.objName, newNPC);
+                            }
+                            else
+                                newNPC = npcObjects[npcData.objName];
+                            if (newNPC != null)
+                                _obj = InstantiateWithId(newNPC, npcData.position, Quaternion.identity);
+                        }
+                        if (_obj == null)
+                            continue;
+                        NPCController _npc = _obj.GetComponent<NPCController>();
+                        if (_npc != null)
+                            _npc.SetData(npcData);
+                        if (objId >= npcsIdCount)
+                            npcsIdCount = objId + 1;
+
                     }
                 }
                 for (int i = 0; i < NPCs.Count; i++)
@@ -648,6 +758,10 @@ public class GameController : MonoBehaviour
 
         #region enemies
 
+        if (setID)
+        {
+            monstersIdCount = 0; objectsIdCount = 0; npcsIdCount = 0;
+        }
         GameObject[] enemiesObjs = GameObject.FindGameObjectsWithTag("enemy");
         monsters = new List<AIController>();
         foreach (GameObject obj in enemiesObjs)
@@ -656,7 +770,10 @@ public class GameController : MonoBehaviour
             if (ai != null? !ai.Dead:false)
             {
                 if (setID)
-                    ai.ID = monsters.Count;
+                {
+                    ai.ID = monstersIdCount;
+                    monstersIdCount++;
+                }
                 monsters.Add(ai);
             }
         }
@@ -668,7 +785,10 @@ public class GameController : MonoBehaviour
             if (ai != null)
             {
                 if (setID)
-                    ai.ID = monsters.Count;
+                {
+                    ai.ID = monstersIdCount;
+                    monstersIdCount++;
+                }
                 monsters.Add(ai);
             }
         }
@@ -688,6 +808,8 @@ public class GameController : MonoBehaviour
 
         ConsiderObjectsWithTag("box", setID);
 
+        ConsiderObjectsWithTag("interObject", setID);
+
         intObjects.Sort((x, y) => { return x.GetComponent<IHaveID>().GetID().CompareTo(y.GetComponent<IHaveID>().GetID()); });
 
         #region NPCs
@@ -700,7 +822,10 @@ public class GameController : MonoBehaviour
             if (npc != null)
             {
                 if (setID)
-                    npc.SetID(NPCs.Count);
+                {
+                    npc.SetID(npcsIdCount);
+                    npcsIdCount++;
+                }
                 NPCs.Add(npc);
             }
         }
@@ -712,7 +837,10 @@ public class GameController : MonoBehaviour
             if (spirit != null)
             {
                 if (setID)
-                    spirit.SetID(NPCs.Count);
+                {
+                    spirit.SetID(npcsIdCount);
+                    npcsIdCount++;
+                }
                 NPCs.Add(spirit);
             }
         }
@@ -723,6 +851,20 @@ public class GameController : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Функция, которая заставляет всех патрулирующих 
+    /// </summary>
+    public void SetPatrollingEnemiesToHome()
+    {
+        AIController[] ais = FindObjectsOfType<AIController>();
+        foreach (AIController ai in ais)
+            if (ai.Loyalty == LoyaltyEnum.enemy && ai.Behavior == BehaviorEnum.patrol)
+                ai.GoHome();
+    }
+
+    /// <summary>
+    /// Учесть все объекты с данным тэгом и внести их в список объектов, задав им id при необходимости
+    /// </summary>
     public void ConsiderObjectsWithTag(string tag,bool setID)
     {
         GameObject[] intObjs = GameObject.FindGameObjectsWithTag(tag);
@@ -732,11 +874,57 @@ public class GameController : MonoBehaviour
             if (inter != null)
             {
                 if (setID)
-                    inter.SetID(intObjects.Count);
+                {
+                    inter.SetID(objectsIdCount);
+                    objectsIdCount++;
+                }
                 intObjects.Add(obj);
             }
         }
     }
+
+    /// <summary>
+    /// Создать игровой объект и задать ему id
+    /// </summary>
+    public static GameObject InstantiateWithId(GameObject _gameObject, Vector3 _position, Quaternion _rotation)
+    {
+        GameObject obj = Instantiate(_gameObject, _position, _rotation) as GameObject;
+        SetIDToNewObject(obj);
+        return obj;        
+    }
+
+    /// <summary>
+    /// Задать id новому объекту
+    /// </summary>
+    public static void SetIDToNewObject(GameObject obj)
+    {
+        AIController ai = obj.GetComponent<AIController>();
+        IHaveID inter = obj.GetComponent<IHaveID>();
+        NPCController npc = obj.GetComponent<NPCController>();
+        DialogObject dObj = obj.GetComponent<DialogObject>();
+        if (ai != null)
+        {
+            ai.ID = monstersIdCount;
+            monstersIdCount++;
+        }
+        else if (npc != null)
+        {
+            npc.SetID(npcsIdCount);
+            npcsIdCount++;
+        }
+        else if (inter != null)
+        {
+            inter.SetID(objectsIdCount);
+            objectsIdCount++;
+        }
+        
+        if (dObj!=null)
+            if (SpecialFunctions.dialogWindow != null)
+            {
+                
+            }
+    }
+
 
     #region gameEffects
 
@@ -1136,6 +1324,7 @@ public class GameController : MonoBehaviour
     /// <param name="nextLevelName">Название следующего уровня</param>
     public void CompleteLevel(string nextLevelName)
     {
+        SpecialFunctions.StartStoryEvent(this, EndGameEvent, new StoryEventArgs());
         GameStatistics statistics = SpecialFunctions.statistics;
         List<ItemCollection> itemCollections = statistics != null ? statistics.ItemCollections : null;
         string sceneName = SceneManager.GetActiveScene().name;

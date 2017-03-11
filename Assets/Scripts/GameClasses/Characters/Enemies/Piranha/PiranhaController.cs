@@ -206,7 +206,7 @@ public class PiranhaController : AIController
     protected override void Move(OrientationEnum _orientation)
     {
         CurrentDirection = (currentTarget - (Vector2)transform.position).normalized;
-        Vector2 targetVelocity = (!wallCheck.WallInFront && waterCheck.WallInFront) ? currentDirection * speed : Vector2.zero;
+        Vector2 targetVelocity = (!wallCheck.WallInFront && waterCheck.WallInFront) ? currentDirection * speed * speedCoof : Vector2.zero;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
     }
 
@@ -216,7 +216,7 @@ public class PiranhaController : AIController
     protected override void MoveAway(OrientationEnum _orientation)
     {
         CurrentDirection = ((Vector2)transform.position - currentTarget).normalized;
-        Vector2 targetVelocity = (!wallCheck.WallInFront && waterCheck.WallInFront) ? currentDirection * speed: Vector2.zero;
+        Vector2 targetVelocity = (!wallCheck.WallInFront && waterCheck.WallInFront) ? currentDirection * speed * speedCoof : Vector2.zero;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
     }
 
@@ -242,7 +242,7 @@ public class PiranhaController : AIController
     /// Повернуться
     /// </summary>
     /// <param name="_orientation">В какую сторону должен смотреть персонаж</param>
-    protected override void Turn(OrientationEnum _orientation)
+    public override void Turn(OrientationEnum _orientation)
     {
         base.Turn(_orientation);
         wallCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
@@ -415,7 +415,7 @@ public class PiranhaController : AIController
     /// <summary>
     /// Выдвинуться в начальную позицию
     /// </summary>
-    protected override void GoHome()
+    public override void GoHome()
     {
         MainTarget = ETarget.zero;
         BecomePatrolling();
@@ -579,7 +579,7 @@ public class PiranhaController : AIController
                 if (currentTarget.exists)
                 {
                     Vector2 direction = targetPos - pos;
-                    transform.position = pos + direction.normalized * Mathf.Clamp(speed, 0f, direction.magnitude);
+                    transform.position = pos + direction.normalized * Mathf.Clamp(optSpeed, 0f, direction.magnitude);
                 }
                 yield return new WaitForSeconds(optTimeStep);
             }

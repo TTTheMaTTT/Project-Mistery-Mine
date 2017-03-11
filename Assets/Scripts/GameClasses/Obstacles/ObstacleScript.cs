@@ -25,7 +25,7 @@ public class ObstacleScript : MonoBehaviour
         hitBox = GetComponent<HitBox>();
         hitBox.Immobile = true;
         hitBox.SetEnemies(enemies);
-        hitBox.SetHitBox(new HitParametres(hitData.damage,-1f,hitData.hitSize,transform.position,0f, hitData.damageType, hitData.effectChance));
+        hitBox.SetHitBox(new HitParametres(hitData.damage,-1f,hitData.hitSize,transform.position,0f, hitData.damageType, hitData.effectChance,hitData.attackPower,0f,0f));
     }
 
 }

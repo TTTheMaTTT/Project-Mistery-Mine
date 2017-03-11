@@ -32,7 +32,7 @@ public enum LoyaltyEnum { enemy=-1, neutral = 0, ally = 1}
 /// <summary>
 /// Режим перемещения камеры
 /// </summary>
-public enum CameraModEnum {position=0, move=1, player=2, playerMove=3}
+public enum CameraModEnum {position=0, move=1, player=2, playerMove=3, obj=4, objMove=5}
 
 /// <summary>
 /// Енам, связанный с режимом редактора уровней
@@ -48,6 +48,11 @@ public enum DrawModEnum { ground = 0, plant = 1, water = 2, ladder=3, spikes=4,u
 /// Режим диалога
 /// </summary>
 public enum DialogModEnum {usual=0, random=1, one=2 }
+
+/// <summary>
+/// Режим отображения реплик персонажей
+/// </summary>
+public enum SpeechModEnum {usual=0, wait=1, waitFadeInOut=2, waitFadeIn=3, waitFadeOut=4, answer=5 }
 
 /// <summary>
 /// Енам, связанный с видами игровых препятствий

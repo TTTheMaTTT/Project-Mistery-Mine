@@ -80,7 +80,7 @@ public class BowClass : WeaponClass
                         AIController ai = targetObj.GetComponent<AIController>();
                         if (ai!=null)
                             ai.TakeAttackerInformation(SpecialFunctions.player);
-                        target.TakeDamage(damage,attackType);
+                        target.TakeDamage(damage,attackType,attackPower);
                         break;
                     }
                 }

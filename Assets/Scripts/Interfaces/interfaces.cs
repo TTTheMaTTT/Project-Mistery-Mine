@@ -22,9 +22,9 @@ public interface IHaveID
 public interface IDamageable: IHaveID
 {
 
-    void TakeDamage(float damage, DamageType _dType, bool _microstun=true);
+    void TakeDamage(float damage, DamageType _dType, int attackPower=0);
 
-    void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, bool _microstun=true);
+    void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower=0);
 
     float GetHealth();
 
@@ -42,6 +42,8 @@ public interface IInteractive: IHaveID
     void Interact();
 
     void SetOutline(bool _outline);//Отрисовать контур обхекта, если с ним возможно произвести взаимодействие
+
+    bool IsInteractive();//Можно ли взаимодействовать с объектом в данный момент?
 
 }
 
@@ -63,4 +65,5 @@ public interface IHaveStory
     Dictionary<string, List<string>> actionIDs1();//Вернуть id-шники,
     Dictionary<string, List<string>> actionIDs2();//настраивающие данные функции
     Dictionary<string, List<string>> conditionIDs();//id-шники, настраивающие функцию проверки
+    StoryAction.StoryActionDelegate GetStoryAction(string actionName);//Вернуть ссылку на функцию, соответствующую данному имени
 }

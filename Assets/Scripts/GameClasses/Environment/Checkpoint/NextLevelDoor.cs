@@ -95,7 +95,7 @@ public class NextLevelDoor : DoorClass
     /// </summary>
     public override InterObjData GetData()
     {
-        DoorData dData = new DoorData(id, opened);
+        DoorData dData = new DoorData(id, opened, gameObject.name);
         return dData;
     } 
 

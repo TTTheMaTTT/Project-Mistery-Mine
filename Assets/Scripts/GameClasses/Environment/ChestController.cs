@@ -32,7 +32,6 @@ public class ChestController : MonoBehaviour, IInteractive
     #region parametres
 
     [SerializeField]
-    [HideInInspector]
     protected int id;
 
     protected Color outlineColor = Color.yellow;
@@ -89,6 +88,14 @@ public class ChestController : MonoBehaviour, IInteractive
         }
     }
 
+    /// <summary>
+    /// Можно ли провзаимодействовать с объектом в данный момент?
+    /// </summary>
+    public virtual bool IsInteractive()
+    {
+        return true;
+    }
+
     #endregion //IInteractive
 
     #region events
@@ -140,7 +147,7 @@ public class ChestController : MonoBehaviour, IInteractive
     /// </summary>
     public InterObjData GetData()
     {
-        InterObjData cData = new InterObjData(id);
+        InterObjData cData = new InterObjData(id,gameObject.name, transform.position);
         return cData;
     }
 

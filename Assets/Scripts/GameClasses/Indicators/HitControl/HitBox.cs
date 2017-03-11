@@ -18,7 +18,7 @@ public class HitBox : HitBoxController
     #region fields
 
     protected BoxCollider2D col;//Область удара
-    protected BoxCollider2D Col { get { if (col == null); col = GetComponent<BoxCollider2D>(); return col; } }
+    protected BoxCollider2D Col { get { if (col == null) col = GetComponent<BoxCollider2D>(); return col; } }
     protected List<string> enemies;//По каким тегам искать врагов?
 
     protected List<GameObject> list=new List<GameObject>();//Список всех атакованных противников. (чтобы один удар не отнимал hp дважды)
@@ -154,7 +154,7 @@ public class HitBox : HitBoxController
                         AIController ai = null;
                         if ((ai = other.GetComponent<AIController>()) != null)
                             ai.TakeAttackerInformation(attacker);
-                        target.TakeDamage(hitData.damage, hitData.damageType);
+                        target.TakeDamage(hitData.damage, hitData.damageType, hitData.attackPower);
                         OnAttack(new HitEventArgs(target.GetHealth()-prevHP));
                         return;
                     }
@@ -172,7 +172,7 @@ public class HitBox : HitBoxController
                         AIController ai = null;
                         if ((ai = other.GetComponent<AIController>()) != null)
                             ai.TakeAttackerInformation(attacker);
-                        target.TakeDamage(hitData.damage, hitData.damageType);
+                        target.TakeDamage(hitData.damage, hitData.damageType,hitData.attackPower);
                         OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
                     }
                 }
@@ -204,8 +204,10 @@ public struct HitParametres
     public float hitForce;//Насколько сильно отталкивает атака
     public DamageType damageType;//Каким способом наносится атака
     [Range(0f, 100f)]public float effectChance;//Какова вероятность срабатывания особого эффекта урона
+    public int attackPower;//Насколько эффектно атака сбивает
 
-    public HitParametres(float _damage, float _actTime, Vector2 _size, Vector2 _position, float _hitForce, DamageType _dType=DamageType.Physical, float _eChance=0f, float _preAttackTime=0f, float _endAttackTime=0f)
+    public HitParametres(float _damage, float _actTime, Vector2 _size, Vector2 _position, float _hitForce, 
+                                        DamageType _dType=DamageType.Physical, float _eChance=0f, int _attackPower = 0, float _preAttackTime=0f, float _endAttackTime=0f)
     {
         damage = _damage;
         preAttackTime = _preAttackTime;
@@ -216,9 +218,10 @@ public struct HitParametres
         hitForce = _hitForce;
         damageType = _dType;
         effectChance = _eChance;
+        attackPower = _attackPower;
     }
 
-    public HitParametres(float _damage, float _actTime, float _hitForce, DamageType _dType=DamageType.Physical, float _eChance=0f, float _preAttackTime = 0f, float _endAttackTime = 0f)
+    public HitParametres(float _damage, float _actTime, float _hitForce, DamageType _dType=DamageType.Physical, float _eChance=0f, int _attackPower = 0, float _preAttackTime = 0f, float _endAttackTime = 0f)
     {
         damage = _damage;
         preAttackTime = _preAttackTime;
@@ -229,6 +232,7 @@ public struct HitParametres
         hitForce = _hitForce;
         damageType = _dType;
         effectChance = _eChance;
+        attackPower = _attackPower;
     }
 
     public HitParametres(float _damage, float _actTime, float _hitForce, float _preAttackTime = 0f, float _endAttackTime = 0f)
@@ -242,6 +246,7 @@ public struct HitParametres
         hitForce = _hitForce;
         damageType = DamageType.Physical;
         effectChance = 0f;
+        attackPower = 0;
     }
 
     public HitParametres(float _damage, float _actTime)
@@ -255,6 +260,7 @@ public struct HitParametres
         hitForce = 0f;
         damageType = DamageType.Physical;
         effectChance = 0f;
+        attackPower = 0;
     }
 
     public HitParametres(HitParametres _hit)
@@ -268,6 +274,7 @@ public struct HitParametres
         hitForce = _hit.hitForce;
         damageType = _hit.damageType;
         effectChance = _hit.effectChance;
+        attackPower = _hit.attackPower;
     }
 
     public static HitParametres zero
@@ -277,5 +284,29 @@ public struct HitParametres
             return new HitParametres(0f,0f,Vector2.zero,Vector2.zero,0f,DamageType.Physical,0f);
         }
     }
+    
+    /// <summary>
+    /// Возвращает всё время, необходимое для совершения атаки
+    /// </summary>
+    public float wholeAttackTime { get { return preAttackTime + actTime + endAttackTime; } }
+
+}
+
+/// <summary>
+/// Структура, содержащая информацию об атаке, совершаемой с движением по кривой Безье
+/// </summary>
+[System.Serializable]
+public struct SimpleCurveHitParametres
+{
+    public HitParametres hitParametres;
+    public BezierSimpleCurve curve;
+
+    public SimpleCurveHitParametres(HitParametres _hitParametres, BezierSimpleCurve _curve)
+    {
+        hitParametres = _hitParametres;
+        curve = _curve;
+    }
+
+    public static SimpleCurveHitParametres zero { get { return new SimpleCurveHitParametres(HitParametres.zero, BezierSimpleCurve.zero);} }
 
 }

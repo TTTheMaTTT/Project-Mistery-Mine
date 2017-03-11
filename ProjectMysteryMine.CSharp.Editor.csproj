@@ -148,6 +148,7 @@
     <Compile Include="Assets\Editor\LevelEditor\SpriteBase.cs" />
     <Compile Include="Assets\Editor\LevelEditor\WaterBrush.cs" />
     <Compile Include="Assets\Editor\MisteryCaveEditor.cs" />
+    <Compile Include="Assets\Editor\PropertyDrawers.cs" />
     <Compile Include="Assets\Editor\SpeechCreator\DialogCreateWindow.cs" />
     <Compile Include="Assets\Editor\Steamworks.NET\RedistCopy.cs" />
     <Compile Include="Assets\Editor\Steamworks.NET\RedistInstall.cs" />

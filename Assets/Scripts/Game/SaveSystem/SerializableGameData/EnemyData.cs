@@ -15,6 +15,9 @@ using System.Xml.Serialization;
 public class EnemyData
 {
 
+    [XmlElement("ObjectName")]
+    public string objName;
+
     [XmlElement("ID")]
     public int objId;//Номер, по которому можно отличить монстра
 
@@ -48,6 +51,8 @@ public class EnemyData
 
     public EnemyData(AIController _ai)
     {
+        string _name = _ai.gameObject.name;
+        objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
         objId = _ai.ID;
         position = _ai.transform.position;
         orientation = Mathf.RoundToInt(Mathf.Sign(_ai.transform.lossyScale.x));
@@ -77,15 +82,21 @@ public class SpiderData : EnemyData
     [XmlElement("Spider Orientation")]
     public Vector2 spiderOrientation = Vector2.zero;
 
+    [XmlAttribute("In Ground")]
+    public bool inGround = false;
+
     public SpiderData()
     { }
 
     public SpiderData(SpiderController _ai)
     {
+        string _name = _ai.gameObject.name;
+        objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
         objId = _ai.ID;
         position = _ai.transform.position;
         spiderOrientation = _ai.GetSpiderOrientation();
         orientation = Mathf.RoundToInt(Mathf.Sign(_ai.transform.lossyScale.x));
+        inGround = _ai.InGround;
 
         behavior = _ai.Behavior.ToString();
 
@@ -121,6 +132,8 @@ public class HumanoidData: EnemyData
 
     public HumanoidData(HumanoidController _ai)
     {
+        string _name = _ai.gameObject.name;
+        objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
         objId = _ai.ID;
         position = _ai.transform.position;
         orientation = Mathf.RoundToInt(Mathf.Sign(_ai.transform.lossyScale.x));
@@ -161,6 +174,8 @@ public class WormData : EnemyData
 
     public WormData(WormController _ai)
     {
+        string _name = _ai.gameObject.name;
+        objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
         objId = _ai.ID;
         position = _ai.transform.position;
         orientation = Mathf.RoundToInt(Mathf.Sign(_ai.transform.lossyScale.x));

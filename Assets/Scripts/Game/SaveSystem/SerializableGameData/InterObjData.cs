@@ -12,19 +12,49 @@ using System.Xml.Serialization;
 [XmlInclude(typeof(MovPlatformData))]
 [XmlInclude(typeof(BoxData))]
 [XmlInclude(typeof(NPCData))]
+[XmlInclude(typeof(SpiderSpyData))]
 public class InterObjData
 {
 
+    [XmlElement("ObjectName")]
+    public string objName;
+
     [XmlElement("ID")]
     public int objId;
+
+    [XmlElement("Position")]
+    public Vector3 position=Vector3.zero;
 
     public InterObjData()
     {
     }
 
-    public InterObjData(int _id)
+    public InterObjData(int _id, string _name, Vector3 _position)
     {
         objId = _id;
+        objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
+        position = _position;
+    }
+
+}
+
+/// <summary>
+/// Класс, который нужен для гипотетического сохранения единственного за всю игру объекта в своём роде - паука-лазутчика
+/// </summary>
+[XmlType("SpiderSpyData")]
+public class SpiderSpyData : InterObjData
+{
+    [XmlAttribute("Activated")]
+    public bool activated = false;
+
+    public SpiderSpyData()
+    { }
+
+    public SpiderSpyData(int _id, string _name, bool _activated)
+    {
+        objId = _id;
+        objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
+        activated = _activated;
     }
 
 }
@@ -41,10 +71,11 @@ public class DoorData : InterObjData
     public DoorData()
     { }
 
-    public DoorData(int _id, bool _opened)
+    public DoorData(int _id, bool _opened, string _name)
     {
         objId = _id;
         opened = _opened;
+        objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
     }
 
 }
@@ -59,17 +90,15 @@ public class MechData : InterObjData
     [XmlElement("Activated")]
     public bool activated;
 
-    [XmlElement("Position")]
-    public Vector3 position;
-
     public MechData()
     { }
 
-    public MechData(int _id, bool _activated, Vector3 _position)
+    public MechData(int _id, bool _activated, Vector3 _position, string _name)
     {
         objId = _id;
         activated = _activated;
         position = _position;
+        objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
     }
 
 }
@@ -90,13 +119,14 @@ public class MovPlatformData: MechData
     {
     }
 
-    public MovPlatformData(int _id, bool _activated, Vector3 _position, int _direction, int _currentPosition)
+    public MovPlatformData(int _id, bool _activated, Vector3 _position, int _direction, int _currentPosition, string _name)
     {
         objId = _id;
         activated = _activated;
         position = _position;
         direction = _direction;
         currentPosition = _currentPosition;
+        objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
     }
 
 }
@@ -137,9 +167,10 @@ public class BoxData : InterObjData
     {
     }
 
-    public BoxData(int _id, float _hp)
+    public BoxData(int _id, float _hp, string _name)
     {
         objId = _id;
         health = _hp;
+        objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
     }
 }

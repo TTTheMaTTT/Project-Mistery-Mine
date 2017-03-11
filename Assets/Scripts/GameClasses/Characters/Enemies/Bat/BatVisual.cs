@@ -12,7 +12,6 @@ public class BatVisual : CharacterVisual
     protected override void FormDictionaries()
     {
         base.FormDictionaries();
-
     }
 
 }

@@ -92,7 +92,7 @@ public class DogController : HumanoidController
                     //if (currentTarget == null)
                     //break;
                     if (!hit ?
-                        ((pos - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && currentTarget != mainTarget) : true)
+                        ((pos - prevPosition).sqrMagnitude < speed * speedCoof * Time.fixedDeltaTime / 10f && currentTarget != mainTarget) : true)
                     {
                         if (!avoid)
                             StartCoroutine("AvoidProcess");
@@ -112,7 +112,7 @@ public class DogController : HumanoidController
                     }
                     if (!avoid)
                     {
-                        if ((pos - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
+                        if ((pos - prevPosition).sqrMagnitude < speed * speedCoof * Time.fixedDeltaTime / 10f)
                             StartCoroutine("AvoidProcess");
                     }
                     Vector2 direction = Vector3.right * (int)orientation;
@@ -223,7 +223,7 @@ public class DogController : HumanoidController
         EVector3 _prevPos = prevPosition;
         yield return new WaitForSeconds(avoidTime);
         Vector3 pos = (Vector2)transform.position;
-        if ((transform.position - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && avoid)
+        if ((transform.position - _prevPos).sqrMagnitude < speed * speedCoof * Time.fixedDeltaTime / 10f && avoid)
         {
             if (currentTarget.exists)
             {
@@ -233,7 +233,7 @@ public class DogController : HumanoidController
                 pos = (Vector2)transform.position;
                 //Если не получается обойти ставшее на пути препятствие
                 if (currentTarget.exists && currentTarget != mainTarget && avoid &&
-                    (pos - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
+                    (pos - _prevPos).sqrMagnitude < speed * speedCoof * Time.fixedDeltaTime / 10f)
                 {
                     if (mainTarget.exists)
                     {

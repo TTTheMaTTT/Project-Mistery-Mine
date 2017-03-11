@@ -244,7 +244,7 @@ public class MovingPlatform : MonoBehaviour, IMechanism
     /// </summary>
     public virtual InterObjData GetData()
     {
-        MovPlatformData mData = new MovPlatformData(id, moving, transform.position,orientation, currentPosition);
+        MovPlatformData mData = new MovPlatformData(id, moving, transform.position,orientation, currentPosition, gameObject.name);
         return mData;
     }
 
@@ -376,7 +376,7 @@ public class MovingPlatformEditor : Editor
         textureStyleAct.normal.background = textureStyle.active.background;
 
         base.OnInspectorGUI();
-        
+
         if (GUILayout.Button("DeleteLines"))
         {
             lines = mov.Lines;
