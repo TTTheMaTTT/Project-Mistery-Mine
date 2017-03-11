@@ -60,7 +60,7 @@ public class BoomerangScript : MonoBehaviour
         rigid.velocity = (currentTarget - transform.position).normalized * speed;
         rigid.gravityScale = 0f;
         phase = 1;
-        hero = SpecialFunctions.player.GetComponent<HeroController>();
+        hero = SpecialFunctions.Player.GetComponent<HeroController>();
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ public class BoomerangScript : MonoBehaviour
         currentTarget = newTarget;
     }
 
-    public virtual void SetHitBox(HitClass _hit, List<string> enemies)
+    public virtual void SetHitBox(HitParametres _hit, List<string> enemies)
     {
         hitBox.SetEnemies(enemies);
         hitBox.SetHitBox(_hit);

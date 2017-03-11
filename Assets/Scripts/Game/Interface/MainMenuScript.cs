@@ -13,6 +13,12 @@ public class MainMenuScript : MonoBehaviour
         SpecialFunctions.PlayGame();
     }
 
+    public void Update()
+    {
+        if (Input.GetButtonDown("Cancel"))
+            Application.Quit();
+    }
+
     /// <summary>
     /// Продолжить игру с последнего сохранения (если такое имеется)
     /// </summary>

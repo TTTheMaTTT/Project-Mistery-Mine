@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -14,6 +15,12 @@ public class BoxController : MonoBehaviour, IDamageable
     protected const float deathTime = .05f;
 
     #endregion //consts
+
+    #region eventHandlers
+
+    public EventHandler<EventArgs> BoxDestroyedEvent;//Событие "Коробка была разрушена"
+
+    #endregion //eventHandlers
 
     #region fields
 
@@ -44,10 +51,12 @@ public class BoxController : MonoBehaviour, IDamageable
         anim = GetComponent<Animator>();
     }
 
+    #region IDamageable
+
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public void TakeDamage(float damage)
+    public void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
     {
         health -= damage;
         StopAllCoroutines();
@@ -59,7 +68,7 @@ public class BoxController : MonoBehaviour, IDamageable
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public void TakeDamage(float damage, bool ignoreInvul)
+    public void TakeDamage(float damage,DamageType _dType, bool ignoreInvul, bool _microstun)
     {
         health -= damage;
         StopAllCoroutines();
@@ -67,6 +76,13 @@ public class BoxController : MonoBehaviour, IDamageable
         if (health <= 0f)
             Destroy();
     }
+
+    /// <summary>
+    /// Подвергнуться эффекту, связанному с типом урона
+    /// </summary>
+    /// <param name="_dType">Тип урона</param>
+    public void TakeDamageEffect(DamageType _dType)
+    {}
 
     public bool InInvul()
     {
@@ -83,9 +99,11 @@ public class BoxController : MonoBehaviour, IDamageable
             GameObject drop1 = Instantiate(drop, transform.position, transform.rotation) as GameObject;
             Rigidbody2D rigid = drop1.GetComponent<Rigidbody2D>();
             if (rigid != null)
-                rigid.AddForce(new Vector2(Random.Range(-dropForceX, dropForceX), dropForceY));
-            Destroy(gameObject, deathTime);
+                rigid.AddForce(new Vector2(UnityEngine.Random.Range(-dropForceX, dropForceX), dropForceY));
+            OnBoxDestroyed(new EventArgs());
         }
+
+        Destroy(gameObject, deathTime);
     }
 
     /// <summary>
@@ -105,6 +123,26 @@ public class BoxController : MonoBehaviour, IDamageable
             anim.Play("Idle");
         }
     }
+
+    #endregion //IDamageable
+
+    #region events
+
+    /// <summary>
+    /// Событие "коробка была разрушена"
+    /// </summary>
+    protected virtual void OnBoxDestroyed(EventArgs e)
+    {
+        EventHandler<EventArgs> handler = BoxDestroyedEvent;
+        if (handler != null)
+        {
+            handler(this, e);
+        }
+    }
+
+    #endregion //events
+
+    #region id
 
     /// <summary>
     /// Вернуть id
@@ -145,5 +183,7 @@ public class BoxController : MonoBehaviour, IDamageable
         BoxData bData = new BoxData(id, health);
         return bData;
     }
+
+    #endregion //id
 
 }

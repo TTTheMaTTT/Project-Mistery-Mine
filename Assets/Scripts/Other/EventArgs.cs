@@ -38,14 +38,35 @@ public class AnimationEventArgs : EventArgs
 public class HealthEventArgs : EventArgs
 {
     private float hp;
+    private float hpDelta;
 
     public float HP { get { return hp; } }
+    public float HPDelta { get { return hpDelta; } }
 
-    public HealthEventArgs(float _hp)
+    public HealthEventArgs(float _hp, float _hpDelta=0f)
     {
         hp = _hp;
+        hpDelta = _hpDelta;
     }
 
+}
+
+/// <summary>
+/// Данные о событии, связанном с баффом, дебаффом или эффектом
+/// </summary>
+public class BuffEventArgs : EventArgs
+{
+    private BuffClass buff;
+    private bool battleEffect = true;
+
+    public BuffClass Buff { get { return buff; } }
+    public bool BattleEffect { get { return battleEffect; } }
+
+    public BuffEventArgs(BuffClass _buff, bool _bEffect)
+    {
+        buff = _buff;
+        battleEffect = _bEffect;
+    }
 }
 
 /// <summary>
@@ -77,12 +98,40 @@ public class HitEventArgs : EventArgs
 {
     private float hpDif;//Насколько изменилось хп персонажа
 
+    private GameObject target;//По какому персонажу был нанесён урон
+
     public float HPDif { get { return hpDif; } }
+    public GameObject Target { get { return target; } }
 
     public HitEventArgs(float _hpDif)
     {
         hpDif = _hpDif;
+        target = null;
     }
+
+    public HitEventArgs(float _hpDif, GameObject _target)
+    {
+        hpDif = _hpDif;
+        target = _target;
+    }
+
+
+}
+
+/// <summary>
+/// Данные о событии "Был услышан враг (или какой-то другой отслеживаемый объект)"
+/// </summary>
+public class HearingEventArgs : EventArgs
+{
+    private GameObject target;//Кого услышали
+
+    public GameObject Target { get { return target; } }
+
+    public HearingEventArgs(GameObject _target)
+    {
+        target = _target;
+    }
+
 }
 
 /// <summary>
@@ -106,12 +155,15 @@ public class SuffocateEventArgs : EventArgs
 /// </summary>
 public class EquipmentEventArgs : EventArgs
 {
+    private WeaponClass currentWeapon;
     private ItemClass item;
 
+    public WeaponClass CurrentWeapon { get { return currentWeapon; } }
     public ItemClass Item { get { return item; } }
 
-    public EquipmentEventArgs(ItemClass _item)
+    public EquipmentEventArgs(WeaponClass _weapon, ItemClass _item)
     {
+        currentWeapon = _weapon;
         item = _item;
     }
 
@@ -138,5 +190,37 @@ public class StoryEventArgs : EventArgs
 
     public string ID { get { return id; } }
     public int Argument { get { return argument; } }
+
+}
+
+/// <summary>
+/// Событийные данные, используемые для событий, связанных со сменой моделей поведения
+/// </summary>
+public class BehaviorEventArgs : EventArgs
+{
+    private BehaviorEnum behaviour;
+
+    public BehaviorEventArgs(BehaviorEnum _behaviour)
+    {
+        behaviour = _behaviour;
+    }
+
+    public BehaviorEnum Behaviour { get { return behaviour; } }
+
+}
+
+/// <summary>
+/// Событийные данные, используемые для событий, связанных со сменой стороны конфликта
+/// </summary>
+public class LoyaltyEventArgs : EventArgs
+{
+    private LoyaltyEnum loyalty;
+
+    public LoyaltyEventArgs(LoyaltyEnum _loyalty)
+    {
+        loyalty = _loyalty;
+    }
+
+    public LoyaltyEnum Loyalty { get { return loyalty; } }
 
 }

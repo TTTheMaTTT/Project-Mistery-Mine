@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Steamworks;
 
 /// <summary>
 /// Компонент, ответственный за работу игровых событий, квестов и обучения
@@ -32,7 +33,7 @@ public class GameHistory : MonoBehaviour, IHaveStory
     /// <returns></returns>
     public virtual List<string> actionNames()
     {
-        return new List<string>() { "changeQuestData", "removeObject" };
+        return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement" };
     }
 
     /// <summary>
@@ -43,7 +44,9 @@ public class GameHistory : MonoBehaviour, IHaveStory
     {
         return new Dictionary<string, List<string>>() {
                                                     { "changeQuestData", new List<string>() {"add","continue","complete" } },
-                                                    { "removeObject", new List<string>(){ } } };
+                                                    { "removeObject", new List<string>(){ } },
+                                                    { "startInvestigationEffect",new List<string>() { } },
+                                                    { "getAchievement", new List<string>() { } } };
     }
 
     /// <summary>
@@ -56,7 +59,9 @@ public class GameHistory : MonoBehaviour, IHaveStory
                                                     { "changeQuestData", (SpecialFunctions.statistics.database != null?
                                                                                         SpecialFunctions.statistics.database.quests.ConvertAll<string>(x=>x.questName):
                                                                                         new List<string>())},
-                                                    {"removeOject", new List<string>()} };
+                                                    {"removeOject", new List<string>()},
+                                                    {"startInvestigationEffect",new List<string>() { } },
+                                                    { "getAchievement",new List<string>() { } } };
     }
 
     public virtual Dictionary<string, List<string>> conditionIDs()
@@ -180,9 +185,10 @@ public class History
     /// </summary>
     public void FormStoryBase()
     {
-
         storyActionBase.Add("changeQuestData", ChangeQuestData);
         storyActionBase.Add("removeObject", RemoveHistoryObject);
+        storyActionBase.Add("startInvestigationEffect", StartInvestigationEffect);
+        storyActionBase.Add("getAchievement", GetAchievement);
 
         storyConditionBase.Clear();
         storyConditionBase.Add("compare", Compare);
@@ -364,6 +370,30 @@ public class History
     #region storyActions
 
     /// <summary>
+    /// Сюжетное событие, добавляющее ачивку
+    /// </summary>
+    public void GetAchievement(StoryAction _action)
+    {
+        if (SteamManager.Initialized)
+        {
+            bool isAchivementAlreadyGet;
+            if (SteamUserStats.GetAchievement(_action.id1, out isAchivementAlreadyGet) && !isAchivementAlreadyGet)
+            {
+                SteamUserStats.SetAchievement(_action.id1);
+                SteamUserStats.StoreStats();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Вызвать исследовательский эффект
+    /// </summary>
+    public void StartInvestigationEffect(StoryAction _action)
+    {
+        SpecialFunctions.gameController.AddRandomGameEffect();
+    }
+
+    /// <summary>
     /// Изменить данные о квестах
     /// </summary>
     public void ChangeQuestData(StoryAction _action)
@@ -451,7 +481,7 @@ public class History
     }
 
     /// <summary>
-    /// Проверить, была ли сказана персонажем нужна нам реплика
+    /// Проверить, была ли сказана персонажем нужная нам реплика
     /// </summary>
     static bool CompareSpeech(StoryCondition _condition, StoryEventArgs e)
     {

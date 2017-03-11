@@ -22,11 +22,13 @@ public interface IHaveID
 public interface IDamageable: IHaveID
 {
 
-    void TakeDamage(float damage);
+    void TakeDamage(float damage, DamageType _dType, bool _microstun=true);
 
-    void TakeDamage(float damage, bool ignoreInvul);
+    void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, bool _microstun=true);
 
     float GetHealth();
+
+    void TakeDamageEffect(DamageType _dType);
 
     bool InInvul();
 

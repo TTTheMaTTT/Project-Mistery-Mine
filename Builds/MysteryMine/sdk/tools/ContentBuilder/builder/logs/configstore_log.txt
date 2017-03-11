@@ -1,0 +1,31 @@
+
+
+[2017-02-09 13:18:42] Failed to read store 'install' from 'D:\Chisto Moya Papka!!!\Programmes\SteamworksSDK\sdk\tools\ContentBuilder\builder\config\config.vdf.tmp'
+[2017-02-09 13:18:42] Failed to read store 'install' from 'D:\Chisto Moya Papka!!!\Programmes\SteamworksSDK\sdk\tools\ContentBuilder\builder\config\config.vdf.tmp'
+[2017-02-09 13:18:43] Failed to read store 'install' from 'D:\Chisto Moya Papka!!!\Programmes\SteamworksSDK\sdk\tools\ContentBuilder\builder\config\config.vdf.tmp'
+[2017-02-09 13:18:43] Flushed store 'install' to 'D:\Chisto Moya Papka!!!\Programmes\SteamworksSDK\sdk\tools\ContentBuilder\builder\config\config.vdf'
+
+
+[2017-02-11 03:21:14] Loaded store 'install' from 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine 01.02.2017\sdk\tools\ContentBuilder\builder\config\config.vdf' successfully
+[2017-02-11 03:21:14] Loaded store 'install' from 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine 01.02.2017\sdk\tools\ContentBuilder\builder\config\config.vdf' successfully
+[2017-02-11 03:27:35] Loaded store 'install' from 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine 01.02.2017\sdk\tools\ContentBuilder\builder\config\config.vdf' successfully
+[2017-02-11 03:28:26] Failed to read store 'userlocal' from 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine 01.02.2017\sdk\tools\ContentBuilder\builder\userdata\122204173\config\localconfig.vdf.tmp'
+[2017-02-11 03:28:28] Flushed store 'install' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine 01.02.2017\sdk\tools\ContentBuilder\builder\config\config.vdf'
+[2017-02-11 03:28:28] Flushed store 'userlocal' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine 01.02.2017\sdk\tools\ContentBuilder\builder\userdata\122204173\config\localconfig.vdf'
+[2017-02-11 03:28:29] Flushed store 'userlocal' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine 01.02.2017\sdk\tools\ContentBuilder\builder\userdata\122204173\config\localconfig.vdf'
+[2017-02-11 03:28:29] Flushed store 'userlocal' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine 01.02.2017\sdk\tools\ContentBuilder\builder\userdata\122204173\config\localconfig.vdf'
+[2017-02-11 03:28:32] Flushed store 'userlocal' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine 01.02.2017\sdk\tools\ContentBuilder\builder\userdata\122204173\config\localconfig.vdf'
+[2017-02-11 03:28:59] Flushed store 'userlocal' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine 01.02.2017\sdk\tools\ContentBuilder\builder\userdata\122204173\config\localconfig.vdf'
+
+
+[2017-02-11 03:32:29] Loaded store 'install' from 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\config\config.vdf' successfully
+[2017-02-11 03:32:29] Loaded store 'install' from 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\config\config.vdf' successfully
+[2017-02-11 03:32:47] Loaded store 'install' from 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\config\config.vdf' successfully
+[2017-02-11 03:32:47] Loaded store 'userlocal' from 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\userdata\122204173\config\localconfig.vdf' successfully
+[2017-02-11 03:32:47] Flushed store 'userlocal' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\userdata\122204173\config\localconfig.vdf'
+[2017-02-11 03:32:47] Flushed store 'install' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\config\config.vdf'
+[2017-02-11 03:32:48] Flushed store 'install' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\config\config.vdf'
+[2017-02-11 03:32:49] Flushed store 'userlocal' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\userdata\122204173\config\localconfig.vdf'
+[2017-02-11 03:32:50] Flushed store 'userlocal' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\userdata\122204173\config\localconfig.vdf'
+[2017-02-11 03:32:50] Flushed store 'install' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\config\config.vdf'
+[2017-02-11 03:32:54] Flushed store 'userlocal' to 'D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\userdata\122204173\config\localconfig.vdf'

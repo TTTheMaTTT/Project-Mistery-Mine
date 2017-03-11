@@ -15,8 +15,8 @@ public class ObstacleScript : MonoBehaviour
     public List<string> Enemies {set { enemies = value; } }
 
     [SerializeField]
-    protected HitClass hitData;
-    public HitClass HitData { get { return hitData; } set { hitData = value; } }
+    protected HitParametres hitData;
+    public HitParametres HitData { get { return hitData; } set { hitData = value; } }
     
     #endregion //fields
 
@@ -25,7 +25,7 @@ public class ObstacleScript : MonoBehaviour
         hitBox = GetComponent<HitBox>();
         hitBox.Immobile = true;
         hitBox.SetEnemies(enemies);
-        hitBox.SetHitBox(new HitClass(hitData.damage,-1f,hitData.hitSize,transform.position,0f));
+        hitBox.SetHitBox(new HitParametres(hitData.damage,-1f,hitData.hitSize,transform.position,0f, hitData.damageType, hitData.effectChance));
     }
 
 }

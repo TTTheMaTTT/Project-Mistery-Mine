@@ -55,6 +55,7 @@ public class MovingPlatform : MonoBehaviour, IMechanism
     public bool moving = true;//Движется ли платформа или нет
     protected int currentPosition = 0;//Текущая позиция
     protected Vector2 direction = Vector2.zero;//Направление движения платформа
+    public Vector2 Direction { get { return direction; } }
 
     [SerializeField]public int id;
 
@@ -185,6 +186,8 @@ public class MovingPlatform : MonoBehaviour, IMechanism
         }
     }
 
+    #region IHaveID
+
     /// <summary>
     /// Вернуть id
     /// </summary>
@@ -244,6 +247,8 @@ public class MovingPlatform : MonoBehaviour, IMechanism
         MovPlatformData mData = new MovPlatformData(id, moving, transform.position,orientation, currentPosition);
         return mData;
     }
+
+    #endregion //IHaveID
 
 }
 

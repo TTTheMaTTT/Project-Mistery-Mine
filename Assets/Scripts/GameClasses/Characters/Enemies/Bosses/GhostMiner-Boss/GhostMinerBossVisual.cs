@@ -9,7 +9,6 @@ public class GhostMinerBossVisual : GroundMoveVisual
 
     #region consts
 
-    protected const float invulBlinkTime = .2f;//Константы для отображения мерцания персонажа
     protected const int invulTimes = 3;
 
     #endregion //consts
@@ -45,7 +44,7 @@ public class GhostMinerBossVisual : GroundMoveVisual
             anim.Play("Attack");
         else
             anim.Play(id);
-        StartCoroutine(VisualRoutine(5, 1f));
+        StartVisualRoutine(5, 1f);
     }
 
     /// <summary>
@@ -60,17 +59,17 @@ public class GhostMinerBossVisual : GroundMoveVisual
     /// <summary>
     /// Отобразить получение урона миганием персонажа
     /// </summary>
-    public virtual void Blink()
+    public override void Blink(bool blink=true)
     {
         GetComponent<SpriteRenderer>().enabled = true;
-        StopCoroutine(BlinkProcess());
-        StartCoroutine(BlinkProcess());
+        StopCoroutine("BlinkProcess");
+        StartCoroutine("BlinkProcess");
     }
 
     /// <summary>
     /// Процесс мигания
     /// </summary>
-    protected virtual IEnumerator BlinkProcess()
+    protected override IEnumerator BlinkProcess()
     {
         SpriteRenderer sprite = GetComponent<SpriteRenderer>();
         for (int i = 0; i < invulTimes; i++)

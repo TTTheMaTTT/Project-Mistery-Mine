@@ -5,9 +5,9 @@ Shader "MysteryMine/WaterShader"
 	Properties
 	{
 		_MainTex ("Texture", 2D) = "white" {}//Текстура воды
-		_LightColour("LightColour", Color) = (1,1,1,1)//Цвет просвета
+		//_LightColour("LightColour", Color) = (1,1,1,1)//Цвет просвета
 
-		_CosAngle("CosAngle",Range(-1,1)) = 0.0//Косинус угла наклона просветов
+		/*_CosAngle("CosAngle",Range(-1,1)) = 0.0//Косинус угла наклона просветов
 		_T("Period",Float) = 2.0//Период появления и исчезновения просветов
 		_L("MaxDistance",Float) = 1
 
@@ -25,12 +25,14 @@ Shader "MysteryMine/WaterShader"
 
 		_t4("t4", Float) = 0.0
 		_x4("x4", Float) = 0.1
-		_l4("l4",Float) = .15
+		_l4("l4",Float) = .15*/
 	}
 	SubShader
 	{
 	
+
 		Tags{ "Queue" = "Transparent" "IgnoreProjector" = "True"}
+		Blend SrcAlpha OneMinusSrcAlpha
 
 		Pass
 		{
@@ -47,9 +49,9 @@ Shader "MysteryMine/WaterShader"
 #include "UnityCG.cginc"
 
 		sampler2D _MainTex;
-		fixed4 _LightColour;
+		//fixed4 _LightColour;
 
-		float _CosAngle;
+		/*float _CosAngle;
 		float _T;
 		float _L;
 
@@ -67,7 +69,7 @@ Shader "MysteryMine/WaterShader"
 
 		float _t4;
 		float _x4;
-		float _l4;
+		float _l4;*/
 
 		struct vin_vct
 		{
@@ -97,18 +99,18 @@ Shader "MysteryMine/WaterShader"
 			return o;
 		}
 
-		float sinusoid(float t)
+		/*float sinusoid(float t)
 		{
 			float2 c = 3.1415;
 			return (1.0 + sin(t / _T * 2 * c)) / 2.0;
-		}
+		}*/
 
 		// Fragment function
 		half4 frag(v2f_vct i) : COLOR
 		{
 			half4 mainColour = tex2D(_MainTex, i.texcoord);
 
-			float nx = step(i.wPos.x - i.wPos.y*_CosAngle, 0);
+			/*float nx = step(i.wPos.x - i.wPos.y*_CosAngle, 0);
 			float x = (1-nx)*fmod(i.wPos.x - i.wPos.y*_CosAngle,_L)+nx*(_L-fmod(-i.wPos.x + i.wPos.y*_CosAngle, _L));
 			float time = _Time[1];
 
@@ -117,9 +119,10 @@ Shader "MysteryMine/WaterShader"
 			float nd3 = step(x, _x3 + _l3)*step(_x3 - _l3/2.0, x);
 			float nd4 = step(x, _x4 + _l4)*step(_x4 - _l4/2.0, x);
 
-			float koof = saturate(nd1*sinusoid(time+_t1)+ nd2*sinusoid(time + _t2) + nd3*sinusoid(time + _t3) + nd4*sinusoid(time + _t4));
+			float koof = saturate(nd1*sinusoid(time+_t1)+ nd2*sinusoid(time + _t2) + nd3*sinusoid(time + _t3) + nd4*sinusoid(time + _t4));*/
 
-			return mainColour * (1.0-koof) + _LightColour*koof;
+			//return mainColour * (1.0-koof) + _LightColour*koof;
+			return mainColour;
 		}
 
 			ENDCG

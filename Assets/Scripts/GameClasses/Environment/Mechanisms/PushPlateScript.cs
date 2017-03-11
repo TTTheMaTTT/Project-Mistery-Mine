@@ -21,7 +21,7 @@ public class PushPlateScript : LeverScript
     {
         if (!activated)
         {
-            if (other.gameObject == SpecialFunctions.player)
+            if (other.gameObject == SpecialFunctions.Player)
             {
                 activated = true;
                 if (anim != null)
@@ -40,7 +40,7 @@ public class PushPlateScript : LeverScript
     {
         if (activated)
         {
-            if (other.gameObject == SpecialFunctions.player)
+            if (other.gameObject == SpecialFunctions.Player)
             {
                 activated = false;
                 if (anim!=null)

@@ -15,13 +15,13 @@ public class BulletScript : MonoBehaviour
 
     #region fields
 
-    protected HitBox hitBox;
+    protected HitBoxController hitBox;
 
     #endregion //fields
 
     public virtual void Awake()
     {
-        hitBox = GetComponentInChildren<HitBox>();
+        hitBox = GetComponentInChildren<HitBoxController>();
         hitBox.AttackEventHandler += HandleAttackProcess;
     }
 

@@ -1,15 +1,30 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using Steamworks;
 
 /// <summary>
 /// Функция, хранящая в себе методы, что могут быть использованы всеми скриптами в игре
 /// </summary>
 public static class SpecialFunctions
 {
-    public static GameObject player { get { return GameObject.FindGameObjectWithTag("player"); } }
+    public static GameObject player = null;
+    public static BattleField battleField = null;
+    public static GameObject Player
+    {
+        get
+        {
+            if (player == null)
+            {
+                player = GameObject.FindGameObjectWithTag("player");
+                battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
+            }
+            return player;
+        }
+    }
 
-    public static CameraController camControl { get { return GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); } }
+    public static CameraController camControl;
+    public static CameraController СamController { get { camControl = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); return camControl; } }
 
     public static GameController gameController { get { return GameObject.FindGameObjectWithTag("gameController").GetComponent<GameController>(); } }
 
@@ -20,8 +35,25 @@ public static class SpecialFunctions
     public static GameObject gameInterface { get { return GameObject.FindGameObjectWithTag("interface"); } }
 
     public static GameUIScript gameUI { get { return gameInterface.GetComponentInChildren<GameUIScript>(); } }
+    public static EquipmentMenu equipWindow { get { return gameInterface.GetComponentInChildren<EquipmentMenu>(); } }
 
     public static LoadMenuScript loadMenu { get { return GameObject.Find("SaveScreen").GetComponent<LoadMenuScript>(); } }
+
+    public static bool totalPaused = false;//Пауза, которая не может быть снята функцией PlayGame()
+    public static bool levelEnd = false;//Закончен ли уровень
+    public static string nextLevelName = "";//Название следующего уровня
+
+    /// <summary>
+    /// Проинициализировать важные игровые объекты перед началом игры
+    /// </summary>
+    public static void InitializeObjects()
+    {
+        totalPaused = false;
+        levelEnd = false;
+        camControl= GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>();
+        player = GameObject.FindGameObjectWithTag("player");
+        battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
+    }
 
     /// <summary>
     /// Функция, которая позволяет использовать ComparativeClass и по сути ей можно заменять 
@@ -40,14 +72,21 @@ public static class SpecialFunctions
                         (opr==string.Empty));
     }
 
+    /// <summary>
+    /// Поставить игру на паузу
+    /// </summary>
     public static void PauseGame()
     {
         Time.timeScale = 0f;
     }
 
+    /// <summary>
+    /// Возобновить ход игры
+    /// </summary>
     public static void PlayGame()
     {
-        Time.timeScale = 1f;
+        if (!totalPaused)
+            Time.timeScale = 1f;
     }
 
     /// <summary>
@@ -66,7 +105,24 @@ public static class SpecialFunctions
     /// </summary>
     public static void SetText(string _info, float textTime)
     {
-        gameUI.SetText(_info, textTime);
+        gameUI.SetMessage(_info, textTime);
+    }
+
+    /// <summary>
+    /// Функция, выводящая заданный тект в поле сообщений о секретах и эффектах
+    /// </summary>
+    public static void SetSecretText(float textTime, string _text = "Вы нашли секретное место!")
+    {
+        gameUI.SetSecretMessage(textTime,_text);
+    }
+
+    /// <summary>
+    /// Функция, обрабатывающая событие нахождения секретного места
+    /// </summary>
+    public static void FindSecretPlace(float textTime)
+    {
+        gameUI.SetSecretMessage(textTime);
+        gameController.FindSecretPlace();
     }
 
     /// <summary>
@@ -93,8 +149,17 @@ public static class SpecialFunctions
     /// </summary>
     public static void MoveToCheckpoint(CheckpointController checkpoint)
     {
-        Vector3 cPos = checkpoint.transform.position, pPos = player.transform.position;
-        player.transform.position = new Vector3(cPos.x, cPos.y, pPos.z);
+        Vector3 cPos = checkpoint.transform.position, pPos = Player.transform.position;
+        Player.transform.position = new Vector3(cPos.x, cPos.y, pPos.z);
+    }
+
+    /// <summary>
+    /// Функция, сбрасывающая все достижения (нужно для тестов системы ачивок)
+    /// </summary>
+    public static void ResetAchievements()
+    {
+        SteamUserStats.ResetAllStats(true);
+        SteamUserStats.RequestCurrentStats();
     }
 
 }

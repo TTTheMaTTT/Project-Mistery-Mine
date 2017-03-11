@@ -24,6 +24,7 @@ public class Serializator
                               typeof (DropData),
                               typeof (DropInfo),
                               typeof(QuestInfo),
+                              typeof(CollectionInfo),
                               typeof(EquipmentInfo),
                               typeof(StoryInfo)};
 
@@ -49,6 +50,7 @@ public class Serializator
                               typeof (DropData),
                               typeof (DropInfo),
                               typeof(QuestInfo),
+                              typeof(CollectionInfo),
                               typeof(EquipmentInfo),
                               typeof(StoryInfo)};
 

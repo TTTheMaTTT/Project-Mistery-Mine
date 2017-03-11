@@ -10,6 +10,59 @@ using System.Collections.Generic;
 public class GameController : MonoBehaviour
 {
 
+    #region consts
+
+    #region gameEffectConsts
+
+    protected const float ancestorsRevengeTime = 60f;//Время и шанс эффекта "Месть предков"
+    protected const float ancestorsRevengeProbability = .1f;
+
+    protected const float tribalLeaderTime = 30f;//Время и шанс эффекта "Вождь племени"
+    protected const float tribalLeaderProbability =.07f;
+
+    protected const float battleCryProbability = .05f;//Шанс и радиус действия эффекта "Боевой клич"
+    protected const float battleCryRadius = 6f;
+
+    protected const float treasureHunterTime = 30f;//Время действия и шанс эффекта "Кладоискатель"
+    protected const float treasureHunterProbability = .4f;
+
+    protected const float collectorTime = 15f;//Время действия и шанс эффекта "Коллекционер"
+    protected const float collectorProbability = .3f;
+
+    protected const float compassArrowOffsetY = 0.17f;//Насколько смещена по вертикали стрелка компаса относительно персонажа
+
+    protected const float ancientDarknessTime = 15f;//Время и шанс эффекта "Древняя тьма"
+    protected const float ancientDarknessProbability = .05f;
+
+    protected const float totemAnimalProbability = .07f;//Шанс эффекта "Тотемное животное"
+
+    protected const float tribalRitualProbability = .07f;//Шанс эффекта "Ритуал племени"
+
+    #endregion //gameEffectConsts
+
+    #endregion //consts
+
+    #region dictionaries
+
+    //protected Dictionary<string, BuffFunction> buffFunctions = new Dictionary<string, BuffFunction>();
+    protected Dictionary<string, StopBuffFunction> stopBuffFunctions = new Dictionary<string, StopBuffFunction>();
+    protected Dictionary<string, string> buffNamesDict = new Dictionary<string, string>() { {"AncestorsRevenge","Месть предков"},
+                                                                                            {"TribalLeader", "Вождь племени" },
+                                                                                            {"TreasureHunter", "Кладоскатель"},
+                                                                                            {"Collector", "Коллекционер"},
+                                                                                            {"AncientDarkness","Древняя тьма"},
+                                                                                            {"TotemAnimal", "Тотемное животное"},
+                                                                                            {"TribalRitual", "Ритуал племени"} };
+
+    #endregion //dictionaries
+
+    #region delegates
+
+    //protected delegate void BuffFunction(CharacterController _char, float _time, int argument, string id);
+    protected delegate void StopBuffFunction(int argument, string id);
+
+    #endregion //delegates
+
     #region eventHandlers
 
     public EventHandler<StoryEventArgs> StartGameEvent;
@@ -18,10 +71,18 @@ public class GameController : MonoBehaviour
 
     #region fields
 
-    protected DialogWindowScript dialogWindow;
-    protected GameMenuScript gameMenu;
+    protected DialogWindowScript dialogWindow;//Окно диалога
+    protected GameMenuScript gameMenu;//игровой интерфейс
+    protected LevelCompleteScreenScript levelCompleteScreen;//Окошко, открывающееся при завершении уровня
+    private HeroController hero;//Главный герой
+    private HeroController Hero { get { if (hero == null) hero = SpecialFunctions.Player.GetComponent<HeroController>(); return hero; } }
 
-    List<CheckpointController> checkpoints = new List<CheckpointController>();
+    private List<CheckpointController> checkpoints = new List<CheckpointController>();
+
+    private static List<string> activeGameEffects = new List<string>();//Названия активных игровычх эффектов
+
+    [SerializeField]private GameObject treasureHunterArrow;//Стрелка компаса охотника за сокровищами
+    [SerializeField]private GameObject collectorArrow;//Стрелка компаса коллекционера
 
     #region saveSystem
 
@@ -44,6 +105,8 @@ public class GameController : MonoBehaviour
     string savesInfoPath;
 
     int startCheckpointNumber = 0;
+
+    int secretsFoundNumber = 0, secretsTotalNumber = 0;//Сколько секретных мест на уровне было найдено и сколько их всего
 
     [SerializeField]protected bool idSetted=false;//Были ли установлены id для всех игровых объектов
     public bool IDSetted
@@ -97,15 +160,20 @@ public class GameController : MonoBehaviour
 
     protected void Initialize()
     {
+        SpecialFunctions.InitializeObjects();
+        InitializeDictionaries();
         datapath = (Application.dataPath) + "/StreamingAssets/Saves/Profile";
         savesInfoPath = (Application.dataPath) + "/StreamingAssets/SavesInfo.xml";
-
+        GameObject p=SpecialFunctions.Player;
         Transform interfaceWindows = SpecialFunctions.gameInterface.transform;
         dialogWindow = interfaceWindows.GetComponentInChildren<DialogWindowScript>();
         gameMenu = interfaceWindows.GetComponentInChildren<GameMenuScript>();
+        //if (gameMenu != null)
+            //Debug.LogError("GameMenu initialized");
+        levelCompleteScreen = interfaceWindows.GetComponentInChildren<LevelCompleteScreenScript>();
         SpecialFunctions.PlayGame();
         if (SceneManager.GetActiveScene().name != "MainMenu")
-            Cursor.visible = false;
+            Cursor.visible = true;
         if (PlayerPrefs.HasKey("Profile Number"))
             profileNumber = PlayerPrefs.GetInt("Profile Number");
         else
@@ -124,6 +192,27 @@ public class GameController : MonoBehaviour
         if (!PlayerPrefs.HasKey("Checkpoint Number"))
             PlayerPrefs.SetInt("Checkpoint Number", 0);
         startCheckpointNumber = PlayerPrefs.GetInt("Checkpoint Number");
+
+        //Определим, сколько секретных мест на уровне
+        secretsTotalNumber = 0; secretsFoundNumber = 0;
+        GameObject[] secretPlaces = GameObject.FindGameObjectsWithTag("mechanism");
+        foreach (GameObject secretPlace in secretPlaces)
+            if (secretPlace.GetComponent<SecretPlaceTrigger>() != null)
+                secretsTotalNumber++;
+        activeGameEffects = new List<string>();
+    }
+
+    /// <summary>
+    /// Инициализировать нужные словари
+    /// </summary>
+    void InitializeDictionaries()
+    {
+        stopBuffFunctions.Add("AncestorsRevenge", StopAncestorsRevenge);
+        stopBuffFunctions.Add("TribalLeader", StopTribalLeader);
+        stopBuffFunctions.Add("TreasureHunter", StopTreasureHunt);
+        stopBuffFunctions.Add("Collector", StopCollectorProcess);
+        stopBuffFunctions.Add("AncientDarkness", StopAncientDarkness);
+        stopBuffFunctions.Add("TotemAnimal", StopTotemAnimal);
     }
 
     /*
@@ -141,8 +230,16 @@ public class GameController : MonoBehaviour
     /// </summary>
     public void StartDialog(NPCController npc, Dialog dialog)
     {
-        Transform player = SpecialFunctions.player.transform;
+        Transform player = SpecialFunctions.Player.transform;
         dialogWindow.BeginDialog(npc, dialog);
+    }
+
+    /// <summary>
+    /// Функция, вызывающаяся при нахождении секретного места
+    /// </summary>
+    public void FindSecretPlace()
+    {
+        secretsFoundNumber++;
     }
 
     /// <summary>
@@ -150,6 +247,8 @@ public class GameController : MonoBehaviour
     /// </summary>
     public void SaveGame(int checkpointNumb, bool generally, string levelName)
     {
+        SpecialFunctions.battleField.KillAllies();//Все союзники героя погибают (ввиду их временного характера)
+        Hero.RestoreStats();//При сохранении герой восстанавливает свои характеристики (восстановление здоровья, сброс отрицательных боевых эффектов)
         Serializator.SaveXml(GetGameData(generally, checkpointNumb), datapath + profileNumber.ToString()+".xml");
         SavesInfo savesInfo = Serializator.DeXmlSavesInfo(savesInfoPath);
         SaveInfo sInfo = savesInfo.saves[profileNumber];
@@ -157,6 +256,8 @@ public class GameController : MonoBehaviour
         sInfo.hasData = true;
         savesInfo.currentProfileNumb = profileNumber;
         sInfo.loadSceneName = levelName;
+        if (generally)
+            SpecialFunctions.nextLevelName = levelName;
         Serializator.SaveXmlSavesInfo(savesInfo, savesInfoPath);
     }
 
@@ -189,7 +290,6 @@ public class GameController : MonoBehaviour
             if (gGData != null)
             {
                 startCheckpointNumber = gGData.firstCheckpointNumber;
-                HeroController hero = SpecialFunctions.player.GetComponent<HeroController>();
 
                 //Сначала переместим главного героя к последнему чекпоинту
                 CheckpointController currentCheckpoint = checkpoints.Find(x => (x.checkpointNumb == startCheckpointNumber));
@@ -201,19 +301,36 @@ public class GameController : MonoBehaviour
                 EquipmentInfo eInfo = gGData.eInfo;
                 if (eInfo != null && gStats != null)
                 {
+                    EquipmentClass equip = Hero.Equipment;
+                    SpecialFunctions.equipWindow.ClearCells();
+                    equip.bag.Clear();
+                    foreach (string itemName in eInfo.bagItems)
+                        if (gStats.ItemDict.ContainsKey(itemName))
+                            equip.bag.Add(gStats.ItemDict[itemName]);
+                    equip.weapons.Clear();
+                    foreach (string itemName in eInfo.weapons)
+                        if (gStats.WeaponDict.ContainsKey(itemName))
+                            Hero.SetItem(gStats.WeaponDict[itemName]);
                     if (gStats.WeaponDict.ContainsKey(eInfo.weapon))
                     {
-                        hero.SetItem(gStats.WeaponDict[eInfo.weapon],true);
-                    }
-                    foreach (string itemName in eInfo.bagItems)
-                    {
-                        hero.Bag.Clear();
-                        if (gStats.ItemDict.ContainsKey(itemName))
-                        {
-                            hero.Bag.Add(gStats.ItemDict[itemName]);
-                        }
+                        Hero.CurrentWeapon = gStats.WeaponDict[eInfo.weapon];
                     }
                 }
+
+                List<CollectionInfo> cInfo = gGData.cInfo;
+                List<ItemCollection> _collection = gStats.ItemCollections;
+                if (cInfo != null && _collection != null)
+                {
+                    foreach (CollectionInfo cData in cInfo)
+                    {
+                        ItemCollection iCollection = _collection.Find(x => x.collectionName == cData.collectionName);
+                        if (iCollection != null)
+                            for (int i = 0; i < cData.itemsFound.Count && i < iCollection.collection.Count; i++)
+                                iCollection.collection[i].itemFound = cData.itemsFound[i]; 
+                    }
+                }
+
+                Hero.SetBuffs(new BuffListData(new List<BuffClass>()));
 
                 GetComponent<GameStatistics>().ResetStatistics();
 
@@ -228,7 +345,6 @@ public class GameController : MonoBehaviour
 
         else//Если игрок сохранился на чекпоинте, то у него есть прогресс на уровне и именно его мы и загружаем
         {
-            HeroController hero = SpecialFunctions.player.GetComponent<HeroController>();
 
             //Сначала переместим главного героя к последнему чекпоинту
             CheckpointController currentCheckpoint = checkpoints.Find(x => (x.checkpointNumb == lData.checkpointNumber));
@@ -240,21 +356,40 @@ public class GameController : MonoBehaviour
             EquipmentInfo eInfo = lData.eInfo;
             if (eInfo != null && gStats != null)
             {
+                EquipmentClass equip = Hero.Equipment;
+                SpecialFunctions.equipWindow.ClearCells();
+                equip.bag.Clear();
+                foreach (string itemName in eInfo.bagItems)
+                    if (gStats.ItemDict.ContainsKey(itemName))
+                        equip.bag.Add(gStats.ItemDict[itemName]);
+                equip.weapons.Clear();
+                foreach (string itemName in eInfo.weapons)
+                    if (gStats.WeaponDict.ContainsKey(itemName))
+                        Hero.SetItem(gStats.WeaponDict[itemName]);
                 if (gStats.WeaponDict.ContainsKey(eInfo.weapon))
                 {
-                    hero.SetItem(gStats.WeaponDict[eInfo.weapon],true);
-                }
-                foreach (string itemName in eInfo.bagItems)
-                {
-                    hero.Bag.Clear();
-                    if (gStats.ItemDict.ContainsKey(itemName))
-                    {
-                        hero.Bag.Add(gStats.ItemDict[itemName]);
-                    }
+                    Hero.CurrentWeapon = gStats.WeaponDict[eInfo.weapon];
                 }
             }
 
             #endregion //heroEquipment
+
+            #region gameCollections
+
+            List<CollectionInfo> cInfo = lData.cInfo;
+            List<ItemCollection> _collection = gStats.ItemCollections;
+            if (cInfo != null && _collection != null)
+            {
+                foreach (CollectionInfo cData in cInfo)
+                {
+                    ItemCollection iCollection = _collection.Find(x => x.collectionName == cData.collectionName);
+                    if (iCollection != null)
+                        for (int i = 0; i < cData.itemsFound.Count && i < iCollection.collection.Count; i++)
+                            iCollection.collection[i].itemFound = cData.itemsFound[i];
+                }
+            }
+
+            #endregion //gameCollections
 
             GameHistory gHistory = GetComponent<GameHistory>();
             History history = gHistory!=null? gHistory.history:null;
@@ -339,7 +474,7 @@ public class GameController : MonoBehaviour
                 for (int i = 0; i < monsters.Count; i++)
                 {
                     if (monsters[i] != null)
-                        DestroyImmediate(monsters[i].gameObject);
+                        Destroy(monsters[i].gameObject);
                 }
             }
 
@@ -354,7 +489,7 @@ public class GameController : MonoBehaviour
                 foreach (InterObjData interData in intInfo)
                 {
                     int objId = interData.objId;
-                    if (objId < intObjects.Count ? intObjects[objId] != null : false)
+                    if (objId < intObjects.Count && objId>0 ? intObjects[objId] != null : false)
                     {
                         IInteractive iInter = intObjects[objId].GetComponent<IInteractive>();
                         IMechanism iMech = intObjects[objId].GetComponent<IMechanism>();
@@ -378,13 +513,23 @@ public class GameController : MonoBehaviour
                 {
                     if (intObjects[i] != null)
                     {
-                        ChestController chest = intObjects[i].GetComponent<ChestController>();
-                        CheckpointController checkpoint = intObjects[i].GetComponent<CheckpointController>();
-                        if (chest != null)
+                        if (intObjects[i].GetComponent<ChestController>() != null)
+                        {
+                            ChestController chest = intObjects[i].GetComponent<ChestController>();
                             chest.DestroyClosedChest();
-                        else if (checkpoint != null)
-                            checkpoint.DestroyCheckpoint();
-                        else 
+                        }
+                        else if (intObjects[i].GetComponent<CheckpointController>() != null)
+                        {
+                            CheckpointController checkpoint = intObjects[i].GetComponent<CheckpointController>();
+                            checkpoint.ChangeCheckpoint();
+                        }
+                        else if (intObjects[i].GetComponent<SecretPlaceTrigger>())
+                        {
+                            SecretPlaceTrigger secretPlace = intObjects[i].GetComponent<SecretPlaceTrigger>();
+                            FindSecretPlace();
+                            Destroy(secretPlace);
+                        }
+                        else
                             DestroyImmediate(intObjects[i]);
                     }
                 }
@@ -440,7 +585,7 @@ public class GameController : MonoBehaviour
         if (general)
         {
             _gData.ResetLevelData();
-            _gData.SetGeneralGameData(cNumber, SpecialFunctions.player.GetComponent<HeroController>());
+            _gData.SetGeneralGameData(cNumber, Hero, SpecialFunctions.statistics.ItemCollections);
         }
         else
         {
@@ -474,7 +619,9 @@ public class GameController : MonoBehaviour
             foreach (NPCController npc in NPCs)
                 npcInfo.Add((NPCData)npc.GetData());
 
-            _gData.SetLevelData(cNumber, SpecialFunctions.player.GetComponent<HeroController>(), drops, GetComponent<GameHistory>().history,
+            List<ItemCollection> _collection = SpecialFunctions.statistics.ItemCollections;
+
+            _gData.SetLevelData(cNumber, Hero,  _collection, drops, GetComponent<GameHistory>().history,
                                                                                                         GetComponent<GameStatistics>(),enInfo,intInfo, npcInfo);
         }
         return _gData;
@@ -506,7 +653,7 @@ public class GameController : MonoBehaviour
         foreach (GameObject obj in enemiesObjs)
         {
             AIController ai = obj.GetComponent<AIController>();
-            if (ai != null)
+            if (ai != null? !ai.Dead:false)
             {
                 if (setID)
                     ai.ID = monsters.Count;
@@ -591,5 +738,430 @@ public class GameController : MonoBehaviour
         }
     }
 
+    #region gameEffects
+
+    /*
+    /// <summary>
+    /// Добавить бафф, описанный в геймконтроллере, запрашивающему персонажу и задать этому баффу необходимые параметры
+    /// </summary>
+    /// <param name="_bData">Данные о баффе</param>
+    /// <param name="_char">Персонаж, который запрашивает бафф</param>
+    public void SetBuffData(BuffData _bData, CharacterController _char)
+    {
+        if (buffFunctions.ContainsKey(_bData.buffName))
+            buffFunctions[_bData.buffName].Invoke(_char, _bData.buffDuration, _bData.buffArgument, _bData.buffID);
+    }*/
+
+    /// <summary>
+    /// Вызвать случайный игровой эффект (функция вызывет с некоторым шансом случайный положительный исследовательский объект при выполнении задания)
+    /// </summary>
+    public void AddRandomGameEffect()
+    {
+        float rand = UnityEngine.Random.RandomRange(0f, 1f);
+        if (rand < treasureHunterProbability)
+        {
+            StartTreasureHunt();
+            return;
+        }
+        else
+            rand -= treasureHunterProbability;
+        if (rand < collectorProbability)
+            StartСollectorProcess();
+    }
+
+    /// <summary>
+    /// Вызвать случайный игровой эффект
+    /// </summary>
+    /// <param name="_char">Персонаж, который вызывает случайный эффект (например, своей смертью)</param>
+    public void AddRandomGameEffect(CharacterController _char)
+    {
+        float rand = UnityEngine.Random.RandomRange(0f, 1f);
+        if (rand < ancestorsRevengeProbability)
+        {
+            StartAncestorsRevenge(_char);
+            return;
+        }
+        else
+            rand -= ancestorsRevengeProbability;
+
+        if (rand < tribalLeaderProbability)
+        {
+            StartTribalLeader(_char);
+            return;
+        }
+        else
+            rand -= tribalLeaderProbability;
+
+        if (rand < battleCryProbability)
+        {
+            StartBattleCry();
+            return;
+        }
+        else
+            rand -= battleCryProbability;
+
+        if (rand < ancientDarknessProbability)
+        {
+            StartAncientDarkness();
+            return;
+        }
+        else
+            rand -= ancientDarknessProbability;
+
+        if (rand < totemAnimalProbability)
+        {
+            StartTotemAnimal();
+            return;
+        }
+        else
+            rand -= totemAnimalProbability;
+
+        if (rand<tribalRitualProbability)
+            StartTribalRitual();
+    }
+
+    /// <summary>
+    /// Остановить действия указанного баффа (заданного в этом скрипте) на персонажа.
+    /// </summary>
+    /// <param name="_bData">Данные о баффе</param>
+    /// <param name="_char"></param>
+    public void StopBuff(BuffData _bData)
+    {
+        if (stopBuffFunctions.ContainsKey(_bData.buffName))
+            stopBuffFunctions[_bData.buffName].Invoke(_bData.buffArgument, _bData.buffID);
+    }
+
+    /// <summary>
+    /// Вернуть по названию баффа текст, который должен вывестись на экран
+    /// </summary>
+    /// <param name="_bName">Название баффа в коде</param>
+    public string GetBuffText(string _bName)
+    {
+        if (buffNamesDict.ContainsKey(_bName))
+            return "Вы находитесь под действием эффекта \"" + buffNamesDict[_bName]+"\"";
+        return "";
+    }
+
+    /// <summary>
+    /// Инициализировать действие баффа "Месть предков"
+    /// </summary>
+    /// <param name="_char">Смерть какого персонажа вызвал этот бафф (или на какого персонажа он должен подействовать</param>
+    /// <param name="_time">Как долго он будет длит</param>
+    /// <param name="argument">Какой тип урона наносил персонаж, смертью которого был вызван этот эффект (0, если это неизвестно)</param>
+    void StartAncestorsRevenge(CharacterController _char)
+    {
+        if (activeGameEffects.Contains("AncestorsRevenge"))
+            return;
+        WeaponClass _weapon = Hero.CurrentWeapon;
+        DamageType newType = _weapon.attackType;
+        DamageType dType = ((AIController)_char).AttackParametres.damageType;
+        if (!(_char is AIController))
+            return;
+        switch (dType)
+        {
+            case DamageType.Fire:
+                {
+                    newType = DamageType.Water;
+                    break;
+                }
+            case DamageType.Cold:
+                {
+                    newType = DamageType.Fire;
+                    break;
+                }
+            case DamageType.Water:
+                {
+                    newType = DamageType.Fire;
+                    break;
+                }
+            case DamageType.Poison:
+                {
+                    newType = DamageType.Crushing;
+                    break;
+                }
+            default:
+                break;
+        }
+        if (newType != _weapon.attackType)
+        {
+            _weapon.attackType = newType;
+            Hero.AddBuff(new BuffClass("AncestorsRevenge", Time.fixedTime, ancestorsRevengeTime));
+            activeGameEffects.Add("AncestorsRevenge");
+            StartCoroutine("AncestorsRevengeProcess");
+        }
+    }
+
+    /// <summary>
+    /// Процесс действия баффа "Месть предков"
+    /// </summary>
+    /// <param name="_time">Время действия</param>
+    IEnumerator AncestorsRevengeProcess()
+    {
+        yield return new WaitForSeconds(ancestorsRevengeTime);
+        GameStatistics statistics = GetComponent<GameStatistics>();
+        if (statistics != null)
+        {
+            WeaponClass _weapon = SpecialFunctions.Player.GetComponent<HeroController>().CurrentWeapon;
+            if (statistics.WeaponDict.ContainsKey(_weapon.itemName))
+                _weapon.attackType = statistics.WeaponDict[_weapon.itemName].attackType;
+        }
+        hero.RemoveBuff("AncestorsRevenge");
+        activeGameEffects.Remove("AncestorsRevenge");
+    }
+
+    /// <summary>
+    /// Остановить бафф "Месть предков"
+    /// </summary>
+    void StopAncestorsRevenge(int argument, string id)
+    {
+        if (!activeGameEffects.Contains("AncestorsRevenge"))
+            return;
+        StopCoroutine("AncestorsRevengeProcess");
+        GameStatistics statistics = GetComponent<GameStatistics>();
+        if (statistics != null)
+        {
+            WeaponClass _weapon = hero.CurrentWeapon;
+            if (statistics.WeaponDict.ContainsKey(_weapon.itemName))
+                _weapon.attackType = statistics.WeaponDict[_weapon.itemName].attackType;
+        }
+        hero.RemoveBuff("AncestorsRevenge");
+        activeGameEffects.Remove("AncestorsRevenge");
+    }
+
+    /// <summary>
+    /// Начать действие эффекта "Вождь племени"
+    /// </summary>
+    /// <param name="_char">На какого персонажа действует эффект</param>
+    void StartTribalLeader(CharacterController _char)
+    {
+        if (!(_char is AIController) || activeGameEffects.Contains("TribalLeader"))
+            return;
+        ((AIController)_char).Loyalty = LoyaltyEnum.ally;
+        _char.AddBuff(new BuffClass("TribalLeader", Time.fixedTime, tribalLeaderTime));
+        Hero.AddBuff(new BuffClass("TribalLeader", Time.fixedTime, tribalLeaderTime));
+        activeGameEffects.Add("TribalLeader");
+        StartCoroutine("TribalLeaderProcess",_char);
+    }
+
+    /// <summary>
+    /// Процесс действия эффекта "Вождь племени"
+    /// </summary>
+    /// <param name="_char">Персонаж, на которого действует эффект</param>
+    /// <param name="_time">Длительность действия эффекта</param>
+    IEnumerator TribalLeaderProcess(CharacterController _char)
+    {
+        yield return new WaitForSeconds(tribalLeaderTime);
+        if (_char != null ? !_char.Dead : false)
+            _char.TakeDamage(10000f, DamageType.Physical);
+    }
+
+    /// <summary>
+    /// Остановить действие эффекта "Вождь племенеи"
+    /// </summary>
+    void StopTribalLeader(int argument, string id)
+    {
+        if (!activeGameEffects.Contains("TribalLeader"))
+            return;
+        Hero.RemoveBuff("TribalLeader");
+        activeGameEffects.Remove("TribalLeader");
+        StopCoroutine("TribalLeaderProcess");
+    }
+
+    /// <summary>
+    /// Вызвать "Боевой клич"
+    /// </summary>
+    void StartBattleCry()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("enemy");
+        Vector2 cryPosition = Hero.transform.position;
+        foreach (GameObject enemy in enemies)
+        {
+            AIController ai = enemy.GetComponent<AIController>();
+            if (!ai)
+                continue;
+            if (Vector2.SqrMagnitude((Vector2)enemy.transform.position - cryPosition) <= battleCryRadius*battleCryRadius)
+                ai.HearBattleCry(cryPosition);
+        }
+        hero.BattleCry();
+    }
+
+    /// <summary>
+    /// Вызвать эффект "Охотник за сокровищами"
+    /// </summary>
+    void StartTreasureHunt()
+    {
+        if (activeGameEffects.Contains("TreasureHunter"))
+            return;
+        else if (activeGameEffects.Contains("Collector"))
+        {
+            StopCollectorProcess(0,"");
+        }
+        Hero.AddBuff(new BuffClass("TreasureHunter", Time.fixedTime,treasureHunterTime));
+        activeGameEffects.Add("TreasureHunter");
+        GameObject _treasureHunterArrow = Instantiate(treasureHunterArrow, Hero.transform.position + Vector3.up * compassArrowOffsetY, Quaternion.identity, hero.transform) as GameObject;
+        TreasureHuntArrow thArrow = _treasureHunterArrow.GetComponent<TreasureHuntArrow>();
+        thArrow.DestroyEvent += HandleCompassArrowDestroy;
+        thArrow.Initialize(treasureHunterTime);
+    }
+
+    /// <summary>
+    /// Прервать эффект "Охотник за сокровищами"
+    /// </summary>
+    void StopTreasureHunt(int argument, string id)
+    {
+        if (!activeGameEffects.Contains("TreasureHunter"))
+            return;
+        TreasureHuntArrow thArrow = Hero.GetComponentInChildren<TreasureHuntArrow>();
+        if (thArrow != null)
+            thArrow.DestroyArrow();
+    }
+
+    /// <summary>
+    /// Вызвать эффект "Коллекционер"
+    /// </summary>
+    void StartСollectorProcess()
+    {
+        if (activeGameEffects.Contains("Collector"))
+            return;
+        else if (activeGameEffects.Contains("TreasureHunter"))
+        {
+            StopTreasureHunt(0,"");
+        }
+        Hero.AddBuff(new BuffClass("Collector", Time.fixedTime, collectorTime));
+        activeGameEffects.Add("Collector");
+        GameObject _collectorArrow = Instantiate(collectorArrow, Hero.transform.position + Vector3.up * compassArrowOffsetY, Quaternion.identity, hero.transform) as GameObject;
+        CollectorArrow colArrow = _collectorArrow.GetComponent<CollectorArrow>();
+        colArrow.DestroyEvent += HandleCompassArrowDestroy;
+        colArrow.Initialize(collectorTime);
+    }
+
+    /// <summary>
+    /// Прервать эффект "Коллекционер"
+    /// </summary>
+    void StopCollectorProcess(int argument, string id)
+    {
+        if (!activeGameEffects.Contains("Collector"))
+            return;
+        CollectorArrow colArrow = Hero.GetComponentInChildren<CollectorArrow>();
+        if (colArrow != null)
+            colArrow.DestroyArrow();
+    }
+
+    /// <summary>
+    /// Начать действие эффекта "Древняя тьма"
+    /// </summary>
+    void StartAncientDarkness()
+    {
+        if (activeGameEffects.Contains("AncientDarkness"))
+            return;
+        StartCoroutine("AncientDarknessProcess");
+    }
+
+    /// <summary>
+    /// Процесс действия эффекта "Древняя тьма"
+    /// </summary>
+    /// <param name="_time">Длительность эффекта</param>
+    IEnumerator AncientDarknessProcess()
+    {
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.СamController.GetComponent<SpriteLightKitImageEffect>();
+        int prevIntensity = Mathf.RoundToInt(lightManager.intensity * 100f);
+        Hero.AddBuff(new BuffClass("AncientDarkness", Time.fixedTime, ancientDarknessTime, prevIntensity, (lightManager.HDRRatio > .1f ? "changed" : "")));
+        activeGameEffects.Add("AncientDarkness");
+        lightManager.intensity = Mathf.Clamp(lightManager.intensity - 1f, 0f, 2f);
+        bool changedHDRRatio = false;
+        if (lightManager.HDRRatio > 0.1f)
+        {
+            changedHDRRatio = true;
+            lightManager.HDRRatio -= .1f;
+        }
+        yield return new WaitForSeconds(ancientDarknessTime);
+        lightManager.intensity = prevIntensity/100f;
+        if (changedHDRRatio)
+            lightManager.HDRRatio += .1f;
+        hero.RemoveBuff("AncientDarkness");
+        activeGameEffects.Remove("AncientDarkness");
+    }
+
+    /// <summary>
+    /// Остановить действие эффекта "Древняя тьма"
+    /// </summary>
+    void StopAncientDarkness(int argument, string id)
+    {
+        if (!activeGameEffects.Contains("AncientDarkness"))
+            return;
+        StopCoroutine("AncientDarknessProcess");
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.СamController.GetComponent<SpriteLightKitImageEffect>();
+        lightManager.intensity = argument / 100f;
+        if (id == "changed")
+            lightManager.HDRRatio += .1f;
+        hero.RemoveBuff("AncientDarkness");
+        activeGameEffects.Remove("AncientDarkness");
+    }
+
+    /// <summary>
+    /// Вызвать эффект "Тотемное животное"
+    /// </summary>
+    void StartTotemAnimal()
+    {
+        if (activeGameEffects.Contains("TotemAnimal"))
+            return;
+        Hero.SummonTotemAnimal();
+        activeGameEffects.Add("TotemAnimal");
+    }
+
+    /// <summary>
+    /// Прервать эффект "Тотемное животное"
+    /// </summary>
+    void StopTotemAnimal(int argument,string id)
+    {
+        if (!activeGameEffects.Contains("TotemAnimal"))
+            return;
+        hero.RemoveBuff("TotemAnimal");
+        activeGameEffects.Remove("TotemAnimal");
+    }
+
+    /// <summary>
+    /// Вызвать эффект "Племенной ритуал"
+    /// </summary>
+    void StartTribalRitual()
+    {
+        Hero.StartTribalRitual();
+    }
+
+    #endregion //gameEffects
+
+    /// <summary>
+    /// Функция завершения данного уровня
+    /// </summary>
+    /// <param name="nextLevelName">Название следующего уровня</param>
+    public void CompleteLevel(string nextLevelName)
+    {
+        GameStatistics statistics = SpecialFunctions.statistics;
+        List<ItemCollection> itemCollections = statistics != null ? statistics.ItemCollections : null;
+        string sceneName = SceneManager.GetActiveScene().name;
+        ItemCollection _collection = itemCollections != null ? itemCollections.Find(x=>sceneName.Contains(x.settingName)):null;
+        levelCompleteScreen.SetLevelCompleteScreen(nextLevelName, secretsFoundNumber, secretsTotalNumber, _collection);
+    }
+
+    #region eventHandlers
+
+    /// <summary>
+    /// Обработка события "Стрелка компаса перестала работать"
+    /// </summary>
+    void HandleCompassArrowDestroy(object sender, EventArgs e)
+    {
+        if (sender is TreasureHuntArrow)
+        {
+            Hero.RemoveBuff("TreasureHunter");
+            activeGameEffects.Remove("TreasureHunter");
+        }
+        else if (sender is CollectorArrow)
+        {
+            Hero.RemoveBuff("Collector");
+            activeGameEffects.Remove("Collector");
+        }
+    }
+
+    #endregion //eventHandlers
 
 }
