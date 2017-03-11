@@ -5,22 +5,12 @@ using System.Collections;
 /// <summary>
 /// Скрипт, управляющий окошком игрового меню
 /// </summary>
-public class GameMenuScript : MonoBehaviour
+public class GameMenuScript : InterfaceWindow
 {
-
-    #region fields
-
-    Canvas canvas;
-
-    #endregion //fields
-
-    public void Awake()
-    {
-        Initialize();
-    }
 
     public void Update()
     {
+        /*
         //Читы для разработчиков. Потом надо будет убрать
         if (canvas.enabled && Input.anyKeyDown)
         {
@@ -68,12 +58,7 @@ public class GameMenuScript : MonoBehaviour
             {
                 SpecialFunctions.Player.GetComponent<HeroController>().Health = 100f;
             }
-        }
-    }
-
-    public void Initialize()
-    {
-        canvas = GetComponent<Canvas>();
+        }*/
     }
 
     /// <summary>
@@ -102,33 +87,14 @@ public class GameMenuScript : MonoBehaviour
     /// </summary>
     public void ChangeGameMod()
     {
-        if (canvas.enabled)
-            Return();
+        if (SpecialFunctions.levelEnd)
+            return;
+        if (openedWindow != null)
+            openedWindow.CloseWindow();
         else
-            Pause();
+            OpenWindow();
     }
 
-    /// <summary>
-    /// Выйти из игрового меню
-    /// </summary>
-    public void Return()
-    {
-        canvas.enabled = false;
-        SpecialFunctions.PlayGame();
-        SpecialFunctions.Player.GetComponent<HeroController>().SetImmobile(false);
-        Cursor.visible = false;
-    }
-
-    /// <summary>
-    /// Поставить игру на паузу
-    /// </summary>
-    public void Pause()
-    {
-        canvas.enabled = true;
-        SpecialFunctions.PauseGame();
-        SpecialFunctions.Player.GetComponent<HeroController>().SetImmobile(true);
-        Cursor.visible = true;
-    }
 
     /// <summary>
     /// Перезапустить игру с последнего сохранения
@@ -145,6 +111,14 @@ public class GameMenuScript : MonoBehaviour
     {
         SpecialFunctions.gameController.ResetLevelData();
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    /// <summary>
+    /// Функция сброса всех игровых достижений
+    /// </summary>
+    public void ResetAchievements()
+    {
+        SpecialFunctions.ResetAchievements();
     }
 
 }

@@ -328,7 +328,7 @@ public class BatController : AIController
             Vector2 targetPosition = currentTarget;
             Vector2 pos = transform.position;
             Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-            if (currentTarget != mainTarget && Vector2.SqrMagnitude(currentTarget-pos) < batSize*batSize)
+            if (currentTarget != mainTarget && Vector2.SqrMagnitude(currentTarget - pos) < batSize * batSize)
             {
                 waypoints.RemoveAt(0);
                 if (waypoints.Count == 0)
@@ -351,6 +351,8 @@ public class BatController : AIController
                 }
             }
         }
+        else
+            GoHome();
         Animate(new AnimationEventArgs("fly"));
     }
 

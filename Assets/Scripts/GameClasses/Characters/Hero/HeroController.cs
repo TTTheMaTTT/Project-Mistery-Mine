@@ -20,6 +20,7 @@ public class HeroController : CharacterController
     protected const int maxJumpInput = 10;
 
     protected const float invulTime = 1f;
+    protected const float minChargeTime = .3f;//Какое минимальное время нужно дердать кнопку атаки, чтобы начать зарядку оружия (используется, чтобы отличить обычную атаку от заряженной атаки)
 
     protected const float ladderCheckOffset = .05f, ladderStep = .01f;
 
@@ -40,6 +41,8 @@ public class HeroController : CharacterController
 
     #region fields
 
+    public int k = 0;
+
     protected Transform waterCheck;
     protected Transform wallAboveCheck;//Индикатор того, что над персонажем располагается твёрдое тело, земля
     protected WallChecker wallCheck;//Индикатор, необходимый для отсутствия зависаний в стене
@@ -50,10 +53,28 @@ public class HeroController : CharacterController
 
     [SerializeField]
     protected WeaponClass currentWeapon;//Оружие, которое используется персонажем в данный момент
-    public WeaponClass CurrentWeapon { get { return currentWeapon; } set { currentWeapon = value.GetWeapon(); OnEquipmentChanged(new EquipmentEventArgs(currentWeapon)); } }
+    public WeaponClass CurrentWeapon
+    {
+        get
+        {
+            return currentWeapon;
+        }
+        set
+        {
+            currentWeapon = value.GetWeapon();
+            if (currentWeapon is BowClass)
+            {
+                ((BowClass)currentWeapon).ReloadWeapon();
+                fightingMode = "range";
+            }
+            else
+                fightingMode = "melee";
+            OnEquipmentChanged(new EquipmentEventArgs(currentWeapon, null));
+        }
+    }
 
-    protected List<ItemClass> bag = new List<ItemClass>();//Рюкзак игрока.
-    public List<ItemClass> Bag { get { return bag; } }
+    protected EquipmentClass equipment;//Инвентарь игрока.
+    public EquipmentClass Equipment { get { return equipment; } }
     public GameObject dropPrefab;
 
     [SerializeField]protected GameObject summonedAnimal;//Животное, которое может призвать на помощь герой
@@ -62,7 +83,7 @@ public class HeroController : CharacterController
 
     #region parametres
 
-    public override float Health { get { return base.Health; } set { base.Health = value; OnHealthChanged(new HealthEventArgs(value)); } }
+    public override float Health { get { return base.Health; } set { float prevHealth = health; base.Health = value; OnHealthChanged(new HealthEventArgs(value, health-prevHealth)); } }
     public float MaxHealth { get { return base.maxHealth; } }
 
     protected int airSupply = 10;//Запас воздуха
@@ -123,8 +144,8 @@ public class HeroController : CharacterController
     protected bool invul;//Если true, то персонаж невосприимчив к урону
 
     protected string fightingMode;
-
     public bool attacking = false;
+    protected float chargeBeginTime = 0f;
 
     #region effectParametres
 
@@ -200,7 +221,12 @@ public class HeroController : CharacterController
                                 if (interactor.ReadyForInteraction())
                                     interactor.Interact();
                                 else
-                                    Attack();
+                                {
+                                    if (currentWeapon.chargeable)
+                                        StartCharge();
+                                    else
+                                        Attack();
+                                }
                             }
                         }
                         else if (Input.GetButtonDown("Flip"))
@@ -208,6 +234,14 @@ public class HeroController : CharacterController
                                 Flip();
                         if (Input.GetButtonDown("ChangeInteraction"))
                             interactor.ChangeInteraction();
+                    }
+                }
+
+                if (currentWeapon.chargeable)
+                {
+                    if (Input.GetButtonUp("Attack") && chargeBeginTime>0f)
+                    {
+                        StopCharge();
                     }
                 }
             }
@@ -281,12 +315,14 @@ public class HeroController : CharacterController
         jumping = false;
         onLadder = false;
 
+        equipment = new EquipmentClass();
         if (currentWeapon != null)
         {
-            currentWeapon = currentWeapon.GetWeapon();//Сразу же в начале игры в это поле занесём независимую от оригинала копию этого же поля, чтобы можно было производить операции с оружием, не меняя файловую структуру игры
+            currentWeapon = currentWeapon.GetWeapon();//Сразу же в начале игры в это поле занесём независимую от 
+                                                      //оригинала копию этого же поля, чтобы можно было производить операции с оружием, не меняя файловую структуру игры
             fightingMode = (currentWeapon is SwordClass) ? "melee" : "range";
+            SetItem(currentWeapon);
         }
-        bag = new List<ItemClass>();
 
         Collider2D[] cols = new Collider2D[2];
         cols = GetComponents<Collider2D>();
@@ -484,11 +520,42 @@ public class HeroController : CharacterController
         wallCheck.SetPosition(0f, (int)orientation);
     }
 
+    /// <summary>
+    /// Прыгнуть
+    /// </summary>
     protected override void Jump()
     {
         jumping = true;
         rigid.AddForce(new Vector2(0f, jumpForce * (underWater ? waterCoof : 1f)));
         StartCoroutine(JumpProcess());
+    }
+
+    /// <summary>
+    /// Начать зарядку оружия
+    /// </summary>
+    protected virtual void StartCharge()
+    {
+        if (fightingMode == "range" ? !((BowClass)currentWeapon).canShoot : false)
+            return;
+        chargeBeginTime = Time.fixedTime;
+        int employmentDelta = fightingMode == "range" ? 5 : 3;
+        employment = Mathf.Clamp(employment - employmentDelta, 0, maxEmployment);
+        Animate(new AnimationEventArgs("holdAttack", currentWeapon.itemName, 0));
+    }
+
+    /// <summary>
+    /// Закончить зарядку оружия
+    /// </summary>
+    protected virtual void StopCharge()
+    {
+        int employmentDelta = fightingMode == "range" ? 5 : 3;
+        float chargeTime = (Time.fixedTime - chargeBeginTime);
+        if (chargeTime < minChargeTime)
+            chargeBeginTime = 0f;
+        currentWeapon.ChargeValue = chargeTime;
+        employment = Mathf.Clamp(employment + employmentDelta, 0, maxEmployment);
+        Attack();
+            
     }
 
     /// <summary>
@@ -498,7 +565,13 @@ public class HeroController : CharacterController
     {
         if (fightingMode == "melee")
         {
-            Animate(new AnimationEventArgs("attack", currentWeapon.itemName, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime+currentWeapon.endAttackTime))));
+            if (chargeBeginTime > 0f)
+                Animate(new AnimationEventArgs("releaseAttack", currentWeapon.itemName, Mathf.RoundToInt(10 * currentWeapon.attackTime + currentWeapon.endAttackTime)));
+            else
+            {
+                Animate(new AnimationEventArgs("releaseAttack", "",0));
+                Animate(new AnimationEventArgs("attack", currentWeapon.itemName, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime + currentWeapon.endAttackTime))));
+            }
             StartCoroutine(AttackProcess());
         }
         else if (fightingMode == "range")
@@ -506,7 +579,13 @@ public class HeroController : CharacterController
             if (((BowClass)currentWeapon).canShoot)
             {
                 StopMoving();
-                Animate(new AnimationEventArgs("shoot", currentWeapon.name, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime))));
+                if (chargeBeginTime > 0f)
+                    Animate(new AnimationEventArgs("releaseAttack", currentWeapon.itemName, Mathf.RoundToInt(10 * currentWeapon.attackTime)));
+                else
+                {
+                    Animate(new AnimationEventArgs("releaseAttack", "", 0));
+                    Animate(new AnimationEventArgs("shoot", currentWeapon.itemName, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime))));
+                }
                 StartCoroutine(ShootProcess());
             }
         }
@@ -519,7 +598,12 @@ public class HeroController : CharacterController
     {
         employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
         SwordClass sword = (SwordClass)currentWeapon;
-        yield return new WaitForSeconds(sword.preAttackTime);
+
+        if (chargeBeginTime == 0f)
+            yield return new WaitForSeconds(sword.preAttackTime);
+        else
+            chargeBeginTime = 0f;
+
         attacking = true;
         sword.Attack(hitBox, transform.position);
         yield return new WaitForSeconds(sword.attackTime);
@@ -535,8 +619,13 @@ public class HeroController : CharacterController
     {
         employment = Mathf.Clamp(employment - 5, 0, maxEmployment);
         BowClass bow = (BowClass)currentWeapon;
-        yield return new WaitForSeconds(currentWeapon.preAttackTime);
-        bow.Shoot(hitBox, transform.position+Vector3.down*0.035f + Vector3.right*(int)orientation*.05f, (int)orientation, whatIsAim, enemies);
+
+        if (chargeBeginTime == 0f)
+            yield return new WaitForSeconds(currentWeapon.preAttackTime);
+        else
+            chargeBeginTime = 0f;
+
+        bow.Shoot(hitBox, transform.position + Vector3.right*(int)orientation*.05f, (int)orientation, whatIsAim, enemies);
         yield return new WaitForSeconds(currentWeapon.attackTime);
 
         employment = Mathf.Clamp(employment + 5, 0, maxEmployment);
@@ -576,19 +665,21 @@ public class HeroController : CharacterController
         {
             Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
             if (health <= 0f)
+            {
                 Death();
+                return;
+            }
             else
                 Animate(new AnimationEventArgs("hitted", "", _microstun ? 0 : 1));
             if (_microstun)
             {
-                StopCoroutine("AttackProcess");
-                dontShoot = false;
+                //StopCoroutine("AttackProcess");
+                //dontShoot = false;
                 if (onLadder)
                     LadderOff();
                 StartCoroutine(InvulProcess(invulTime, true));
             }
-            else
-                anim.Blink();
+            anim.Blink();
         }
     }
 
@@ -601,21 +692,23 @@ public class HeroController : CharacterController
         {
             Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
             if (health <= 0f)
+            {
                 Death();
+                return;
+            }
             else
                 Animate(new AnimationEventArgs("hitted", "", _microstun ? 0 : 1));
             SpriteRenderer sprite = GetComponentInChildren<SpriteRenderer>();
             if (sprite != null) sprite.enabled = true;
             if (_microstun)
             {
-                StopCoroutine("AttackProcess");
-                dontShoot = false;
+                //StopCoroutine("AttackProcess");
+                //dontShoot = false;
                 if (onLadder)
                     LadderOff();
                 StartCoroutine(InvulProcess(invulTime, true));
             }
-            else
-                anim.Blink();
+            anim.Blink();
         }
     }
 
@@ -668,37 +761,26 @@ public class HeroController : CharacterController
     /// <summary>
     /// Добавить предмет в инвентарь
     /// </summary>
-    public void SetItem(ItemClass item, bool withoutDrop)
+    public void SetItem(ItemClass item)
     {
         if (item is WeaponClass)
         {
-            if (!withoutDrop)
-            {
-                GameStatistics gStats = SpecialFunctions.statistics;
-                if (gStats.WeaponDict.ContainsKey(currentWeapon.itemName))
-                {
-                    GameObject drop = Instantiate(dropPrefab, transform.position, transform.rotation) as GameObject;
-                    drop.GetComponent<DropClass>().item = gStats.WeaponDict[currentWeapon.itemName];
-                }
-            }
-            currentWeapon = (WeaponClass)item;
-            currentWeapon = currentWeapon.GetWeapon();//Сразу же заносим в поле оружия не оригинал, что находится в файлах игры, а копию, чтобы творить с ней что угодно.
-            if (currentWeapon is BowClass)
-            {
-                ((BowClass)currentWeapon).ReloadWeapon();
-                fightingMode = "range";
-            }
-            else
-             fightingMode ="melee";
-            OnEquipmentChanged(new EquipmentEventArgs(currentWeapon));
+            WeaponClass _weapon = (WeaponClass)item;
+            if (equipment.weapons.Contains(_weapon))
+                return;
+            equipment.weapons.Add(_weapon);
+            SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName);
+            OnEquipmentChanged(new EquipmentEventArgs(null, _weapon));
         }
-        else if (item is HeartClass)
+        if (item is HeartClass)
         {
             Health = Mathf.Clamp(Health + ((HeartClass)item).hp, 0f, maxHealth);
         }
         else
         {
-            bag.Add(item);
+            equipment.bag.Add(item);
+            SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName);
+            OnEquipmentChanged(new EquipmentEventArgs(null, item));
         }
             
     }

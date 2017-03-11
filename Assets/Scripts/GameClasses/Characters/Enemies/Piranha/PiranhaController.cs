@@ -447,26 +447,30 @@ public class PiranhaController : AIController
     /// </summary>
     protected virtual void FindNextWaterPosition()
     {
-        ChooseRandomTargetPosition();
+
+        /*ChooseRandomTargetPosition();
         if (!Physics2D.OverlapCircle(currentTarget, navCellSize / 4f, LayerMask.GetMask(wLName)))
         {
             Vector2 pos = transform.position;
             Vector2 distance = currentTarget - pos;
-            for (int i = 9; i >= 0; i++)
+            for (int i = 9; i >= 0; i--)
                 if (Physics2D.OverlapCircle(pos + distance / 10f * i, navCellSize / 4f, LayerMask.GetMask(wLName)))
                 {
+                    if (Physics2D.Raycast(pos, distance, distance.magnitude / 10f * i, LayerMask.GetMask(gLName)))
+                        continue;
                     currentTarget = new ETarget(pos + distance / 10f * i);
                     break;
                 }
-        }
+        }*/
     }
 
     /// <summary>
-    /// Сменить оптимизированную версию на активную
+    /// Сменить активную версию на оптимизированную
     /// </summary>
     protected override void ChangeBehaviorToOptimized()
     {
         GetOptimizedPosition();
+        StopMoving();
         Optimized = true;
         switch (behavior)
         {
@@ -504,6 +508,7 @@ public class PiranhaController : AIController
         }
         else
         {
+            /*
             if (!currentTarget.exists)
             {
                 StopCoroutine("PathPassOptProcess");//На всякий случай
@@ -513,6 +518,7 @@ public class PiranhaController : AIController
             }
             else if (!followOptPath)
                 StartCoroutine("PathPassOptProcess");
+            */
         }
     }
 

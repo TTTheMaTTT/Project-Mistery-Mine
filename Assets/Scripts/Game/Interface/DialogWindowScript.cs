@@ -112,6 +112,7 @@ public class DialogWindowScript : MonoBehaviour
             if (currentDialog.pause)
             {
                 SpecialFunctions.PauseGame();
+                SpecialFunctions.totalPaused = true;
             }
             noInput = 0;
         }
@@ -146,6 +147,7 @@ public class DialogWindowScript : MonoBehaviour
             npcControl.StopTalking();
         }
 
+        SpecialFunctions.totalPaused = false;
         SpecialFunctions.PlayGame();
 
     }
@@ -178,7 +180,7 @@ public class DialogWindowScript : MonoBehaviour
         portrait = transform.FindChild("PortraitImage").FindChild("Portrait").GetComponent<Image>();
 
         hero = SpecialFunctions.Player.transform;
-        cam = SpecialFunctions.camControl;
+        cam = SpecialFunctions.СamController;
         CurrentSpeech = null;
     }
 

@@ -68,7 +68,7 @@ public class LevelData
         qInfo = new QuestInfo(history.ActiveQuests);
         sInfo = new StoryInfo(history);
         lStatsInfo = new LevelStatsData(gStats);
-        eInfo = new EquipmentInfo(player.CurrentWeapon, player.Bag);
+        eInfo = new EquipmentInfo(player.CurrentWeapon, player.Equipment);
         dropInfo = new DropData(drops);
         enInfo = _enInfo;
         intInfo = _intInfo;

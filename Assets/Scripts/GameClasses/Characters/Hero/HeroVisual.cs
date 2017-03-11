@@ -24,6 +24,8 @@ public class HeroVisual : GroundMoveVisual
     {
         base.FormDictionaries();
         visualFunctions.Add("shoot", Shoot);
+        visualFunctions.Add("holdAttack", HoldAttack);
+        visualFunctions.Add("releaseAttack", ReleaseAttack);
         visualFunctions.Add("flip", Flip);
         visualFunctions.Add("fall", Fall);
         visualFunctions.Add("waterSplash", WaterSplash);
@@ -62,6 +64,7 @@ public class HeroVisual : GroundMoveVisual
         {
             return;
         }
+        anim.Play("Idle");
         if (id == string.Empty)
             anim.Play("Attack");
         else
@@ -78,11 +81,43 @@ public class HeroVisual : GroundMoveVisual
         {
             return;
         }
+        anim.Play("Idle");
         if (id == string.Empty)
             anim.Play("Shoot");
         else
             anim.Play(id + "Shoot");
         StartVisualRoutine(5, argument/10f);
+    }
+
+    /// <summary>
+    /// Анимировать задержку атаки
+    /// </summary>
+    protected virtual void HoldAttack(string id, int argument)
+    {
+        if (employment < 8)
+        {
+            return;
+        }
+        anim.Play("Idle");
+        if (id == string.Empty)
+            anim.Play("Attack");
+        else
+            anim.Play(id + "Hold");
+        employment = Mathf.Clamp(employment - 5, 0, maxEmployment);
+    }
+
+    /// <summary>
+    /// Анимировать высвобождение атаки после задержки
+    /// </summary>
+    protected virtual void ReleaseAttack(string id, int argument)
+    {
+        employment = Mathf.Clamp(employment + 5, 0, maxEmployment);
+        if (id!="")
+        {
+            anim.Play("Idle");
+            anim.Play(id + "Release");
+            StartVisualRoutine(5, argument / 10f);
+        }
     }
 
     /// <summary>
@@ -103,13 +138,13 @@ public class HeroVisual : GroundMoveVisual
     /// </summary>
     protected override void Hitted(string id, int argument)
     {
-        if (argument==0 && employment > 0)//Считаем, что employment равен нулю только при заморозке, когда персонаж не может быть анимируем
+        /*if (argument==0 && employment > 0)//Считаем, что employment равен нулю только при заморозке, когда персонаж не может быть анимируем
         {
             StopAllCoroutines();
             employment = maxEmployment;
             anim.Play("Hitted");
             StartVisualRoutine(5, hittedTime);
-        }
+        }*/
         if (effectSystem != null)
             effectSystem.ResetEffects();
     }

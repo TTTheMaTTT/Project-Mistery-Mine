@@ -13,7 +13,7 @@ public class SpiderController : AIController
 
     protected const float patrolDistance = 2f;//По таким дистанциям паук будет патрулировать
 
-    protected const float spiderOffset = .052f;//Насколько должен быть смещён паук относительно поверхности земли
+    protected const float spiderOffset = .026f;//Насколько должен быть смещён паук относительно поверхности земли
 
     #endregion //consts
 
@@ -21,7 +21,7 @@ public class SpiderController : AIController
 
     protected WallChecker wallCheck, precipiceCheck;
     //protected SightFrustum sight;//Зрение персонажа
-    protected HitBoxController selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
+    //protected HitBoxController selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
 
     protected override List<NavigationCell> Waypoints
     {
@@ -95,7 +95,7 @@ public class SpiderController : AIController
     }
     protected Vector2 movementDirection = Vector2.right;//В какую сторону движется паук, если он повёрнут вправо
 
-    protected override float attackDistance { get { return .15f; } }//На каком расстоянии должен стоять ИИ, чтобы решить атаковать
+    protected override float attackDistance { get { return .12f; } }//На каком расстоянии должен стоять ИИ, чтобы решить атаковать
 
     public override LoyaltyEnum Loyalty
     {
@@ -108,11 +108,11 @@ public class SpiderController : AIController
         {
             bool noPlatform = (LayerMask.LayerToName(gameObject.layer) == "characterWithoutPlatform");
             base.Loyalty = value;
-            if (selfHitBox != null)
+            /*if (selfHitBox != null)
             {
                 selfHitBox.allyHitBox = (value == LoyaltyEnum.ally);
                 selfHitBox.SetEnemies(enemies);
-            }
+            }*/
             if (noPlatform)
                 gameObject.layer = LayerMask.NameToLayer("characterWithoutPlatform");
         }
@@ -131,6 +131,16 @@ public class SpiderController : AIController
             MoveOut();
         Animate(new AnimationEventArgs("groundMove"));
     }
+
+    /*protected override void Update()
+    {
+        base.Update();
+
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            HearBattleCry(SpecialFunctions.player.transform.position);
+        }
+    }*/
 
     /// <summary>
     /// Инициализация
@@ -159,22 +169,22 @@ public class SpiderController : AIController
 
         base.Initialize();
 
-        selfHitBox = transform.FindChild("SelfHitBox").GetComponent<HitBoxController>();
+        /*selfHitBox = transform.FindChild("SelfHitBox").GetComponent<HitBoxController>();
         if (selfHitBox != null)
         {
             selfHitBox.SetEnemies(enemies);
             selfHitBox.SetHitBox(attackParametres.damage, -1f, 0f,attackParametres.damageType);
             //selfHitBox.Immobile = true;//На всякий случай
             selfHitBox.AttackEventHandler += HandleAttackProcess;
-        }
+        }*/
 
         if (areaTrigger != null)
         {
-            if (selfHitBox != null)
+            /*if (selfHitBox != null)
             {
                 areaTrigger.triggerFunctionIn += EnableSelfHitBox;
                 areaTrigger.triggerFunctionOut += DisableSelfHitBox;
-            }
+            }*/
             areaTrigger.triggerFunctionOut += AreaTriggerExitChangeBehavior;
             /*if (sight != null)
             {
@@ -199,7 +209,8 @@ public class SpiderController : AIController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = wallCheck.WallInFront ? new Vector2(0f, rigid.velocity.y) : (rigid.gravityScale == 0f ? movementDirection * (int)orientation * speed : new Vector2((int)orientation * speed, rigid.velocity.y));
+        Vector2 targetVelocity = wallCheck.WallInFront ? new Vector2(0f, rigid.velocity.y) : 
+                                                        (rigid.gravityScale == 0f ? movementDirection * (int)orientation * speed : new Vector2((int)orientation * speed, rigid.velocity.y));
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)
@@ -722,9 +733,10 @@ public class SpiderController : AIController
                     float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
                     if (sqDistance < waitingNearDistance * waitingNearDistance)
                     {
+                        OrientationEnum nextOrientation = (OrientationEnum)Mathf.Sign(Vector2.Dot(pos-targetPosition, movementDirection));
                         if (!wallCheck.WallInFront && (precipiceCheck.WallInFront))
-                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(pos.x - targetPosition.x)));
-                        else if ((pos.x - targetPosition.x) * (int)orientation < 0f)
+                            Move(nextOrientation);
+                        else if (orientation!=nextOrientation)
                             Turn();
                     }
                     else if (sqDistance < waitingFarDistance * waitingFarDistance)
@@ -735,9 +747,10 @@ public class SpiderController : AIController
                     }
                     else
                     {
+                        OrientationEnum nextOrientation = (OrientationEnum)Mathf.Sign(Vector2.Dot(targetPosition - pos, movementDirection));
                         if (!wallCheck.WallInFront && (precipiceCheck.WallInFront))
-                            Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-                        else if ((targetPosition - pos).x * (int)orientation < 0f)
+                            Move(nextOrientation);
+                        else if (nextOrientation!=orientation)
                             Turn();
                         else
                         {
@@ -763,11 +776,12 @@ public class SpiderController : AIController
                     if (employment > 8)
                     {
 
+                        OrientationEnum nextOrientation = (OrientationEnum)Mathf.Sign(Vector2.Dot(targetPosition - pos, movementDirection));
                         if (Vector2.SqrMagnitude(targetPosition - pos) > attackDistance * attackDistance)
                         {
                             if (!wallCheck.WallInFront && (precipiceCheck.WallInFront))
-                                Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-                            else if ((targetPosition - pos).x * (int)orientation < 0f)
+                                Move(nextOrientation);
+                            else if (orientation!=nextOrientation)
                                 Turn();
                             else
                             {
@@ -785,16 +799,16 @@ public class SpiderController : AIController
                         }
                         else
                         {
-                            if ((targetPosition - pos).x * (int)orientation < 0f)
+                            if (Vector2.Dot(targetPosition - pos,movementDirection) * (int)orientation < 0f)
                                 Turn();
                             StopMoving();
                             Attack();
                         }
                     }
 
-                    if (spiderOrientation.y < 0 || spiderOrientation.y < Mathf.Abs(spiderOrientation.x))
+                    /*if (spiderOrientation.y < 0 || spiderOrientation.y < Mathf.Abs(spiderOrientation.x))
                         if (Mathf.Abs(targetPosition.x - pos.x) < attackDistance / 2f)
-                            JumpDown();
+                            JumpDown();*/
 
                     #endregion //active
                 }
@@ -965,7 +979,7 @@ public class SpiderController : AIController
                 {
                     StopMoving();
                     //Достигли конца маршрута
-                    if (Vector3.SqrMagnitude(beginPosition-currentWaypoint.cellPosition) < minCellSqrMagnitude)
+                    if (Vector3.SqrMagnitude(beginPosition - currentWaypoint.cellPosition) < minCellSqrMagnitude)
                     {
                         transform.position = beginPosition;
                         Turn(beginOrientation);
@@ -1020,6 +1034,8 @@ public class SpiderController : AIController
                 }
             }
         }
+        else
+            GoHome();
     }
 
     #endregion //behaviourActions
@@ -1191,6 +1207,7 @@ public class SpiderController : AIController
     }
     */
 
+    /*
     /// <summary>
     /// Включить собственный хитбокс
     /// </summary>
@@ -1206,6 +1223,7 @@ public class SpiderController : AIController
     {
         selfHitBox.gameObject.SetActive(false);
     }
+    */
 
     /// <summary>
     /// Функция, которая отыскивает навигационную ячейку, находящаяся в доступных пауку пределах (паук стоит на земле и не использует стены и потолок, а также не прыгает) и ставит её текущей целью паука.

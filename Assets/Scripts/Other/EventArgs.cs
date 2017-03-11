@@ -38,12 +38,15 @@ public class AnimationEventArgs : EventArgs
 public class HealthEventArgs : EventArgs
 {
     private float hp;
+    private float hpDelta;
 
     public float HP { get { return hp; } }
+    public float HPDelta { get { return hpDelta; } }
 
-    public HealthEventArgs(float _hp)
+    public HealthEventArgs(float _hp, float _hpDelta=0f)
     {
         hp = _hp;
+        hpDelta = _hpDelta;
     }
 
 }
@@ -152,12 +155,15 @@ public class SuffocateEventArgs : EventArgs
 /// </summary>
 public class EquipmentEventArgs : EventArgs
 {
+    private WeaponClass currentWeapon;
     private ItemClass item;
 
+    public WeaponClass CurrentWeapon { get { return currentWeapon; } }
     public ItemClass Item { get { return item; } }
 
-    public EquipmentEventArgs(ItemClass _item)
+    public EquipmentEventArgs(WeaponClass _weapon, ItemClass _item)
     {
+        currentWeapon = _weapon;
         item = _item;
     }
 

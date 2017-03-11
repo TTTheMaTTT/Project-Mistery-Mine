@@ -34,6 +34,7 @@ public class BoomerangClass : BowClass
 
     public BoomerangClass(BoomerangClass _boomerang) : base(_boomerang)
     {
+        boomerang = _boomerang.boomerang;
         speed = _boomerang.speed;
         acceleration = _boomerang.acceleration;
         hitSize = _boomerang.hitSize;
@@ -45,14 +46,15 @@ public class BoomerangClass : BowClass
     /// </summary>
     public override void Shoot(HitBoxController hitBox, Vector3 position, int orientation, LayerMask whatIsAim, List<string> enemies)
     {
+        Vector2 shootPosition = (Vector2)position + Vector2.up * shootOffset;
         canShoot = false;
-        RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(position, orientation * Vector3.right, shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(position + shootDelta* Vector3.up, orientation * Vector3.right, shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(position + Vector3.up*shootDelta/2f, orientation * Vector3.right, shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(position + Vector3.up*(-shootDelta/2f),orientation * Vector3.right, shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(position + Vector3.up*(-shootDelta), orientation * Vector3.right, shootDistance, whatIsAim),
-                                                   Physics2D.Raycast(position +  Vector3.up*(- 1.5f*shootDelta), orientation * Vector3.right,shootDistance, whatIsAim)};
-        Vector2 endPoint = position + orientation * Vector3.right * (shootDistance + .1f);
+        RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(shootPosition, orientation * Vector3.right, shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(shootPosition + shootDelta* Vector2.up, orientation * Vector3.right, shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(shootPosition + Vector2.up*shootDelta/2f, orientation * Vector3.right, shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(shootPosition + Vector2.up*(-shootDelta/2f),orientation * Vector3.right, shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(shootPosition + Vector2.up*(-shootDelta), orientation * Vector3.right, shootDistance, whatIsAim),
+                                                   Physics2D.Raycast(shootPosition +  Vector2.up*(- 1.5f*shootDelta), orientation * Vector3.right,shootDistance, whatIsAim)};
+        Vector2 endPoint = shootPosition + orientation * Vector2.right * (shootDistance + .1f);
         if (hits[0] || hits[1] || hits[2] || hits[3] || hits[4] || hits[5])
         {
             IDamageable target = null;
@@ -72,16 +74,17 @@ public class BoomerangClass : BowClass
             if (hitIndex != -1)
                 endPoint = hits[hitIndex].point;
         }
-        GameObject _boomerang = GameObject.Instantiate(boomerang, position, Quaternion.identity) as GameObject;
+        GameObject _boomerang = GameObject.Instantiate(boomerang, shootPosition, Quaternion.identity) as GameObject;
         Vector3 scal = _boomerang.transform.localScale;
         _boomerang.transform.localScale = new Vector3(orientation*scal.x, scal.y, scal.z);
         BoomerangScript boomerangScript = _boomerang.GetComponent<BoomerangScript>();
         if (boomerangScript)
         {
-            boomerangScript.SetTarget(endPoint);
+            boomerangScript.SetTarget(shootPosition+(endPoint-shootPosition)*1.1f);
             boomerangScript.SetBoomerang(speed, acceleration);
             boomerangScript.SetHitBox(new HitParametres(damage,-1f,hitSize,Vector2.zero,hitForce, attackType, effectChance), enemies);
         }
+        chargeValue = 0f;
     }
 
 }

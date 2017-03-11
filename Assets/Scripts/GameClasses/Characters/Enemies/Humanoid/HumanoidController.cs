@@ -72,6 +72,11 @@ public class HumanoidController : AIController
             base.Loyalty = value;
             if (hearing != null)
                 hearing.AllyHearing = (value==LoyaltyEnum.ally);
+            if (value == LoyaltyEnum.ally)
+                wallCheck.WhatIsWall.Remove("character");
+            else
+                if (!wallCheck.WhatIsWall.Contains("character"))
+                    wallCheck.WhatIsWall.Add("character");
         }
     }
 
@@ -1061,6 +1066,14 @@ public class HumanoidController : AIController
                 }
             }
         }
+        else
+            GoHome();
+    }
+
+    protected override void GoHome()
+    {
+        StopLadderMoving();
+        base.GoHome();
     }
 
     #endregion //behaviourActions

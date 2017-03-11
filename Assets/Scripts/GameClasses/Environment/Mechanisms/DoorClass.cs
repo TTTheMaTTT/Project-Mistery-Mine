@@ -72,7 +72,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
         HeroController player = SpecialFunctions.Player.GetComponent<HeroController>();
         if (keyID == string.Empty)
             Open();
-        else if (player.Bag.Find(x => x.itemName == keyID))
+        else if (player.Equipment.bag.Find(x => x.itemName == keyID))
             Open();
         else
             SpecialFunctions.SetText(closedDoorMessage, 2.5f);

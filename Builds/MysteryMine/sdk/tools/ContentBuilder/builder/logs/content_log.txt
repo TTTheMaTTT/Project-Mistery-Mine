@@ -1,0 +1,9 @@
+
+
+[2017-02-09 13:18:42] Loaded 0 apps from install folder "D:\Chisto Moya Papka!!!\Programmes\SteamworksSDK\sdk\tools\ContentBuilder\builder\steamapps\appmanifest_*.acf".
+
+
+[2017-02-11 03:21:14] Loaded 0 apps from install folder "D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine 01.02.2017\sdk\tools\ContentBuilder\builder\steamapps\appmanifest_*.acf".
+
+
+[2017-02-11 03:32:29] Loaded 0 apps from install folder "D:\Chisto Moya Papka!!!\Games\MyGames\Project MysteryMine\ProjectMysteryMine\Builds\MysteryMine\sdk\tools\ContentBuilder\builder\steamapps\appmanifest_*.acf".

@@ -26,6 +26,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
     int id;
 
     protected Color outlineColor = Color.yellow;//Цвет контура
+    protected bool changed = false;
 
     #endregion //parametres
 
@@ -42,16 +43,17 @@ public class CheckpointController : MonoBehaviour, IInteractive
 
     public void Update()
     {
-        if (activated)
-            DestroyCheckpoint();
+        if (activated && !changed)
+            ChangeCheckpoint();
     }
 
     /// <summary>
     /// После активации чекпоинт больше не может быть активирован
     /// </summary>
-    public void DestroyCheckpoint()
+    public void ChangeCheckpoint()
     {
         SetOutline(false);
+        changed = true;
         if (anim != null)
         {
             anim.Play("Active");
@@ -60,7 +62,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
         {
             checkpointLight.SetActive(true);
         }
-        DestroyImmediate(this);
+        SetID(-1);//Чекпоинт не учтётся при сохранении, следовательно, чекпоинт будет считаться неактивным при следующей загрузке
     }
 
     #region IInteractive
@@ -74,7 +76,11 @@ public class CheckpointController : MonoBehaviour, IInteractive
         {
             activated = true;
             SpecialFunctions.gameController.SaveGame(checkpointNumb, false, SceneManager.GetActiveScene().name);
-            DestroyCheckpoint();
+            ChangeCheckpoint();
+        }
+        else
+        {
+            SpecialFunctions.equipWindow.OpenWindow();
         }
     }
 

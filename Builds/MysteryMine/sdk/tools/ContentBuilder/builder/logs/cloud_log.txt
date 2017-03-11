@@ -1,0 +1,25 @@
+
+
+[2017-02-11 03:28:28] [AppID 7] Init cache request complete
+[2017-02-11 03:28:28] Starting sync job
+[2017-02-11 03:28:28] [AppID 7] Starting sync (init)
+[2017-02-11 03:28:58] Starting sync job
+[2017-02-11 03:28:58] [AppID 7] Starting sync (eval)
+[2017-02-11 03:28:58] [AppID 7] Need to download file sharedconfig.vdf
+[2017-02-11 03:28:58] [AppID 7] Eval complete
+[2017-02-11 03:28:58] Starting sync job
+[2017-02-11 03:28:58] [AppID 7] Starting sync (download)
+[2017-02-11 03:28:58] [AppID 7] Need to download file sharedconfig.vdf
+[2017-02-11 03:28:59] [AppID 7] HTTP download for file 'sharedconfig.vdf' from host 'steamcloudams.blob.core.windows.net' beginning. . .
+[2017-02-11 03:29:00] [AppID 7] HTTP download for file 'sharedconfig.vdf' from host 'steamcloudams.blob.core.windows.net' - Success.
+[2017-02-11 03:29:00] [AppID 7] Download OK for file sharedconfig.vdf
+[2017-02-11 03:29:00] [AppID 7] Download complete, result OK
+
+
+[2017-02-11 03:32:47] [AppID 7] Init cache request complete
+[2017-02-11 03:32:47] Starting sync job
+[2017-02-11 03:32:47] [AppID 7] Starting sync (init)
+[2017-02-11 03:32:48] Starting sync job
+[2017-02-11 03:32:48] [AppID 7] Starting sync (eval)
+[2017-02-11 03:32:49] [AppID 7] File is in sync sharedconfig.vdf
+[2017-02-11 03:32:49] [AppID 7] Eval complete
