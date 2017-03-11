@@ -103,9 +103,12 @@
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\Statistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\StoryTriggerStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\DialogWindowScript.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\EquipmentWindow\EquipmentCellScript.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\EquipmentWindow\EquipmentMenu.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\GameMenuScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\GameUI\FadeFluctuationScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\GameUI\GameUIScript.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\InterfaceWindow.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\LevelCompleteScreenScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\MainMenuScript.cs" />
     <Compile Include="Assets\Scripts\Game\Light\DynamicLight.cs" />
@@ -203,6 +206,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Indicators\StoryTrigger.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\WallChecker.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\WaterIndicator.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Items\EquipmentClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\HeartClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\ItemClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\KeyClass.cs" />
@@ -221,8 +225,10 @@
     <Compile Include="Assets\Scripts\Other\MapVisualizer.cs" />
     <Compile Include="Assets\Scripts\Other\SpecialFunctions.cs" />
     <Compile Include="Assets\Scripts\Other\Structs.cs" />
+    <Compile Include="Assets\Scripts\Steamwork.NET\SteamManager.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Plugins\Steamworks.NET\redist\steam_appid.txt" />
     <None Include="Assets\Scripts\Shaders\CharacterShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Blue.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\CharacterUnderWater.shader" />
