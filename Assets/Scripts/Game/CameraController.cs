@@ -166,4 +166,9 @@ public class CameraController : MonoBehaviour
         offset = new Vector3(offsetX, offsetY, offsetZ);
     }
 
+    public void SetPlayer(Transform _player)
+    {
+        player = _player;
+    }
+
 }

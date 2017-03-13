@@ -144,6 +144,26 @@ public class GameUIScript : MonoBehaviour
     }
 
     /// <summary>
+    /// Настроить работу меню на заданного игрового персонажа
+    /// </summary>
+    public void ConsiderPlayer(HeroController _player)
+    {
+        _player.healthChangedEvent += HandleHealthChanges;
+
+        _player.equipmentChangedEvent += HandleEquipmentChanges;
+        if (_player.CurrentWeapon != null)
+            weaponImage.sprite = _player.CurrentWeapon.itemImage;
+        else
+            weaponImage.sprite = null;
+
+        _player.buffAddEvent += HandleBuffAdd;
+        _player.buffRemoveEvent += HandleBuffRemove;
+        _player.suffocateEvent += HandleSuffocate;
+
+        ConsiderHealth(_player.Health);
+    }
+
+    /// <summary>
     /// Учитывая текущее количество здоровье, правильно отобразить сердечки
     /// </summary>
     void ConsiderHealth(float hp)

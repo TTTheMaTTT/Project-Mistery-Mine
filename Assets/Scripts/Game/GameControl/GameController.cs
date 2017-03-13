@@ -920,9 +920,7 @@ public class GameController : MonoBehaviour
         
         if (dObj!=null)
             if (SpecialFunctions.dialogWindow != null)
-            {
-                
-            }
+                SpecialFunctions.dialogWindow.AddDialogObjectInDictionary(dObj);
     }
 
 

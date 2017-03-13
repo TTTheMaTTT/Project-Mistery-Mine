@@ -1826,7 +1826,7 @@ public class SpiderController : AIController
         //if (Vector2.Angle(spiderOrientation, normal) < minAngle)
             //return Vector2.zero;
         if (point1.x - point2.x == 0)
-            connectionPoint = new Vector2(point1.x, normal.y / normal.x * (point1.x - transform.position.x) + transform.position.y);
+            connectionPoint = new Vector2(point1.x, normal.y / normal.x * (point1.x - fromPoint.x) + fromPoint.y);
         else if (normal.x == 0)
             connectionPoint = new Vector2(fromPoint.x, (point2.y - point1.y) / (point2.x - point1.x) * (fromPoint.x - point1.x) + point1.y);
         else

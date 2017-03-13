@@ -41,8 +41,6 @@ public class HeroController : CharacterController
 
     #region fields
 
-    public int k = 0;
-
     protected Transform waterCheck;
     protected Transform wallAboveCheck;//Индикатор того, что над персонажем располагается твёрдое тело, земля
     protected WallChecker wallCheck;//Индикатор, необходимый для отсутствия зависаний в стене
@@ -84,7 +82,11 @@ public class HeroController : CharacterController
     #region parametres
 
     public override float Health { get { return base.Health; } set { float prevHealth = health; base.Health = value; OnHealthChanged(new HealthEventArgs(value, health-prevHealth)); } }
-    public float MaxHealth { get { return base.maxHealth; } }
+    public float MaxHealth { get { return base.maxHealth; } set { maxHealth = value; } }
+    public int Balance { get { return balance;} set { balance = value; } }
+    public float Speed { get { return speed; } set { speed = value; } }
+    public float JumpForce { get { return jumpForce; } set { jumpForce = value; } }
+    public float JumpAdd { get { return jumpAdd;} set { jumpAdd = value; } }
 
     protected int airSupply = 10;//Запас воздуха
     public int AirSupply { get { return airSupply; } set { airSupply = value; OnSuffocate(new SuffocateEventArgs(airSupply)); } }
@@ -255,13 +257,9 @@ public class HeroController : CharacterController
             else
             {
                 if (Input.GetButton("Vertical"))
-                {
                     LadderMove(Input.GetAxis("Vertical"));
-                }
                 else
-                {
                     StopLadderMoving();
-                }
                 if (Input.GetButtonDown("Jump"))
                 {
                     LadderOff();
@@ -394,7 +392,7 @@ public class HeroController : CharacterController
     /// <summary>
     /// Процесс самого прыжка
     /// </summary>
-    protected IEnumerator JumpProcess()
+    protected virtual IEnumerator JumpProcess()
     {
         employment = Mathf.Clamp(employment - 2, 0, maxEmployment);
         jumpInput = 1;
@@ -496,7 +494,8 @@ public class HeroController : CharacterController
     protected override void LadderMove(float direction)
     {
         rigid.velocity = new Vector3(0f,
-                         Physics2D.OverlapCircle(transform.position + Mathf.Sign(direction) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? direction * ladderSpeed * speedCoof : 0f);
+                         Physics2D.OverlapCircle(transform.position + Mathf.Sign(direction) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? 
+                         direction * ladderSpeed * speedCoof : 0f);
     }
 
     /// <summary>

@@ -319,6 +319,16 @@ public class DialogWindowScript : MonoBehaviour
     }
 
     /// <summary>
+    /// Добавить диалоговый объект в словарь
+    /// </summary>
+    /// <param name="_dObj">Диалоговый объект, что добавляется в словарь</param>
+    public void AddDialogObjectInDictionary(DialogObject _dObj)
+    {
+        if (!dialogObjectsDictionary.ContainsKey(_dObj.ID))
+            dialogObjectsDictionary.Add(_dObj.ID, _dObj);
+    }
+
+    /// <summary>
     /// Процесс, в течение которого нельзя будет пропускать реплику диалога
     /// </summary>
     IEnumerator NoInputProcess()

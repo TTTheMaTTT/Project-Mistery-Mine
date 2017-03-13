@@ -842,7 +842,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
 
     #endregion //events
 
-    #region IHasID
+    #region IHaveID
 
     /// <summary>
     /// Вернуть id персонажа
@@ -857,6 +857,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// </summary>
     public virtual void SetID(int _id)
     {
+        
     }
 
     /// <summary>
@@ -880,7 +881,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
             AddCustomBuff(_bData);
     }
 
-    #endregion //IHasID
+    #endregion //IHaveID
 
     #region storyActions
 

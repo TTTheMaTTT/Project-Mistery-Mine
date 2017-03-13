@@ -108,6 +108,7 @@ public class AIController : CharacterController
     protected ActionDelegate analyseActions;
 
     protected AreaTrigger areaTrigger;//Триггер области вхождения монстра. Если герой находится в ней, то у монстра включаются все функции
+    public AreaTrigger ATrigger { get { return areaTrigger; } }
 
     protected NavigationMap navMap;
 

@@ -35,9 +35,9 @@ public class GameHistory : MonoBehaviour, IHaveStory
     {
         Summoner summoner = GetComponent<Summoner>();
         if (summoner==null)
-            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress",""};
+            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame"};
         else
-            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "summon","destroy","move" };
+            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame", "summon","destroy","move" };
     }
 
     /// <summary>
@@ -53,6 +53,7 @@ public class GameHistory : MonoBehaviour, IHaveStory
                                             { "startInvestigationEffect",new List<string>() { } },
                                             { "getAchievement", new List<string>() { } },
                                             { "changeStoryProgress", SpecialFunctions.statistics!=null? SpecialFunctions.statistics.HistoryBase.stories.ConvertAll<string>(x=>x.storyName):new List<string>(){ } },
+                                            { "saveGame", new List<string>() },
                                             { "summon", summoner!=null? summoner.summons.ConvertAll<string>(x=>x.summonName):new List<string>()},
                                             { "destroy", summoner!=null? summoner.destroys.ConvertAll<string>(x=>x.summonName):new List<string>()},
                                             { "move", summoner!=null? summoner.activeObjects.ConvertAll<string>(x=>x.summonName):new List<string>()}};
@@ -73,6 +74,7 @@ public class GameHistory : MonoBehaviour, IHaveStory
                                                     {"startInvestigationEffect",new List<string>() { } },
                                                     { "getAchievement",new List<string>() { } },
                                                     { "changeStoryProgress", SpecialFunctions.statistics!=null? SpecialFunctions.statistics.GetStoryProgressNames(): new List<string>() { } },
+                                                    { "saveGame", new List<string>()},
                                                     { "summon",new List<string>() },
                                                     { "destroy",new List<string>() },
                                                     { "move",new List<string>() } };
@@ -209,6 +211,7 @@ public class History
         storyActionBase.Add("removeObject", RemoveHistoryObject);
         storyActionBase.Add("startInvestigationEffect", StartInvestigationEffect);
         storyActionBase.Add("getAchievement", GetAchievement);
+        storyActionBase.Add("saveGame", SaveGameStory);
         storyActionBase.Add("summon", Summon);
         storyActionBase.Add("destroy", StoryDestroy);
         storyActionBase.Add("move", StoryMove);
@@ -542,6 +545,14 @@ public class History
         GameObject dObj = GameObject.Find(_action.id1);
         if (dObj != null)
             UnityEngine.Object.Destroy(dObj);
+    }
+    
+    /// <summary>
+    /// Сохранить игру
+    /// </summary>
+    public void SaveGameStory(StoryAction _action)
+    {
+        SpecialFunctions.SaveGame(_action.argument);
     }
 
     #endregion //storyActions

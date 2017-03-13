@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using System;
 using System.Collections;
 using Steamworks;
@@ -91,6 +92,31 @@ public static class SpecialFunctions
             Time.timeScale = 1f;
     }
 
+    /// <summary>
+    /// Сменить основного игрока
+    /// </summary>
+    public static void SwitchPlayer(HeroController _hero)
+    {
+        if (battleField != null)
+            battleField.ResetBattlefield();
+        player = _hero.gameObject;
+        battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
+        if (camControl != null)
+            camControl.SetPlayer(_hero.transform);
+        if (gameUI != null)
+            gameUI.ConsiderPlayer(_hero);
+
+    }
+
+    /// <summary>
+    /// Сохранить игру у определённого чекпоинта
+    /// </summary>
+    /// <param name="checkpointNumb"></param>
+    public static void SaveGame(int checkpointNumb)
+    {
+        gameController.SaveGame(checkpointNumb, false, SceneManager.GetActiveScene().name);
+    }
+    
     /// <summary>
     /// Запустить событие, связанное с сюжетом игры
     /// </summary>

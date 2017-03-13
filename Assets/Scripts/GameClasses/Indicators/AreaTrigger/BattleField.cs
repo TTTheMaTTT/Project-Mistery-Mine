@@ -247,6 +247,17 @@ public class BattleField : MonoBehaviour
         }
     }
 
+    public void ResetBattlefield()
+    {
+        //foreach (AIController enemy in enemies)
+        //enemy.Waiting = false;
+        KillAllies();
+        agressiveEnemies.Clear();
+        foreach (AIController enemy in enemies)
+            enemy.ATrigger.TriggerOut();
+        enemies.Clear();
+    }
+    
     #region events
 
     /// <summary>
