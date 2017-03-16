@@ -169,6 +169,7 @@ public class CameraController : MonoBehaviour
     public void SetPlayer(Transform _player)
     {
         player = _player;
+        ChangeCameraMod(CameraModEnum.player);
     }
 
 }

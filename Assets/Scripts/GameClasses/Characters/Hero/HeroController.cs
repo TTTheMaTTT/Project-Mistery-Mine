@@ -326,8 +326,15 @@ public class HeroController : CharacterController
 
         Collider2D[] cols = new Collider2D[2];
         cols = GetComponents<Collider2D>();
-        col1 = cols[0]; col2 = cols[1];
-        col2.enabled = false;
+        if (cols.Length > 0)
+        {
+            col1 = cols[0];
+            if (cols.Length > 1)
+            {
+                col2 = cols[1];
+                col2.enabled = false;
+            }
+        }
 
         if (!PlayerPrefs.HasKey("Hero Health"))//Здоровье не восполняется при переходе на следующий уровень. Поэтому, его удобно сохранять в PlayerPrefs
             PlayerPrefs.SetFloat("Hero Health", maxHealth);
@@ -347,7 +354,7 @@ public class HeroController : CharacterController
         if ((groundState == GroundStateEnum.grounded))
         {
             bool crouching = false;
-            if (Physics2D.OverlapCircle(wallAboveCheck.position, groundRadius, whatIsGround) || Input.GetButton("Flip"))
+            if (Physics2D.OverlapCircle(wallAboveCheck.position, groundRadius, whatIsGround)/* || Input.GetButton("Flip")*/)
             {
                 groundState = GroundStateEnum.crouching;
                 crouching = true;

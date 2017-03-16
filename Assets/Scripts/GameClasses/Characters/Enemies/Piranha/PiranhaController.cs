@@ -14,6 +14,7 @@ public class PiranhaController : AIController
     protected const float fishSize = .05f;
     //protected const float maxAvoidDistance = 10f, avoidOffset = .5f;
     protected const float pushBackForce = 75f;
+    protected const float observationAngle = .12f;
 
     //protected const float areaSizeX = 1.5f, areaSizeY = 1.5f;//Размеры прямоугольной зоны перемещения пираньи
     //protected const int clockwiseDirection = -1;//Обход контура идёт по часовой или против
@@ -145,15 +146,7 @@ public class PiranhaController : AIController
             case BehaviorEnum.patrol:
                 {
 
-                    RaycastHit2D hit = Physics2D.Raycast(pos + sightOffset * currentDirection, currentDirection, sightRadius, LayerMask.GetMask(gLName, cLName));
-                    if (hit)
-                    {
-                        if (enemies.Contains(hit.collider.gameObject.tag))
-                        {
-                            MainTarget = new ETarget(hit.collider.transform);
-                            BecomeAgressive();
-                        }
-                    }
+                    ObserveTarget();
 
                     if (wallCheck.WallInFront)
                     {
@@ -174,15 +167,7 @@ public class PiranhaController : AIController
             case BehaviorEnum.calm:
                 {
 
-                    RaycastHit2D hit = Physics2D.Raycast(pos + sightOffset * currentDirection, currentDirection, sightRadius, LayerMask.GetMask(gLName, cLName));
-                    if (hit)
-                    {
-                        if (enemies.Contains(hit.collider.gameObject.tag))
-                        {
-                            MainTarget = new ETarget(hit.collider.transform);
-                            BecomeAgressive();
-                        }
-                    }
+                    ObserveTarget();
 
                     if (loyalty == LoyaltyEnum.ally)
                     {
@@ -198,6 +183,30 @@ public class PiranhaController : AIController
                 break;
         }
 
+    }
+
+    /// <summary>
+    /// Функция поиска цели при помощи своего зрения
+    /// </summary>
+    protected void ObserveTarget()
+    {
+        Vector2 pos = transform.position;
+        float cos = Mathf.Cos(observationAngle), sin = Mathf.Sin(observationAngle);
+        Vector2 direction1 = new Vector2(currentDirection.x * cos - currentDirection.y * sin, currentDirection.y * cos + currentDirection.x * sin),
+                direction2 = new Vector2(currentDirection.x * cos + currentDirection.y * sin, currentDirection.y * cos - currentDirection.x * sin);
+        RaycastHit2D[] hits = new RaycastHit2D[] {Physics2D.Raycast(pos + sightOffset * currentDirection, currentDirection, sightRadius, LayerMask.GetMask(gLName, cLName)),
+                                                  Physics2D.Raycast(pos + sightOffset * direction1, direction1, sightRadius, LayerMask.GetMask(gLName, cLName)),
+                                                  Physics2D.Raycast(pos + sightOffset * direction2, direction2, sightRadius, LayerMask.GetMask(gLName, cLName)) };
+        foreach (RaycastHit2D hit in hits)
+            if (hit)
+            {
+                if (enemies.Contains(hit.collider.gameObject.tag))
+                {
+                    MainTarget = new ETarget(hit.collider.transform);
+                    BecomeAgressive();
+                    return;
+                }
+            }
     }
 
     /// <summary>

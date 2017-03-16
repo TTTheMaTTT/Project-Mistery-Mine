@@ -191,7 +191,10 @@ public class AIController : CharacterController
                 MainTarget = ETarget.zero;
             }
             else
+            {
                 gameObject.layer = LayerMask.NameToLayer("neutralCharacter");
+                cLName = "ground";
+            }
             OnChangeLoyalty(new LoyaltyEventArgs(value));
         }
     }

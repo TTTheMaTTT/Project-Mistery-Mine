@@ -20,7 +20,7 @@ public class DialogObject : MonoBehaviour
     {
         if (id == 0)
         {
-            if (GetComponent<HeroController>() != null)
+            if (GetComponent<HeroController>() != null? !(GetComponent<HeroController>() is SpiderHeroController):false)
                 id = 0;
             else
                 id = SpecialFunctions.dialogWindow.GetDialogID();

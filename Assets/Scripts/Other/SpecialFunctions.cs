@@ -25,7 +25,7 @@ public static class SpecialFunctions
     }
 
     public static CameraController camControl;
-    public static CameraController СamController { get { camControl = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); return camControl; } }
+    public static CameraController CamController { get { camControl = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); return camControl; } }
 
     public static GameController gameController { get { return GameObject.FindGameObjectWithTag("gameController").GetComponent<GameController>(); } }
 
@@ -101,11 +101,12 @@ public static class SpecialFunctions
             battleField.ResetBattlefield();
         player = _hero.gameObject;
         battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
-        if (camControl != null)
-            camControl.SetPlayer(_hero.transform);
+        if (CamController != null)
+            CamController.SetPlayer(_hero.transform);
         if (gameUI != null)
             gameUI.ConsiderPlayer(_hero);
-
+        if (dialogWindow.activated)
+            _hero.SetImmobile(true);
     }
 
     /// <summary>
@@ -114,7 +115,7 @@ public static class SpecialFunctions
     /// <param name="checkpointNumb"></param>
     public static void SaveGame(int checkpointNumb)
     {
-        gameController.SaveGame(checkpointNumb, false, SceneManager.GetActiveScene().name);
+        gameController.StartSaveGameProcess(checkpointNumb, false, SceneManager.GetActiveScene().name);
     }
     
     /// <summary>

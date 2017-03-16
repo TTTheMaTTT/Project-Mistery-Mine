@@ -12,8 +12,8 @@ public class SpiderHeroVisual : HeroVisual
 
     protected const float spiderOffset = .026f;
     protected const float webRatio = .1f;
-    protected const float webWidth = .1f;
-    protected const float blinkSpeed = 1f;
+    protected const float webWidth = .01f;
+    protected const float blinkSpeed = 3f;
 
     #endregion //consts
 
@@ -81,6 +81,26 @@ public class SpiderHeroVisual : HeroVisual
         visualFunctions.Add("setWebMove", SetWebMove);
         visualFunctions.Add("startCeilBlink", StartCeilBlink);
         visualFunctions.Add("stopCeilBlink", StopCeilBlink);
+        visualFunctions.Add("goAway", GoAway);
+    }
+
+    /// <summary>
+    /// Функция, отвечающая за перемещение персонажа на земле
+    /// </summary>
+    protected override void GroundMove(string id, int argument)
+    {
+        if (employment <= 6)
+        {
+            return;
+        }
+        if (Mathf.Abs(rigid.velocity.sqrMagnitude) > minSpeed*minSpeed)
+        {
+            anim.Play("Run");
+        }
+        else
+        {
+            anim.Play("Idle");
+        }
     }
 
     /// <summary>
@@ -153,6 +173,15 @@ public class SpiderHeroVisual : HeroVisual
     }
 
     /// <summary>
+    /// Анимировать уход
+    /// </summary>
+    protected virtual void GoAway(string id, int argument)
+    {
+        anim.Play("GoAway");
+        StartVisualRoutine(6, 6f);
+    }
+
+    /// <summary>
     /// Начать мигание, связанное с стоянием на потолке
     /// </summary>
     protected virtual void StartCeilBlink(string id, int argument)
@@ -176,12 +205,12 @@ public class SpiderHeroVisual : HeroVisual
     protected virtual IEnumerator CeilBlinkProcess()
     {
         blink = true;
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
         {
-            targetColor = new Color(1f, 1f, 1f, .4f);
-            yield return new WaitForSeconds(.5f);
-            targetColor = new Color(1f, 1f, 1f, .4f);
-            yield return new WaitForSeconds(.5f);
+            targetColor = new Color(1f, 1f, 1f, .2f);
+            yield return new WaitForSeconds(.25f);
+            targetColor = new Color(1f, 1f, 1f, 1f);
+            yield return new WaitForSeconds(.25f);
         }
         blink = false;
         spriteRenderer.color = Color.white;

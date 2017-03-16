@@ -28,6 +28,8 @@ public class GameUIScript : MonoBehaviour
 
     #region fields
 
+    protected HeroController hero;
+
     [SerializeField]
     protected Sprite wholeHeart, halfHeart, emptyHeart;
 
@@ -42,12 +44,17 @@ public class GameUIScript : MonoBehaviour
     protected Text[] questTexts = new Text[3];//Строчки, рассказывающие об активных квестах
     
     protected Image weaponImage;
+    public Sprite WeaponImage { set { weaponImage.sprite = value; if (value != null) weaponImage.color = Color.white; else weaponImage.color = new Color(1f, 1f, 1f, 0f); } }
 
     protected GameObject textPanel;//В этом окошечке будет выводится информация о процессе игры
     protected GameObject messagePanel;//В этом окошечке выводится информация, переданная от других персонажей или игровых объектов
     protected Text messageText;
     protected GameObject secretPlacePanel;//В этом окошечке выводится информация, о том, что герой нашёл секретное место
     protected Text secretPlaceText;
+
+    protected float countdownTime = 0f;
+    protected Transform countdownPanel;//Панель, на которой отображается обратный отсчёт
+    protected Text countdownText;//Текст, на котором отображается обратный отсчёт
 
     protected GameObject collectorScreen;//Панель, на которой отображается информация о собранных коллекциях
     protected GameObject oneItemScreen;//Экран, в котором показывается найденный коллекционный предмет
@@ -86,6 +93,21 @@ public class GameUIScript : MonoBehaviour
         damageScreen.color = Color.Lerp(damageScreen.color, dmgColor, Time.fixedDeltaTime * dmgScreenFadeSpeed);
     }
 
+    void FixedUpdate()
+    {
+        if (countdownTime > 0f)
+        {
+            countdownTime -= Time.fixedDeltaTime;
+            TimeSpan tSpan = new TimeSpan(0, Mathf.FloorToInt(countdownTime / 60f), Mathf.FloorToInt(countdownTime - 60f * Mathf.FloorToInt(countdownTime / 60f)));
+            //countdownText.text = Mathf.FloorToInt(countdownTime/60f).ToString() + ":" + Mathf.FloorToInt(countdownTime - 60f * Mathf.FloorToInt(countdownTime / 60f));
+            countdownText.text = tSpan.ToString();
+            if (countdownTime == 0f)
+                countdownTime = -1f;
+        }
+        else if (countdownTime < 0f)
+            StopCountdown();
+    }
+
     void Initialize()
     {
         heartImages = new List<Image>();
@@ -95,16 +117,16 @@ public class GameUIScript : MonoBehaviour
             heartImages.Add(panel.GetChild(i).GetComponent<Image>());
         }
 
-        HeroController player = SpecialFunctions.Player.GetComponent<HeroController>();
-        player.healthChangedEvent += HandleHealthChanges;
+        hero = SpecialFunctions.Player.GetComponent<HeroController>();
+        hero.healthChangedEvent += HandleHealthChanges;
 
         weaponImage = transform.FindChild("WeaponPanel").FindChild("WeaponImage").GetComponent<Image>();
-        player.equipmentChangedEvent += HandleEquipmentChanges;
-        weaponImage.sprite = player.CurrentWeapon.itemImage;
+        hero.equipmentChangedEvent += HandleEquipmentChanges;
+        WeaponImage = hero.CurrentWeapon.itemImage;
 
         buffPanel = transform.FindChild("BuffsPanel");
-        player.buffAddEvent += HandleBuffAdd;
-        player.buffRemoveEvent += HandleBuffRemove;
+        hero.buffAddEvent += HandleBuffAdd;
+        hero.buffRemoveEvent += HandleBuffRemove;
 
         Transform questsPanel = transform.FindChild("QuestsPanel");
         questTexts[0] = questsPanel.GetChild(0).GetComponent<Text>();
@@ -123,6 +145,9 @@ public class GameUIScript : MonoBehaviour
         secretPlaceText = secretPlacePanel.transform.FindChild("SecretPlaceText").GetComponent<Text>();
         secretPlaceText.text = "";
 
+        countdownPanel = transform.FindChild("CountdownZ");
+        countdownText = countdownPanel.GetComponentInChildren<Text>();
+
         collectorScreen = transform.FindChild("CollectionsPanel").gameObject;
         oneItemScreen = collectorScreen.transform.FindChild("OneItemScreen").gameObject;
         collectionScreen = collectorScreen.transform.FindChild("CollectionItemsScreen").gameObject;
@@ -131,10 +156,10 @@ public class GameUIScript : MonoBehaviour
         collectorScreen.SetActive(false);
 
         breathPanel = transform.FindChild("BreathPanel");
-        player.suffocateEvent += HandleSuffocate;
+        hero.suffocateEvent += HandleSuffocate;
         ConsiderBreath(10);
 
-        ConsiderHealth(player.Health);
+        ConsiderHealth(hero.Health);
 
         bossHealthPanel = transform.FindChild("BossHealthPanel").gameObject;
         bossHP = bossHealthPanel.transform.FindChild("BossHP").GetComponent<Image>();
@@ -148,17 +173,24 @@ public class GameUIScript : MonoBehaviour
     /// </summary>
     public void ConsiderPlayer(HeroController _player)
     {
-        _player.healthChangedEvent += HandleHealthChanges;
+        hero.healthChangedEvent -= HandleHealthChanges;
+        hero.equipmentChangedEvent -= HandleEquipmentChanges;
+        hero.buffAddEvent -= HandleBuffAdd;
+        hero.buffRemoveEvent -= HandleBuffRemove;
+        hero.suffocateEvent -= HandleSuffocate;
 
-        _player.equipmentChangedEvent += HandleEquipmentChanges;
-        if (_player.CurrentWeapon != null)
-            weaponImage.sprite = _player.CurrentWeapon.itemImage;
+        hero = _player;
+        hero.healthChangedEvent += HandleHealthChanges;
+
+        hero.equipmentChangedEvent += HandleEquipmentChanges;
+        if (hero.CurrentWeapon != null)
+            WeaponImage = hero.CurrentWeapon.itemImage;
         else
-            weaponImage.sprite = null;
+            WeaponImage = null;
 
-        _player.buffAddEvent += HandleBuffAdd;
-        _player.buffRemoveEvent += HandleBuffRemove;
-        _player.suffocateEvent += HandleSuffocate;
+        hero.buffAddEvent += HandleBuffAdd;
+        hero.buffRemoveEvent += HandleBuffRemove;
+        hero.suffocateEvent += HandleSuffocate;
 
         ConsiderHealth(_player.Health);
     }
@@ -385,6 +417,25 @@ public class GameUIScript : MonoBehaviour
         secretPlacePanel.SetActive(true);
         yield return new WaitForSeconds(textTime);
         secretPlacePanel.SetActive(false);
+    }
+
+    /// <summary>
+    /// Начать обратный отсчёт
+    /// </summary>
+    public void StartCountdown(float _time)
+    {
+        countdownTime = _time;
+        countdownPanel.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// Остановить обратный отсчёт
+    /// </summary>
+    public void StopCountdown()
+    {
+        countdownText.text = "0:00";
+        countdownTime = 0f;
+        countdownPanel.gameObject.SetActive(false);
     }
 
     /// <summary>

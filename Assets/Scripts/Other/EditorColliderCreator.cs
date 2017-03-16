@@ -30,9 +30,9 @@ public class EditorColliderCreator_Editor : Editor
         if (GUILayout.Button("Create Editor Colliders"))
             CreateColliders();
         if (GUILayout.Button("Remove Editor Colliders"))
-            RemoveColliders();
-
-          
+            RemoveEditorColliders();
+        if (GUILayout.Button("Remove Colliders"))
+            RemoveColliders();          
     }
 
     /// <summary>
@@ -66,7 +66,7 @@ public class EditorColliderCreator_Editor : Editor
     /// <summary>
     /// Убратьь компонент EditorCollider из указанных объектов 
     /// </summary>
-    void RemoveColliders()
+    void RemoveEditorColliders()
     {
         EditorColliderCreator creator = (EditorColliderCreator)target;
         EditorCollider col=null;
@@ -86,8 +86,37 @@ public class EditorColliderCreator_Editor : Editor
                 if ((col = editorObj.GetComponent<EditorCollider>()) != null)
                     DestroyImmediate(col);
         }
-        Button button;
 
+    }
+
+    /// <summary>
+    /// Функция, что удаляет компонент Collider2D из указанных объектов
+    /// </summary>
+    void RemoveColliders()
+    {
+        EditorColliderCreator creator = (EditorColliderCreator)target;
+        EditorCollider edCol = null;
+        Collider2D col = null;
+        if (parentMod)
+        {
+            foreach (GameObject obj in creator.editorObjects)
+                for (int i = 0; i < obj.transform.childCount; i++)
+                {
+                    GameObject editorObj = obj.transform.GetChild(i).gameObject;
+                    if ((edCol = editorObj.GetComponent<EditorCollider>()) != null)
+                        DestroyImmediate(edCol);
+                    if ((col = editorObj.GetComponent<Collider2D>()) != null)
+                        DestroyImmediate(col);
+                }
+        }
+        else
+            foreach (GameObject editorObj in creator.editorObjects)
+            {
+                if ((edCol = editorObj.GetComponent<EditorCollider>()) != null)
+                    DestroyImmediate(col);
+                if ((col = editorObj.GetComponent<Collider2D>()) != null)
+                    DestroyImmediate(col);
+            }
     }
 
 }

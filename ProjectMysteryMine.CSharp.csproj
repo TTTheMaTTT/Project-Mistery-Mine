@@ -82,9 +82,9 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\Experiment\AngleCalculator.cs" />
     <Compile Include="Assets\Scripts\Experiment\SpriteOutline.cs" />
-    <Compile Include="Assets\Scripts\Experiment\Summoner.cs" />
     <Compile Include="Assets\Scripts\Game\AutoLineRender.cs" />
     <Compile Include="Assets\Scripts\Game\CameraController.cs" />
+    <Compile Include="Assets\Scripts\Game\CountdownScript.cs" />
     <Compile Include="Assets\Scripts\Game\Effects\CircleShockWacveScript.cs" />
     <Compile Include="Assets\Scripts\Game\FadeScript.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\DialogSystem\Dialog.cs" />
@@ -127,6 +127,7 @@
     <Compile Include="Assets\Scripts\Game\NavigationSystem\NavigationSystem.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\LoadMenuScript.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\ProfileButton.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SaveMeScript.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\SavesInfo.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\BuffListData.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\CollectionInfo.cs" />
@@ -143,6 +144,7 @@
     <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\StoryInfo.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\StoryProgressData.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\Serializator.cs" />
+    <Compile Include="Assets\Scripts\Game\Summoner.cs" />
     <Compile Include="Assets\Scripts\GameClasses\BuffClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterEffectSystem.cs" />
@@ -167,6 +169,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Humanoid\TotemMonkeyController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Piranha\PiranhaController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\IceSpiderController.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\SentryIndicator.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\SpiderController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\SpiderSpyVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\SpiderVisual.cs" />
@@ -208,11 +211,11 @@
     <Compile Include="Assets\Scripts\GameClasses\Indicators\AreaTrigger\BattleField.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Compasses\CollectorArrow.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\Compasses\TreasureHuntArrow.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Indicators\EnvironmentIndicaors\Hearing.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Indicators\EnvironmentIndicaors\Interactor.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Indicators\EnvironmentIndicaors\SightFrustum.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Indicators\EnvironmentIndicaors\WallChecker.cs" />
-    <Compile Include="Assets\Scripts\GameClasses\Indicators\EnvironmentIndicaors\WaterIndicator.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\EnvironmentIndicators\Hearing.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\EnvironmentIndicators\Interactor.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\EnvironmentIndicators\SightFrustum.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\EnvironmentIndicators\WallChecker.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Indicators\EnvironmentIndicators\WaterIndicator.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\HeroImpulseIndicator.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\HitControl\HitBox.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Indicators\HitControl\HitBoxCollider.cs" />

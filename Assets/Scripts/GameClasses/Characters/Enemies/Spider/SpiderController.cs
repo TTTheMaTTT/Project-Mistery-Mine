@@ -299,11 +299,19 @@ public class SpiderController : AIController
     /// <summary>
     /// Определить следующую точку патрулирования
     /// </summary>
-    protected virtual void Patrol()
+    public virtual void Patrol()
     {
         Vector2 waypoint = new Vector3((int)orientation * patrolDistance, 0f, 0f) + transform.position;
         currentTarget = new ETarget(waypoint);
+    }
 
+    /// <summary>
+    /// Прекратить патрулирование
+    /// </summary>
+    public virtual void StopPatrol()
+    {
+        StopMoving();
+        currentTarget.exists = false;
     }
 
     /// <summary>
@@ -1622,7 +1630,6 @@ public class SpiderController : AIController
                 immobile = false;
                 inGround = false;
                 EnableColliders();
-                Loyalty = LoyaltyEnum.enemy;
             }
 
             if (transform.localScale.x * eData.orientation < 0f)

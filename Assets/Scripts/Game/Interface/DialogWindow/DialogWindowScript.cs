@@ -58,6 +58,8 @@ public class DialogWindowScript : MonoBehaviour
 
     #region parametres
 
+    public bool activated { get { return canvas.enabled; } }
+
     protected float prevScale;
     protected bool noInput = false;//Если true, то диалог пропустить нельзя
 
@@ -514,7 +516,7 @@ public class DialogWindowScript : MonoBehaviour
         portrait = panel.FindChild("PortraitImage").FindChild("Portrait").GetComponent<Image>();
 
         hero = SpecialFunctions.Player.transform;
-        cam = SpecialFunctions.СamController;
+        cam = SpecialFunctions.CamController;
         CurrentSpeech = null;
         dialogObjs = new List<DialogObject>();
         waitingForInput = false;

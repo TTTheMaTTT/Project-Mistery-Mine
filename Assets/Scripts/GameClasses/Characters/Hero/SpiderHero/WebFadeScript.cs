@@ -10,7 +10,7 @@ public class WebFadeScript : MonoBehaviour
 
     #region consts
 
-    private const float fadeSpeed = 2f;
+    private const float fadeSpeed = .5f;
     private const float lifeTime = 5f;
 
     #endregion //consts

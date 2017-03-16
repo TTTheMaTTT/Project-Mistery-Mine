@@ -11,27 +11,32 @@ public class SpiderHeroController : HeroController
 
     #region consts
 
-    protected const float spiderOffset = .026f;//Насколько должен быть смещён паук относительно поверхности земли
-    protected const float spiderOffsetEps = .01f;//Какая может быть ошибка смещения относительно поверхности?
+    protected const float spiderOffset = .04f;//Насколько должен быть смещён паук относительно поверхности земли
+    protected const float spiderOffsetEps = .12f;//Какая может быть ошибка смещения относительно поверхности?
     protected const float precipiceEps = .01f;//Насколько близко паук должен быть у края поверхности, чтобы перейти на следующую поверхность
     protected const float catchWallTime = .2f;//Как долго паук будет пытаться закрепиться за стену?
     protected const float minAngle = 1f;
+    protected const float camTime = 3f;//Время, через которое камера переключается в режим медленного следования за персонажем
 
     protected const float maxObservationDistance = 10f;
-    protected const float maxCeilTime = 10f;//Максимальное время, при котором паук может быть прицеплённым к потолке
+    protected const float maxCeilTime = 2f;//Максимальное время, при котором паук может быть прицеплённым к потолке
     protected const int maxWebUsageTimes = 3;//Максимальное число использований паутины, стоя на потолке
 
     #endregion //consts  
 
     #region fields
 
+    protected WallChecker precipiceCheck;//Индикатор, отслеживающий пропасти
     protected HeroController originalController;
+    protected NavigationBunchedMap crawlMap;
 
     #endregion //fields
 
     #region parametres
 
     protected int id = 0;
+    protected Vector2 navCellSize;
+
     protected Vector2 spiderOrientation = Vector2.up;//нормаль поверхности, на которой стоит паук
     protected virtual Vector2 SpiderOrientation
     {
@@ -52,7 +57,10 @@ public class SpiderHeroController : HeroController
             else
                 rigid.gravityScale = 1f;
             OnCeil = spiderOrientation.y < -.8f;
+            if (spiderOrientation.y >= -.8f)
+                webUsageTimes = maxWebUsageTimes;
             wallCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
+            precipiceCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
             groundCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
         }
     }
@@ -63,9 +71,10 @@ public class SpiderHeroController : HeroController
         set
         {
             currentSurface = value;
-            moveDirection = currentSurface.exists ? currentSurface.GetMoveDirection() : Vector2.right; StopCatchingWall();
-            if (value.exists)
-                nextSurface = SurfaceLineClass.zero;
+            moveDirection = currentSurface.exists ? currentSurface.GetMoveDirection() : Vector2.right;
+            if (tryingCatchWall)
+                StopCatchingWall();
+            nextSurface = SurfaceLineClass.zero;
         }
     }
     protected SurfaceLineClass nextSurface = SurfaceLineClass.zero;
@@ -105,24 +114,35 @@ public class SpiderHeroController : HeroController
 
         if (Input.GetButton("Horizontal"))
         {
-            if (moveDirection.x >= moveDirection.y -.1f)
+            if (moveDirection.x >= moveDirection.y - .1f)
                 Move(Input.GetAxis("Horizontal"));
             if (nextSurface.exists ? nextSurface.normal.y > .1f || nextSurface.normal.y < -.8f : false)
-                if (Input.GetAxis("Horizontal")*(nextSurface.GetFarPoint(pos)-nextSurface.GetNearPoint(pos)).x>0f) 
+            {
+                Vector2 _moveDirection = GetNormal(nextSurface.normal) * (int)orientation;
+                if (Input.GetAxis("Horizontal") * _moveDirection.x > 0f)
                     ChangeSurface(nextSurface);
+            }
         }
         else
         {
-            StopCatchingWall();//Если игрок не зажимает клавишу движения, то он не сможет закрепиться за отвесную стену
-            if (Input.GetButton("Vertical"))
+            if (moveDirection.x >= moveDirection.y - .1f)
+                StopMoving();
+            //StopCatchingWall();//Если игрок не зажимает клавишу движения, то он не сможет закрепиться за отвесную стену
+        }
+
+        if (Input.GetButton("Vertical"))
+        {
+            if (moveDirection.y > moveDirection.x - .1f)
+                Move(Input.GetAxis("Vertical"));
+            if (nextSurface.exists ? nextSurface.normal.y < .1f && nextSurface.normal.y > -.8f : false)
             {
-                if (moveDirection.y > moveDirection.x-.1f)
-                    Move(Input.GetAxis("Vertical"));
-                if (nextSurface.exists ? nextSurface.normal.y < .1f && nextSurface.normal.y > -.8f : false)
-                    if (Input.GetAxis("Vertical") * (nextSurface.GetFarPoint(pos) - nextSurface.GetNearPoint(pos)).y > 0f)
-                        ChangeSurface(nextSurface);
+                Vector2 _moveDirection = GetNormal(nextSurface.normal) * (int)orientation;
+                if (Input.GetAxis("Vertical") * _moveDirection.y > 0f)
+                    ChangeSurface(nextSurface);
             }
         }
+        else if (moveDirection.y > moveDirection.x - .1f)
+            StopMoving();
 
         if (Input.GetButtonDown("Jump"))
         {
@@ -183,12 +203,26 @@ public class SpiderHeroController : HeroController
             Animate(new AnimationEventArgs("groundMove"));
     }
 
+    protected override void FixedUpdate()
+    {
+        base.FixedUpdate();
+        if (groundState == GroundStateEnum.inAir && !onWeb)
+        {
+            if (!tryingCatchWall && wallCheck.CheckWall())
+                TryCatchWall();
+            else if (tryingCatchWall && !wallCheck.CheckWall())
+                StopCatchingWall();
+        }
+    }
+
     /// <summary>
     /// Инициализация
     /// </summary>
     protected override void Initialize()
     {
         base.Initialize();
+        if (indicators != null)
+            precipiceCheck = indicators.FindChild("PrecipiceCheck").GetComponent<WallChecker>();
 
         SpiderOrientation = Vector2.up;
         CurrentSurface = SurfaceLineClass.zero;
@@ -196,6 +230,9 @@ public class SpiderHeroController : HeroController
         onCeil = false;
         tryingCatchWall = false;
         webUsageTimes = maxWebUsageTimes;
+        crawlMap = (NavigationBunchedMap)SpecialFunctions.statistics.navSystem.GetMap(NavMapTypeEnum.crawl);
+        navCellSize = crawlMap.cellSize;
+        StartCoroutine("CamProcess");
     }
 
     #region movement
@@ -207,22 +244,44 @@ public class SpiderHeroController : HeroController
     {
         Vector2 velocity = value * moveDirection * speed * speedCoof;
         Vector2 _moveDirection = moveDirection * Mathf.Sign(value);
-        if (rigid.gravityScale == 1f)
+        if (wallCheck.WallInFront || (!precipiceCheck.WallInFront && rigid.gravityScale<1f))
         {
-            if (wallCheck.WallInFront)
-            {
-                if (!currentSurface.exists)
-                {
-                    rigid.velocity = new Vector2(0f, rigid.velocity.y);
-                }
-            }
-            else
-                rigid.velocity = new Vector2(velocity.x, rigid.velocity.y);
+            rigid.velocity = new Vector2(0f, rigid.gravityScale>0f?rigid.velocity.y:0f);
         }
         else
-            rigid.velocity = velocity;
+            rigid.velocity = new Vector2(velocity.x,  rigid.gravityScale>0f?rigid.velocity.y:velocity.y);
 
         Turn((OrientationEnum)Mathf.RoundToInt(Vector2.Dot(rightMovementDirection, _moveDirection)));
+    }
+
+    /// <summary>
+    /// Повернуться в выбранном направлении
+    /// </summary>
+    public override void Turn(OrientationEnum _orientation)
+    {
+        if (employment < 8)
+            return;
+        if (orientation != _orientation)
+        {
+            Vector3 vect = transform.localScale;
+            orientation = _orientation;
+            transform.localScale = new Vector3(-1 * vect.x, vect.y, vect.z);
+            nextSurface = SurfaceLineClass.zero;
+        }
+        wallCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
+        precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
+    }
+
+    /// <summary>
+    /// Повернуться
+    /// </summary>
+    protected override void Turn()
+    {
+        Vector3 vect = transform.localScale;
+        orientation = (OrientationEnum)(-1 * (int)orientation);
+        transform.localScale = new Vector3(-1 * vect.x, vect.y, vect.z);
+        precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
+        nextSurface = SurfaceLineClass.zero;
     }
 
     /// <summary>
@@ -263,7 +322,6 @@ public class SpiderHeroController : HeroController
         {
             ChangeOrientation(hit.collider, true);
         }
-
     }
 
     /// <summary>
@@ -275,6 +333,7 @@ public class SpiderHeroController : HeroController
         transform.position = webConnectionPoint + Vector2.down * spiderOffset;
         SpiderOrientation = spiderOrientation;
         Animate(new AnimationEventArgs("setWebMove", "", 0));
+        OnCeil = true;
     }
 
     /// <summary>
@@ -288,6 +347,7 @@ public class SpiderHeroController : HeroController
         transform.eulerAngles = Vector3.zero;
         Turn(OrientationEnum.right);
         Animate(new AnimationEventArgs("setWebMove", "", 1));
+        OnCeil = false;
     }
 
     /// <summary>
@@ -333,7 +393,11 @@ public class SpiderHeroController : HeroController
                 float newDistance = Vector2.SqrMagnitude(_connectionPoint - (Vector2)transform.position);
                 if (newDistance < mDistance)
                 {
-                    connectionPoint = _connectionPoint;
+                    Vector2 _moveDirection = GetNormal(normal) * (int)orientation;
+                    if (Physics2D.OverlapCircle(_connectionPoint + (normal + _moveDirection) * spiderOffset, spiderOffset / 2f, whatIsGround) ||
+                        !Physics2D.OverlapCircle(_connectionPoint + (-normal + _moveDirection) * spiderOffset, spiderOffset / 2f, whatIsGround))
+                        continue;
+                    connectionPoint = _connectionPoint+_moveDirection*spiderOffset;
                     mDistance = newDistance;
                     pointIndex = i;
                 }
@@ -347,8 +411,9 @@ public class SpiderHeroController : HeroController
         Vector2 _spiderOrientation = GetNormal(surfacePoint1, surfacePoint2, targetCollider);
 
         //Определим, на какой поверхности мы находимся
-        surfacePoint1 = ObserveSurfacePoint(surfacePoint1, (surfacePoint1 - surfacePoint2).normalized, _spiderOrientation, targetCollider);
-        surfacePoint2 = ObserveSurfacePoint(surfacePoint2, (surfacePoint2 - surfacePoint1).normalized, _spiderOrientation, targetCollider);
+        Vector2 observeDirection = (surfacePoint1 - surfacePoint2).normalized;
+        surfacePoint1 = ObserveSurfacePoint(connectionPoint, observeDirection, _spiderOrientation);
+        surfacePoint2 = ObserveSurfacePoint(connectionPoint, -observeDirection, _spiderOrientation);
         CurrentSurface = new SurfaceLineClass(surfacePoint1, surfacePoint2,_spiderOrientation);
 
         SpiderOrientation = _spiderOrientation;
@@ -363,43 +428,55 @@ public class SpiderHeroController : HeroController
     /// <param name="surfacePoint">Точка, откуда ищется следующая поверхность</param>
     protected SurfaceLineClass GetNextSurface(Vector2 _surfacePoint, bool considerCurrentOrientation)
     {
-        Collider2D targetCollider = Physics2D.OverlapCircle(_surfacePoint, spiderOffset, whatIsGround);
-        if (targetCollider == null)
+        Collider2D[] targetColliders = Physics2D.OverlapCircleAll (_surfacePoint, spiderOffset, whatIsGround);
+        if (targetColliders == null)
             return SurfaceLineClass.zero;
-        Vector2[] colPoints = GetColliderPoints(targetCollider);
-
-        if (colPoints.Length <= 0)
-            return SurfaceLineClass.zero;
-
+        int pointIndex = -1;
+        Vector2[] colPoints = null;
+        Collider2D targetCollider=null;
+        Vector2 connectionPoint1=Vector2.zero;
         //Найдём ту сторону коллайдера, которая имеет нормаль, отличную от текущей ориентации паука, и расстояние до которой от текущего положения паука является наименьшим
         float mDistance = Mathf.Infinity;
-        int pointIndex = -1;
-        for (int i = 0; i < colPoints.Length; i++)
+        foreach (Collider2D _targetCollider in targetColliders)
         {
-            Vector2 point1 = colPoints[i];
-            Vector2 point2 = i < colPoints.Length - 1 ? colPoints[i + 1] : colPoints[0];
-            Vector2 normal = GetNormal(point1, point2, targetCollider);
-            if (considerCurrentOrientation? Mathf.Abs(Vector2.Angle(spiderOrientation, normal)) >= minAngle: true)
+
+            Vector2[] _colPoints = GetColliderPoints(_targetCollider);
+            if (_colPoints.Length <= 0)
+                continue;
+            for (int i = 0; i < _colPoints.Length; i++)
             {
-                Vector2 _connectionPoint = GetConnectionPoint(point1, point2, _surfacePoint);
-                float newDistance = Vector2.SqrMagnitude(_connectionPoint - (Vector2)transform.position);
-                if (newDistance < mDistance)
+                Vector2 point1 = _colPoints[i];
+                Vector2 point2 = i < _colPoints.Length - 1 ? _colPoints[i + 1] : _colPoints[0];
+                Vector2 normal = GetNormal(point1, point2, _targetCollider);
+                if (considerCurrentOrientation ? Mathf.Abs(Vector2.Angle(spiderOrientation, normal)) >= minAngle : true)
                 {
-                    mDistance = newDistance;
-                    pointIndex = i;
+                    Vector2 _connectionPoint = GetConnectionPoint(point1, point2, _surfacePoint);
+                    float newDistance = Vector2.SqrMagnitude(_connectionPoint - _surfacePoint);
+                    if (newDistance < mDistance)
+                    {
+                        Vector2 _moveDirection = GetNormal(normal) * (int)orientation;
+                        if (Physics2D.OverlapCircle(_connectionPoint + (normal + _moveDirection) * spiderOffset, spiderOffset / 2f, whatIsGround)||
+                            !Physics2D.OverlapCircle(_connectionPoint + (-normal + _moveDirection) * spiderOffset, spiderOffset / 2f, whatIsGround))
+                            continue;
+                        mDistance = newDistance;
+                        pointIndex = i;
+                        colPoints = _colPoints;
+                        targetCollider =_targetCollider;
+                        connectionPoint1 = _connectionPoint+_moveDirection*spiderOffset;
+                    }
                 }
             }
         }
-
-        if (pointIndex < 0)
+        if (pointIndex < 0 || colPoints == null)
             return SurfaceLineClass.zero;
 
         Vector2 surfacePoint1 = colPoints[pointIndex], surfacePoint2 = colPoints[pointIndex < colPoints.Length - 1 ? pointIndex + 1 : 0];
         Vector2 _spiderOrientation = GetNormal(surfacePoint1, surfacePoint2, targetCollider);
 
         //Определим, на какой поверхности мы находимся
-        surfacePoint1 = ObserveSurfacePoint(surfacePoint1, (surfacePoint1 - surfacePoint2).normalized, _spiderOrientation, targetCollider);
-        surfacePoint2 = ObserveSurfacePoint(surfacePoint2, (surfacePoint2 - surfacePoint1).normalized, _spiderOrientation, targetCollider);
+        Vector2 observeDirection = (surfacePoint1 - surfacePoint2).normalized;
+        surfacePoint1 = ObserveSurfacePoint(connectionPoint1, observeDirection, _spiderOrientation);
+        surfacePoint2 = ObserveSurfacePoint(connectionPoint1, -observeDirection, _spiderOrientation);
         return new SurfaceLineClass(surfacePoint1, surfacePoint2, _spiderOrientation);
     }
 
@@ -466,11 +543,12 @@ public class SpiderHeroController : HeroController
     /// <returns></returns>
     protected virtual IEnumerator CeilProcess()
     {
-        yield return new WaitForSeconds(maxCeilTime-3f);
+        yield return new WaitForSeconds(maxCeilTime-1f);
         Animate(new AnimationEventArgs("startCeilBlink"));
-        yield return new WaitForSeconds(3f);
+        yield return new WaitForSeconds(1f);
         JumpDown();
         onCeil = false;
+        webUsageTimes = maxWebUsageTimes;
     }
 
     /// <summary>
@@ -480,7 +558,6 @@ public class SpiderHeroController : HeroController
     {
         StopCoroutine("CeilProcess");
         Animate(new AnimationEventArgs("stopCeilBlink"));
-        webUsageTimes = maxWebUsageTimes;
     }
 
     #endregion //movement
@@ -498,28 +575,38 @@ public class SpiderHeroController : HeroController
 
         if ((groundState == GroundStateEnum.grounded))
         {
-            if (!currentSurface.exists)
+            if (!currentSurface.exists && !jumping)
             {
                 RaycastHit2D hit = Physics2D.Raycast(groundCheck.transform.position, -spiderOrientation, spiderOffset * 2f, whatIsGround);
                 if (hit)
                     ChangeOrientation(hit.collider, false);
             }
-            else if (currentSurface.IsNearPoint(pos, spiderOffsetEps / 2f))
+            else if (!nextSurface.exists && currentSurface.IsNearPointInDirection(pos, spiderOffsetEps,rightMovementDirection*(int)orientation))
             {
-                Vector2 nearPoint = currentSurface.GetNearPoint(pos);
-                string buttonName = currentSurface.normal.y >= 0.1f || currentSurface.normal.y < -.9f ? "Horizontal" : "Vertical";
-                if (Input.GetButton(buttonName) && Vector2.Dot((int)orientation * rightMovementDirection, nearPoint - currentSurface.GetFarPoint(pos)) > 0f)
-                    nextSurface = GetNextSurface(nearPoint, true);
+                Vector2 nearPoint = currentSurface.GetPointInDirection(rightMovementDirection * (int)orientation);
+                //string buttonName = currentSurface.normal.y >= 0.1f || currentSurface.normal.y < -.9f ? "Horizontal" : "Vertical";
+                //if (Input.GetButton(buttonName) && Vector2.Dot((int)orientation * rightMovementDirection, nearPoint - currentSurface.GetFarPoint(pos)) > 0f)
+                nextSurface = GetNextSurface(nearPoint, true);
             }
+            else if (!currentSurface.IsNearPointInDirection(pos, spiderOffsetEps, rightMovementDirection * (int)orientation))
+                nextSurface = SurfaceLineClass.zero;
             if (fallSpeed > minDamageFallSpeed)
-                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed), DamageType.Physical, true, 1);
+                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed*2f), DamageType.Physical, true, 1);
             if (fallSpeed > minDamageFallSpeed / 10f)
                 Animate(new AnimationEventArgs("fall"));
             fallSpeed = 0f;
-
         }
-        else
+        else if (!onWeb)
+        {
+            if (rigid.gravityScale < 1f)
+                JumpDown();//Мы больше не прикреплены к стене
             fallSpeed = -rigid.velocity.y;
+            currentSurface = SurfaceLineClass.zero;
+            /*if (!tryingCatchWall && wallCheck.WallInFront)
+                TryCatchWall();
+            else if (tryingCatchWall && !wallCheck.WallInFront)
+                StopCatchingWall();*/
+        }
 
         bool _underWater = Physics2D.OverlapCircle(waterCheck.position, groundRadius, LayerMask.GetMask("Water"));
         if (underWater != _underWater)
@@ -540,6 +627,7 @@ public class SpiderHeroController : HeroController
             if (attackPower > balance || stunned)
                 JumpDown();
         }
+        base.TakeDamage(damage, _dType, attackPower); 
     }
 
     /// <summary>
@@ -553,6 +641,7 @@ public class SpiderHeroController : HeroController
             if (attackPower > balance || stunned)
                 JumpDown();
         }
+        base.TakeDamage(damage,_dType,ignoreInvul,attackPower);
     }
 
     /// <summary>
@@ -575,6 +664,15 @@ public class SpiderHeroController : HeroController
         originalController.gameObject.SetActive(true);
         SpecialFunctions.SwitchPlayer(originalController);
         gameObject.SetActive(false);
+    }
+
+    /// <summary>
+    /// Процесс, после которого камера переключается в режим медленного следования
+    /// </summary>
+    protected virtual IEnumerator CamProcess()
+    {
+        yield return new WaitForSeconds(camTime);
+        SpecialFunctions.camControl.ChangeCameraMod(CameraModEnum.playerMove);
     }
 
     #region IHaveID
@@ -763,9 +861,9 @@ public class SpiderHeroController : HeroController
         Vector2 normal = GetNormal(point1, point2);//Нормаль рассматриваемой поверхности
                                                    //if (Vector2.Angle(spiderOrientation, normal) < minAngle)
                                                    //return Vector2.zero;
-        if (point1.x - point2.x == 0)
+        if (Mathf.Approximately(point1.x - point2.x, 0))
             connectionPoint = new Vector2(point1.x, normal.y / normal.x * (point1.x - fromPoint.x) + fromPoint.y);
-        else if (normal.x == 0)
+        else if (normal.x<.0001f)
             connectionPoint = new Vector2(fromPoint.x, (point2.y - point1.y) / (point2.x - point1.x) * (fromPoint.x - point1.x) + point1.y);
         else
         {
@@ -776,11 +874,12 @@ public class SpiderHeroController : HeroController
             float newY = normal.y / normal.x * (newX - fromPoint.x) + fromPoint.y;
             connectionPoint = new Vector2(newX, newY);
         }
+        float sqDistance1 = Vector2.SqrMagnitude(connectionPoint - point1), sqDistance2 = Vector2.SqrMagnitude(connectionPoint - point2);
         //Если точка крепления по какой-то причине оказалась не между двумя точками заданной прямой, то установить точкой крепления ближайшую из этой точек
         if ((connectionPoint.x - point1.x) * (connectionPoint.x - point2.x) > 0 || (connectionPoint.y - point1.y) * (connectionPoint.y - point2.y) > 0)
-            connectionPoint = (Vector2.SqrMagnitude(connectionPoint - point1) < Vector2.SqrMagnitude(connectionPoint - point2) ? point1 + (point2 - point1).normalized * spiderOffset :
-                                                                                                                                 point2 + (point1 - point2).normalized * spiderOffset);
-
+            connectionPoint = (sqDistance1 < sqDistance2 ? point1 + (point2 - point1).normalized * spiderOffset :point2 + (point1 - point2).normalized * spiderOffset);
+        //else
+            //connectionPoint+= sqDistance1 < sqDistance2 ? (point2 - point1).normalized * spiderOffset: (point1 - point2).normalized * spiderOffset;
         return connectionPoint;
     }
     
@@ -790,10 +889,11 @@ public class SpiderHeroController : HeroController
     /// <param name="startPoint">Точка поверхности, откуда ведём поиск</param>
     /// <param name="observeDirection">В какую сторону смотрим</param>
     /// <param name="_spiderOrientation">Какова ориентация паука при перемещении по заданной поверхности</param>
-    /// <param name="col">Коллайдер, составляющий поверхность, с которого начинаем исследование</param>
-    public Vector2 ObserveSurfacePoint(Vector2 startPoint, Vector2 observeDirection, Vector2 _spiderOrientation, Collider2D col)
+    public Vector2 ObserveSurfacePoint(Vector2 startPoint, Vector2 observeDirection, Vector2 _spiderOrientation)
     {
-        Vector2 nextPoint = startPoint;
+        #region uselessTrash
+
+        /*Vector2 nextPoint = startPoint;
         bool findNextPoint = true;
         Collider2D prevCol = col;
         while (findNextPoint)
@@ -833,7 +933,21 @@ public class SpiderHeroController : HeroController
                 }
             }
         }
+        return nextPoint;*/
+
+        #endregion //uselessTrash
+
+        float _distance = 0f;
+        Vector2 nextPoint = startPoint;
+        Vector2 deltaPos = _spiderOrientation * spiderOffset / 2f;
+        while (Physics2D.Raycast(nextPoint + deltaPos, -_spiderOrientation, spiderOffset, whatIsGround) &&
+               !Physics2D.Raycast(nextPoint + deltaPos,observeDirection, spiderOffset, whatIsGround) && _distance <maxObservationDistance )
+        {
+            nextPoint += spiderOffset * observeDirection;
+            _distance += spiderOffset;
+        }
         return nextPoint;
+
     }
 
     #endregion //other
@@ -843,6 +957,7 @@ public class SpiderHeroController : HeroController
 /// <summary>
 /// Структура, содержащая информацию о поверхности, по которой двигается паук, а также удобные методы, для работы с такой структурой
 /// </summary>
+[System.Serializable]
 public struct SurfaceLineClass
 {
 
@@ -903,6 +1018,17 @@ public struct SurfaceLineClass
     }
 
     /// <summary>
+    /// Узнать, находится ли крайняя точка поверхности в заданном направлении рядом
+    /// </summaary>
+    public bool IsNearPointInDirection(Vector2 position, float eps, Vector2 direction)
+    {
+        if (Vector2.Dot(point1 - point2, direction) >= 0f)
+            return Vector2.SqrMagnitude(position - point1) <= eps * eps;
+        else
+            return Vector2.SqrMagnitude(position - point2) <= eps * eps;
+    }
+
+    /// <summary>
     /// Возвращает ближайший к заданной точке край поверхности
     /// </summary>
     /// <param name="position">Заданная точка</param
@@ -911,6 +1037,17 @@ public struct SurfaceLineClass
         float distance1 = Vector2.SqrMagnitude(position-point1);
         float distance2 = Vector2.SqrMagnitude(position - point2);
         if (distance1 < distance2)
+            return point1;
+        else
+            return point2;
+    }
+
+    /// <summary>
+    /// Вернуть крайнюю точку поверхности в заданном направлении
+    /// </summary>
+    public Vector2 GetPointInDirection(Vector2 direction)
+    {
+        if (Vector2.Dot(point1 - point2, direction) >= 0f)
             return point1;
         else
             return point2;
@@ -994,8 +1131,6 @@ public struct SurfaceLineClass
     {
         return GetDistance(position) < eps;
     }
-
-
 
 }
 

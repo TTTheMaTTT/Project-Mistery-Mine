@@ -327,6 +327,11 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
                 if (dialog != null)
                     dialogs.Add(dialog);
             }
+            if (transform.parent != null ? transform.parent.GetComponent<DialogObject>() : false)
+                transform.parent.position = npcData.position;//Частые случаи, когда НПС находится внутри другого объекта, 
+                                                            //и он должен быть в координатном нуле относительно него
+            else
+                transform.position = npcData.position;
         }
 #if UNITY_EDITOR
         UnityEditor.EditorUtility.SetDirty(this);

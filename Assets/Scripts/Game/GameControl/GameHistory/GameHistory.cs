@@ -35,9 +35,10 @@ public class GameHistory : MonoBehaviour, IHaveStory
     {
         Summoner summoner = GetComponent<Summoner>();
         if (summoner==null)
-            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame"};
+            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame", "setText","setSecretText", "setLight", "setHDR"};
         else
-            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame", "summon","destroy","move" };
+            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame",
+                                        "setText","setSecretText", "setLight", "setHDR", "summon","destroy","move" };
     }
 
     /// <summary>
@@ -54,6 +55,10 @@ public class GameHistory : MonoBehaviour, IHaveStory
                                             { "getAchievement", new List<string>() { } },
                                             { "changeStoryProgress", SpecialFunctions.statistics!=null? SpecialFunctions.statistics.HistoryBase.stories.ConvertAll<string>(x=>x.storyName):new List<string>(){ } },
                                             { "saveGame", new List<string>() },
+                                            { "setText", new List<string>() },
+                                            { "setSecretText", new List<string>() },
+                                            { "setLight", new List<string>() },
+                                            { "setHDR",new List<string>()},
                                             { "summon", summoner!=null? summoner.summons.ConvertAll<string>(x=>x.summonName):new List<string>()},
                                             { "destroy", summoner!=null? summoner.destroys.ConvertAll<string>(x=>x.summonName):new List<string>()},
                                             { "move", summoner!=null? summoner.activeObjects.ConvertAll<string>(x=>x.summonName):new List<string>()}};
@@ -75,6 +80,10 @@ public class GameHistory : MonoBehaviour, IHaveStory
                                                     { "getAchievement",new List<string>() { } },
                                                     { "changeStoryProgress", SpecialFunctions.statistics!=null? SpecialFunctions.statistics.GetStoryProgressNames(): new List<string>() { } },
                                                     { "saveGame", new List<string>()},
+                                                    { "setText", new List<string>() },
+                                                    { "setSecretText", new List<string>() },
+                                                    { "setLight", new List<string>() },
+                                                    { "setHDR",new List<string>()},
                                                     { "summon",new List<string>() },
                                                     { "destroy",new List<string>() },
                                                     { "move",new List<string>() } };
@@ -212,6 +221,10 @@ public class History
         storyActionBase.Add("startInvestigationEffect", StartInvestigationEffect);
         storyActionBase.Add("getAchievement", GetAchievement);
         storyActionBase.Add("saveGame", SaveGameStory);
+        storyActionBase.Add("setText", SetStoryText);
+        storyActionBase.Add("setSecretText", SetStorySecretText);
+        storyActionBase.Add("setLight", SetStoryLight);
+        storyActionBase.Add("setHDR", SetStoryHDRRatio);
         storyActionBase.Add("summon", Summon);
         storyActionBase.Add("destroy", StoryDestroy);
         storyActionBase.Add("move", StoryMove);
@@ -553,6 +566,40 @@ public class History
     public void SaveGameStory(StoryAction _action)
     {
         SpecialFunctions.SaveGame(_action.argument);
+    }
+
+    /// <summary>
+    /// Выставить текст в окошечке игровых сообщений
+    /// </summary>
+    public void SetStoryText(StoryAction _action)
+    {
+        SpecialFunctions.SetText(_action.id1, _action.argument);
+    }
+
+    /// <summary>
+    /// Выставить текст в окошечке секретных сообщений
+    /// </summary>
+    public void SetStorySecretText(StoryAction _action)
+    {
+        SpecialFunctions.SetSecretText(_action.argument, _action.id1);
+    }
+
+    /// <summary>
+    /// Установить освещение
+    /// </summary>
+    public void SetStoryLight(StoryAction _action)
+    {
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
+        lightManager.intensity = Mathf.Clamp(_action.argument/100f, 0f, 2f);
+    }
+
+    /// <summary>
+    /// Установить силу источников света
+    /// </summary>
+    public void SetStoryHDRRatio(StoryAction _action)
+    {
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
+        lightManager.HDRRatio = Mathf.Clamp(_action.argument / 100f, 0f, Mathf.Infinity);
     }
 
     #endregion //storyActions

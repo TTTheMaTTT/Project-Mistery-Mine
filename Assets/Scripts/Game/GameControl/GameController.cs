@@ -259,6 +259,23 @@ public class GameController : MonoBehaviour
     }
 
     /// <summary>
+    /// Начать процесс сохранения игры
+    /// </summary>
+    public void StartSaveGameProcess(int checkpointNumb, bool generally, string levelName)
+    {
+        StartCoroutine(SaveGameProcess(checkpointNumb, generally, levelName));
+    }
+
+    /// <summary>
+    /// Процесс сохранения игры. Используется, когда игру надо сохранить после некоторого промежутка времени.ё
+    /// </summary>
+    IEnumerator SaveGameProcess(int checkpointNumb, bool generally, string levelName)
+    {
+        yield return new WaitForSeconds(.5f);
+        SaveGame(checkpointNumb, generally, levelName);
+    }
+
+    /// <summary>
     /// Функция сохранения игры. Поддерживается 2 режима сохранения: сохранения данных игры в целом и сохранение текущего уровня 
     /// </summary>
     public void SaveGame(int checkpointNumb, bool generally, string levelName)
@@ -368,6 +385,13 @@ public class GameController : MonoBehaviour
             CheckpointController currentCheckpoint = checkpoints.Find(x => (x.checkpointNumb == lData.checkpointNumber));
             if (currentCheckpoint != null)
                 SpecialFunctions.MoveToCheckpoint(currentCheckpoint);
+
+            SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
+            if (lightManager != null)
+            {
+                lightManager.intensity = lData.lightIntensity;
+                lightManager.HDRRatio = lData.lightHDR;
+            }
 
             #region heroEquipment
 
@@ -810,6 +834,8 @@ public class GameController : MonoBehaviour
 
         ConsiderObjectsWithTag("interObject", setID);
 
+        ConsiderSaveMeObjects(setID);
+
         intObjects.Sort((x, y) => { return x.GetComponent<IHaveID>().GetID().CompareTo(y.GetComponent<IHaveID>().GetID()); });
 
         #region NPCs
@@ -880,6 +906,29 @@ public class GameController : MonoBehaviour
                 }
                 intObjects.Add(obj);
             }
+        }
+    }
+
+    /// <summary>
+    /// Учесть все объекты, имеющие компонент SaveMeScript и внести их в список объектв, задав им id при необходимости
+    /// </summary>
+    public void ConsiderSaveMeObjects(bool setID)
+    {
+        SaveMeScript[] saveMeScripts = FindObjectsOfType<SaveMeScript>();
+        foreach (SaveMeScript saveMe in saveMeScripts)
+        {
+            IHaveID inter = saveMe.GetComponent<IHaveID>();
+            GameObject obj = saveMe.gameObject;
+            if (inter == null)
+                continue;
+            if (intObjects.Contains(obj))
+                continue;
+            if (setID)
+            {
+                inter.SetID(objectsIdCount);
+                objectsIdCount++;
+            }
+            intObjects.Add(obj);
         }
     }
 
@@ -1249,7 +1298,7 @@ public class GameController : MonoBehaviour
     /// <param name="_time">Длительность эффекта</param>
     IEnumerator AncientDarknessProcess()
     {
-        SpriteLightKitImageEffect lightManager = SpecialFunctions.СamController.GetComponent<SpriteLightKitImageEffect>();
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
         int prevIntensity = Mathf.RoundToInt(lightManager.intensity * 100f);
         Hero.AddBuff(new BuffClass("AncientDarkness", Time.fixedTime, ancientDarknessTime, prevIntensity, (lightManager.HDRRatio > .1f ? "changed" : "")));
         activeGameEffects.Add("AncientDarkness");
@@ -1276,7 +1325,7 @@ public class GameController : MonoBehaviour
         if (!activeGameEffects.Contains("AncientDarkness"))
             return;
         StopCoroutine("AncientDarknessProcess");
-        SpriteLightKitImageEffect lightManager = SpecialFunctions.СamController.GetComponent<SpriteLightKitImageEffect>();
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
         lightManager.intensity = argument / 100f;
         if (id == "changed")
             lightManager.HDRRatio += .1f;
