@@ -48,6 +48,7 @@ public class SecretPlaceTrigger : StoryTrigger, IHaveID
         //Destroy(gameObject);
         foreach (GameObject ghostWall in ghostWalls)
             ghostWall.GetComponent<FadeScript>().Activate();
+        Destroy(this);
     }
 
     #region IHaveID

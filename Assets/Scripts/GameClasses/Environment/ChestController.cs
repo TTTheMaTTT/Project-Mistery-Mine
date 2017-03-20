@@ -26,6 +26,7 @@ public class ChestController : MonoBehaviour, IInteractive
     public List<DropClass> content = new List<DropClass>();
 
     protected SpriteRenderer sRenderer;
+    protected AudioSource aSource;
 
     #endregion //fields
 
@@ -43,6 +44,7 @@ public class ChestController : MonoBehaviour, IInteractive
     void Awake()
     {
         sRenderer = GetComponent<SpriteRenderer>();
+        aSource = GetComponent<AudioSource>();
     }
 
     /// <summary>
@@ -69,6 +71,7 @@ public class ChestController : MonoBehaviour, IInteractive
         SetOutline(false);
         if (anim != null)
             anim.Play("Opened");
+        SpecialFunctions.PlaySound(aSource);
         OnChestOpened(new EventArgs());
         DestroyImmediate(this);
     }

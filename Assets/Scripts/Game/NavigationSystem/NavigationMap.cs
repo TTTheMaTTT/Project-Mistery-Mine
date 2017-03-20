@@ -101,6 +101,7 @@ public class NavigationBunchedMap: NavigationMap
     public NavigationBunchedMap(NavMapTypeEnum _mapType): base(_mapType)
     {
         cellGroups = new List<NavigationGroup>();
+        mapType = _mapType;
     }
 
     /// <summary>
@@ -549,6 +550,7 @@ public class NavigationMatrixMap : NavigationMap
     public NavigationMatrixMap(NavMapTypeEnum _mapType) : base(_mapType)
     {
         cellRows = new List<NavigationCellRow>();
+        mapType = _mapType;
     }
 
     /// <summary>

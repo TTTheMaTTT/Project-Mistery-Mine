@@ -33,6 +33,7 @@ public class Summoner : MonoBehaviour, IHaveStory
     {
         storyActionBase.Add("summon", InstantiateObject);
         storyActionBase.Add("destroy", DestroyObject);
+        storyActionBase.Add("move", MoveObject);
     }
 
     /// <summary>
@@ -42,7 +43,7 @@ public class Summoner : MonoBehaviour, IHaveStory
     {
         SummonClass _summon = summons.Find(x => x.summonName == _action.id1);
         if (_summon != null)
-            GameController.InstantiateWithId(_summon.summon, _summon.position, Quaternion.identity);
+            SpecialFunctions.gameController.InstantiateWithId(_summon.summon, _summon.position, Quaternion.identity);
     }
 
     /// <summary>
@@ -67,7 +68,7 @@ public class Summoner : MonoBehaviour, IHaveStory
             _obj.summon.transform.position = _obj.position;
             _obj.summon.SetActive(_obj.activate);
             if (_obj.activate)
-                GameController.SetIDToNewObject(_obj.summon);
+                SpecialFunctions.gameController.SetIDToNewObject(_obj.summon);
         }
     }
 

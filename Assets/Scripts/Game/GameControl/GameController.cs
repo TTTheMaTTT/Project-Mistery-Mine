@@ -84,6 +84,9 @@ public class GameController : MonoBehaviour
     [SerializeField]private GameObject treasureHunterArrow;//Стрелка компаса охотника за сокровищами
     [SerializeField]private GameObject collectorArrow;//Стрелка компаса коллекционера
 
+    private AudioSource ambientSource, musicSource, soundSource;//Источники звуков окружающего мира и музыки, а также источник игровых звуков
+    [SerializeField]private List<AudioClip> ambientClips, musicClips, soundClips;//Аудиоклипы, ответственные за создание звуков окружающего мира и за музыкальные темы игры, а также игровые звуки
+
     #region saveSystem
 
     /// <summary>
@@ -154,9 +157,9 @@ public class GameController : MonoBehaviour
 
         LoadGame();
 
-        monsters = null;
-        intObjects =null;
-        NPCs = null;
+        //monsters = null;
+        //intObjects =null;
+        //NPCs = null;
 
         SpecialFunctions.history.Initialize();
         SpecialFunctions.StartStoryEvent(this, StartGameEvent, new StoryEventArgs());
@@ -212,6 +215,34 @@ public class GameController : MonoBehaviour
             if (secretPlace.GetComponent<SecretPlaceTrigger>() != null)
                 secretsTotalNumber++;
         activeGameEffects = new List<string>();
+
+        AudioSource[] audioSources = SpecialFunctions.CamController.GetComponents<AudioSource>();
+        if (audioSources.Length >= 1)
+        {
+            musicSource = audioSources[0];
+            musicSource.volume = PlayerPrefs.GetFloat("MusicVolume");
+            if (musicClips.Count > 0)
+            {
+                musicSource.clip = musicClips[0];
+                musicSource.Play();
+            }
+        }
+        if (audioSources.Length >= 2)
+        {
+            ambientSource = audioSources[1];
+            ambientSource.volume = PlayerPrefs.GetFloat("SoundVolume");
+            SpecialFunctions.Settings.soundEventHandler += HandleSoundVolumeChange;
+            if (ambientClips.Count > 0)
+            {
+                ambientSource.clip = ambientClips[0];
+                ambientSource.Play();
+            }
+        }
+        if (audioSources.Length >= 3)
+        {
+            soundSource = audioSources[2];
+            soundSource.volume = PlayerPrefs.GetFloat("SoundVolume");
+        }
     }
 
     /// <summary>
@@ -526,6 +557,10 @@ public class GameController : MonoBehaviour
                         {
                             _obj = summon.summon;
                             _obj.SetActive(true);
+                            DialogObject dObj = _obj.GetComponent<DialogObject>();
+                            if (dObj != null)
+                                if (SpecialFunctions.dialogWindow != null)
+                                    SpecialFunctions.dialogWindow.AddDialogObjectInDictionary(dObj);
                         }
                         else
                         {
@@ -537,7 +572,7 @@ public class GameController : MonoBehaviour
                             else
                                 newMonster = monsterObjects[enData.objName];
                             if (newMonster != null)
-                                _obj = Instantiate(newMonster, enData.position, Quaternion.identity);
+                                _obj = InstantiateWithId(newMonster, enData.position, Quaternion.identity);
                              
                         }
                         if (_obj == null)
@@ -587,6 +622,10 @@ public class GameController : MonoBehaviour
                         {
                             _obj = summon.summon;
                             _obj.SetActive(true);
+                            DialogObject dObj = _obj.GetComponent<DialogObject>();
+                            if (dObj != null)
+                                if (SpecialFunctions.dialogWindow != null)
+                                    SpecialFunctions.dialogWindow.AddDialogObjectInDictionary(dObj);
                         }
                         else
                         {
@@ -598,13 +637,16 @@ public class GameController : MonoBehaviour
                             else
                                 newObject = interObjects[interData.objName];
                             if (newObject != null)
-                                _obj = Instantiate(newObject, interData.position, Quaternion.identity);
+                                _obj = InstantiateWithId(newObject, interData.position, Quaternion.identity);
                         }
                         if (_obj == null)
                             continue;
                         IHaveID _inter = _obj.GetComponent<IHaveID>();
                         if (_inter != null)
+                        {
                             _inter.SetData(interData);
+
+                        }
                         if (objId >= objectsIdCount)
                             objectsIdCount = objId + 1;
                     }
@@ -663,6 +705,10 @@ public class GameController : MonoBehaviour
                         {
                             _obj = summon.summon;
                             _obj.SetActive(true);
+                            DialogObject dObj = _obj.GetComponent<DialogObject>();
+                            if (dObj != null)
+                                if (SpecialFunctions.dialogWindow != null)
+                                    SpecialFunctions.dialogWindow.AddDialogObjectInDictionary(dObj);
                         }
                         else
                         {
@@ -935,7 +981,7 @@ public class GameController : MonoBehaviour
     /// <summary>
     /// Создать игровой объект и задать ему id
     /// </summary>
-    public static GameObject InstantiateWithId(GameObject _gameObject, Vector3 _position, Quaternion _rotation)
+    public GameObject InstantiateWithId(GameObject _gameObject, Vector3 _position, Quaternion _rotation)
     {
         GameObject obj = Instantiate(_gameObject, _position, _rotation) as GameObject;
         SetIDToNewObject(obj);
@@ -945,23 +991,23 @@ public class GameController : MonoBehaviour
     /// <summary>
     /// Задать id новому объекту
     /// </summary>
-    public static void SetIDToNewObject(GameObject obj)
+    public void SetIDToNewObject(GameObject obj)
     {
         AIController ai = obj.GetComponent<AIController>();
         IHaveID inter = obj.GetComponent<IHaveID>();
         NPCController npc = obj.GetComponent<NPCController>();
         DialogObject dObj = obj.GetComponent<DialogObject>();
-        if (ai != null)
+        if (ai != null && !monsters.Contains(ai))
         {
             ai.ID = monstersIdCount;
             monstersIdCount++;
         }
-        else if (npc != null)
+        else if (npc != null && !NPCs.Contains(npc))
         {
             npc.SetID(npcsIdCount);
             npcsIdCount++;
         }
-        else if (inter != null)
+        else if (inter != null && !intObjects.Contains(obj))
         {
             inter.SetID(objectsIdCount);
             objectsIdCount++;
@@ -970,8 +1016,7 @@ public class GameController : MonoBehaviour
         if (dObj!=null)
             if (SpecialFunctions.dialogWindow != null)
                 SpecialFunctions.dialogWindow.AddDialogObjectInDictionary(dObj);
-    }
-
+    }  
 
     #region gameEffects
 
@@ -1378,6 +1423,87 @@ public class GameController : MonoBehaviour
         ItemCollection _collection = itemCollections != null ? itemCollections.Find(x=>sceneName.Contains(x.settingName)):null;
         levelCompleteScreen.SetLevelCompleteScreen(nextLevelName, secretsFoundNumber, secretsTotalNumber, _collection);
     }
+
+    #region musicAndSounds
+
+    /// <summary>
+    /// Поменять громкость музыки
+    /// </summary>
+    public void ChangeMusicVolume(float _volume)
+    {
+        if (musicSource != null)
+            musicSource.volume = _volume;
+    }
+
+    /// <summary>
+    /// Обработка события "Поменялась громкость звуков"
+    /// </summary>
+    private void HandleSoundVolumeChange(object sender, SoundChangesEventArgs e)
+    {
+        if (soundSource != null)
+            soundSource.volume = e.SoundVolume;
+        if (ambientSource != null)
+            ambientSource.volume = e.SoundVolume;
+    }
+
+    /// <summary>
+    /// Начать проигрывать звуки окружающего мира, которые имеют заданное название
+    /// </summary>
+    public void ChangeAmbientSound(string clipName)
+    {
+        if (ambientSource == null)
+            return;
+        ambientSource.Stop();
+        if (clipName!="")
+        {
+            AudioClip _clip = ambientClips.Find(x => x.name.Contains(clipName));
+            if (_clip != null)
+            {
+                ambientSource.clip = _clip;
+                ambientSource.Play();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Начать проигрывать музыкальную тему с заданным названием
+    /// </summary>
+    public void ChangeMusicTheme(string clipName)
+    {
+        if (musicSource == null)
+            return;
+        musicSource.Stop();
+        if (clipName != "")
+        {
+            AudioClip _clip = musicClips.Find(x => x.name.Contains(clipName));
+            if (_clip != null)
+            {
+                musicSource.clip = _clip;
+                musicSource.Play();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Проиграть игровой звук с заданным названием
+    /// </summary>
+    /// <param name="soundName"></param>
+    public void PlaySound(string soundName)
+    {
+        if (soundSource == null)
+            return;
+        if (soundName != "")
+        {
+            AudioClip _clip = soundClips.Find(x => x.name.Contains(soundName));
+            if (_clip != null)
+            {
+                soundSource.clip = _clip;
+                soundSource.Play();
+            }
+        }
+    }
+
+    #endregion //musicAndSounds
 
     #region eventHandlers
 

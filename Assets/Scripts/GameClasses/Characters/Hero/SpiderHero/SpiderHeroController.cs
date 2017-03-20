@@ -1,7 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif //UNITY_EDITOR
 
 /// <summary>
 /// Контроллер главного героя в обличии паука
@@ -13,6 +15,7 @@ public class SpiderHeroController : HeroController
 
     protected const float spiderOffset = .04f;//Насколько должен быть смещён паук относительно поверхности земли
     protected const float spiderOffsetEps = .12f;//Какая может быть ошибка смещения относительно поверхности?
+    protected const float spiderMinFallSpeed = 2.9f;//Минимальная скорость падения, при которой персонаж не получает урон при падении
     protected const float precipiceEps = .01f;//Насколько близко паук должен быть у края поверхности, чтобы перейти на следующую поверхность
     protected const float catchWallTime = .2f;//Как долго паук будет пытаться закрепиться за стену?
     protected const float minAngle = 1f;
@@ -20,7 +23,6 @@ public class SpiderHeroController : HeroController
 
     protected const float maxObservationDistance = 10f;
     protected const float maxCeilTime = 2f;//Максимальное время, при котором паук может быть прицеплённым к потолке
-    protected const int maxWebUsageTimes = 3;//Максимальное число использований паутины, стоя на потолке
 
     #endregion //consts  
 
@@ -57,8 +59,6 @@ public class SpiderHeroController : HeroController
             else
                 rigid.gravityScale = 1f;
             OnCeil = spiderOrientation.y < -.8f;
-            if (spiderOrientation.y >= -.8f)
-                webUsageTimes = maxWebUsageTimes;
             wallCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
             precipiceCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
             groundCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
@@ -81,7 +81,6 @@ public class SpiderHeroController : HeroController
     protected Vector2 moveDirection;
 
     protected bool tryingCatchWall = false;//Пытается ли паук закрепиться за стену (например, в полёте)
-    protected int webUsageTimes = maxWebUsageTimes;//Сколько раз паук может использовать паутину
     protected bool onWeb = false;//Находится ли паук на паутине в данный момент?
     [SerializeField]
     protected float webSpeed = .4f;//Скорость перемещения по паутине
@@ -89,7 +88,26 @@ public class SpiderHeroController : HeroController
     protected Vector2 webConnectionPoint = Vector2.zero;
 
     protected bool onCeil = false;//Находится ли паук на потолке?
-    protected bool OnCeil { get { return onCeil; }  set { if (!onCeil && value) StartCoroutine("CeilProcess"); if (!value) StopCeilProcess(); onCeil = value; } }
+    protected bool OnCeil
+    {
+        get
+        {
+            return onCeil;
+        }
+        set
+        {
+            if (!onCeil && value)
+            {
+                StartCoroutine("CeilProcess",maxCeilTime);
+                ceilRemainTime = maxCeilTime;
+                ceilBeginTime = Time.fixedTime;
+            }
+            if (!value)
+                StopCeilProcess();
+            onCeil = value;
+        }
+    }
+    protected float ceilBeginTime=0f, ceilRemainTime=maxCeilTime;//Когда паук стал на потолок, сколько времени пауку осталось быть на потолке
 
     #endregion //parametres
 
@@ -162,8 +180,7 @@ public class SpiderHeroController : HeroController
         {
             if (spiderOrientation.y < -Mathf.Abs(spiderOrientation.x) - .1f && currentSurface.exists)
             {
-                if (webUsageTimes>0)
-                    WebOn();
+                WebOn();
             }
             else if (interactor.ReadyForInteraction())
                 interactor.Interact();
@@ -229,7 +246,6 @@ public class SpiderHeroController : HeroController
         onWeb = false;
         onCeil = false;
         tryingCatchWall = false;
-        webUsageTimes = maxWebUsageTimes;
         crawlMap = (NavigationBunchedMap)SpecialFunctions.statistics.navSystem.GetMap(NavMapTypeEnum.crawl);
         navCellSize = crawlMap.cellSize;
         StartCoroutine("CamProcess");
@@ -265,7 +281,7 @@ public class SpiderHeroController : HeroController
         {
             Vector3 vect = transform.localScale;
             orientation = _orientation;
-            transform.localScale = new Vector3(-1 * vect.x, vect.y, vect.z);
+            transform.localScale = new Vector3((int)orientation * Mathf.Abs(vect.x), vect.y, vect.z);
             nextSurface = SurfaceLineClass.zero;
         }
         wallCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
@@ -279,7 +295,7 @@ public class SpiderHeroController : HeroController
     {
         Vector3 vect = transform.localScale;
         orientation = (OrientationEnum)(-1 * (int)orientation);
-        transform.localScale = new Vector3(-1 * vect.x, vect.y, vect.z);
+        transform.localScale = new Vector3((int)orientation * Mathf.Abs(vect.x), vect.y, vect.z);
         precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
         nextSurface = SurfaceLineClass.zero;
     }
@@ -334,6 +350,7 @@ public class SpiderHeroController : HeroController
         SpiderOrientation = spiderOrientation;
         Animate(new AnimationEventArgs("setWebMove", "", 0));
         OnCeil = true;
+        StartCoroutine("CeilProcess", ceilRemainTime);
     }
 
     /// <summary>
@@ -341,13 +358,16 @@ public class SpiderHeroController : HeroController
     /// </summary>
     protected virtual void WebOn()
     {
-        webUsageTimes--;
+        StopMoving();
         onWeb = true;
         webConnectionPoint = (Vector2)transform.position + Vector2.up * spiderOffset;
         transform.eulerAngles = Vector3.zero;
         Turn(OrientationEnum.right);
         Animate(new AnimationEventArgs("setWebMove", "", 1));
-        OnCeil = false;
+        StopCoroutine("CeilProcess");
+        ceilRemainTime = maxCeilTime - Time.fixedTime + ceilBeginTime;
+        if (ceilRemainTime < 0f)
+            ceilRemainTime = 0f;
     }
 
     /// <summary>
@@ -372,6 +392,7 @@ public class SpiderHeroController : HeroController
     /// <param name="targetCollider">коллайдер, к которому прикрепляется паук</param>
     protected void ChangeOrientation(Collider2D targetCollider, bool considerCurrentOrientation)
     {
+        StopMoving();
         Vector2[] colPoints = GetColliderPoints(targetCollider);
 
         if (colPoints.Length <= 0)
@@ -393,11 +414,11 @@ public class SpiderHeroController : HeroController
                 float newDistance = Vector2.SqrMagnitude(_connectionPoint - (Vector2)transform.position);
                 if (newDistance < mDistance)
                 {
-                    Vector2 _moveDirection = GetNormal(normal) * (int)orientation;
+                    /*Vector2 _moveDirection = GetNormal(normal) * (int)orientation;
                     if (Physics2D.OverlapCircle(_connectionPoint + (normal + _moveDirection) * spiderOffset, spiderOffset / 2f, whatIsGround) ||
                         !Physics2D.OverlapCircle(_connectionPoint + (-normal + _moveDirection) * spiderOffset, spiderOffset / 2f, whatIsGround))
-                        continue;
-                    connectionPoint = _connectionPoint+_moveDirection*spiderOffset;
+                        continue;*/
+                    connectionPoint = _connectionPoint;
                     mDistance = newDistance;
                     pointIndex = i;
                 }
@@ -419,7 +440,6 @@ public class SpiderHeroController : HeroController
         SpiderOrientation = _spiderOrientation;
 
         transform.position = connectionPoint + spiderOffset * spiderOrientation;//Расположить паука
-        StopMoving();
     }
 
     /// <summary>
@@ -486,11 +506,11 @@ public class SpiderHeroController : HeroController
     /// <param name="_surface">Поверхность, на которую происходит переход</param>
     protected virtual void ChangeSurface(SurfaceLineClass _surface)
     {
+        StopMoving();
         Vector2 connectionPoint = GetConnectionPoint(_surface.point1, _surface.point2, transform.position);
         SpiderOrientation = _surface.normal;
         CurrentSurface = _surface;
         transform.position = connectionPoint + spiderOffset * spiderOrientation;//Расположить паука
-        StopMoving();
     }
 
     /// <summary>
@@ -534,6 +554,7 @@ public class SpiderHeroController : HeroController
         SpiderOrientation = Vector2.up;
         rightMovementDirection = Vector2.right;
         CurrentSurface = SurfaceLineClass.zero;
+        ceilRemainTime = 0f;
         transform.eulerAngles = Vector3.zero;
     }
 
@@ -548,7 +569,6 @@ public class SpiderHeroController : HeroController
         yield return new WaitForSeconds(1f);
         JumpDown();
         onCeil = false;
-        webUsageTimes = maxWebUsageTimes;
     }
 
     /// <summary>
@@ -590,10 +610,13 @@ public class SpiderHeroController : HeroController
             }
             else if (!currentSurface.IsNearPointInDirection(pos, spiderOffsetEps, rightMovementDirection * (int)orientation))
                 nextSurface = SurfaceLineClass.zero;
-            if (fallSpeed > minDamageFallSpeed)
-                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed*2f), DamageType.Physical, true, 1);
-            if (fallSpeed > minDamageFallSpeed / 10f)
-                Animate(new AnimationEventArgs("fall"));
+            if (currentSurface.normal.y > .5f)
+            {
+                if (fallSpeed > minDamageFallSpeed)
+                    TakeDamage(Mathf.Round((fallSpeed - spiderMinFallSpeed) * damagePerFallSpeed * 2f), DamageType.Physical, true, 1);
+                if (fallSpeed > minDamageFallSpeed / 10f)
+                    Animate(new AnimationEventArgs("fall"));
+            }
             fallSpeed = 0f;
         }
         else if (!onWeb)

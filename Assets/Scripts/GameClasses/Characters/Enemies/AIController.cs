@@ -278,6 +278,7 @@ public class AIController : CharacterController
             }
         }
         GetMap();
+        BecomeCalm();
         optSpeed = speed * optTimeStep;
         usualBalance = balance;
     }
@@ -328,7 +329,8 @@ public class AIController : CharacterController
     {
         base.StopAttack();
         Animate(new AnimationEventArgs("stop"));
-        hitBox.ResetHitBox();
+        if (hitBox!=null)
+            hitBox.ResetHitBox();
     }
 
     /// <summary>

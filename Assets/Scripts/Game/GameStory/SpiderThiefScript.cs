@@ -14,6 +14,9 @@ public class SpiderThiefScript : CharacterController
     private Transform hero;
     private Transform trans;
 
+    [SerializeField]
+    private List<float> animationDurations = new List<float> { 1.75f, 2.36f, 2.78f, 7.38f };
+
     #endregion //fields
 
     #region parametres
@@ -25,6 +28,7 @@ public class SpiderThiefScript : CharacterController
 
     private bool waiting = true;
     private bool activated = false;
+    private bool goAhead=false;//Если true, то паук не будет ждать героя
     private int stage = 0;
 
     #endregion //parametres
@@ -41,7 +45,7 @@ public class SpiderThiefScript : CharacterController
     {
         if (!activated || !waiting)
             return;
-        if (Vector2.SqrMagnitude(trans.position - hero.position) < distanceToHero * distanceToHero)
+        if (Vector2.SqrMagnitude(trans.position - hero.position) < distanceToHero * distanceToHero || goAhead)
             StartCoroutine("EscapeProcess");
     }
 
@@ -52,6 +56,7 @@ public class SpiderThiefScript : CharacterController
     {
         base.FormDictionaries();
         storyActionBase.Add("activate", StoryActivate);
+        storyActionBase.Add("goAhead", GoAhead);
     }
 
     /// <summary>
@@ -70,7 +75,7 @@ public class SpiderThiefScript : CharacterController
         if (animClip != null)
         {
             animator.Play(animClip.name);
-            yield return new WaitForSeconds(animClip.averageDuration);
+            yield return new WaitForSeconds(animationDurations[stage-1]);
         }
         waiting = true;
         if (stage == 4)
@@ -93,6 +98,14 @@ public class SpiderThiefScript : CharacterController
         activated = true;
     }
 
+    /// <summary>
+    /// Паук больше не ждёт героя и просто добирается до своего убежища
+    /// </summary>
+    public void GoAhead(StoryAction _action)
+    {
+        goAhead = true;
+    }
+
     #endregion //storyActions
 
     #region IHaveStory
@@ -105,6 +118,7 @@ public class SpiderThiefScript : CharacterController
     {
         List<string> _actions = base.actionNames();
         _actions.Add("activate");
+        _actions.Add("goAhead");
         return _actions;
     }
 
@@ -116,6 +130,7 @@ public class SpiderThiefScript : CharacterController
     {
         Dictionary<string, List<string>> _actionIDs1 = base.actionIDs1();
         _actionIDs1.Add( "activate",new List<string>() { });
+        _actionIDs1.Add("goAhead", new List<string>());
         return _actionIDs1;
     }
 
@@ -127,6 +142,7 @@ public class SpiderThiefScript : CharacterController
     {
         Dictionary<string, List<string>> _actionIDs2 = base.actionIDs2();
         _actionIDs2.Add("activate", new List<string>() { });
+        _actionIDs2.Add("goAhead", new List<string>());
         return _actionIDs2;
     }
 

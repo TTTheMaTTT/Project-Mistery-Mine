@@ -8,9 +8,20 @@ using System.Collections;
 public class GameMenuScript : InterfaceWindow
 {
 
+    #region fields
+
+    protected SettingsScript settings;//Окошко, в котором можно настроить игру
+
+    #endregion //fields
+
+    protected override void Awake()
+    {
+        base.Awake();
+        settings = SpecialFunctions.gameInterface.GetComponentInChildren<SettingsScript>();
+    }
+
     public void Update()
     {
-        /*
         //Читы для разработчиков. Потом надо будет убрать
         if (canvas.enabled && Input.anyKeyDown)
         {
@@ -20,45 +31,45 @@ public class GameMenuScript : InterfaceWindow
             }
             if (Input.GetKeyDown(KeyCode.Alpha2))
             {
-                GoToTheLevel("cave_lvl2");
+                GoToTheLevel("cave_lvl5");
             }
             if (Input.GetKeyDown(KeyCode.Alpha3))
             {
-                GoToTheLevel("cave_lvl3");
+                GoToTheLevel("mine_lvl1");
             }
             if (Input.GetKeyDown(KeyCode.Alpha4))
             {
-                GoToTheLevel("cave_lvl4");
+                GoToTheLevel("mine_lvl4");
             }
             if (Input.GetKeyDown(KeyCode.Alpha5))
             {
-                GoToTheLevel("cave_lvl5");
+                GoToTheLevel("mine_lvl8");
             }
             if (Input.GetKeyDown(KeyCode.Alpha6))
             {
-                GoToTheLevel("mine_lvl1");
+                GoToTheLevel("DM_lvl1");
             }
             if (Input.GetKeyDown(KeyCode.Alpha7))
             {
-                GoToTheLevel("mine_lvl3");
+                GoToTheLevel("DM_lvl3");
             }
             if (Input.GetKeyDown(KeyCode.Alpha8))
             {
-                GoToTheLevel("mine_lvl5");
+                GoToTheLevel("DM_lvl5");
             }
             if (Input.GetKeyDown(KeyCode.Alpha9))
             {
-                GoToTheLevel("mine_lvl7");
+                GoToTheLevel("underworld_lvl1");
             }
             if (Input.GetKeyDown(KeyCode.Alpha0))
             {
-                GoToTheLevel("mine_lvl8");
+                GoToTheLevel("underworld_lvl3");
             }
             if (Input.GetKeyDown(KeyCode.H))
             {
                 SpecialFunctions.Player.GetComponent<HeroController>().Health = 100f;
             }
-        }*/
+        }
     }
 
     /// <summary>
@@ -111,6 +122,18 @@ public class GameMenuScript : InterfaceWindow
     {
         SpecialFunctions.gameController.ResetLevelData();
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    /// <summary>
+    /// Открыть окно настроек
+    /// </summary>
+    public void GoToSettings()
+    {
+        if (settings == null)
+            return;
+        if (openedWindow == this)
+            CloseWindow();
+        settings.OpenWindow();
     }
 
     /// <summary>

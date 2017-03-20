@@ -80,10 +80,10 @@ public class HitBoxController : MonoBehaviour
     /// <param name="_actTime">Время действия (если -1, то всегда действует)</param>
     /// <param name="_hitForce">Сила отталкивания, действующая на цель</param>
     /// <param name="_dType">Тип наносимого урона</param>
-    public virtual void SetHitBox(float _damage, float _actTime, float _hitForce, DamageType _dType=DamageType.Physical, float _eChance=0f)
+    public virtual void SetHitBox(float _damage, float _actTime, float _hitForce, DamageType _dType=DamageType.Physical, float _eChance=0f, int _attackPower=1)
     {
         HitCol.Activate(true);
-        hitData = new HitParametres(_damage, _actTime, _hitForce, _dType, _eChance);
+        hitData = new HitParametres(_damage, _actTime, _hitForce, _dType, _eChance,_attackPower);
         if (hitData.actTime != -1f)
         {
             hitCol.AlwaysAttack = false;

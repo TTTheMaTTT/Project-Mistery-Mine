@@ -388,7 +388,10 @@ public class MovingPlatformEditor : Editor
         if (GUILayout.Button("CreateLines"))
         {
             foreach (LineRenderer line in lines)
-                DestroyImmediate(line.gameObject);
+            {
+                if (line)
+                    DestroyImmediate(line.gameObject);
+            }
             lines.Clear();
             for (int i = 1; i < mov.PlatformPositions.Count; i++)
             {

@@ -10,7 +10,7 @@ public class SpiderHeroVisual : HeroVisual
 
     #region consts
 
-    protected const float spiderOffset = .026f;
+    protected const float spiderOffset = .08f;
     protected const float webRatio = .1f;
     protected const float webWidth = .01f;
     protected const float blinkSpeed = 3f;

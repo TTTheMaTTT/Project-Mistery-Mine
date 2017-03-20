@@ -140,7 +140,6 @@
     <Compile Include="Assets\Editor\ImageEffects\TonemappingEditor.cs" />
     <Compile Include="Assets\Editor\ImageEffects\VignetteAndChromaticAberrationEditor.cs" />
     <Compile Include="Assets\Editor\ItemCreator.cs" />
-    <Compile Include="Assets\Editor\LevelEditor\GroundBrush.cs" />
     <Compile Include="Assets\Editor\LevelEditor\LadderBase.cs" />
     <Compile Include="Assets\Editor\LevelEditor\LevelEditor.cs" />
     <Compile Include="Assets\Editor\LevelEditor\ObstacleBase.cs" />
@@ -150,8 +149,6 @@
     <Compile Include="Assets\Editor\MisteryCaveEditor.cs" />
     <Compile Include="Assets\Editor\PropertyDrawers.cs" />
     <Compile Include="Assets\Editor\SpeechCreator\DialogCreateWindow.cs" />
-    <Compile Include="Assets\Editor\Steamworks.NET\RedistCopy.cs" />
-    <Compile Include="Assets\Editor\Steamworks.NET\RedistInstall.cs" />
     <Compile Include="Assets\Editor\StoryCreator\QuestCreator.cs" />
     <Compile Include="Assets\Editor\StoryCreator\StoryCreator.cs" />
   </ItemGroup>

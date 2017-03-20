@@ -104,7 +104,7 @@ public class HitBox : HitBoxController
     /// <param name="_hitForce">Сила отталкивания, действующая на цель</param>
     /// <param name="_dType">Тип наносимого урона</param>
     /// <param name="_eChance">Шанс особого эффекта модификатора урона</param>
-    public override void SetHitBox(float _damage, float _actTime, float _hitForce, DamageType _dType=DamageType.Physical, float _eChance=0f)
+    public override void SetHitBox(float _damage, float _actTime, float _hitForce, DamageType _dType=DamageType.Physical, float _eChance=0f, int _attackPower=1)
     {
         activated = true;
         Col.enabled = true;

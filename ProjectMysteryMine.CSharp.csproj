@@ -82,6 +82,7 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\Experiment\AngleCalculator.cs" />
     <Compile Include="Assets\Scripts\Experiment\SpriteOutline.cs" />
+    <Compile Include="Assets\Scripts\Game\AnimatedSoundManager.cs" />
     <Compile Include="Assets\Scripts\Game\AutoLineRender.cs" />
     <Compile Include="Assets\Scripts\Game\CameraController.cs" />
     <Compile Include="Assets\Scripts\Game\CountdownScript.cs" />
@@ -117,6 +118,7 @@
     <Compile Include="Assets\Scripts\Game\Interface\InterfaceWindow.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\LevelCompleteScreenScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\MainMenuScript.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\SettingsScript.cs" />
     <Compile Include="Assets\Scripts\Game\Light\DynamicLight.cs" />
     <Compile Include="Assets\Scripts\Game\Light\ObstacleCamera.cs" />
     <Compile Include="Assets\Scripts\Game\Light\ObstacleTextureCreator.cs" />
@@ -240,8 +242,11 @@
     <Compile Include="Assets\Scripts\Other\EditorColliderCreator.cs" />
     <Compile Include="Assets\Scripts\Other\Enums.cs" />
     <Compile Include="Assets\Scripts\Other\EventArgs.cs" />
+    <Compile Include="Assets\Scripts\Other\GroundBrush.cs" />
     <Compile Include="Assets\Scripts\Other\MapVisualizer.cs" />
     <Compile Include="Assets\Scripts\Other\SpecialFunctions.cs" />
+    <Compile Include="Assets\Scripts\Other\Steamworks.NET\RedistCopy.cs" />
+    <Compile Include="Assets\Scripts\Other\Steamworks.NET\RedistInstall.cs" />
     <Compile Include="Assets\Scripts\Other\Structs.cs" />
     <Compile Include="Assets\Scripts\Steamwork.NET\SteamManager.cs" />
   </ItemGroup>

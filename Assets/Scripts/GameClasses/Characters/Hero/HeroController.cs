@@ -30,7 +30,7 @@ public class HeroController : CharacterController
     protected const float suffocateTime = .3f;//Сколько времени должно пройти, чтобы запас воздуха уменьшился на 1 или здоровье ГГ на .5
     protected const int maxAirSupply = 10;
 
-    protected const float highWallCheckPosition = 0.04f, lowWallCheckPosition = 0f;
+    protected const float highWallCheckPosition = 0.02f, lowWallCheckPosition = 0f;
     protected const float highWallCheckSize = .08f, lowWallCheckSize = .05f;
 
     protected const float totemAnimalTime = 20f;//Время действия эффекта "Тотемное животное"
@@ -673,6 +673,10 @@ public class HeroController : CharacterController
             Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
             if (health <= 0f)
             {
+                if (damage > 200f && _dType == DamageType.Fire)
+                    Animate(new AnimationEventArgs("death", "fire", 0));
+                rigid.velocity = Vector2.zero;
+                rigid.isKinematic = true;
                 Death();
                 return;
             }
@@ -702,6 +706,10 @@ public class HeroController : CharacterController
             Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
             if (health <= 0f)
             {
+                if (damage>200f && _dType==DamageType.Fire)
+                    Animate(new AnimationEventArgs("death", "fire",0));
+                rigid.velocity = Vector2.zero;
+                rigid.isKinematic = true;
                 Death();
                 return;
             }

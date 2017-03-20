@@ -15,7 +15,7 @@ public class SpiderController : AIController
 
     protected const float spiderOffset = .026f;//Насколько должен быть смещён паук относительно поверхности земли
 
-    protected const float jumpAttackMaxDistance = .65f, jumpAttackMinDistance = .3f;//Расстояние до цели, для совершения атаки в прыжке 
+    protected const float jumpAttackMaxDistance = .85f, jumpAttackMinDistance = .3f;//Расстояние до цели, для совершения атаки в прыжке 
 
     #endregion //consts
 
@@ -565,7 +565,7 @@ public class SpiderController : AIController
     protected virtual void JumpAttack()
     {
         balance = attackBalance;
-        rigid.AddForce(new Vector2(jumpAttackForce.x*(int)orientation,jumpAttackForce.y));
+        rigid.AddForce(new Vector2(jumpAttackForce.x*(int)orientation,jumpAttackForce.y*.85f));
         Attack();
         StartCoroutine(JumpAttackCooldownProcess());
     }

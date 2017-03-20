@@ -47,6 +47,8 @@ public class CharacterVisual : MonoBehaviour
     protected float colorCoof1 = .5f, colorCoof2 = .5f;//Коэффициенты смешения
     protected Color silhouetteColor = new Color(0.047f, 0.592f, 0.815f, 1f);//Основной цвет, используемый для отображения персонажа под водой
 
+    protected AudioSource soundSource;//Источник звуков анимированных анимаций
+
     #region effectColors
 
     protected virtual Color burningColor { get { return new Color(1f, .47f, 0f); } }
@@ -79,6 +81,11 @@ public class CharacterVisual : MonoBehaviour
         FormDictionaries();
         sRenderer = GetComponent<SpriteRenderer>();
         SetDefaultColor();
+        soundSource = GetComponent<AudioSource>();
+        if (soundSource == null)
+            soundSource = gameObject.AddComponent<AudioSource>();
+        SpecialFunctions.Settings.soundEventHandler += HandleSoundLevelChange;
+        soundSource.volume = PlayerPrefs.GetFloat("SoundVolume");
     }
 
     /// <summary>
@@ -418,6 +425,27 @@ public class CharacterVisual : MonoBehaviour
         mpb.SetColor("_SilhouetteMixedColor", (1f - underwaterCoof) * _col + underwaterCoof * silhouetteColor);
         sRenderer.SetPropertyBlock(mpb);
     }
+
+    #region sounds
+
+    /// <summary>
+    /// Проиграть выбранный звук
+    /// </summary>
+    public virtual void MakeSound(AudioClip sound)
+    {
+        soundSource.clip = sound;
+        soundSource.Play();
+    }
+
+    /// <summary>
+    /// Обработать событие "Поменялась громкость звука"
+    /// </summary>
+    protected virtual void HandleSoundLevelChange(object sender, SoundChangesEventArgs e)
+    {
+        soundSource.volume = e.SoundVolume;
+    }
+
+    #endregion //sounds
 
     #region eventHandlers
 

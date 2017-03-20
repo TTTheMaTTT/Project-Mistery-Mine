@@ -33,6 +33,23 @@ public class AnimationEventArgs : EventArgs
 }
 
 /// <summary>
+/// Событийные данные об изменения громкости звуков
+/// </summary>
+public class SoundChangesEventArgs : EventArgs
+{
+    private float soundVolume;
+    
+    public float SoundVolume { get { return soundVolume; } }
+
+    public SoundChangesEventArgs(float _soundVolume)
+    {
+        soundVolume = _soundVolume;
+    }
+
+}
+
+
+/// <summary>
 /// Данные о событии, связанном с изменением уровня хп
 /// </summary>
 public class HealthEventArgs : EventArgs

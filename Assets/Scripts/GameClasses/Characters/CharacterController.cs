@@ -117,6 +117,9 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
 
     #endregion //effectTimes
 
+    [SerializeField]
+    protected bool questCharacter = false;//Является и персонаж квестовым (его смерть не вызывает игровых эффектов)
+
     #endregion //parametres
 
     #region eventHandlers
@@ -379,7 +382,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         if (this is AIController)
         {
             AIController ai = (AIController)this;
-            if (ai.Loyalty != LoyaltyEnum.ally && !(this is BossController))
+            if (ai.Loyalty != LoyaltyEnum.ally && !(this is BossController) && !questCharacter)
                 SpecialFunctions.gameController.AddRandomGameEffect(this);
         }
         if (!dead)

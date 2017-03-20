@@ -34,6 +34,8 @@ public static class SpecialFunctions
     public static GameStatistics statistics { get { return gameController.GetComponent<GameStatistics>(); } }
 
     public static GameObject gameInterface { get { return GameObject.FindGameObjectWithTag("interface"); } }
+    private static SettingsScript settings;
+    public static SettingsScript Settings { get { if (settings == null) settings=gameInterface.GetComponentInChildren<SettingsScript>(); return settings; } set { settings = value; } }
 
     public static GameUIScript gameUI { get { return gameInterface.GetComponentInChildren<GameUIScript>(); } }
     public static DialogWindowScript dialogWindow { get { return gameInterface.GetComponentInChildren<DialogWindowScript>(); } }
@@ -46,6 +48,8 @@ public static class SpecialFunctions
     public static bool levelEnd = false;//Закончен ли уровень
     public static string nextLevelName = "";//Название следующего уровня
 
+    public static float soundVolume;//Громкость звуков
+
     /// <summary>
     /// Проинициализировать важные игровые объекты перед началом игры
     /// </summary>
@@ -56,6 +60,7 @@ public static class SpecialFunctions
         camControl= GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>();
         player = GameObject.FindGameObjectWithTag("player");
         battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
+        settings = gameInterface.GetComponentInChildren<SettingsScript>();
     }
 
     /// <summary>
@@ -205,6 +210,17 @@ public static class SpecialFunctions
     {
         SteamUserStats.ResetAllStats(true);
         SteamUserStats.RequestCurrentStats();
+    }
+
+    /// <summary>
+    /// Проиграть звук
+    /// </summary>
+    public static void PlaySound(AudioSource source)
+    {
+        if (!source)
+            return;
+        source.volume = soundVolume;
+        source.Play();
     }
 
 }

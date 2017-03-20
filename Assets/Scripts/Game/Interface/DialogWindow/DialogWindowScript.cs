@@ -187,7 +187,7 @@ public class DialogWindowScript : MonoBehaviour
 
             //Повернуть НПС к герою
             prevScale = npc.transform.localScale.x;
-            if (npc.transform.localScale.x * (npc.transform.position - hero.position).x < 0f)
+            if (npc.transform.lossyScale.x * ( hero.position- npc.transform.position).x < 0f)
                 npc.transform.localScale += new Vector3(-2f * prevScale, 0f);
 
             if (currentDialog.pause)

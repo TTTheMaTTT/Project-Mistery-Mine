@@ -61,7 +61,7 @@ public class CountdownScript : MonoBehaviour, IHaveID, IHaveStory
     /// </summary>
     IEnumerator EndLevelProcess()
     {
-        SpecialFunctions.SetSecretText(6f,endGameText);
+        SpecialFunctions.SetText(endGameText,6f);
         SpecialFunctions.SetFade(true);
         SpecialFunctions.Player.GetComponent<HeroController>().SetImmobile(true);
         yield return new WaitForSeconds(endLevelTime);

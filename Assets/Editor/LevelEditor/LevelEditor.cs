@@ -1372,7 +1372,7 @@ public class LevelEditor : EditorWindow
                         else if (obstacleType == ObstacleEnum.spikes)
                         {
                             SpikesScript spikeScript = obstacle.AddComponent<SpikesScript>();
-                            spikeScript.Damage = obstacleDamage;
+                            spikeScript.HParametres = new HitParametres(obstacleDamage, -1f, col.size, col.offset, 0f, obstacleDamageType, obstacleEffectChance);
                             spikeScript.Enemies = new List<string>() { "player" };
                         }
                         obstacle.layer = obstacleLayer;
@@ -2815,6 +2815,8 @@ public class LevelEditor : EditorWindow
             float ctr = maxCtr;
             foreach (GroundBrush gBrush in groundBrushes)
             {
+                if (gBrush == null)
+                    continue;
                 Sprite gBrushImage = gBrush.outGround;
                 if (ctr < gBrushImage.textureRect.x)
                 {
@@ -3447,6 +3449,8 @@ public class LevelEditor : EditorWindow
         }
         foreach (Sprite sprite1 in spriteBase.sprites)
         {
+            if (sprite1 == null)
+                continue;
             if (ctr < sprite1.textureRect.x)
             {
                 GUILayout.EndHorizontal();
@@ -3891,6 +3895,7 @@ public class LevelEditor : EditorWindow
         flyMap.mapDownLeft = navMapDownLeft;
         flyMap.cellSize = navCellSize;
         flyMap.CreateCells();
+        flyMap.mapType = NavMapTypeEnum.fly;
 
         List<NavigationCellRow> simpleCells = flyMap.cellRows;
 
@@ -3932,6 +3937,7 @@ public class LevelEditor : EditorWindow
         crawlMap.mapDownLeft = navMapDownLeft;
         crawlMap.cellSize = navCellSize;
         crawlMap.groupSize = navGroupSize;
+        crawlMap.mapType = NavMapTypeEnum.crawl;
 
         GameObject platforms = GameObject.Find("platforms");
         if (platforms != null)
@@ -4245,6 +4251,7 @@ public class LevelEditor : EditorWindow
         usualMap.mapDownLeft = navMapDownLeft;
         usualMap.cellSize = navCellSize;
         usualMap.groupSize = navGroupSize;
+        usualMap.mapType = NavMapTypeEnum.usual;
 
         complexCells = NavigationSystem.GetNewCells(navMapDownLeft, navMapSize, navCellSize);
 

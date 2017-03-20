@@ -15,8 +15,9 @@ public class SpikesScript : MonoBehaviour
 
     protected List<GameObject> list = new List<GameObject>();//Список всех атакованных противников. (чтобы один удар не отнимал hp дважды)
 
-    [SerializeField]protected float damage;
-    public float Damage { set { damage = value; } }
+    [SerializeField]protected HitParametres hitParametres;
+    public HitParametres HParametres { set { hitParametres = value; } }
+
 
     #endregion //fields
 
@@ -64,7 +65,8 @@ public class SpikesScript : MonoBehaviour
                     if (!list.Contains(other.gameObject))
                     {
                         list.Add(other.gameObject);
-                        target.TakeDamage(damage, DamageType.Physical,true,2);
+                        target.TakeDamageEffect(hitParametres.damageType);
+                        target.TakeDamage(hitParametres.damage, hitParametres.damageType,true,2);
                     }
                 }
             }

@@ -30,22 +30,9 @@ public class SpiritVisual: CharacterVisual
     /// </summary>  
     protected virtual void FixedUpdate()
     {
-        if (parent == null)
-            return;
-        pivot = parent.transform.position + new Vector3(xOffset * Mathf.Sign(parent.lossyScale.x), yOffset) + 
-                    amplitude*Mathf.Sin(2 * Mathf.PI * Time.fixedTime / period) * Vector3.up;
+        pivot = amplitude*Mathf.Sin(2 * Mathf.PI * Time.fixedTime / period) * Vector3.up;
 
-        transform.position = Vector3.Lerp(transform.position, pivot, Time.fixedDeltaTime * speed);
-    }
-
-    protected override void Initialize()
-    {
-        parent = transform.parent;
-        transform.SetParent(null);
-
-        //spiritLight = transform.FindChild("Light").gameObject;
-        //spiritLight.SetActive(true);
-
+        transform.localPosition = pivot;
     }
 
 }
