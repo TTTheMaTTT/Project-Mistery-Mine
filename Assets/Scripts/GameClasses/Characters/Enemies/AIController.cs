@@ -46,7 +46,7 @@ public class AIController : CharacterController
 
     #region fields
 
-    [SerializeField][HideInInspector]protected int id;//ID монстра, по которому его можно отличить
+    [SerializeField]protected int id;//ID монстра, по которому его можно отличить
     public int ID
     {
         get
@@ -108,6 +108,7 @@ public class AIController : CharacterController
     protected ActionDelegate analyseActions;
 
     protected AreaTrigger areaTrigger;//Триггер области вхождения монстра. Если герой находится в ней, то у монстра включаются все функции
+    public AreaTrigger ATrigger { get { return areaTrigger; } }
 
     protected NavigationMap navMap;
 
@@ -117,8 +118,10 @@ public class AIController : CharacterController
 
     [SerializeField]protected HitParametres attackParametres;//Какие параметры атаки, производимой персонажем
     public HitParametres AttackParametres { get { return attackParametres; } set { attackParametres = value; } }
+    protected int usualBalance;
 
     protected virtual float attackDistance { get { return .2f; } }//На каком расстоянии должен стоять ИИ, чтобы решить атаковать
+    protected virtual int attackBalance { get { return 3; } }//Баланс персонажа при совершении особой атаки
     protected virtual float sightRadius { get { return 1.9f; } }
     protected virtual float beCalmTime { get { return 10f; } }//Время через которое ИИ перестаёт преследовать игрока, если он ушёл из их поля зрения
     protected virtual float avoidTime { get { return 1f; } }//Время, спустя которое можно судить о необходимости обхода препятствия
@@ -161,7 +164,7 @@ public class AIController : CharacterController
                     hitBox.SetEnemies(enemies);
                 }
             }
-            else if (value==LoyaltyEnum.ally)
+            else if (value == LoyaltyEnum.ally)
             {
                 gameObject.layer = LayerMask.NameToLayer("hero");
                 gameObject.tag = "ally";
@@ -186,6 +189,11 @@ public class AIController : CharacterController
                 }
                 BecomeCalm();
                 MainTarget = ETarget.zero;
+            }
+            else
+            {
+                gameObject.layer = LayerMask.NameToLayer("neutralCharacter");
+                cLName = "ground";
             }
             OnChangeLoyalty(new LoyaltyEventArgs(value));
         }
@@ -270,12 +278,21 @@ public class AIController : CharacterController
             }
         }
         GetMap();
+        BecomeCalm();
         optSpeed = speed * optTimeStep;
+        usualBalance = balance;
     }
 
     protected virtual void Start()
     {
         Loyalty = loyalty;
+    }
+
+    protected override void FormDictionaries()
+    {
+        base.FormDictionaries();
+        storyActionBase.Add("changeLoyalty", StoryLoyaltyChange);
+        storyActionBase.Add("goToThePoint", StoryGoToThePoint);
     }
 
     /// <summary>
@@ -306,6 +323,17 @@ public class AIController : CharacterController
     }
 
     /// <summary>
+    /// Прекратить атаку
+    /// </summary>
+    protected override void StopAttack()
+    {
+        base.StopAttack();
+        Animate(new AnimationEventArgs("stop"));
+        if (hitBox!=null)
+            hitBox.ResetHitBox();
+    }
+
+    /// <summary>
     /// Функция, ответственная за анализ окружающей обстановки
     /// </summary>
     protected override void Analyse()
@@ -326,7 +354,7 @@ public class AIController : CharacterController
         EVector3 _prevPos = prevPosition;
         yield return new WaitForSeconds(avoidTime);
         Vector3 pos = transform.position;
-        if (currentTarget.exists && (currentTarget != mainTarget) && (pos - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f)
+        if (currentTarget.exists && (currentTarget != mainTarget) && (pos - _prevPos).sqrMagnitude < speed*speedCoof * Time.fixedDeltaTime / 10f)
         {
             transform.position += (currentTarget - transform.position).normalized * navCellSize;
         }
@@ -364,6 +392,7 @@ public class AIController : CharacterController
         currentTarget.Exists = false;
         StopFollowOptPath();
         Waiting = false;
+        StopAttack();
     }
 
     /// <summary>
@@ -449,7 +478,7 @@ public class AIController : CharacterController
     /// <summary>
     /// Выдвинуться в изначальную позицию
     /// </summary>
-    protected virtual void GoHome()
+    public virtual void GoHome()
     {
         StopMoving();
         MainTarget = ETarget.zero;
@@ -466,7 +495,7 @@ public class AIController : CharacterController
     /// <param name="cryPosition">Место, откуда издался клич</param>
     public virtual void HearBattleCry(Vector2 cryPosition)
     {
-        if (behavior!=BehaviorEnum.agressive)
+        if (behavior!=BehaviorEnum.agressive && loyalty==LoyaltyEnum.enemy)
         {
             GoToThePoint(cryPosition);
         }
@@ -506,7 +535,7 @@ public class AIController : CharacterController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
+    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
     {
         if (_dType != DamageType.Physical)
         {
@@ -515,17 +544,20 @@ public class AIController : CharacterController
             else if (_dType == attackParametres.damageType)
                 damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
         }
-        base.TakeDamage(damage, _dType, _microstun);
+        base.TakeDamage(damage, _dType, attackPower);
         OnHealthChanged(new HealthEventArgs(health));
-        StopMoving();
-        if (_microstun)
+        bool stunned = GetBuff("StunnedProcess") != null;
+        bool frozen = GetBuff("FrozenProcess") != null;
+        if (attackPower>balance || frozen || stunned)
         {
-            if (GetBuff("StunnedProcess") == null && GetBuff("FrozenProcess") == null)
+            StopMoving();
+            balance = usualBalance;
+            if (!frozen && !stunned)
             {
                 StopCoroutine("Microstun");
                 StartCoroutine("Microstun");
             }
-            StopCoroutine("AttackProcess");
+            StopAttack();
             employment = maxEmployment;
         }
     }
@@ -536,7 +568,7 @@ public class AIController : CharacterController
     /// <param name="damage">величина урона</param>
     /// <param name="_dType">тип урона</param>
     /// <param name="ignoreInvul">показывает, вводится ли персонаж в микростан при ударе или нет</param>
-    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, bool _microstun)
+    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower = 0)
     {
         if (_dType != DamageType.Physical)
         {
@@ -545,17 +577,19 @@ public class AIController : CharacterController
             else if (_dType == attackParametres.damageType)
                 damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
         }
-        base.TakeDamage(damage, _dType);
+        base.TakeDamage(damage, _dType, ignoreInvul, attackPower);
         OnHealthChanged(new HealthEventArgs(health));
-        StopMoving();
-        if (_microstun)
+        bool stunned = GetBuff("StunnedProcess") != null;
+        bool frozen = GetBuff("FrozenProcess") != null;
+        if (attackPower>balance || stunned || frozen)
         {
-            if (GetBuff("StunnedProcess") == null && GetBuff("FrozenProcess") == null)
+            StopMoving();
+            if (!stunned && !frozen)
             {
                 StopCoroutine("Microstun");
                 StartCoroutine("Microstun");
             }
-            StopCoroutine("AttackProcess");
+            StopAttack();
             employment = maxEmployment;
         }
     }
@@ -867,6 +901,7 @@ public class AIController : CharacterController
     /// </summary>
     protected virtual void DisableRigidbody()
     {
+        rigid.velocity = Vector2.zero;
         rigid.isKinematic = true;
     }
 
@@ -1101,7 +1136,7 @@ public class AIController : CharacterController
                 targetPos = currentTarget;
                 yield return new WaitForSeconds(optTimeStep);
                 Vector2 direction = targetPos - pos;
-                transform.position = pos + direction.normalized * Mathf.Clamp(speed, 0f, direction.magnitude);
+                transform.position = pos + direction.normalized * Mathf.Clamp(optSpeed, 0f, direction.magnitude);
             }
             waypoints = null;
             currentTarget.Exists = false;
@@ -1282,6 +1317,73 @@ public class AIController : CharacterController
     }
 
     #endregion //id
+
+    #region IHaveStory
+
+    /// <summary>
+    /// Вернуть список сюжетных действий, которые может воспроизводить персонаж
+    /// </summary>
+    /// <returns></returns>
+    public override List<string> actionNames()
+    {
+        List<string> _actionNames = base.actionNames();
+        _actionNames.Add("changeLoyalty");
+        _actionNames.Add("goToThePoint");
+        return _actionNames;
+    }
+
+    /// <summary>
+    /// Вернуть словарь первых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public override Dictionary<string, List<string>> actionIDs1()
+    {
+        Dictionary<string, List<string>> _actionIDs1 = base.actionIDs1();
+        _actionIDs1.Add("changeLoyalty", new List<string>() {"enemy", "ally", "neutral"});
+        _actionIDs1.Add("goToThePoint", new List<string>() { "hero" });
+        return _actionIDs1;
+    }
+
+    /// <summary>
+    /// Вернуть словарь вторых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public override Dictionary<string, List<string>> actionIDs2()
+    {
+        Dictionary<string, List<string>> _actionIDs2 = base.actionIDs2();
+        _actionIDs2.Add("changeLoyalty", new List<string>() { });
+        _actionIDs2.Add("goToThePoint", new List<string>() { });
+        return _actionIDs2;
+    }
+
+    #endregion //IHaveStory
+
+    #region storyActions
+
+    /// <summary>
+    /// Сменить отношение к игроку в результате исторического действия
+    /// </summary>
+    public void StoryLoyaltyChange(StoryAction _action)
+    {
+        Loyalty = _action.id1 == "enemy" ? LoyaltyEnum.enemy : (_action.id1 == "ally" ? LoyaltyEnum.ally : LoyaltyEnum.neutral);
+    }
+
+    /// <summary>
+    /// Выдвинуться к позиции в результате исторического действия
+    /// </summary>
+    public void StoryGoToThePoint(StoryAction _action)
+    {
+        if (_action.id1 == "hero")
+            GoToThePoint(SpecialFunctions.player.transform.position);
+        else
+        {
+            GameObject nextTargetObject = GameObject.Find(_action.id1);
+            if (nextTargetObject!=null)
+                GoToThePoint(nextTargetObject.transform.position);
+        }
+    }
+
+    #endregion //storyActions
 
     protected virtual void OnDrawGizmos()
     {

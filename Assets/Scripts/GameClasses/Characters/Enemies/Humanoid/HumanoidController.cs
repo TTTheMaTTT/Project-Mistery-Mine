@@ -170,7 +170,7 @@ public class HumanoidController : AIController
     protected override void Move(OrientationEnum _orientation)
     {
         bool wallInFront = wallCheck.WallInFront;
-        Vector2 targetVelocity = wallInFront ? new Vector2(0f, rigid.velocity.y) : new Vector2((int)orientation * speed, rigid.velocity.y);
+        Vector2 targetVelocity = wallInFront ? new Vector2(0f, rigid.velocity.y) : new Vector2((int)orientation * speed * speedCoof, rigid.velocity.y);
         rigid.velocity = wallInFront ? Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration) : targetVelocity;
 
         if (orientation != _orientation)
@@ -183,7 +183,7 @@ public class HumanoidController : AIController
     /// Повернуться
     /// </summary>
     /// <param name="_orientation">В какую сторону должен смотреть персонаж после поворота</param>
-    protected override void Turn(OrientationEnum _orientation)
+    public override void Turn(OrientationEnum _orientation)
     {
         base.Turn(_orientation);
         wallCheck.SetPosition(0f, (int)orientation);
@@ -242,7 +242,7 @@ public class HumanoidController : AIController
     /// </summary>
     protected override void LadderMove(float direction)
     {
-        rigid.velocity = new Vector2(0f, direction * ladderSpeed);
+        rigid.velocity = new Vector2(0f, direction * ladderSpeed * speedCoof);
     }
 
     /// <summary>
@@ -298,7 +298,7 @@ public class HumanoidController : AIController
                     //if (currentTarget == null)
                     //break;
                     if (!hit ?
-                        ((pos - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && currentTarget != mainTarget &&
+                        ((pos - prevPosition).sqrMagnitude < speed * speedCoof * Time.fixedDeltaTime / 10f && currentTarget != mainTarget &&
                         (platformTarget.exists ? true : (!waitingForPlatform && transform.parent == null))) : true)
                     {
                         if (!avoid)
@@ -334,7 +334,7 @@ public class HumanoidController : AIController
                     }
                     if (!avoid)
                     {
-                        if ((pos - prevPosition).sqrMagnitude < speed * Time.fixedDeltaTime / 10f &&
+                        if ((pos - prevPosition).sqrMagnitude < speed * speedCoof * Time.fixedDeltaTime / 10f &&
                             (platformTarget.exists ? true : (!waitingForPlatform && transform.parent == null)))
                             StartCoroutine("AvoidProcess");
                     }
@@ -437,6 +437,20 @@ public class HumanoidController : AIController
     }
 
     /// <summary>
+    /// Процесс атаки
+    /// </summary>
+    protected override IEnumerator AttackProcess()
+    {
+        balance = attackBalance;
+        employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
+        yield return new WaitForSeconds(attackParametres.preAttackTime);
+        hitBox.SetHitBox(new HitParametres(attackParametres));
+        yield return new WaitForSeconds(attackParametres.actTime + attackParametres.endAttackTime);
+        employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
+        balance = usualBalance;
+    }
+
+    /// <summary>
     /// Определить, нужно ли искать отдельный маршрут до главной цели
     /// </summary>
     /// <returns>Возвращает факт необходимости поиска пути</returns>
@@ -496,11 +510,16 @@ public class HumanoidController : AIController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
+    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
     {
-        if (onLadder && _microstun)
-            LadderOff();//Сбросить с лестницы
-        base.TakeDamage(damage, _dType,_microstun);
+        base.TakeDamage(damage, _dType,attackPower);
+        bool stunned = GetBuff("StunnedProcess") != null;
+        bool frozen = GetBuff("FrozenProcess") != null;
+        if (attackPower > balance || stunned || frozen)
+        {
+            if (onLadder && (!frozen))
+                LadderOff();//Сбросить с лестницы
+        }
     }
 
     /// <summary>
@@ -514,6 +533,7 @@ public class HumanoidController : AIController
         StopCoroutine("BecomeCalmProcess");
         prevTargetPosition = EVector3.zero;
         StopFollowOptPath();
+        StopAttack();
         Waiting = false;
     }
 
@@ -611,7 +631,7 @@ public class HumanoidController : AIController
         EVector3 _prevPos = prevPosition;
         yield return new WaitForSeconds(avoidTime);
         Vector3 pos = (Vector2)transform.position;
-        if ((transform.position - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f && avoid)
+        if ((transform.position - _prevPos).sqrMagnitude < speed * speedCoof * Time.fixedDeltaTime / 10f && avoid)
         {
             if (currentTarget.exists &&
                 (platformTarget.exists ? (!waitingForPlatform && transform.parent != platformTarget.transform) : true))
@@ -622,7 +642,7 @@ public class HumanoidController : AIController
                 pos = (Vector2)transform.position;
                 //Если не получается обойти ставшее на пути препятствие
                 if (currentTarget.exists && currentTarget != mainTarget && avoid &&
-                    (pos - _prevPos).sqrMagnitude < speed * Time.fixedDeltaTime / 10f &&
+                    (pos - _prevPos).sqrMagnitude < speed * speedCoof * Time.fixedDeltaTime / 10f &&
                     (platformTarget.exists ? (!waitingForPlatform && transform.parent != platformTarget.transform) : true))
                 {
                     if (mainTarget.exists)
@@ -1070,7 +1090,7 @@ public class HumanoidController : AIController
             GoHome();
     }
 
-    protected override void GoHome()
+    public override void GoHome()
     {
         StopLadderMoving();
         base.GoHome();
@@ -1265,7 +1285,7 @@ public class HumanoidController : AIController
                 {
                     targetPos = currentTarget;
                     Vector2 direction = targetPos - pos;
-                    transform.position = pos + direction.normalized * Mathf.Clamp(speed, 0f, direction.magnitude);
+                    transform.position = pos + direction.normalized * Mathf.Clamp(optSpeed, 0f, direction.magnitude);
                 }
                 yield return new WaitForSeconds(optTimeStep);
             }

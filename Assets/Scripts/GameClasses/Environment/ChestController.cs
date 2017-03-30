@@ -26,13 +26,13 @@ public class ChestController : MonoBehaviour, IInteractive
     public List<DropClass> content = new List<DropClass>();
 
     protected SpriteRenderer sRenderer;
+    protected AudioSource aSource;
 
     #endregion //fields
 
     #region parametres
 
     [SerializeField]
-    [HideInInspector]
     protected int id;
 
     protected Color outlineColor = Color.yellow;
@@ -44,6 +44,7 @@ public class ChestController : MonoBehaviour, IInteractive
     void Awake()
     {
         sRenderer = GetComponent<SpriteRenderer>();
+        aSource = GetComponent<AudioSource>();
     }
 
     /// <summary>
@@ -70,6 +71,7 @@ public class ChestController : MonoBehaviour, IInteractive
         SetOutline(false);
         if (anim != null)
             anim.Play("Opened");
+        SpecialFunctions.PlaySound(aSource);
         OnChestOpened(new EventArgs());
         DestroyImmediate(this);
     }
@@ -87,6 +89,14 @@ public class ChestController : MonoBehaviour, IInteractive
             mpb.SetColor("_OutlineColor", outlineColor);
             sRenderer.SetPropertyBlock(mpb);
         }
+    }
+
+    /// <summary>
+    /// Можно ли провзаимодействовать с объектом в данный момент?
+    /// </summary>
+    public virtual bool IsInteractive()
+    {
+        return true;
     }
 
     #endregion //IInteractive
@@ -140,7 +150,7 @@ public class ChestController : MonoBehaviour, IInteractive
     /// </summary>
     public InterObjData GetData()
     {
-        InterObjData cData = new InterObjData(id);
+        InterObjData cData = new InterObjData(id,gameObject.name, transform.position);
         return cData;
     }
 

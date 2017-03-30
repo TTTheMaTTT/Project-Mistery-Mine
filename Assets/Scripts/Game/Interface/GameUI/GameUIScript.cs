@@ -12,7 +12,7 @@ public class GameUIScript : MonoBehaviour
 
     #region consts
 
-    protected const float fadeSpeed = 1f;//Скорость затухания
+    protected const float defaultFadeSpeed = 4f;//Скорость затухания
     protected const float fadeTime = 2f;//Время, за которое происходит затухание или проявление экрана
     protected const float fadeOffset = 3f;//Время до конца, при котором начин/ается мигание иконок
 
@@ -28,6 +28,8 @@ public class GameUIScript : MonoBehaviour
 
     #region fields
 
+    protected HeroController hero;
+
     [SerializeField]
     protected Sprite wholeHeart, halfHeart, emptyHeart;
 
@@ -42,12 +44,17 @@ public class GameUIScript : MonoBehaviour
     protected Text[] questTexts = new Text[3];//Строчки, рассказывающие об активных квестах
     
     protected Image weaponImage;
+    public Sprite WeaponImage { set { weaponImage.sprite = value; if (value != null) weaponImage.color = Color.white; else weaponImage.color = new Color(1f, 1f, 1f, 0f); } }
 
     protected GameObject textPanel;//В этом окошечке будет выводится информация о процессе игры
     protected GameObject messagePanel;//В этом окошечке выводится информация, переданная от других персонажей или игровых объектов
     protected Text messageText;
     protected GameObject secretPlacePanel;//В этом окошечке выводится информация, о том, что герой нашёл секретное место
     protected Text secretPlaceText;
+
+    protected float countdownTime = 0f;
+    protected Transform countdownPanel;//Панель, на которой отображается обратный отсчёт
+    protected Text countdownText;//Текст, на котором отображается обратный отсчёт
 
     protected GameObject collectorScreen;//Панель, на которой отображается информация о собранных коллекциях
     protected GameObject oneItemScreen;//Экран, в котором показывается найденный коллекционный предмет
@@ -64,10 +71,12 @@ public class GameUIScript : MonoBehaviour
 
     #region parametres
 
-    protected int fadeDirection;
     protected float fadeTextTime = 0f, fadeSecretTextTime = 0f;
 
+    protected float fadeSpeed = 1f;//Скорость затухания
+    public float FadeSpeed { set { fadeSpeed = value; } }
     protected DamageScreenType dmgScreenType = DamageScreenType.Nothing;
+    protected Color fadeColor = new Color(0f, 0f, 0f, 0f);
     protected Color dmgColor = new Color (0f,0f,0f,0f);
     protected  float dmgScreenFadeSpeed = 2f;//Скорость мигания экрана урона
 
@@ -78,12 +87,25 @@ public class GameUIScript : MonoBehaviour
         Initialize();
     }
 
+    void Update()
+    {
+        fadeScreen.color=Color.Lerp(fadeScreen.color,fadeColor,Time.fixedDeltaTime*fadeSpeed);
+        damageScreen.color = Color.Lerp(damageScreen.color, dmgColor, Time.fixedDeltaTime * dmgScreenFadeSpeed);
+    }
+
     void FixedUpdate()
     {
-        fadeScreen.color=Color.Lerp(fadeScreen.color,new Color(0f,0f,0f,fadeDirection==1? 0f: 
-                                                                        fadeDirection==-1? 1f: 
-                                                                        fadeScreen.color.a),Time.fixedDeltaTime*fadeSpeed);
-        damageScreen.color = Color.Lerp(damageScreen.color, dmgColor, Time.fixedDeltaTime * dmgScreenFadeSpeed);
+        if (countdownTime > 0f)
+        {
+            countdownTime -= Time.fixedDeltaTime;
+            TimeSpan tSpan = new TimeSpan(0, Mathf.FloorToInt(countdownTime / 60f), Mathf.FloorToInt(countdownTime - 60f * Mathf.FloorToInt(countdownTime / 60f)));
+            //countdownText.text = Mathf.FloorToInt(countdownTime/60f).ToString() + ":" + Mathf.FloorToInt(countdownTime - 60f * Mathf.FloorToInt(countdownTime / 60f));
+            countdownText.text = tSpan.ToString();
+            if (countdownTime == 0f)
+                countdownTime = -1f;
+        }
+        else if (countdownTime < 0f)
+            StopCountdown();
     }
 
     void Initialize()
@@ -95,16 +117,16 @@ public class GameUIScript : MonoBehaviour
             heartImages.Add(panel.GetChild(i).GetComponent<Image>());
         }
 
-        HeroController player = SpecialFunctions.Player.GetComponent<HeroController>();
-        player.healthChangedEvent += HandleHealthChanges;
+        hero = SpecialFunctions.Player.GetComponent<HeroController>();
+        hero.healthChangedEvent += HandleHealthChanges;
 
         weaponImage = transform.FindChild("WeaponPanel").FindChild("WeaponImage").GetComponent<Image>();
-        player.equipmentChangedEvent += HandleEquipmentChanges;
-        weaponImage.sprite = player.CurrentWeapon.itemImage;
+        hero.equipmentChangedEvent += HandleEquipmentChanges;
+        WeaponImage = hero.CurrentWeapon.itemImage;
 
         buffPanel = transform.FindChild("BuffsPanel");
-        player.buffAddEvent += HandleBuffAdd;
-        player.buffRemoveEvent += HandleBuffRemove;
+        hero.buffAddEvent += HandleBuffAdd;
+        hero.buffRemoveEvent += HandleBuffRemove;
 
         Transform questsPanel = transform.FindChild("QuestsPanel");
         questTexts[0] = questsPanel.GetChild(0).GetComponent<Text>();
@@ -123,6 +145,9 @@ public class GameUIScript : MonoBehaviour
         secretPlaceText = secretPlacePanel.transform.FindChild("SecretPlaceText").GetComponent<Text>();
         secretPlaceText.text = "";
 
+        countdownPanel = transform.FindChild("CountdownZ");
+        countdownText = countdownPanel.GetComponentInChildren<Text>();
+
         collectorScreen = transform.FindChild("CollectionsPanel").gameObject;
         oneItemScreen = collectorScreen.transform.FindChild("OneItemScreen").gameObject;
         collectionScreen = collectorScreen.transform.FindChild("CollectionItemsScreen").gameObject;
@@ -131,16 +156,43 @@ public class GameUIScript : MonoBehaviour
         collectorScreen.SetActive(false);
 
         breathPanel = transform.FindChild("BreathPanel");
-        player.suffocateEvent += HandleSuffocate;
+        hero.suffocateEvent += HandleSuffocate;
         ConsiderBreath(10);
 
-        ConsiderHealth(player.Health);
+        ConsiderHealth(hero.Health);
 
         bossHealthPanel = transform.FindChild("BossHealthPanel").gameObject;
         bossHP = bossHealthPanel.transform.FindChild("BossHP").GetComponent<Image>();
         bossNameText = bossHealthPanel.GetComponentInChildren<Text>();
         bossHealthPanel.SetActive(false);
 
+    }
+
+    /// <summary>
+    /// Настроить работу меню на заданного игрового персонажа
+    /// </summary>
+    public void ConsiderPlayer(HeroController _player)
+    {
+        hero.healthChangedEvent -= HandleHealthChanges;
+        hero.equipmentChangedEvent -= HandleEquipmentChanges;
+        hero.buffAddEvent -= HandleBuffAdd;
+        hero.buffRemoveEvent -= HandleBuffRemove;
+        hero.suffocateEvent -= HandleSuffocate;
+
+        hero = _player;
+        hero.healthChangedEvent += HandleHealthChanges;
+
+        hero.equipmentChangedEvent += HandleEquipmentChanges;
+        if (hero.CurrentWeapon != null)
+            WeaponImage = hero.CurrentWeapon.itemImage;
+        else
+            WeaponImage = null;
+
+        hero.buffAddEvent += HandleBuffAdd;
+        hero.buffRemoveEvent += HandleBuffRemove;
+        hero.suffocateEvent += HandleSuffocate;
+
+        ConsiderHealth(_player.Health);
     }
 
     /// <summary>
@@ -368,12 +420,30 @@ public class GameUIScript : MonoBehaviour
     }
 
     /// <summary>
+    /// Начать обратный отсчёт
+    /// </summary>
+    public void StartCountdown(float _time)
+    {
+        countdownTime = _time;
+        countdownPanel.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// Остановить обратный отсчёт
+    /// </summary>
+    public void StopCountdown()
+    {
+        countdownText.text = "0:00";
+        countdownTime = 0f;
+        countdownPanel.gameObject.SetActive(false);
+    }
+
+    /// <summary>
     /// Начать затухание экрана
     /// </summary>
     public void FadeIn()
     {
-        fadeDirection = -1;
-        StartCoroutine(FadeProcess());
+        fadeColor = new Color(0f, 0f, 0f, 1f);
     }
 
     /// <summary>
@@ -381,8 +451,7 @@ public class GameUIScript : MonoBehaviour
     /// </summary>
     public void FadeOut()
     {
-        fadeDirection = 1;
-        StartCoroutine(FadeProcess());
+        fadeColor = new Color(0f, 0f, 0f, 0f);
     }
 
     /// <summary>
@@ -391,16 +460,25 @@ public class GameUIScript : MonoBehaviour
     public void SetDark()
     {
         fadeScreen.color = Color.black;
+        fadeColor = Color.black;
     }
 
+    /*
     /// <summary>
     /// Процесс затухания или проявления экрана
     /// </summary>
-    IEnumerator FadeProcess()
+    IEnumerator FadeProcess(int fadeDirection)
     {
         yield return new WaitForSeconds(fadeTime);
-        fadeScreen.color = new Color(0f, 0f, 0f, fadeDirection == -1 ? 1f : 0f);
-        fadeDirection = 0;
+    }
+    */
+
+    /// <summary>
+    /// Вернуть дефолтную скорость затухания экрана
+    /// </summary>
+    public void SetDefaultFadeSpeed()
+    {
+        fadeSpeed = defaultFadeSpeed;
     }
 
     /// <summary>
@@ -408,7 +486,7 @@ public class GameUIScript : MonoBehaviour
     /// </summary>
     IEnumerator GetDamageFadeProcess()
     {
-        if ((dmgScreenType & DamageScreenType.LowHP) != DamageScreenType.LowHP && (dmgScreenType & DamageScreenType.Poison) != DamageScreenType.Poison)
+        if (dmgScreenType == DamageScreenType.Nothing)
         {
             dmgColor = new Color(1f, 0f, 0f, 0.7f);
             dmgScreenFadeSpeed = 100f;
@@ -447,12 +525,27 @@ public class GameUIScript : MonoBehaviour
     }
 
     /// <summary>
+    /// Процесс управления отображением урона при  горении
+    /// </summary>
+    IEnumerator BurningFadeProcess()
+    {
+        while (true)
+        {
+            dmgColor = new Color(1f, .43f, 0f, 0.45f);
+            yield return new WaitForSeconds(1f);
+            dmgColor = new Color(1f, .43f, 0f, 0.7f);
+            yield return new WaitForSeconds(1f);
+        }
+    }
+
+    /*
+    /// <summary>
     /// Вызвать посинение экрана при заморозке
     /// </summary>
     void ConsiderFrozen()
     {
         dmgColor = new Color(0f, 1f, .96f, .7f);
-    }
+    }*/
 
     /// <summary>
     /// Определиться, какое состояниедолжно быть у экрана отображения урона
@@ -461,13 +554,14 @@ public class GameUIScript : MonoBehaviour
     {
         dmgScreenFadeSpeed = 2f;
         StopCoroutine("LowHPFadeProcess");
+        StopCoroutine("BurningFadeProcess");
         StopCoroutine("PoisonedFadeProcess");
         if ((dmgScreenType & DamageScreenType.LowHP) == DamageScreenType.LowHP)
             StartCoroutine("LowHPFadeProcess");
+        else if ((dmgScreenType & DamageScreenType.Burning) == DamageScreenType.Burning)
+            StartCoroutine("BurningFadeProcess");
         else if ((dmgScreenType & DamageScreenType.Poison) == DamageScreenType.Poison)
             StartCoroutine("PoisonedFadeProcess");
-        else if ((dmgScreenType & DamageScreenType.Frozen) == DamageScreenType.Frozen)
-            ConsiderFrozen();
         else
             dmgColor = new Color(0f, 0f, 0f, 0f);
     }
@@ -497,7 +591,7 @@ public class GameUIScript : MonoBehaviour
         if (e.HP < 5f)
             dmgScreenType |= DamageScreenType.LowHP; 
         else
-            dmgScreenType = (dmgScreenType & DamageScreenType.Frozen) | (dmgScreenType & DamageScreenType.Poison);
+            dmgScreenType = (dmgScreenType & DamageScreenType.Burning) | (dmgScreenType & DamageScreenType.Poison);
         ConsiderDamageScreenState();
         if (e.HPDelta < 0f)
         {
@@ -549,8 +643,8 @@ public class GameUIScript : MonoBehaviour
             StartCoroutine(BuffFadeProcess(bTime, _icon));
         if (!e.BattleEffect)
             SetSecretMessage(2f, SpecialFunctions.gameController.GetBuffText(buff.buffName));
-        if (buff.buffName == "FrozenProcess")
-            dmgScreenType |= DamageScreenType.Frozen;
+        if (buff.buffName == "BurningProcess")
+            dmgScreenType |= DamageScreenType.Burning;
         else if (buff.buffName == "PoisonProcess")
             dmgScreenType |= DamageScreenType.Poison;
         ConsiderDamageScreenState();
@@ -578,10 +672,10 @@ public class GameUIScript : MonoBehaviour
             Destroy(bIcon);
         }
         ConsiderBuffs();
-        if (buff.buffName == "FrozenProcess")
+        if (buff.buffName == "BurningProcess")
             dmgScreenType = (dmgScreenType & DamageScreenType.LowHP)|(dmgScreenType & DamageScreenType.Poison);
         else if (buff.buffName == "PoisonProcess")
-            dmgScreenType = (dmgScreenType & DamageScreenType.LowHP) | (dmgScreenType & DamageScreenType.Frozen);
+            dmgScreenType = (dmgScreenType & DamageScreenType.LowHP) | (dmgScreenType & DamageScreenType.Burning);
         ConsiderDamageScreenState();
     }
 
@@ -623,8 +717,8 @@ public struct BuffImage
 [Flags]
 public enum DamageScreenType : byte
 {
-    Nothing = 0x01,
-    LowHP = 0x02,
-    Frozen = 0x04,
-    Poison = 0x08
+    Nothing = 0x00,
+    LowHP = 0x01,
+    Burning = 0x02,
+    Poison = 0x04
 }

@@ -21,7 +21,9 @@ public class CameraController : MonoBehaviour
 
     #region fields
 
-    protected Transform player;//Персонаж, за которым следует камера
+    protected Transform player;//Трансформ героя
+    protected Transform currentObject = null;//Текущий объект, за которым следит камера
+    protected AreaTriggerIndicator aTriggerIndicator;//Индикатор, который закрепляется за камерой и следит за оптимизацией монстров
 
     #endregion //fields
 
@@ -29,10 +31,9 @@ public class CameraController : MonoBehaviour
 
     protected Vector3 offset = new Vector3(offsetX, offsetY, offsetZ);
 
-    protected Vector3 currentPosition;//Какую позицию стремится снять камера?
+    protected ETarget currentTarget;//Какую позицию стремится снять камера?
     [SerializeField]protected float camSpeed;
-
-    [SerializeField] protected CameraModEnum camMod = CameraModEnum.player;//Режим перемещения камеры
+    protected bool instantMotion = true;//Камера мгновенно перемещается к текущей цели
 
     #endregion //parametres
 
@@ -44,14 +45,10 @@ public class CameraController : MonoBehaviour
     protected void FixedUpdate()
     {
         //if (Time.timeScale>0f) { 
-        if (camMod == CameraModEnum.player)
-            transform.position = player.position + offset;
-        else if (camMod == CameraModEnum.playerMove)
-            transform.position = Vector3.Lerp(transform.position, player.position + offset, Time.fixedDeltaTime * camSpeed);
-        //transform.position = player.position + offset;
+        if (instantMotion)
+            transform.position = currentTarget + offset;
         else
-            transform.position = (camMod == CameraModEnum.move) ? Vector3.Lerp(transform.position, currentPosition + offset, Time.fixedDeltaTime * camSpeed) : currentPosition + offset;
-        //}
+            transform.position = Vector3.Lerp(transform.position, currentTarget + offset, Time.fixedDeltaTime * camSpeed);
     }
 
     /*protected void Update()
@@ -70,7 +67,9 @@ public class CameraController : MonoBehaviour
     protected void Initialize()
     {
         player = GameObject.FindGameObjectWithTag("player").transform;
-        currentPosition = player.position;
+        ChangeCameraMod(CameraModEnum.player);
+        //aTriggerIndicator = GetComponentInChildren<AreaTriggerIndicator>();
+        //aTriggerIndicator.Activate(false);
     }
 
     /// <summary>
@@ -78,15 +77,46 @@ public class CameraController : MonoBehaviour
     /// </summary>
     public void ChangeCameraMod(CameraModEnum _camMod)
     {
-        camMod = _camMod;
+        instantMotion = !(_camMod == CameraModEnum.move || _camMod == CameraModEnum.objMove || _camMod == CameraModEnum.playerMove);
+        if (_camMod == CameraModEnum.player || _camMod == CameraModEnum.playerMove)
+        {
+            currentTarget = new ETarget(player);
+            //aTriggerIndicator.Activate(!instantMotion);
+        }
+        else if (currentObject != null ? _camMod == CameraModEnum.obj || _camMod == CameraModEnum.objMove : false)
+        {
+            currentTarget = new ETarget(currentObject);
+            //aTriggerIndicator.Activate(true);
+        }
     }
 
     /// <summary>
-    /// Изменить точку, за которой следит камера
+    /// Изменить точку, за которой следит камера (В данном случае это объект и именно за ним будет следить камера)
     /// </summary>
-    public void ChangeCameraTarget(Vector3 newTarget)
+    public void ChangeCameraTarget(GameObject newTarget, bool _instantMotion)
     {
-        currentPosition = newTarget;
+        currentObject = newTarget.transform;
+        instantMotion = _instantMotion;
+        if (currentObject != null)
+        {
+            currentTarget = new ETarget(currentObject);
+            //aTriggerIndicator.Activate(true);
+        }
+        else
+        {
+            currentTarget = new ETarget(player);
+            //aTriggerIndicator.Activate(!instantMotion);
+        }
+    }
+
+    /// <summary>
+    /// Изменить точку, за которой следит камера (В данном случае это на эту точку указывает вектор)
+    /// </summary>
+    public void ChangeCameraTarget(Vector3 _position, bool _instantMotion)
+    {
+        currentTarget = new ETarget(_position);
+        instantMotion = _instantMotion;
+        //aTriggerIndicator.Activate(true);
     }
 
     /// <summary>
@@ -134,6 +164,12 @@ public class CameraController : MonoBehaviour
             _shakeDistance -= shakeReduce;
         }
         offset = new Vector3(offsetX, offsetY, offsetZ);
+    }
+
+    public void SetPlayer(Transform _player)
+    {
+        player = _player;
+        ChangeCameraMod(CameraModEnum.player);
     }
 
 }

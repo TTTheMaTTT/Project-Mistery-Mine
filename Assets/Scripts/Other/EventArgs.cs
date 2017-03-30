@@ -33,6 +33,23 @@ public class AnimationEventArgs : EventArgs
 }
 
 /// <summary>
+/// Событийные данные об изменения громкости звуков
+/// </summary>
+public class SoundChangesEventArgs : EventArgs
+{
+    private float soundVolume;
+    
+    public float SoundVolume { get { return soundVolume; } }
+
+    public SoundChangesEventArgs(float _soundVolume)
+    {
+        soundVolume = _soundVolume;
+    }
+
+}
+
+
+/// <summary>
 /// Данные о событии, связанном с изменением уровня хп
 /// </summary>
 public class HealthEventArgs : EventArgs
@@ -222,5 +239,21 @@ public class LoyaltyEventArgs : EventArgs
     }
 
     public LoyaltyEnum Loyalty { get { return loyalty; } }
+
+}
+
+/// <summary>
+/// Событийные данные о начавшемся, либо законченном диалоге
+/// </summary>
+public class DialogEventArgs : EventArgs
+{
+    private bool begin = true;//Если true - диалог начался, иначе - закончился
+
+    public bool Begin {get{return begin;}}
+
+    public DialogEventArgs(bool _begin)
+    {
+        begin = _begin;
+    }
 
 }

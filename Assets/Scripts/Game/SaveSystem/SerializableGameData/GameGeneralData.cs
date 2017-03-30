@@ -9,6 +9,7 @@ using System.Xml.Serialization;
 [XmlType("General Game Data")]
 [XmlInclude(typeof(EquipmentInfo))]
 [XmlInclude(typeof(CollectionInfo))]
+[XmlInclude(typeof(GameProgressData))]
 public class GameGeneralData
 {
 
@@ -22,6 +23,8 @@ public class GameGeneralData
     [XmlArrayItem("Information About Collection")]
     public List<CollectionInfo> cInfo = new List<CollectionInfo>();//Данные о собранных коллекциях
 
+    public GameProgressData progressInfo;//Данные о прогрессе игры
+
     public GameGeneralData()
     {
     }
@@ -34,6 +37,9 @@ public class GameGeneralData
         cInfo = new List<CollectionInfo>();
         for (int i = 0; i < _collections.Count; i++)
             cInfo.Add(new CollectionInfo(_collections[i]));
+        GameStatistics gStats = SpecialFunctions.statistics;
+        if (gStats!=null)
+            progressInfo = new GameProgressData(gStats.gameHistoryProgress);
 
     }
 

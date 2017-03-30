@@ -33,7 +33,6 @@ public class GroundMoveVisual : CharacterVisual
     {
         base.FormDictionaries();
         visualFunctions.Add("groundMove", GroundMove);
-        visualFunctions.Add("moveForward", MoveForward);
         visualFunctions.Add("attack", Attack);
         visualFunctions.Add("airMove", AirMove);
         visualFunctions.Add("ladderMove", LadderMove);
@@ -110,11 +109,6 @@ public class GroundMoveVisual : CharacterVisual
         }
     }
 
-    protected virtual void MoveForward(string id, int argument)
-    {
-        anim.Play("Run");
-    }
-
     /// <summary>
     /// Анимировать атаку
     /// </summary>
@@ -124,7 +118,11 @@ public class GroundMoveVisual : CharacterVisual
         {
             return;
         }
-        anim.Play("Attack");
+        anim.Play("Idle");
+        if (id == "")
+            anim.Play("Attack");
+        else
+            anim.Play(id);
         StartVisualRoutine(5, argument != 0? argument/10f : attackTime);
     }
 

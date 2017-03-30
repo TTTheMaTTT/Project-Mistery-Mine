@@ -105,6 +105,14 @@ public class DropClass : MonoBehaviour, IInteractive
         }
     }
 
+    /// <summary>
+    /// Можно ли провзаимодействовать с объектом в данный момент?
+    /// </summary>
+    public virtual bool IsInteractive()
+    {
+        return true;
+    }
+
     #endregion //IInteractive
 
     #region IHaveID

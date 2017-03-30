@@ -29,21 +29,15 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
 
     #endregion //dictionaries
 
-    #region eventHandlers
-
-    public EventHandler<StoryEventArgs> SpeechSaidEvent;
-
-    #endregion //eventHandlers
-
     #region fields
 
     protected Animator anim;
 
     [SerializeField]
-    protected List<Dialog> dialogs=new List<Dialog>();//Диалоги, что могут произойти с этим персонажем
+    protected List<Dialog> dialogs = new List<Dialog>();//Диалоги, что могут произойти с этим персонажем
 
-    protected bool canTalk=true;//Может ли персонаж разговаривать
-    public bool CanTalk { get { return canTalk; } set { canTalk = value; } }
+    protected bool canTalk = true;//Может ли персонаж разговаривать
+    //public bool CanTalk { get { return canTalk; } set {if (value) StartTalking(); else StopTalking(); } }
 
     public List<DropClass> NPCDrop = new List<DropClass>();//Что может вывалить НПС, при выполнении его задания (или при иных условиях)
     protected SpriteRenderer sRenderer;
@@ -52,7 +46,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
 
     #region parametres
 
-    protected bool spoken=false;
+    protected bool spoken = false;
 
     [SerializeField]protected DialogModEnum speechMod;
     [SerializeField]protected int dialogArgument1, dialogArgument2;
@@ -60,22 +54,26 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     [SerializeField][HideInInspector]protected int id;
 
     protected Color outlineColor = Color.yellow;//Цвет контура
+    protected bool possibleTalk = true;//Возможно ли впринципе говорить с персонажем
 
     #endregion //parametres
 
-    protected virtual void Awake ()
+    protected virtual void Awake()
     {
-        Initialize();    
-	}
-	
-	protected virtual void Update ()
+        Initialize();
+    }
+
+    protected virtual void Update()
     {
-	
-	}
+
+    }
 
     protected virtual void Initialize()
     {
-        anim = GetComponent<Animator>();
+        if (GetComponent<CharacterController>() != null)
+            anim = GetComponentInChildren<Animator>();
+        else
+            anim = GetComponent<Animator>();
         sRenderer = GetComponent<SpriteRenderer>();
         FormDictionaries();
     }
@@ -86,6 +84,16 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
 
         storyActionBase.Add("speechAction", SpeechAction);
         storyActionBase.Add("dropAction", GiveDrop);
+        storyActionBase.Add("animate", StoryAnimate);
+        storyActionBase.Add("destroy", StoryDestroy);
+    }
+
+    /// <summary>
+    /// Начать диалог (в отличие от функции talk, эта функция не может вызваться при взаимодействии, а только при использовании сюжетного действия)
+    /// </summary>
+    protected virtual void StartDialog(Dialog _dialog)
+    {
+        SpecialFunctions.gameController.StartDialog(_dialog);
     }
 
     /// <summary>
@@ -95,9 +103,9 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     {
         if (dialogs.Count > 0)
         {
-            if (anim!=null)
+            if (anim != null)
                 anim.Play("Talk");
-            Dialog dialog=null;
+            Dialog dialog = null;
             switch (speechMod)
             {
                 case DialogModEnum.one:
@@ -108,9 +116,9 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
                 case DialogModEnum.random:
                     {
                         if (dialogArgument1 == 0 || dialogArgument2 == 0)
-                            dialog = dialogs[UnityEngine.Random.Range(0,dialogs.Count)];
+                            dialog = dialogs[UnityEngine.Random.Range(0, dialogs.Count)];
                         else
-                            dialog = dialogs[UnityEngine.Random.Range(dialogArgument1,dialogArgument2)];
+                            dialog = dialogs[UnityEngine.Random.Range(dialogArgument1, dialogArgument2)];
                         break;
                     }
                 case DialogModEnum.usual:
@@ -133,9 +141,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// </summary>
     public virtual void StartTalking()
     {
-        if (anim != null)
-            anim.Play("Talk");
-        SetOutline(false);
+        StartCoroutine(StartTalkingProcess());
     }
 
     /// <summary>
@@ -143,11 +149,11 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// </summary>
     public virtual void StopTalking()
     {
-        if (anim!=null)
+        if (anim != null)
             anim.Play("Idle");
         canTalk = false;
         StartCoroutine(NoTalkingProcess());
-        SetOutline(true);
+        //SetOutline(true);
     }
 
     /// <summary>
@@ -157,16 +163,14 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     {
         yield return new WaitForSeconds(disableTalkTime);
         canTalk = true;
-
     }
 
-    /// <summary>
-    /// Событие "Сказана реплика"
-    /// </summary>
-    /// <param name="speechName"></param>
-    public void SpeechSaid(string speechName)
+    protected IEnumerator StartTalkingProcess()
     {
-        SpecialFunctions.StartStoryEvent(this, SpeechSaidEvent, new StoryEventArgs(speechName,0));
+        yield return new WaitForSeconds(.1f);
+        if (anim != null)
+            anim.Play("Talk");
+
     }
 
     /// <summary>
@@ -174,11 +178,26 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// </summary>
     public List<string> GetSpeeches()
     {
-        List<string> newSpeeches=new List<string>();
+        List<string> newSpeeches = new List<string>();
         for (int i = 0; i < dialogs.Count; i++)
             for (int j = 0; j < dialogs[i].speeches.Count; j++)
                 newSpeeches.Add(dialogs[i].speeches[j].speechName);
         return newSpeeches;
+    }
+
+    /// <summary>
+    /// Вернуть названия анимаций
+    /// </summary>
+    public List<string> GetAnimations()
+    {
+        List<string> newAnimations = new List<string>();
+        anim = GetComponent<Animator>();
+        if (anim == null)
+            return newAnimations;
+        AnimationClip[] animClips = anim.runtimeAnimatorController.animationClips;
+        foreach (AnimationClip animClip in animClips)
+            newAnimations.Add(animClip.name);
+        return newAnimations;
     }
 
     #region storyActions
@@ -196,14 +215,16 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
         if (_dialog != null)
         {
             if (_action.id1 == "change speech")
-            {
                 dialogs[0] = _dialog;
-            }
             else if (_action.id1 == "talk")
             {
                 dialogs[0] = _dialog;
                 Talk();
             }
+            else if (_action.id1 == "startDialog")
+                StartDialog(_dialog);
+            else if (_action.id1 == "setTalkPossibility")
+                possibleTalk = _action.argument > 0;
         }
     }
 
@@ -249,6 +270,23 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
         }
     }
 
+    /// <summary>
+    /// Анимирование персонажа в результате скриптового события
+    /// </summary>
+    public void StoryAnimate(StoryAction _action)
+    {
+        if (anim != null)
+            anim.Play(_action.id1);
+    }
+
+    /// <summary>
+    /// Уничтожение объекта в результате скриптового события
+    /// </summary>
+    public void StoryDestroy(StoryAction _action)
+    {
+        Destroy(gameObject);
+    }
+
     #endregion //storyActions
 
     #region IHaveID
@@ -289,6 +327,11 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
                 if (dialog != null)
                     dialogs.Add(dialog);
             }
+            if (transform.parent != null ? transform.parent.GetComponent<DialogObject>() : false)
+                transform.parent.position = npcData.position;//Частые случаи, когда НПС находится внутри другого объекта, 
+                                                            //и он должен быть в координатном нуле относительно него
+            else
+                transform.position = npcData.position;
         }
 #if UNITY_EDITOR
         UnityEditor.EditorUtility.SetDirty(this);
@@ -300,7 +343,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// </summary>
     public InterObjData GetData()
     {
-        return new NPCData(id, dialogs);
+        return new NPCData(id, dialogs,gameObject.name, transform.position);
     }
 
     #endregion //IHaveID
@@ -334,6 +377,14 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
         }
     }
 
+    /// <summary>
+    /// Можно ли провзаимодействовать с НПС в данный момент?
+    /// </summary>
+    public virtual bool IsInteractive()
+    {
+        return SpecialFunctions.battleField.enemiesCount == 0 && possibleTalk;
+    }
+
     #endregion //IInteractive
 
     #region IHaveStory
@@ -344,7 +395,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// <returns></returns>
     public virtual List<string> actionNames()
     {
-        return new List<string>() { "speechAction", "dropAction"};
+        return new List<string>() { "speechAction", "dropAction", "animate", "destroy"};
     }
 
     /// <summary>
@@ -354,8 +405,10 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     public virtual Dictionary<string, List<string>> actionIDs1()
     {
         return new Dictionary<string, List<string>>() {
-                                                    { "speechAction", new List<string> {"change speech", "talk" } },
-                                                    {"dropAction", new List<string> {"","one" } } };
+                                                    { "speechAction", new List<string> {"change speech", "talk", "startDialog", "setTalkPossibility" } },
+                                                    {"dropAction", new List<string> {"","one" } },
+                                                    { "animate", GetAnimations() } ,
+                                                    {"destroy",new List<string>() { } } };
     }
 
     /// <summary>
@@ -366,7 +419,9 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     {
         return new Dictionary<string, List<string>>() {
                                                     { "speechAction", dialogs.ConvertAll<string>(x => x.dialogName)},
-                                                    { "dropAction", NPCDrop.ConvertAll<string>(x=>x.gameObject.name)} };
+                                                    { "dropAction", NPCDrop.ConvertAll<string>(x=>x.gameObject.name)},
+                                                    { "animate", new List<string>() },
+                                                    {"destroy",new List<string>() { } } };
     }
 
     /// <summary>
@@ -376,7 +431,18 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     {
         return new Dictionary<string, List<string>>() { { "", new List<string>()},
                                                         { "compare", new List<string>()},
-                                                        { "compareSpeech", GetSpeeches()} };
+                                                        { "compareSpeech", GetSpeeches()}};
+    }
+
+    /// <summary>
+    /// Возвращает ссылку на сюжетное действие, соответствующее данному имени
+    /// </summary>
+    public StoryAction.StoryActionDelegate GetStoryAction(string s)
+    {
+        if (storyActionBase.ContainsKey(s))
+            return storyActionBase[s].Invoke;
+        else
+            return null;
     }
 
     #endregion //IHaveStory

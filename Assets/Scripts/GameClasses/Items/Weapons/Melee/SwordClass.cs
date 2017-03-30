@@ -29,7 +29,7 @@ public class SwordClass : WeaponClass
     /// </summary>
     public virtual void Attack(HitBoxController hitBox, Vector3 position)
     {
-        hitBox.SetHitBox(new HitParametres(damage, attackTime, attackSize, attackPosition, attackForce, attackType, effectChance));
+        hitBox.SetHitBox(new HitParametres(damage, attackTime, attackSize, attackPosition, attackForce, attackType, effectChance, attackPower));
         chargeValue = 0f;
     }
 

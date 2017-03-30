@@ -71,8 +71,18 @@ public class FlyVisual : CharacterVisual
         {
             return;
         }
-        anim.Play("Attack");
+        anim.Play("Fly");
+        if (id == "")
+            StartCoroutine(AttackProcess("Attack"));
+        else
+            StartCoroutine(AttackProcess(id));
         StartVisualRoutine(5, argument != 0 ? argument / 10f : attackTime);
+    }
+
+    IEnumerator AttackProcess(string attackName)
+    {
+        yield return new WaitForSeconds(.05f);
+        anim.Play(attackName);
     }
 
 }

@@ -26,7 +26,8 @@ public class Serializator
                               typeof(QuestInfo),
                               typeof(CollectionInfo),
                               typeof(EquipmentInfo),
-                              typeof(StoryInfo)};
+                              typeof(StoryInfo),
+                              typeof(GameProgressData)};
 
         XmlSerializer serializer = new XmlSerializer(typeof(GameData), extraTypes);
         var encoding = Encoding.GetEncoding("UTF-8");

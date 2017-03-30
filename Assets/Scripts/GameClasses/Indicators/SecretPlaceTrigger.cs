@@ -1,11 +1,23 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif //UNITY_EDITOR
 
 /// <summary>
 /// Триггер, при входе в который выдаётся сообщение, что было найдено секретное место
 /// </summary>
-public class SecretPlaceTrigger : MonoBehaviour, IHaveID
+public class SecretPlaceTrigger : StoryTrigger, IHaveID
 {
+
+    #region fields
+
+    [SerializeField]protected List<GameObject> ghostWalls = new List<GameObject>();//Призрачные стены, которые исчезают при открытии секретного места
+    public List<GameObject> GhostWalls { get { return ghostWalls; } }
+
+    #endregion //fields
 
     #region parametres
 
@@ -13,13 +25,30 @@ public class SecretPlaceTrigger : MonoBehaviour, IHaveID
 
     #endregion //parametres
 
-    void OnTriggerEnter2D(Collider2D other)
+    protected override void OnTriggerEnter2D(Collider2D other)
     {
         if (other.gameObject.CompareTag("player"))
         {
-            SpecialFunctions.FindSecretPlace(1.5f);
-            Destroy(gameObject);
+            SpecialFunctions.StartStoryEvent(this, TriggerEvent, new StoryEventArgs());
+            if (!triggered)
+            {
+                SpecialFunctions.FindSecretPlace(1.5f);
+                RevealTruth();
+                triggered = true;
+                SpecialFunctions.statistics.ConsiderStatistics(this);
+            }
         }
+    }
+
+    /// <summary>
+    /// Раскрыть скрытое
+    /// </summary>
+    public void RevealTruth()
+    {
+        //Destroy(gameObject);
+        foreach (GameObject ghostWall in ghostWalls)
+            ghostWall.GetComponent<FadeScript>().Activate();
+        Destroy(this);
     }
 
     #region IHaveID
@@ -55,9 +84,37 @@ public class SecretPlaceTrigger : MonoBehaviour, IHaveID
     /// </summary>
     public virtual InterObjData GetData()
     {
-        return new InterObjData(id);
+        return new InterObjData(id, gameObject.name, transform.position);
     }
 
     #endregion //IHaveID
 
 }
+
+#if UNITY_EDITOR
+[CustomEditor(typeof(SecretPlaceTrigger))]
+public class SecretPlaceTriggerEditor : Editor
+{
+    int newCount;
+
+    public void OnEnable()
+    {
+        SecretPlaceTrigger sTrigger = (SecretPlaceTrigger)target;
+        foreach (GameObject ghostWall in sTrigger.GhostWalls)
+            if (ghostWall.GetComponent<FadeScript>() == null)
+                ghostWall.AddComponent<FadeScript>();
+    }
+
+    public override void OnInspectorGUI()
+    {
+        SecretPlaceTrigger sTrigger = (SecretPlaceTrigger)target;
+        base.OnInspectorGUI();
+        if (sTrigger.GhostWalls.Count != newCount)
+            foreach (GameObject ghostWall in sTrigger.GhostWalls)
+                if (ghostWall.GetComponent<FadeScript>() == null)
+                    ghostWall.AddComponent<FadeScript>();
+        newCount = sTrigger.GhostWalls.Count;
+    }
+
+}
+#endif //UNITY_EDITOR

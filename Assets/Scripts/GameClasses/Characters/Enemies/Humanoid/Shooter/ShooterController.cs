@@ -33,20 +33,6 @@ public class ShooterController : HumanoidController
         StartCoroutine("AttackProcess");
     }
 
-    public override void TakeDamage(float damage, DamageType _dType, bool _microstun = true)
-    {
-        base.TakeDamage(damage, _dType, _microstun);
-        if (_microstun)
-            Animate(new AnimationEventArgs("stop"));
-    }
-
-    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, bool _microstun)
-    {
-        base.TakeDamage(damage, _dType, ignoreInvul, _microstun);
-        if (_microstun)
-            Animate(new AnimationEventArgs("stop"));
-    }
-
     /// <summary>
     /// Процесс совершения атаки
     /// </summary>
@@ -134,16 +120,6 @@ public class ShooterController : HumanoidController
             }
         }
         Waypoints=FindPath(currentCell.cellPosition, maxAgressivePathDepth*2);
-    }
-
-    /// <summary>
-    /// Подготовить данные для ведения деятельности в следующей модели поведения
-    /// </summary>
-    protected override void RefreshTargets()
-    {
-        base.RefreshTargets();
-        Animate(new AnimationEventArgs("stop"));
-        StopCoroutine("AttackProcess");
     }
 
     /// <summary>

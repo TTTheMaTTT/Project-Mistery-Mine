@@ -47,7 +47,8 @@ public class Story : ScriptableObject
 
         foreach (StoryAction _action in storyActions)
         {
-            _action.storyAction.Invoke(_action);
+            if (_action.storyAction!=null)
+                _action.storyAction.Invoke(_action);
         }
 
         history.RemoveCompletedStory(this);
@@ -76,6 +77,7 @@ public class StoryAction
     public string id1, id2; //параметры, что использует
     public int argument;//данное действие
     public GameObject gameObj;//с каким игровым объектом произвести действие
+    public List<GameObject> actionObjects = new List<GameObject>();//С какими ещё игровыми объектами прооизвести указанное действие
     public StoryActionDelegate storyAction;//ссылка на функцию, которая соответствует названию выше
 
 }
@@ -108,6 +110,8 @@ public class CustomStoryEditor : Editor
     #region fields
 
     Story story;
+    SerializedObject serStory;
+    SerializedProperty storyActions;
     History history = null;
     StoryInitializer init = null;
 
@@ -131,7 +135,11 @@ public class CustomStoryEditor : Editor
     public void OnEnable()
     {
         if (story == null)
+        {
             story = (Story)target;
+            serStory = new SerializedObject(story);
+            storyActions = serStory.FindProperty("storyActions");
+        }
 
         List<StoryInitializer> initList = null;
 
@@ -281,18 +289,27 @@ public class CustomStoryEditor : Editor
                 story.storyActions.RemoveAt(i);
                 ChangeActionIndexesCount(-1);
             }
+            storyActions = serStory.FindProperty("storyActions");
         }
 
+        if (init!=null? (init.eventObjectLists == null? true : init.eventObjectLists.Count<init.eventObjects.Count):false)
+        {
+            init.eventObjectLists = new List<StoryObjectList>();
+            foreach (GameObject eventObj in init.eventObjects)
+                init.eventObjectLists.Add(new StoryObjectList());
+        }
         if (init!=null? init.eventObjects.Count != story.storyActions.Count:false)
         {
             int m = init.eventObjects.Count;
             for (int i = m; i < story.storyActions.Count; i++)
             {
                 init.eventObjects.Add(null);
+                init.eventObjectLists.Add(new StoryObjectList());
             }
             for (int i = m - 1; i >= story.storyActions.Count; i--)
             {
                 init.eventObjects.RemoveAt(i);
+                init.eventObjectLists.RemoveAt(i);
             }
         }
 
@@ -372,19 +389,55 @@ public class CustomStoryEditor : Editor
                 }
             }
 
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Action Objects");
+            List<GameObject> aObjects = _action.actionObjects;
+            int aObjectsCount = EditorGUILayout.IntField("Size", aObjects.Count);
+            if (aObjectsCount != aObjects.Count)
+            {
+                int prevCount = aObjects.Count;
+                for (int m = prevCount - 1; m >= aObjectsCount; m--)
+                    aObjects.RemoveAt(m);
+                prevCount = aObjects.Count;
+                for (int m = prevCount; m < aObjectsCount; m++)
+                    aObjects.Add(null);
+            }
+            for (int m = 0; m < aObjectsCount; m++)
+                aObjects[m] = (GameObject)EditorGUILayout.ObjectField(aObjects[m], typeof(GameObject), true);
+            if (init != null)
+            {
+                List<GameObject> initObjectsList = init.eventObjectLists[i].storyObjects;
+                int initCount = initObjectsList.Count;
+                if (_action.actionObjects.Count != initObjectsList.Count)
+                {
+                    for (int m = initCount - 1; m >= aObjectsCount; m--)
+                        initObjectsList.RemoveAt(m);
+                    initCount = initObjectsList.Count;
+                    for (int m = initCount; m < aObjectsCount; m++)
+                        initObjectsList.Add(_action.actionObjects[m]);
+                }
+                initCount = initObjectsList.Count;
+                for (int m = 0; m < initCount; m++)
+                    if (_action.actionObjects[m] != null ? _action.actionObjects[m] != initObjectsList[m] : false)
+                        initObjectsList[m] = _action.actionObjects[m];
+            }
+
             if (GUILayout.Button("Delete"))
             {
                 if (sceneName==story.sceneName)
                 {
                     if (init != null)
                     {
-                        init.eventObjects.RemoveAt(story.storyActions.IndexOf(_action));
+                        int _actionIndex = story.storyActions.IndexOf(_action);
+                        init.eventObjects.RemoveAt(_actionIndex);
+                        init.eventObjectLists.RemoveAt(_actionIndex);
                     }
                 }
                 story.storyActions.Remove(_action);
                 actionNamesIndexes.RemoveAt(i);
                 actionID1Indexes.RemoveAt(i);
                 actionID2Indexes.RemoveAt(i);
+                storyActions = serStory.FindProperty("storyActions");
             }
 
             EditorGUILayout.Space();
@@ -692,7 +745,7 @@ public class CustomStoryEditor : Editor
             }
             else
             {
-                if (storyObject.actionNames().Contains(sAction.actionName))
+                if (storyObject.actionNames().Contains(sAction.actionName) && sAction.actionName!="")
                 {
                     actionNamesIndexes[actionIndex]=storyObject.actionNames().IndexOf(sAction.actionName);
                     List<string> id1List = storyObject.actionIDs1()[sAction.actionName], id2List = storyObject.actionIDs2()[sAction.actionName];

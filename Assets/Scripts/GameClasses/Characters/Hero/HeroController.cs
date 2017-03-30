@@ -30,7 +30,7 @@ public class HeroController : CharacterController
     protected const float suffocateTime = .3f;//Сколько времени должно пройти, чтобы запас воздуха уменьшился на 1 или здоровье ГГ на .5
     protected const int maxAirSupply = 10;
 
-    protected const float highWallCheckPosition = 0.04f, lowWallCheckPosition = 0f;
+    protected const float highWallCheckPosition = 0.02f, lowWallCheckPosition = 0f;
     protected const float highWallCheckSize = .08f, lowWallCheckSize = .05f;
 
     protected const float totemAnimalTime = 20f;//Время действия эффекта "Тотемное животное"
@@ -40,8 +40,6 @@ public class HeroController : CharacterController
     #endregion //consts
 
     #region fields
-
-    public int k = 0;
 
     protected Transform waterCheck;
     protected Transform wallAboveCheck;//Индикатор того, что над персонажем располагается твёрдое тело, земля
@@ -84,7 +82,11 @@ public class HeroController : CharacterController
     #region parametres
 
     public override float Health { get { return base.Health; } set { float prevHealth = health; base.Health = value; OnHealthChanged(new HealthEventArgs(value, health-prevHealth)); } }
-    public float MaxHealth { get { return base.maxHealth; } }
+    public float MaxHealth { get { return base.maxHealth; } set { maxHealth = value; } }
+    public int Balance { get { return balance;} set { balance = value; } }
+    public float Speed { get { return speed; } set { speed = value; } }
+    public float JumpForce { get { return jumpForce; } set { jumpForce = value; } }
+    public float JumpAdd { get { return jumpAdd;} set { jumpAdd = value; } }
 
     protected int airSupply = 10;//Запас воздуха
     public int AirSupply { get { return airSupply; } set { airSupply = value; OnSuffocate(new SuffocateEventArgs(airSupply)); } }
@@ -107,6 +109,7 @@ public class HeroController : CharacterController
                     StopCoroutine("WetProcess");
                     Animate(new AnimationEventArgs("stopWet"));
                 }
+                speedCoof *= waterCoof;
                 rigid.gravityScale = .6f;
                 waterIndicator.StartCoroutine(SuffocateProcess());
             }
@@ -120,6 +123,7 @@ public class HeroController : CharacterController
                     AirSupply = maxAirSupply;
                 }
                 waterIndicator.StopAllCoroutines();
+                speedCoof /= waterCoof;
             }
             Animate(new AnimationEventArgs("waterSplash"));
         }
@@ -253,13 +257,9 @@ public class HeroController : CharacterController
             else
             {
                 if (Input.GetButton("Vertical"))
-                {
                     LadderMove(Input.GetAxis("Vertical"));
-                }
                 else
-                {
                     StopLadderMoving();
-                }
                 if (Input.GetButtonDown("Jump"))
                 {
                     LadderOff();
@@ -326,8 +326,15 @@ public class HeroController : CharacterController
 
         Collider2D[] cols = new Collider2D[2];
         cols = GetComponents<Collider2D>();
-        col1 = cols[0]; col2 = cols[1];
-        col2.enabled = false;
+        if (cols.Length > 0)
+        {
+            col1 = cols[0];
+            if (cols.Length > 1)
+            {
+                col2 = cols[1];
+                col2.enabled = false;
+            }
+        }
 
         if (!PlayerPrefs.HasKey("Hero Health"))//Здоровье не восполняется при переходе на следующий уровень. Поэтому, его удобно сохранять в PlayerPrefs
             PlayerPrefs.SetFloat("Hero Health", maxHealth);
@@ -347,7 +354,7 @@ public class HeroController : CharacterController
         if ((groundState == GroundStateEnum.grounded))
         {
             bool crouching = false;
-            if (Physics2D.OverlapCircle(wallAboveCheck.position, groundRadius, whatIsGround) || Input.GetButton("Flip"))
+            if (Physics2D.OverlapCircle(wallAboveCheck.position, groundRadius, whatIsGround)/* || Input.GetButton("Flip")*/)
             {
                 groundState = GroundStateEnum.crouching;
                 crouching = true;
@@ -359,7 +366,7 @@ public class HeroController : CharacterController
 
             if (fallSpeed > minDamageFallSpeed)
             {
-                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed), DamageType.Physical, true, true);
+                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed), DamageType.Physical, true, 1);
             }
             if (fallSpeed > minDamageFallSpeed / 10f)
                 Animate(new AnimationEventArgs("fall"));
@@ -392,7 +399,7 @@ public class HeroController : CharacterController
     /// <summary>
     /// Процесс самого прыжка
     /// </summary>
-    protected IEnumerator JumpProcess()
+    protected virtual IEnumerator JumpProcess()
     {
         employment = Mathf.Clamp(employment - 2, 0, maxEmployment);
         jumpInput = 1;
@@ -421,7 +428,7 @@ public class HeroController : CharacterController
     /// </summary>
     protected IEnumerator SuffocateProcess()
     {
-        //Сначала заканчивается запас здоровья
+        //Сначала заканчивается запас воздуха
         int _airSupply = airSupply;
         for (int i = 0; i < _airSupply; i++)
         {
@@ -432,7 +439,7 @@ public class HeroController : CharacterController
         while (true)
         {
             yield return new WaitForSeconds(suffocateTime*4f);
-            TakeDamage(1f, DamageType.Physical,true,false);
+            TakeDamage(1f, DamageType.Physical,true,0);
         }
     }
 
@@ -442,8 +449,7 @@ public class HeroController : CharacterController
     protected override void Move(OrientationEnum _orientation)
     {
         bool crouching = (groundState == GroundStateEnum.crouching);
-        float currentSpeed = speed * ((underWater || crouching) ? waterCoof : 1f);
-        rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : Input.GetAxis("Horizontal") * currentSpeed, rigid.velocity.y);
+        rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : Input.GetAxis("Horizontal") * speed*speedCoof, rigid.velocity.y);
         if (orientation != _orientation)
         {
             Turn(_orientation);
@@ -495,14 +501,15 @@ public class HeroController : CharacterController
     protected override void LadderMove(float direction)
     {
         rigid.velocity = new Vector3(0f,
-                                     Physics2D.OverlapCircle(transform.position + Mathf.Sign(direction) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? direction * ladderSpeed : 0f);
+                         Physics2D.OverlapCircle(transform.position + Mathf.Sign(direction) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? 
+                         direction * ladderSpeed * speedCoof : 0f);
     }
 
     /// <summary>
     /// Развернуться
     /// </summary>
     /// <param name="_orientation">В какую сторону должен смотреть персонаж после поворота</param>
-    protected override void Turn(OrientationEnum _orientation)
+    public override void Turn(OrientationEnum _orientation)
     {
         if (employment >= 8)
         {
@@ -659,26 +666,32 @@ public class HeroController : CharacterController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool _microstun = true)
+    public override void TakeDamage(float damage, DamageType _dType, int attackPower=0)
     {
         if (!invul)
         {
             Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
             if (health <= 0f)
             {
+                if (damage > 200f && _dType == DamageType.Fire)
+                    Animate(new AnimationEventArgs("death", "fire", 0));
+                rigid.velocity = Vector2.zero;
+                rigid.isKinematic = true;
                 Death();
                 return;
             }
             else
-                Animate(new AnimationEventArgs("hitted", "", _microstun ? 0 : 1));
-            if (_microstun)
+                Animate(new AnimationEventArgs("hitted", "", attackPower>balance ? 0 : 1));
+            bool stunned = GetBuff("StunnedProcess") != null;
+            if (attackPower>balance || stunned)
             {
                 //StopCoroutine("AttackProcess");
                 //dontShoot = false;
                 if (onLadder)
                     LadderOff();
-                StartCoroutine(InvulProcess(invulTime, true));
             }
+            if (attackPower>0)
+                StartCoroutine(InvulProcess(invulTime, true));
             anim.Blink();
         }
     }
@@ -686,28 +699,34 @@ public class HeroController : CharacterController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, bool _microstun)
+    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower=0)
     {
         if (ignoreInvul || !invul)
         {
             Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
             if (health <= 0f)
             {
+                if (damage>200f && _dType==DamageType.Fire)
+                    Animate(new AnimationEventArgs("death", "fire",0));
+                rigid.velocity = Vector2.zero;
+                rigid.isKinematic = true;
                 Death();
                 return;
             }
             else
-                Animate(new AnimationEventArgs("hitted", "", _microstun ? 0 : 1));
+                Animate(new AnimationEventArgs("hitted", "", attackPower > balance ? 0 : 1));
             SpriteRenderer sprite = GetComponentInChildren<SpriteRenderer>();
             if (sprite != null) sprite.enabled = true;
-            if (_microstun)
+            bool stunned = GetBuff("StunnedProcess") != null;
+            if (attackPower > balance || stunned)
             {
                 //StopCoroutine("AttackProcess");
                 //dontShoot = false;
                 if (onLadder)
                     LadderOff();
-                StartCoroutine(InvulProcess(invulTime, true));
             }
+            if (attackPower>0)
+                StartCoroutine(InvulProcess(invulTime, true));
             anim.Blink();
         }
     }
@@ -941,10 +960,10 @@ public class HeroController : CharacterController
     protected virtual IEnumerator TribalRitualProcess()
     {
         AddBuff(new BuffClass("TribalRitual", Time.fixedTime,tribalRitualTime));
-        speed *= tribalRitualCoof;
+        speedCoof *= tribalRitualCoof;
         yield return new WaitForSeconds(tribalRitualTime);
         RemoveBuff("TribalRitual");
-        speed /= tribalRitualCoof;
+        speedCoof /= tribalRitualCoof;
     }
 
     /// <summary>
@@ -955,7 +974,7 @@ public class HeroController : CharacterController
         if (GetBuff("TribalRitual") == null)
             return;
         RemoveBuff("TribalRitual");
-        speed /= tribalRitualCoof;
+        speedCoof /= tribalRitualCoof;
         StopCoroutine("TribalRitualProcess");
     }
 

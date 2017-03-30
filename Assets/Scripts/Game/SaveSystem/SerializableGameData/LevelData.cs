@@ -16,6 +16,7 @@ using System.Xml.Serialization;
 [XmlInclude(typeof(InterObjData))]
 [XmlInclude(typeof(QuestInfo))]
 [XmlInclude(typeof(StoryInfo))]
+[XmlInclude(typeof(GameProgressData))]
 public class LevelData
 {
 
@@ -24,6 +25,12 @@ public class LevelData
 
     [XmlElement("Checkpoint")]
     public int checkpointNumber = 0;//На каком чекпоинте произошло сохранение
+
+    [XmlElement("Light Intensity")]
+    public float lightIntensity = 0f;//Освещение уровня
+
+    [XmlElement("Light HDR")]
+    public float lightHDR = 0f;//Сила источников света
 
     [XmlElement("Level Statistics Data")]
     public LevelStatsData lStatsInfo;
@@ -56,6 +63,9 @@ public class LevelData
     [XmlElement("History Data")]
     public StoryInfo sInfo;//Информация об игровой истории
 
+    [XmlElement("GameStoryData")]
+    public GameProgressData progressInfo;//Информация о сюжетном прогрессе
+
     public LevelData()
     {
     }
@@ -73,10 +83,17 @@ public class LevelData
         enInfo = _enInfo;
         intInfo = _intInfo;
         npcInfo = _npcInfo;
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
+        if (lightManager!=null)
+        {
+            lightIntensity = lightManager.intensity;
+            lightHDR = lightManager.HDRRatio;
+        }
 
         cInfo = new List<CollectionInfo>();
         for (int i = 0; i < _collection.Count; i++)
             cInfo.Add(new CollectionInfo(_collection[i]));
+        progressInfo = new GameProgressData(gStats.gameHistoryProgress);
 
     }
 

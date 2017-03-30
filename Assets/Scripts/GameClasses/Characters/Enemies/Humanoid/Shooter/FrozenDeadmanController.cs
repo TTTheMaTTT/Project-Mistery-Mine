@@ -14,7 +14,7 @@ public class FrozenDeadmanController : ShooterController
     protected override void Move(OrientationEnum _orientation)
     {
         bool wallInFront = wallCheck.WallInFront;
-        Vector2 targetVelocity = wallInFront ? new Vector2(0f, rigid.velocity.y) : new Vector2((int)orientation * speed *(grounded? 1f:1.5f), rigid.velocity.y);
+        Vector2 targetVelocity = wallInFront ? new Vector2(0f, rigid.velocity.y) : new Vector2((int)orientation * speed * speedCoof * (grounded? 1f:1.5f), rigid.velocity.y);
         rigid.velocity = wallInFront ? Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration) : targetVelocity;
 
         if (orientation != _orientation)

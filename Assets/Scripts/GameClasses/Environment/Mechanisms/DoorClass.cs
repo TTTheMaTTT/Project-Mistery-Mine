@@ -93,6 +93,14 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
         }
     }
 
+    /// <summary>
+    /// Можно ли провзаимодействовать с объектом в данный момент?
+    /// </summary>
+    public virtual bool IsInteractive()
+    {
+        return true;
+    }
+
     #endregion //IInteractive
 
     #region IHaveID
@@ -141,7 +149,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
     /// </summary>
     public virtual InterObjData GetData()
     {
-        DoorData dData = new DoorData(id, !col.enabled);
+        DoorData dData = new DoorData(id, !col.enabled, gameObject.name);
         return dData;
     }
 

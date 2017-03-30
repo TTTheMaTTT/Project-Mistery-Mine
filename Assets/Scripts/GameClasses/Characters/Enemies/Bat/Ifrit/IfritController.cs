@@ -32,6 +32,11 @@ public class IfritController : BatController
 
     #endregion //parametres
 
+    protected override void Start()
+    {
+        base.Start();
+        Animate(new AnimationEventArgs("startBurning", "", 0));
+    }
 
     /// <summary>
     /// Совершить атаку
@@ -70,30 +75,6 @@ public class IfritController : BatController
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
-    public override void TakeDamage(float damage, DamageType _dType, bool _microstun = true)
-    {
-        base.TakeDamage(damage, _dType, _microstun);
-        if (_microstun)
-            Animate(new AnimationEventArgs("stop"));
-    }
-
-    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, bool _microstun)
-    {
-        base.TakeDamage(damage, _dType, ignoreInvul, _microstun);
-        if (_microstun)
-            Animate(new AnimationEventArgs("stop"));
-    }
-
-    /// <summary>
-    /// Подготовить данные для ведения деятельности в следующей модели поведения
-    /// </summary>
-    protected override void RefreshTargets()
-    {
-        base.RefreshTargets();
-        Animate(new AnimationEventArgs("stop"));
-        StopCoroutine("AttackProcess");
-    }
-
 
     #region damageEffects
 
@@ -125,10 +106,13 @@ public class IfritController : BatController
     {
         AddBuff(new BuffClass("WetProcess", Time.fixedTime, _time));
         attackParametres.damage *= wetDamageCoof;
+        Animate(new AnimationEventArgs("spawnEffect", "SteamCloud", 0));
+        Animate(new AnimationEventArgs("stopBurning"));
         Animate(new AnimationEventArgs("startWet"));
         yield return new WaitForSeconds(_time);
-        speed /= wetDamageCoof;
+        attackParametres.damage /= wetDamageCoof;
         Animate(new AnimationEventArgs("stopWet"));
+        Animate(new AnimationEventArgs("startBurning"));
         RemoveBuff("WetProcess");
     }
 
@@ -143,6 +127,7 @@ public class IfritController : BatController
         attackParametres.damage /= wetDamageCoof;
         RemoveBuff("WetProcess");
         Animate(new AnimationEventArgs("stopWet"));
+        Animate(new AnimationEventArgs("startBurning"));
     }
 
     #endregion //damageEffects

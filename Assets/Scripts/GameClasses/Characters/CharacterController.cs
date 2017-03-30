@@ -51,8 +51,10 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     [SerializeField] protected float maxHealth=100f;
     [SerializeField] protected float health = 100f;
     public virtual float Health { get { return health; } set { health = value; } }
+    [SerializeField]protected int balance = 0;//Баланс персонажа. Если при получаемый урон имеет параметр силы атаки больше баланса, то персонаж сбивается, вводится в микростан
 
     [SerializeField] protected float speed = 1f;
+    protected float speedCoof = 1f;//Коэффициент скорости
 
     public virtual bool OnLadder { get { return false; } }//Находится ли персонаж на лестнице
 
@@ -115,6 +117,9 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
 
     #endregion //effectTimes
 
+    [SerializeField]
+    protected bool questCharacter = false;//Является и персонаж квестовым (его смерть не вызывает игровых эффектов)
+
     #endregion //parametres
 
     #region eventHandlers
@@ -155,6 +160,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         }
 
         employment = maxEmployment;
+        speedCoof = 1f;
 
         FormDictionaries();
 
@@ -167,6 +173,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     protected virtual void FormDictionaries()
     {
         storyActionBase = new Dictionary<string, storyActionDelegate>();
+        storyActionBase.Add("destroy", StoryDestroy);
     }
 
     /// <summary>
@@ -239,7 +246,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <summary>
     /// Поворот
     /// </summary>
-    protected virtual void Turn(OrientationEnum _orientation)
+    public virtual void Turn(OrientationEnum _orientation)
     {
         if (orientation != _orientation)
         {
@@ -281,9 +288,17 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     }
 
     /// <summary>
+    /// Прекратить атаку
+    /// </summary>
+    protected virtual void StopAttack()
+    {
+        StopCoroutine("AttackProcess");
+    }
+
+    /// <summary>
     /// Функция получения урона
     /// </summary>
-    public virtual void TakeDamage(float damage, DamageType _dType, bool _microstun = true)
+    public virtual void TakeDamage(float damage, DamageType _dType, int attackPower=0)
     {
         Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
         if (health <= 0f)
@@ -300,14 +315,14 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
                         Death();//Персонаж, находясь в замороженном состоянии, рискует быть мгновенно убит
                         return;
                     }
-            Animate(new AnimationEventArgs("hitted","", _microstun ? 0 :1));
+            Animate(new AnimationEventArgs("hitted","", attackPower>balance ? 0 :1));
         }
     }
 
     /// <summary>
     /// Ещё одна функция получения урона, что не обращает на неуязвимость поражённого персонажа, если таковая имеется
     /// </summary>
-    public virtual void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, bool _microstun)
+    public virtual void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower = 0)
     {
         Health = Mathf.Clamp(Health - damage, 0f,maxHealth);
         if (health <= 0f)
@@ -318,7 +333,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
                 if (UnityEngine.Random.Range(0f, 1f) < frozenCrushChance)
                     if (GetBuff("FrozenProcess") != null)
                         Death();//Персонаж, находясь в замороженном состоянии, рискует быть мгновенно убит
-            Animate(new AnimationEventArgs("hitted","",_microstun?0:1));
+            Animate(new AnimationEventArgs("hitted","",attackPower>balance?0:1));
         }
     }
 
@@ -367,7 +382,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         if (this is AIController)
         {
             AIController ai = (AIController)this;
-            if (ai.Loyalty != LoyaltyEnum.ally && !(this is BossController))
+            if (ai.Loyalty != LoyaltyEnum.ally && !(this is BossController) && !questCharacter)
                 SpecialFunctions.gameController.AddRandomGameEffect(this);
         }
         if (!dead)
@@ -531,7 +546,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
             Death();//Если персонаж находится в замороженном состоянии, то он будет разбит сокрушающим ударом
             return;
         }
-        else if (health < maxHealth)
+        else if (health < maxHealth/2f)
         {
             if (GetBuff("BurningProcess") != null)
             {
@@ -620,7 +635,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         while (true)
         {
             yield return new WaitForSeconds(burnFrequency);
-            TakeDamage(burnDamage, DamageType.Fire, true,false);
+            TakeDamage(burnDamage, DamageType.Fire, true,0);
         }
     }
 
@@ -701,10 +716,10 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     protected virtual IEnumerator ColdProcess(float _time)
     {
         AddBuff(new BuffClass("ColdProcess", Time.fixedTime, _time));
-        speed *= coldSpeedCoof;
+        speedCoof *= coldSpeedCoof;
         Animate(new AnimationEventArgs("startCold"));
         yield return new WaitForSeconds(_time);
-        speed /= coldSpeedCoof;
+        speedCoof /= coldSpeedCoof;
         Animate(new AnimationEventArgs("stopCold"));
         RemoveBuff("ColdProcess");
     }
@@ -717,7 +732,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         if (GetBuff("ColdProcess") == null)
             return;
         StopCoroutine("ColdProcess");
-        speed /= coldSpeedCoof;
+        speedCoof /= coldSpeedCoof;
         RemoveBuff("ColdProcess");
         Animate(new AnimationEventArgs("stopCold"));
     }
@@ -755,7 +770,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         while (true)
         {
             yield return new WaitForSeconds(poisonFrequency);
-            TakeDamage(poisonDamage, DamageType.Poison, true, false);
+            TakeDamage(poisonDamage, DamageType.Poison, true, 0);
         }
     }
 
@@ -830,12 +845,12 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
 
     #endregion //events
 
-    #region IHasID
+    #region IHaveID
 
     /// <summary>
     /// Вернуть id персонажа
     /// </summary>
-    public int GetID()
+    public virtual int GetID()
     {
         return -1;
     }
@@ -843,21 +858,22 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <summary>
     /// Установить заданное id
     /// </summary>
-    public void SetID(int _id)
+    public virtual void SetID(int _id)
     {
+        
     }
 
     /// <summary>
     /// Настроить персонажа в соответствии с сохранёнными данными
     /// </summary>
-    public void SetData(InterObjData _intObjData)
+    public virtual void SetData(InterObjData _intObjData)
     {
     }
 
     /// <summary>
     /// Вернуть сохраняемые данные персонажа
     /// </summary>
-    public InterObjData GetData()
+    public virtual InterObjData GetData()
     {
         return null;
     }
@@ -868,7 +884,19 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
             AddCustomBuff(_bData);
     }
 
-    #endregion //IHasID
+    #endregion //IHaveID
+
+    #region storyActions
+
+    /// <summary>
+    /// Уничтожение объекта в результате скриптового события
+    /// </summary>
+    public void StoryDestroy(StoryAction _action)
+    {
+        Destroy(gameObject);
+    }
+
+    #endregion //storyActions
 
     #region IHaveStory
 
@@ -878,7 +906,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <returns></returns>
     public virtual List<string> actionNames()
     {
-        return new List<string>() { };
+        return new List<string>() {"destroy"};
     }
 
     /// <summary>
@@ -887,7 +915,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <returns></returns>
     public virtual Dictionary<string, List<string>> actionIDs1()
     {
-        return new Dictionary<string, List<string>>();
+        return new Dictionary<string, List<string>>() { { "destroy", new List<string>() { } } };
     }
 
     /// <summary>
@@ -896,7 +924,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <returns></returns>
     public virtual Dictionary<string, List<string>> actionIDs2()
     {
-        return new Dictionary<string, List<string>>();
+        return new Dictionary<string, List<string>>() { { "destroy", new List<string>() { } } };
     }
 
     /// <summary>
@@ -907,6 +935,17 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         return new Dictionary<string, List<string>>() {
                                                         {"", new List<string>() },
                                                         {"compare",new List<string>()} };
+    }
+
+    /// <summary>
+    /// Возвращает ссылку на сюжетное действие, соответствующее данному имени
+    /// </summary>
+    public StoryAction.StoryActionDelegate GetStoryAction(string s)
+    {
+        if (storyActionBase.ContainsKey(s))
+            return storyActionBase[s].Invoke;
+        else
+            return null;
     }
 
     #endregion //IHaveStory

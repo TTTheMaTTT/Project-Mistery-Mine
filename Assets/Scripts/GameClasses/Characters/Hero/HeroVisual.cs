@@ -187,7 +187,16 @@ public class HeroVisual : GroundMoveVisual
         if (effectSystem != null)
             effectSystem.ResetEffects();
         employment = 0;
-        anim.Play("Death2");
+        if (id == "fire")
+        {
+            effectSystem.SpawnEffect("AshDrop");
+            sRenderer.enabled = false;
+            this.enabled = false;
+        }
+        else
+        {
+            anim.Play("Death2");
+        }
     }
 
     /// <summary>

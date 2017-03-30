@@ -22,7 +22,6 @@ public class CheckpointController : MonoBehaviour, IInteractive
     public bool activated = false;//Чекпоинт можно активировать лишь один раз
 
     [SerializeField]
-    [HideInInspector]
     int id;
 
     protected Color outlineColor = Color.yellow;//Цвет контура
@@ -99,6 +98,14 @@ public class CheckpointController : MonoBehaviour, IInteractive
         }
     }
 
+    /// <summary>
+    /// Можно ли провзаимодействовать с объектом в данный момент?
+    /// </summary>
+    public virtual bool IsInteractive()
+    {
+        return true;
+    }
+
     #endregion //IInteractive
 
     #region IHaveID
@@ -139,7 +146,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
     /// </summary>
     public InterObjData GetData()
     {
-        MechData chData = new MechData(id, activated,transform.position);
+        MechData chData = new MechData(id, activated,transform.position, gameObject.name);
         return chData;
     }
 

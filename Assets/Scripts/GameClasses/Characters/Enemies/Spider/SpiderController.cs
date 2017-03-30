@@ -9,11 +9,13 @@ using System.Collections.Generic;
 public class SpiderController : AIController
 {
 
+    public enum SpiderStartPositionEnum { usual=0, behindWall=1, underFloor=2}//Енам, характеризующий изначальное положение паука
+
     #region consts
 
-    protected const float patrolDistance = 2f;//По таким дистанциям паук будет патрулировать
-
     protected const float spiderOffset = .026f;//Насколько должен быть смещён паук относительно поверхности земли
+
+    protected const float jumpAttackMaxDistance = .85f, jumpAttackMinDistance = .3f;//Расстояние до цели, для совершения атаки в прыжке 
 
     #endregion //consts
 
@@ -53,8 +55,6 @@ public class SpiderController : AIController
     #endregion //fields
 
     #region parametres
-
-    protected bool moveOut = false;
 
     protected Vector2 spiderOrientation = new Vector2(0f, 1f);//нормаль поверхности, на которой стоит паук
     protected virtual Vector2 SpiderOrientation
@@ -96,6 +96,10 @@ public class SpiderController : AIController
     protected Vector2 movementDirection = Vector2.right;//В какую сторону движется паук, если он повёрнут вправо
 
     protected override float attackDistance { get { return .12f; } }//На каком расстоянии должен стоять ИИ, чтобы решить атаковать
+    [SerializeField]protected Vector2 jumpAttackForce;//Сила отталкивания при прыжковой атаке
+    [SerializeField]protected HitParametres jumpAttackParametres;//Параметры атаки в прыжке
+    [SerializeField]protected float jumpAttackCooldown = 10f;//Кулдаун атаки в прыжке
+    protected bool jumpAttackIsPossible = true;//может ли паук совершить атаку в прыжке?
 
     public override LoyaltyEnum Loyalty
     {
@@ -115,8 +119,18 @@ public class SpiderController : AIController
             }*/
             if (noPlatform)
                 gameObject.layer = LayerMask.NameToLayer("characterWithoutPlatform");
+            if (value == LoyaltyEnum.ally)
+                wallCheck.WhatIsWall.Remove("character");
+            else if (!wallCheck.WhatIsWall.Contains("character"))
+                wallCheck.WhatIsWall.Add("character");
         }
     }
+
+    public float patrolDistance = 2f;//По таким дистанциям паук будет патрулировать
+    public float appearTime = 0f;//Сколько времени должно пройти, прежде чем паук вылезет из своей норы
+    public SpiderStartPositionEnum spiderStartPosition = SpiderStartPositionEnum.usual;//Изначальное положение паука
+    protected bool inGround = false;//Прячтся ли паук под землёй в данный момент?
+    public bool InGround { get { return inGround; } }
 
     //protected bool calmDown = false;//Успокаивается ли персонаж
     //[SerializeField]protected bool neutral = true;//Является ли паук изначально нейтральным
@@ -126,10 +140,10 @@ public class SpiderController : AIController
     protected override void FixedUpdate()
     {
         if (!immobile)
+        {
             base.FixedUpdate();
-        else if (moveOut)
-            MoveOut();
-        Animate(new AnimationEventArgs("groundMove"));
+            Animate(new AnimationEventArgs("groundMove"));
+        }
     }
 
     /*protected override void Update()
@@ -194,12 +208,21 @@ public class SpiderController : AIController
             areaTrigger.InitializeAreaTrigger();
         }
 
+        if (spiderStartPosition != SpiderStartPositionEnum.usual)
+        {
+            immobile = true;
+            rigid.isKinematic = true;
+            DisableColliders();
+            Animate(new AnimationEventArgs("setInGround", spiderStartPosition == SpiderStartPositionEnum.behindWall ? "right" : "down", 0));
+            inGround = true;
+        }
         BecomeCalm();
     }
 
     protected override void FormDictionaries()
     {
-        storyActionBase.Add("moveForward", MoveForwardAction);
+        base.FormDictionaries();
+        storyActionBase.Add("moveOut", MoveOutAction);
     }
 
     #region movement
@@ -242,7 +265,7 @@ public class SpiderController : AIController
     /// Повернуться
     /// </summary>
     /// <param name="_orientation">В какую сторону должен смотреть персонаж</param>
-    protected override void Turn(OrientationEnum _orientation)
+    public override void Turn(OrientationEnum _orientation)
     {
         base.Turn(_orientation);
         wallCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
@@ -276,11 +299,19 @@ public class SpiderController : AIController
     /// <summary>
     /// Определить следующую точку патрулирования
     /// </summary>
-    protected virtual void Patrol()
+    public virtual void Patrol()
     {
         Vector2 waypoint = new Vector3((int)orientation * patrolDistance, 0f, 0f) + transform.position;
         currentTarget = new ETarget(waypoint);
+    }
 
+    /// <summary>
+    /// Прекратить патрулирование
+    /// </summary>
+    public virtual void StopPatrol()
+    {
+        StopMoving();
+        currentTarget.exists = false;
     }
 
     /// <summary>
@@ -518,11 +549,59 @@ public class SpiderController : AIController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
+    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
     {
-        base.TakeDamage(damage, _dType, _microstun);
-        if (_microstun)
+        base.TakeDamage(damage, _dType, attackPower);
+        bool stunned = GetBuff("StunnedProcess") != null;
+        if (attackPower > balance || stunned)
+        {
             JumpDown();//Сбросить паука со стены ударом
+        }
+    }
+
+    /// <summary>
+    /// Совершить атаку в прыжке
+    /// </summary>
+    protected virtual void JumpAttack()
+    {
+        balance = attackBalance;
+        rigid.AddForce(new Vector2(jumpAttackForce.x*(int)orientation,jumpAttackForce.y*.85f));
+        Attack();
+        StartCoroutine(JumpAttackCooldownProcess());
+    }
+
+    /// <summary>
+    /// Процесс кулдауна атаки в прыжке
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IEnumerator JumpAttackCooldownProcess()
+    {
+        jumpAttackIsPossible = false;
+        yield return new WaitForSeconds(jumpAttackCooldown);
+        jumpAttackIsPossible = true;
+    }
+
+    /// <summary>
+    /// Атаковать
+    /// </summary>
+    protected override void Attack()
+    {
+        Animate(new AnimationEventArgs("attack", balance==usualBalance?"":"Idle", Mathf.RoundToInt(10 * (attackParametres.preAttackTime + attackParametres.actTime + attackParametres.endAttackTime))));
+        StartCoroutine("AttackProcess");
+    }
+
+    /// <summary>
+    /// Процесс атаки
+    /// </summary>
+    protected override IEnumerator AttackProcess()
+    {
+        HitParametres _attackParametres = balance == usualBalance ? attackParametres : jumpAttackParametres;
+        employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
+        yield return new WaitForSeconds(_attackParametres.preAttackTime);
+        hitBox.SetHitBox(new HitParametres(_attackParametres));
+        yield return new WaitForSeconds(_attackParametres.actTime + _attackParametres.endAttackTime);
+        employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
+        balance = usualBalance;
     }
 
     /// <summary>
@@ -550,7 +629,7 @@ public class SpiderController : AIController
     protected override void BecomeCalm()
     {
         base.BecomeCalm();
-        if (!optimized && loyalty!=LoyaltyEnum.ally)
+        if (!optimized && loyalty!=LoyaltyEnum.ally && !immobile && patrolDistance>.1f)
             Patrol();
         gameObject.layer = LayerMask.NameToLayer(loyalty==LoyaltyEnum.ally?"hero":"character");
         //if (sight != null ? sight.enabled : false)
@@ -573,8 +652,8 @@ public class SpiderController : AIController
             //sight.ChangeSightMod();
         }
         prevTargetPosition = new EVector3(Vector3.zero);
-        wallCheck.WhatIsWall.Remove("character");
-        wallCheck.WhatIsWall.Remove("hero");
+        //wallCheck.WhatIsWall.Remove("character");
+        //wallCheck.WhatIsWall.Remove("hero");
         /*if (sight != null)
         {
             sight.WhatToSight = LayerMask.GetMask("ground");
@@ -588,8 +667,8 @@ public class SpiderController : AIController
     protected override void BecomePatrolling()
     {
         base.BecomePatrolling();
-                wallCheck.WhatIsWall.Remove("character");
-        wallCheck.WhatIsWall.Remove("hero");
+        //wallCheck.WhatIsWall.Remove("character");
+        //wallCheck.WhatIsWall.Remove("hero");
         gameObject.layer = LayerMask.NameToLayer("characterWithoutPlatform");
         /*if (sight != null ? sight.enabled : false)
         {
@@ -610,8 +689,8 @@ public class SpiderController : AIController
         yield return new WaitForSeconds(beCalmTime);
         if (Vector2.SqrMagnitude((Vector2)transform.position - beginPosition) > minDistance)
             GoHome();
-        wallCheck.WhatIsWall.Add("character");
-        wallCheck.WhatIsWall.Add("hero");
+        //wallCheck.WhatIsWall.Add("character");
+        //wallCheck.WhatIsWall.Add("hero");
         /*if (sight != null)
         {
             sight.WhatToSight = LayerMask.GetMask("character", "ground");
@@ -698,7 +777,7 @@ public class SpiderController : AIController
             if (currentTarget.exists)
             {
                 Vector2 targetPos = currentTarget;
-                if ((Vector2.Distance(targetPos, pos) < attackDistance) || (wallCheck.WallInFront || !(precipiceCheck.WallInFront)))
+                if (patrolDistance>.1f?(Vector2.Distance(targetPos, pos) < attackDistance) || (wallCheck.WallInFront || !(precipiceCheck.WallInFront)):false)
                 {
                     Turn();
                     Patrol();
@@ -777,7 +856,18 @@ public class SpiderController : AIController
                     {
 
                         OrientationEnum nextOrientation = (OrientationEnum)Mathf.Sign(Vector2.Dot(targetPosition - pos, movementDirection));
-                        if (Vector2.SqrMagnitude(targetPosition - pos) > attackDistance * attackDistance)
+                        float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
+
+                        if (jumpAttackIsPossible? 
+                            Mathf.Approximately(spiderOrientation.y,1f)? 
+                                                sqDistance<jumpAttackMaxDistance*jumpAttackMaxDistance && sqDistance>jumpAttackMinDistance*jumpAttackMinDistance :false : false)
+                        {
+                            if (Vector2.Dot(targetPosition - pos, movementDirection) * (int)orientation < 0f)
+                                Turn();
+                            StopMoving();
+                            JumpAttack();
+                        }
+                        else if (sqDistance > attackDistance * attackDistance)
                         {
                             if (!wallCheck.WallInFront && (precipiceCheck.WallInFront))
                                 Move(nextOrientation);
@@ -1155,6 +1245,40 @@ public class SpiderController : AIController
     #region optimization
 
     /// <summary>
+    /// Включить риджидбоди
+    /// </summary>
+    protected override void EnableRigidbody()
+    {
+        if (inGround)
+            return;
+        base.EnableRigidbody();
+    }
+
+    /// <summary>
+    /// Включить все коллайдеры в персонаже
+    /// </summary>
+    protected override void EnableColliders()
+    {
+        if (inGround)
+            return;
+        Collider2D[] cols = GetComponents<Collider2D>();
+        foreach (Collider2D col in cols)
+            col.enabled = true;
+    }
+
+    /// <summary>
+    /// Включить визуальное отображение
+    /// </summary>
+    protected override void EnableVisual()
+    {
+        base.EnableVisual();
+        Vector2 localPos = anim.transform.localPosition;
+        anim.transform.localPosition = new Vector3(0f, localPos.y);
+        if (inGround)
+            Animate(new AnimationEventArgs("setInGround", spiderStartPosition == SpiderStartPositionEnum.behindWall ? "right" : "down", 0));
+    }
+
+    /// <summary>
     /// Сменить оптимизированную версию на активную
     /// </summary>
     protected override void ChangeBehaviorToOptimized()
@@ -1166,7 +1290,7 @@ public class SpiderController : AIController
             case BehaviorEnum.calm:
                 {
                     behaviorActions = CalmOptBehavior;
-                    if (currentTarget.exists)
+                    if (currentTarget.exists && !immobile && patrolDistance>.1f)
                         FindFrontPatrolTarget();
                     break;
                 }
@@ -1267,24 +1391,26 @@ public class SpiderController : AIController
     /// </summary>
     protected override void AnalyseOpt()
     {
-        if (behavior != BehaviorEnum.calm)
+        if (immobile)
+            return;
+            if (behavior != BehaviorEnum.calm)
         {
             if (!followOptPath)
                 StartCoroutine("PathPassOptProcess");
         }
         else
         {
-            if (!currentTarget.exists)
-            {
-                StopCoroutine("PathPassOptProcess");//На всякий случай
-                Turn();
-                FindFrontPatrolTarget();
-                if (currentTarget.exists)
+                if (!currentTarget.exists && patrolDistance>.1f)
+                {
+                    StopCoroutine("PathPassOptProcess");//На всякий случай
+                    Turn();
+                    FindFrontPatrolTarget();
+                    if (currentTarget.exists)
+                        StartCoroutine("PathPassOptProcess");
+                }
+                else if (!followOptPath)
                     StartCoroutine("PathPassOptProcess");
             }
-            else if (!followOptPath)
-                StartCoroutine("PathPassOptProcess");
-        }
     }
 
     /// <summary>
@@ -1488,6 +1614,24 @@ public class SpiderController : AIController
         {
             transform.position = eData.position;
             SpiderOrientation=((SpiderData)eData).spiderOrientation;
+
+            bool _inGround = ((SpiderData)eData).inGround;
+            if (_inGround)
+            {
+                immobile = true;
+                rigid.isKinematic = true;
+                DisableColliders();
+                Animate(new AnimationEventArgs("setInGround", spiderStartPosition == SpiderStartPositionEnum.behindWall ? "right" : "down", 0));
+                inGround = true;
+            }
+            else
+            {
+                rigid.isKinematic = false;
+                immobile = false;
+                inGround = false;
+                EnableColliders();
+            }
+
             if (transform.localScale.x * eData.orientation < 0f)
                 Turn((OrientationEnum)eData.orientation);
 
@@ -1570,24 +1714,24 @@ public class SpiderController : AIController
     /// <summary>
     /// Выйти вперёд
     /// </summary>
-    public void MoveForwardAction(StoryAction _action)
+    public void MoveOutAction(StoryAction _action)
     {
-        //Animate(new AnimationEventArgs("moveForward"));
-        StartCoroutine(MoveForwardProcess());
+        MoveOut();
     }
 
     /// <summary>
     /// Процесс нападения из засады
     /// </summary>
-    IEnumerator MoveForwardProcess()
+    IEnumerator MoveOutProcess()
     {
-        moveOut = true;
-        rigid.isKinematic = true;
-        immobile = true;
+        yield return new WaitForSeconds(appearTime);
+        Animate(new AnimationEventArgs("moveOut"));
         yield return new WaitForSeconds(1f);
-        moveOut = false;
         rigid.isKinematic = false;
         immobile = false;
+        inGround = false;
+        EnableColliders();
+        Loyalty = LoyaltyEnum.enemy;
     }
 
     /// <summary>
@@ -1595,7 +1739,7 @@ public class SpiderController : AIController
     /// </summary>
     protected void MoveOut()
     {
-        transform.position += new Vector3(speed * Time.fixedDeltaTime*(int)orientation, 0f, 0f);
+        StartCoroutine("MoveOutProcess");
     }
 
     #endregion //storyActions
@@ -1608,7 +1752,9 @@ public class SpiderController : AIController
     /// <returns></returns>
     public override List<string> actionNames()
     {
-        return new List<string>(){ };
+        List<string> _actionNames = base.actionNames();
+        _actionNames.Add("moveOut");
+        return _actionNames;
     }
 
     /// <summary>
@@ -1617,7 +1763,9 @@ public class SpiderController : AIController
     /// <returns></returns>
     public override Dictionary<string, List<string>> actionIDs1()
     {
-        return new Dictionary<string, List<string>>() { { "moveForward", new List<string>() { } } };
+        Dictionary<string, List<string>> _actionIDs1 = base.actionIDs1();
+        _actionIDs1.Add("moveOut", new List<string>() { });
+        return _actionIDs1;
     }
 
     /// <summary>
@@ -1626,7 +1774,9 @@ public class SpiderController : AIController
     /// <returns></returns>
     public override Dictionary<string, List<string>> actionIDs2()
     {
-        return new Dictionary<string, List<string>>() { { "moveForward", new List<string>() { } } };
+        Dictionary<string, List<string>> _actionIDs2 = base.actionIDs2();
+        _actionIDs2.Add("moveOut", new List<string>() { });
+        return _actionIDs2;
     }
 
     #endregion //IHaveStory
@@ -1683,7 +1833,7 @@ public class SpiderController : AIController
         //if (Vector2.Angle(spiderOrientation, normal) < minAngle)
             //return Vector2.zero;
         if (point1.x - point2.x == 0)
-            connectionPoint = new Vector2(point1.x, normal.y / normal.x * (point1.x - transform.position.x) + transform.position.y);
+            connectionPoint = new Vector2(point1.x, normal.y / normal.x * (point1.x - fromPoint.x) + fromPoint.y);
         else if (normal.x == 0)
             connectionPoint = new Vector2(fromPoint.x, (point2.y - point1.y) / (point2.x - point1.x) * (fromPoint.x - point1.x) + point1.y);
         else

@@ -82,7 +82,7 @@ public class BoomerangClass : BowClass
         {
             boomerangScript.SetTarget(shootPosition+(endPoint-shootPosition)*1.1f);
             boomerangScript.SetBoomerang(speed, acceleration);
-            boomerangScript.SetHitBox(new HitParametres(damage,-1f,hitSize,Vector2.zero,hitForce, attackType, effectChance), enemies);
+            boomerangScript.SetHitBox(new HitParametres(damage,-1f,hitSize,Vector2.zero,hitForce, attackType, effectChance, attackPower), enemies,SpecialFunctions.player);
         }
         chargeValue = 0f;
     }

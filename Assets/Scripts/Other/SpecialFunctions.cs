@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using System;
 using System.Collections;
 using Steamworks;
@@ -24,7 +25,7 @@ public static class SpecialFunctions
     }
 
     public static CameraController camControl;
-    public static CameraController СamController { get { camControl = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); return camControl; } }
+    public static CameraController CamController { get { camControl = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); return camControl; } }
 
     public static GameController gameController { get { return GameObject.FindGameObjectWithTag("gameController").GetComponent<GameController>(); } }
 
@@ -33,8 +34,12 @@ public static class SpecialFunctions
     public static GameStatistics statistics { get { return gameController.GetComponent<GameStatistics>(); } }
 
     public static GameObject gameInterface { get { return GameObject.FindGameObjectWithTag("interface"); } }
+    private static SettingsScript settings;
+    public static SettingsScript Settings { get { if (settings == null) settings=gameInterface.GetComponentInChildren<SettingsScript>(); return settings; } set { settings = value; } }
 
     public static GameUIScript gameUI { get { return gameInterface.GetComponentInChildren<GameUIScript>(); } }
+    public static DialogWindowScript dialogWindow { get { return gameInterface.GetComponentInChildren<DialogWindowScript>(); } }
+
     public static EquipmentMenu equipWindow { get { return gameInterface.GetComponentInChildren<EquipmentMenu>(); } }
 
     public static LoadMenuScript loadMenu { get { return GameObject.Find("SaveScreen").GetComponent<LoadMenuScript>(); } }
@@ -42,6 +47,8 @@ public static class SpecialFunctions
     public static bool totalPaused = false;//Пауза, которая не может быть снята функцией PlayGame()
     public static bool levelEnd = false;//Закончен ли уровень
     public static string nextLevelName = "";//Название следующего уровня
+
+    public static float soundVolume;//Громкость звуков
 
     /// <summary>
     /// Проинициализировать важные игровые объекты перед началом игры
@@ -53,6 +60,7 @@ public static class SpecialFunctions
         camControl= GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>();
         player = GameObject.FindGameObjectWithTag("player");
         battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
+        settings = gameInterface.GetComponentInChildren<SettingsScript>();
     }
 
     /// <summary>
@@ -89,6 +97,32 @@ public static class SpecialFunctions
             Time.timeScale = 1f;
     }
 
+    /// <summary>
+    /// Сменить основного игрока
+    /// </summary>
+    public static void SwitchPlayer(HeroController _hero)
+    {
+        if (battleField != null)
+            battleField.ResetBattlefield();
+        player = _hero.gameObject;
+        battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
+        if (CamController != null)
+            CamController.SetPlayer(_hero.transform);
+        if (gameUI != null)
+            gameUI.ConsiderPlayer(_hero);
+        if (dialogWindow.activated)
+            _hero.SetImmobile(true);
+    }
+
+    /// <summary>
+    /// Сохранить игру у определённого чекпоинта
+    /// </summary>
+    /// <param name="checkpointNumb"></param>
+    public static void SaveGame(int checkpointNumb)
+    {
+        gameController.StartSaveGameProcess(checkpointNumb, false, SceneManager.GetActiveScene().name);
+    }
+    
     /// <summary>
     /// Запустить событие, связанное с сюжетом игры
     /// </summary>
@@ -145,6 +179,22 @@ public static class SpecialFunctions
     }
 
     /// <summary>
+    /// Установить скорость затухания
+    /// </summary>
+    public static void SetFadeSpeed(float _fadeSpeed)
+    {
+        gameUI.FadeSpeed = _fadeSpeed;
+    }
+
+    /// <summary>
+    /// Установить дефолтную скорость затухания
+    /// </summary>
+    public static void SetDefaultFadeSpeed()
+    {
+        gameUI.SetDefaultFadeSpeed();
+    }
+
+    /// <summary>
     /// Переместить главного героя к чекпоинту
     /// </summary>
     public static void MoveToCheckpoint(CheckpointController checkpoint)
@@ -160,6 +210,17 @@ public static class SpecialFunctions
     {
         SteamUserStats.ResetAllStats(true);
         SteamUserStats.RequestCurrentStats();
+    }
+
+    /// <summary>
+    /// Проиграть звук
+    /// </summary>
+    public static void PlaySound(AudioSource source)
+    {
+        if (!source)
+            return;
+        source.volume = soundVolume;
+        source.Play();
     }
 
 }

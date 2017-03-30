@@ -92,7 +92,7 @@ public class GhostPlatform : MonoBehaviour, IMechanism
     /// </summary>
     public InterObjData GetData()
     {
-        MechData mData = new MechData(id, activated,transform.position);
+        MechData mData = new MechData(id, activated,transform.position, gameObject.name);
         return mData;
     }
 

@@ -112,6 +112,14 @@ public class LeverScript : MonoBehaviour, IInteractive
         }
     }
 
+    /// <summary>
+    /// Можно ли провзаимодействовать с объектом в данный момент?
+    /// </summary>
+    public virtual bool IsInteractive()
+    {
+        return true;
+    }
+
     #endregion //IInteractive
 
     #region IHaveID
@@ -157,7 +165,7 @@ public class LeverScript : MonoBehaviour, IInteractive
     /// </summary>
     public virtual InterObjData GetData()
     {
-        MechData mData = new MechData(id, activated, transform.position);
+        MechData mData = new MechData(id, activated, transform.position, gameObject.name);
         return mData;
     }
 

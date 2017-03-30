@@ -207,7 +207,7 @@ public class WormController : AIController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = !precipiceCheck.WallInFront ? new Vector2(0f, rigid.velocity.y) : (new Vector2((int)orientation * speed, rigid.velocity.y));
+        Vector2 targetVelocity = !precipiceCheck.WallInFront ? new Vector2(0f, rigid.velocity.y) : (new Vector2((int)orientation * speed * speedCoof, rigid.velocity.y));
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)
@@ -229,7 +229,7 @@ public class WormController : AIController
     /// Повернуться
     /// </summary>
     /// <param name="_orientation">В какую сторону должен смотреть персонаж</param>
-    protected override void Turn(OrientationEnum _orientation)
+    public override void Turn(OrientationEnum _orientation)
     {
         base.Turn(_orientation);
         precipiceCheck.SetPosition(0f, (int)orientation);
@@ -336,13 +336,14 @@ public class WormController : AIController
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
+    /*
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool _microstun = true)
+    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
     {
         if (GetBuff("StunnedProcess") != null || GetBuff("FrozenProcess") != null)
-            base.TakeDamage(damage, _dType, _microstun);
+            base.TakeDamage(damage, _dType, attackPower);
         else
             base.TakeDamage(damage, _dType, false);
     }
@@ -357,6 +358,7 @@ public class WormController : AIController
         else
             base.TakeDamage(damage, _dType, false);
     }
+    */
 
     /// <summary>
     /// Функция смерти
@@ -579,7 +581,7 @@ public class WormController : AIController
     /// <summary>
     /// Направиться к изначальной позиции
     /// </summary>
-    protected override void GoHome()
+    public override void GoHome()
     {
         MainTarget = ETarget.zero;
         BecomePatrolling();

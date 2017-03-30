@@ -10,6 +10,12 @@ public class LavaGolemController : GolemController
 
     #endregion //consts
 
+    protected override void Start()
+    {
+        base.Start();
+        Animate(new AnimationEventArgs("startBurning"));
+    }
+
     #region damageEffects
 
     /// <summary>
@@ -40,10 +46,13 @@ public class LavaGolemController : GolemController
     {
         AddBuff(new BuffClass("WetProcess", Time.fixedTime, _time));
         attackParametres.damage *= wetDamageCoof;
+        Animate(new AnimationEventArgs("spawnEffect", "SteamCloud", 0));
+        Animate(new AnimationEventArgs("stopBurning"));
         Animate(new AnimationEventArgs("startWet"));
         yield return new WaitForSeconds(_time);
-        speed /= wetDamageCoof;
+        attackParametres.damage /= wetDamageCoof;
         Animate(new AnimationEventArgs("stopWet"));
+        Animate(new AnimationEventArgs("startBurning"));
         RemoveBuff("WetProcess");
     }
 
@@ -58,6 +67,7 @@ public class LavaGolemController : GolemController
         attackParametres.damage /= wetDamageCoof;
         RemoveBuff("WetProcess");
         Animate(new AnimationEventArgs("stopWet"));
+        Animate(new AnimationEventArgs("startBurning"));
     }
 
     #endregion //damageEffects

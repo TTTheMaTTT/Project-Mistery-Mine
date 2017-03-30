@@ -33,7 +33,12 @@ public class GameHistory : MonoBehaviour, IHaveStory
     /// <returns></returns>
     public virtual List<string> actionNames()
     {
-        return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement" };
+        Summoner summoner = GetComponent<Summoner>();
+        if (summoner==null)
+            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame", "setText","setSecretText", "setLight", "setHDR"};
+        else
+            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame",
+                                        "setText","setSecretText", "setLight", "setHDR", "summon","destroy","move" };
     }
 
     /// <summary>
@@ -42,11 +47,21 @@ public class GameHistory : MonoBehaviour, IHaveStory
     /// <returns></returns>
     public virtual Dictionary<string, List<string>> actionIDs1()
     {
+        Summoner summoner = GetComponent<Summoner>();
         return new Dictionary<string, List<string>>() {
-                                                    { "changeQuestData", new List<string>() {"add","continue","complete" } },
-                                                    { "removeObject", new List<string>(){ } },
-                                                    { "startInvestigationEffect",new List<string>() { } },
-                                                    { "getAchievement", new List<string>() { } } };
+                                            { "changeQuestData", new List<string>() {"add","continue","complete" } },
+                                            { "removeObject", new List<string>(){ } },
+                                            { "startInvestigationEffect",new List<string>() { } },
+                                            { "getAchievement", new List<string>() { } },
+                                            { "changeStoryProgress", SpecialFunctions.statistics!=null? SpecialFunctions.statistics.HistoryBase.stories.ConvertAll<string>(x=>x.storyName):new List<string>(){ } },
+                                            { "saveGame", new List<string>() },
+                                            { "setText", new List<string>() },
+                                            { "setSecretText", new List<string>() },
+                                            { "setLight", new List<string>() },
+                                            { "setHDR",new List<string>()},
+                                            { "summon", summoner!=null? summoner.summons.ConvertAll<string>(x=>x.summonName):new List<string>()},
+                                            { "destroy", summoner!=null? summoner.destroys.ConvertAll<string>(x=>x.summonName):new List<string>()},
+                                            { "move", summoner!=null? summoner.activeObjects.ConvertAll<string>(x=>x.summonName):new List<string>()}};
     }
 
     /// <summary>
@@ -55,18 +70,33 @@ public class GameHistory : MonoBehaviour, IHaveStory
     /// <returns></returns>
     public virtual Dictionary<string, List<string>> actionIDs2()
     {
+        Summoner summoner = GetComponent<Summoner>();
         return new Dictionary<string, List<string>>() {
                                                     { "changeQuestData", (SpecialFunctions.statistics.database != null?
                                                                                         SpecialFunctions.statistics.database.quests.ConvertAll<string>(x=>x.questName):
                                                                                         new List<string>())},
                                                     {"removeOject", new List<string>()},
                                                     {"startInvestigationEffect",new List<string>() { } },
-                                                    { "getAchievement",new List<string>() { } } };
+                                                    { "getAchievement",new List<string>() { } },
+                                                    { "changeStoryProgress", SpecialFunctions.statistics!=null? SpecialFunctions.statistics.GetStoryProgressNames(): new List<string>() { } },
+                                                    { "saveGame", new List<string>()},
+                                                    { "setText", new List<string>() },
+                                                    { "setSecretText", new List<string>() },
+                                                    { "setLight", new List<string>() },
+                                                    { "setHDR",new List<string>()},
+                                                    { "summon",new List<string>() },
+                                                    { "destroy",new List<string>() },
+                                                    { "move",new List<string>() } };
     }
 
     public virtual Dictionary<string, List<string>> conditionIDs()
     {
         return new Dictionary<string, List<string>>();
+    }
+
+    public StoryAction.StoryActionDelegate GetStoryAction(string s)
+    {
+        return null;
     }
 
     #endregion //IHaveStory
@@ -93,7 +123,7 @@ public class History
     #region dictionaries
 
     private Dictionary<string, storyActionDelegate> storyActionBase = new Dictionary<string, storyActionDelegate>(); //Словарь сюжетных действий
-    
+
     //Возвращает список типов, которые могут быть причиной события
     public virtual List<string> storyTypes
     {
@@ -105,7 +135,7 @@ public class History
 
     //Возвращает имена инциализирующих функций для создания причины сюжетного события
     public virtual Dictionary<Type, List<string>> initNames { get { return new Dictionary<Type, List<string>>() {
-                                                                                    { typeof(GameController), new List<string> {"startGame" } },
+                                                                                    { typeof(GameController), new List<string> {"startGame", "endGame" } },
                                                                                     { typeof(GameStatistics), new List<string> {"statisticCount"} },
                                                                                     { typeof(CharacterController),new List<string> { "characterDeath"} },
                                                                                     { typeof(StoryTrigger),new List<string> {"triggerEvent"} },
@@ -116,8 +146,8 @@ public class History
         get
         {
             return new Dictionary<Type, List<string>> {
-                                                                                    { typeof(GameController), new List<string> {"","compare"} },
-                                                                                    { typeof(GameStatistics), new List<string> {"", "compare", "compareStatistics", } },
+                                                                                    { typeof(GameController), new List<string> {"","compare", "compareHistoryProgress"} },
+                                                                                    { typeof(GameStatistics), new List<string> {"", "compare", "compareStatistics" } },
                                                                                     { typeof(CharacterController),new List<string> { "", "compare" } },
                                                                                     { typeof(StoryTrigger),new List<string> { "", "compare" } },
                                                                                     { typeof(NPCController),new List<string> { "", "compare", "compareSpeech"} } };
@@ -125,7 +155,7 @@ public class History
     }
 
     //Словарь функций проверки сюжетных условий
-    private static Dictionary<string, storyConditionDelegate> storyConditionBase = new Dictionary<string, storyConditionDelegate> ();
+    private static Dictionary<string, storyConditionDelegate> storyConditionBase = new Dictionary<string, storyConditionDelegate>();
 
     private Dictionary<string, storyInitDelegate> storyInitBase = new Dictionary<string, storyInitDelegate>();//подписка
     private Dictionary<string, storyInitDelegate> storyDeInitBase = new Dictionary<string, storyInitDelegate>();//отписка
@@ -143,7 +173,7 @@ public class History
     [SerializeField]
     protected List<Quest> activeQuests = new List<Quest>();
     public List<Quest> ActiveQuests { get { return activeQuests; } }
-      
+
     #endregion fields
 
     #region interface
@@ -186,26 +216,38 @@ public class History
     public void FormStoryBase()
     {
         storyActionBase.Add("changeQuestData", ChangeQuestData);
+        storyActionBase.Add("changeStoryProgress", ChangeStoryProgressData);
         storyActionBase.Add("removeObject", RemoveHistoryObject);
         storyActionBase.Add("startInvestigationEffect", StartInvestigationEffect);
         storyActionBase.Add("getAchievement", GetAchievement);
+        storyActionBase.Add("saveGame", SaveGameStory);
+        storyActionBase.Add("setText", SetStoryText);
+        storyActionBase.Add("setSecretText", SetStorySecretText);
+        storyActionBase.Add("setLight", SetStoryLight);
+        storyActionBase.Add("setHDR", SetStoryHDRRatio);
+        storyActionBase.Add("summon", Summon);
+        storyActionBase.Add("destroy", StoryDestroy);
+        storyActionBase.Add("move", StoryMove);
 
         storyConditionBase.Clear();
         storyConditionBase.Add("compare", Compare);
         storyConditionBase.Add("compareSpeech", CompareSpeech);
         storyConditionBase.Add("compareStatistics", CompareStatistics);
+        storyConditionBase.Add("compareHistoryProgress", CompareGameHistoryProgress);
 
-        storyInitBase.Add("startGame", (x,y)=> { if(y.GetComponent<GameStatistics>()!=null) y.GetComponent<GameController>().StartGameEvent += x.HandleStoryEvent; });
+        storyInitBase.Add("startGame", (x, y) => { if (y.GetComponent<GameController>() != null) y.GetComponent<GameController>().StartGameEvent += x.HandleStoryEvent; });
+        storyInitBase.Add("endGame", (x, y) => { if (y.GetComponent<GameController>() != null) y.GetComponent<GameController>().EndGameEvent += x.HandleStoryEvent; });
         storyInitBase.Add("statisticCount", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameStatistics>().StatisticCountEvent += x.HandleStoryEvent; });
-        storyInitBase.Add("characterDeath", (x, y) => { if (y.GetComponent<CharacterController>()!=null) y.GetComponent<CharacterController>().CharacterDeathEvent += x.HandleStoryEvent; });
+        storyInitBase.Add("characterDeath", (x, y) => { if (y.GetComponent<CharacterController>() != null) y.GetComponent<CharacterController>().CharacterDeathEvent += x.HandleStoryEvent; });
         storyInitBase.Add("triggerEvent", (x, y) => { if (y.GetComponent<StoryTrigger>() != null) y.GetComponent<StoryTrigger>().TriggerEvent += x.HandleStoryEvent; });
-        storyInitBase.Add("speech", (x, y) => { if (y.GetComponent<NPCController>() != null) y.GetComponent<NPCController>().SpeechSaidEvent += x.HandleStoryEvent; });
+        storyInitBase.Add("speech", (x, y) => { if (SpecialFunctions.dialogWindow != null) SpecialFunctions.dialogWindow.SpeechSaidEvent += x.HandleStoryEvent; });
 
         storyDeInitBase.Add("startGame", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameController>().StartGameEvent -= x.HandleStoryEvent; });
+        storyDeInitBase.Add("endGame", (x, y) => { if (y.GetComponent<GameController>() != null) y.GetComponent<GameController>().EndGameEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("statisticCount", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameStatistics>().StatisticCountEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("characterDeath", (x, y) => { if (y.GetComponent<CharacterController>() != null) y.GetComponent<CharacterController>().CharacterDeathEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("triggerEvent", (x, y) => { if (y.GetComponent<StoryTrigger>() != null) y.GetComponent<StoryTrigger>().TriggerEvent -= x.HandleStoryEvent; });
-        storyDeInitBase.Add("speech", (x, y) => { if (y.GetComponent<NPCController>() != null) y.GetComponent<NPCController>().SpeechSaidEvent -= x.HandleStoryEvent; });
+        storyDeInitBase.Add("speech", (x, y) => { if (SpecialFunctions.dialogWindow != null) SpecialFunctions.dialogWindow.SpeechSaidEvent -= x.HandleStoryEvent; });
 
     }
 
@@ -225,19 +267,18 @@ public class History
         if (storyTarget == null)
             return;
 
-        //В первую очередь, подпишемся на сюжетные объекты объекты
+        //В первую очередь, подпишемся на сюжетные объекты
         if (storyInitBase.ContainsKey(_story.storyCondition.storyConditionName))
         {
             string s = _story.storyCondition.storyConditionName;
             storyInitBase[s].Invoke(_story, storyTarget);
         }
 
-        for (int i=0;i<_story.storyActions.Count; i++)
+        for (int i = 0; i < _story.storyActions.Count; i++)
         {
             if (i >= init.eventObjects.Count)
                 break;
             StoryAction _action = _story.storyActions[i];
-
             GameObject obj = init.eventObjects[i];
             if (obj == null)
                 continue;
@@ -249,27 +290,39 @@ public class History
                     _action.storyAction = storyActionBase[s].Invoke;
                 }
             }
-            else if (obj.GetComponent<NPCController>() != null)
+            else if (obj.GetComponent<IHaveStory>() != null)
             {
-                NPCController npc = obj.GetComponent<NPCController>();
-                if (npc.StoryActionBase.ContainsKey(_action.actionName))
+                IHaveStory storyParticipant = obj.GetComponent<IHaveStory>();
+                if (storyParticipant.actionNames().Contains(_action.actionName))
                 {
                     string s = _action.actionName;
-                    _action.storyAction = npc.StoryActionBase[s].Invoke;
+                    _action.storyAction = storyParticipant.GetStoryAction(s);
                 }
             }
-            else if (obj.GetComponent<CharacterController>() != null)
+
+
+            StoryObjectList initList = null;
+            if (init.eventObjectLists != null ? init.eventObjectLists.Count > i : false)
+                initList = init.eventObjectLists[i];
+            if (initList == null)
+                continue;
+            foreach (GameObject _obj in initList.storyObjects)
             {
-                CharacterController character = obj.GetComponent<CharacterController>();
-                if (character.StoryActionBase.ContainsKey(_action.actionName))
+                if (_obj == null)
+                    continue;
+                if (_obj.GetComponent<IHaveStory>() != null)
                 {
-                    string s = _action.actionName;
-                    _action.storyAction = character.StoryActionBase[s].Invoke;
+                    IHaveStory storyParticipant = _obj.GetComponent<IHaveStory>();
+                    if (storyParticipant.actionNames().Contains(_action.actionName))
+                    {
+                        string s = _action.actionName;
+                        _action.storyAction += storyParticipant.GetStoryAction(s);
+                    }
                 }
             }
         }
 
-        if (storyConditionBase.ContainsKey(_story.storyCondition.conditionName))
+        if (_story.storyCondition.conditionName!=""?storyConditionBase.ContainsKey(_story.storyCondition.conditionName):false)
         {
             string s = _story.storyCondition.conditionName;
             _story.storyCondition.storyCondition = storyConditionBase[s].Invoke;
@@ -321,7 +374,7 @@ public class History
 
         for (int i = 0; i < _story.presequences.Count; i++)
         {
-            if (FindInitializer(_story.presequences[i])!=null? !FindInitializer(_story.presequences[i]).completed:false)
+            if (FindInitializer(_story.presequences[i]) != null ? !FindInitializer(_story.presequences[i]).completed : false)
                 return;
         }
 
@@ -386,12 +439,48 @@ public class History
     }
 
     /// <summary>
+    /// Сюжетное событие, создающее объект
+    /// </summary>
+    public void Summon(StoryAction _action)
+    {
+        Summoner summoner = SpecialFunctions.gameController.GetComponent<Summoner>();
+        if (summoner != null)
+            summoner.InstantiateObject(_action);
+    }
+
+    /// <summary>
+    /// Сюжетное событие, уничтожающее объект
+    /// </summary>
+    public void StoryDestroy(StoryAction _action)
+    {
+        Summoner summoner = SpecialFunctions.gameController.GetComponent<Summoner>();
+        if (summoner != null)
+            summoner.DestroyObject(_action);
+    }
+
+    /// <summary>
+    /// Сюжетное событие, перемещающее объект
+    /// </summary>
+    public void StoryMove(StoryAction _action)
+    {
+        Summoner summoner = SpecialFunctions.gameController.GetComponent<Summoner>();
+        if (summoner != null)
+            summoner.MoveObject(_action);
+    }
+
+    /// <summary>
     /// Вызвать исследовательский эффект
     /// </summary>
     public void StartInvestigationEffect(StoryAction _action)
     {
         SpecialFunctions.gameController.AddRandomGameEffect();
     }
+
+    /// <summary>
+    /// Пустая функция сюжетного действия
+    /// </summary>
+    public void NullStoryAction(StoryAction _action)
+    {}
 
     /// <summary>
     /// Изменить данные о квестах
@@ -451,13 +540,66 @@ public class History
     }
 
     /// <summary>
+    /// Сменить состояние истории
+    /// </summary>
+    public void ChangeStoryProgressData(StoryAction _action)
+    {
+        GameStatistics gStats = SpecialFunctions.statistics;
+        if (gStats == null)
+            return;
+        gStats.gameHistoryProgress.ChangeStoryProgress(_action.id1, _action.id2);
+    }
+
+    /// <summary>
     /// Убрать объект
     /// </summary>
     public void RemoveHistoryObject(StoryAction _action)
     {
         GameObject dObj = GameObject.Find(_action.id1);
-        if (dObj!=null)
-            dObj.SetActive(false);
+        if (dObj != null)
+            UnityEngine.Object.Destroy(dObj);
+    }
+    
+    /// <summary>
+    /// Сохранить игру
+    /// </summary>
+    public void SaveGameStory(StoryAction _action)
+    {
+        SpecialFunctions.SaveGame(_action.argument);
+    }
+
+    /// <summary>
+    /// Выставить текст в окошечке игровых сообщений
+    /// </summary>
+    public void SetStoryText(StoryAction _action)
+    {
+        SpecialFunctions.SetText(_action.id1, _action.argument);
+    }
+
+    /// <summary>
+    /// Выставить текст в окошечке секретных сообщений
+    /// </summary>
+    public void SetStorySecretText(StoryAction _action)
+    {
+        SpecialFunctions.SetSecretText(_action.argument, _action.id1);
+    }
+
+    /// <summary>
+    /// Установить освещение
+    /// </summary>
+    public void SetStoryLight(StoryAction _action)
+    {
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
+        lightManager.intensity = Mathf.Clamp(_action.argument/100f, 0f, 2f);
+    }
+
+    /// <summary>
+    /// Установить силу источников света
+    /// </summary>
+    public void SetStoryHDRRatio(StoryAction _action)
+    {
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
+        lightManager.HDRRatio = Mathf.Clamp(_action.argument / 100f, 0f, Mathf.Infinity);
     }
 
     #endregion //storyActions
@@ -497,6 +639,20 @@ public class History
             return SpecialFunctions.ComprFunctionality(e.Argument, _condition.id2, _condition.argument);
         else
             return false;
+    }
+
+    /// <summary>
+    /// Проверить учёт 
+    /// </summary>
+    static bool CompareGameHistoryProgress(StoryCondition _condition, StoryEventArgs e)
+    {
+        GameStatistics gStats = SpecialFunctions.statistics;
+        if (gStats == null)
+            return false;
+        if (_condition.argument>=0)
+            return gStats.gameHistoryProgress.GetStoryProgress(_condition.id1) == _condition.id2;
+        else
+            return gStats.gameHistoryProgress.GetStoryProgress(_condition.id1) != _condition.id2;
     }
 
     #endregion //conditionFunctions
@@ -576,6 +732,7 @@ public class StoryInitializer
     public Story story;
     public GameObject eventReason;
     public List<GameObject> eventObjects;
+    public List<StoryObjectList> eventObjectLists;
 
     [NonSerialized][HideInInspector]
     public bool completed=false;
@@ -584,5 +741,24 @@ public class StoryInitializer
     public bool impossible = false;//Если true, то эта история больше не сможет проинициализироваться
 }
 
+/// <summary>
+/// Класс, который содержит в себе списки исторических объектов
+/// </summary>
+[System.Serializable]
+public class StoryObjectList
+{
+    public List<GameObject> storyObjects = new List<GameObject>();
+
+    public StoryObjectList()
+    {
+        storyObjects = new List<GameObject>();
+    }
+
+    public StoryObjectList(List<GameObject> _storyObjects)
+    {
+        storyObjects = _storyObjects;
+    }
+
+}
 
 

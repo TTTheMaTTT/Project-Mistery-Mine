@@ -1,8 +1,14 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections;
+using System.Collections.Generic;
 
 public class MisteryCaveEditor : Editor{
+
+    /*[MenuItem("Mystery Mine/Create Experimental Thing")]
+    public static void CreateExperimentalThing()
+    {
+    }*/
 
     [MenuItem("Mystery Mine/Create Speech")]
     public static void CreateDialog()

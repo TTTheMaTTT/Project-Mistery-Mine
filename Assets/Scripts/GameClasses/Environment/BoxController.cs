@@ -28,6 +28,7 @@ public class BoxController : MonoBehaviour, IDamageable
     protected List<GameObject> content = new List<GameObject>();//Содержимое коробки, что вываливается из неё
 
     protected Animator anim;
+    protected AudioSource aSource;
 
     #endregion //fields
 
@@ -49,6 +50,9 @@ public class BoxController : MonoBehaviour, IDamageable
     {
         health = maxHealth;
         anim = GetComponent<Animator>();
+        aSource = GetComponent<AudioSource>();
+        if (aSource == null)
+            aSource = gameObject.AddComponent<AudioSource>();
     }
 
     #region IDamageable
@@ -56,25 +60,27 @@ public class BoxController : MonoBehaviour, IDamageable
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public void TakeDamage(float damage, DamageType _dType, bool _microstun=true)
+    public void TakeDamage(float damage, DamageType _dType, int attackPower=0)
     {
         health -= damage;
         StopAllCoroutines();
-        StartCoroutine(HitProcess());
         if (health <= 0f)
             Destroy();
+        else
+            StartCoroutine(HitProcess());
     }
 
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public void TakeDamage(float damage,DamageType _dType, bool ignoreInvul, bool _microstun)
+    public void TakeDamage(float damage,DamageType _dType, bool ignoreInvul, int attackPower=0)
     {
         health -= damage;
         StopAllCoroutines();
-        StartCoroutine(HitProcess());
         if (health <= 0f)
             Destroy();
+        else
+            StartCoroutine(HitProcess());
     }
 
     /// <summary>
@@ -100,10 +106,10 @@ public class BoxController : MonoBehaviour, IDamageable
             Rigidbody2D rigid = drop1.GetComponent<Rigidbody2D>();
             if (rigid != null)
                 rigid.AddForce(new Vector2(UnityEngine.Random.Range(-dropForceX, dropForceX), dropForceY));
-            OnBoxDestroyed(new EventArgs());
         }
-
-        Destroy(gameObject, deathTime);
+        SpecialFunctions.PlaySound(aSource);
+        OnBoxDestroyed(new EventArgs());
+        StartCoroutine(DestroyProcess());
     }
 
     /// <summary>
@@ -120,8 +126,18 @@ public class BoxController : MonoBehaviour, IDamageable
         {
             anim.Play("TakeDamage");
             yield return new WaitForSeconds(.1f);
-            anim.Play("Idle");
+            if (anim!=null)
+                anim.Play("Idle");
         }
+    }
+
+    protected virtual IEnumerator DestroyProcess()
+    {
+        Destroy(anim);
+        Destroy(GetComponent<SpriteRenderer>());
+        Destroy(GetComponent<Collider2D>());
+        yield return new WaitForSeconds(10f);
+        Destroy(gameObject);
     }
 
     #endregion //IDamageable
@@ -180,7 +196,7 @@ public class BoxController : MonoBehaviour, IDamageable
     /// </summary>
     public InterObjData GetData()
     {
-        BoxData bData = new BoxData(id, health);
+        BoxData bData = new BoxData(id, health,gameObject.name);
         return bData;
     }
 

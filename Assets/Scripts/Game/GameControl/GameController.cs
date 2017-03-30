@@ -65,7 +65,7 @@ public class GameController : MonoBehaviour
 
     #region eventHandlers
 
-    public EventHandler<StoryEventArgs> StartGameEvent;
+    public EventHandler<StoryEventArgs> StartGameEvent, EndGameEvent;
 
     #endregion //eventHandlers
 
@@ -83,6 +83,9 @@ public class GameController : MonoBehaviour
 
     [SerializeField]private GameObject treasureHunterArrow;//Стрелка компаса охотника за сокровищами
     [SerializeField]private GameObject collectorArrow;//Стрелка компаса коллекционера
+
+    private AudioSource ambientSource, musicSource, soundSource;//Источники звуков окружающего мира и музыки, а также источник игровых звуков
+    [SerializeField]private List<AudioClip> ambientClips, musicClips, soundClips;//Аудиоклипы, ответственные за создание звуков окружающего мира и за музыкальные темы игры, а также игровые звуки
 
     #region saveSystem
 
@@ -105,6 +108,7 @@ public class GameController : MonoBehaviour
     string savesInfoPath;
 
     int startCheckpointNumber = 0;
+    static int monstersIdCount = 0, objectsIdCount=0, npcsIdCount=0;//Количество персонажей с id-шниками
 
     int secretsFoundNumber = 0, secretsTotalNumber = 0;//Сколько секретных мест на уровне было найдено и сколько их всего
 
@@ -145,21 +149,32 @@ public class GameController : MonoBehaviour
 
         //Пройдёмся по всем объектам уровня, дадим им id и посмотрим, как изменятся эти объекты в соответсвтии с сохранениями
         GetLists(!idSetted);
+        monstersIdCount = monsters.Count;
+        npcsIdCount = NPCs.Count;
+        objectsIdCount = intObjects.Count;
 
         #endregion //RegisterObjects
 
         LoadGame();
 
-        monsters = null;
-        intObjects =null;
-        NPCs = null;
+        //monsters = null;
+        //intObjects =null;
+        //NPCs = null;
 
         SpecialFunctions.history.Initialize();
         SpecialFunctions.StartStoryEvent(this, StartGameEvent, new StoryEventArgs());
+        Resources.UnloadUnusedAssets();
+
+        Debug.LogWarning(GetComponent<GameStatistics>().gameHistoryProgress.GetStoryProgress("spiderStory"));
+
     }
 
     protected void Initialize()
     {
+        Resources.UnloadUnusedAssets();
+        monstersIdCount = 0;
+        objectsIdCount = 0;
+        npcsIdCount = 0;
         SpecialFunctions.InitializeObjects();
         InitializeDictionaries();
         datapath = (Application.dataPath) + "/StreamingAssets/Saves/Profile";
@@ -200,6 +215,34 @@ public class GameController : MonoBehaviour
             if (secretPlace.GetComponent<SecretPlaceTrigger>() != null)
                 secretsTotalNumber++;
         activeGameEffects = new List<string>();
+
+        AudioSource[] audioSources = SpecialFunctions.CamController.GetComponents<AudioSource>();
+        if (audioSources.Length >= 1)
+        {
+            musicSource = audioSources[0];
+            musicSource.volume = PlayerPrefs.GetFloat("MusicVolume");
+            if (musicClips.Count > 0)
+            {
+                musicSource.clip = musicClips[0];
+                musicSource.Play();
+            }
+        }
+        if (audioSources.Length >= 2)
+        {
+            ambientSource = audioSources[1];
+            ambientSource.volume = PlayerPrefs.GetFloat("SoundVolume");
+            SpecialFunctions.Settings.soundEventHandler += HandleSoundVolumeChange;
+            if (ambientClips.Count > 0)
+            {
+                ambientSource.clip = ambientClips[0];
+                ambientSource.Play();
+            }
+        }
+        if (audioSources.Length >= 3)
+        {
+            soundSource = audioSources[2];
+            soundSource.volume = PlayerPrefs.GetFloat("SoundVolume");
+        }
     }
 
     /// <summary>
@@ -230,8 +273,12 @@ public class GameController : MonoBehaviour
     /// </summary>
     public void StartDialog(NPCController npc, Dialog dialog)
     {
-        Transform player = SpecialFunctions.Player.transform;
         dialogWindow.BeginDialog(npc, dialog);
+    }
+
+    public void StartDialog(Dialog dialog)
+    {
+        dialogWindow.BeginDialog(dialog);
     }
 
     /// <summary>
@@ -240,6 +287,23 @@ public class GameController : MonoBehaviour
     public void FindSecretPlace()
     {
         secretsFoundNumber++;
+    }
+
+    /// <summary>
+    /// Начать процесс сохранения игры
+    /// </summary>
+    public void StartSaveGameProcess(int checkpointNumb, bool generally, string levelName)
+    {
+        StartCoroutine(SaveGameProcess(checkpointNumb, generally, levelName));
+    }
+
+    /// <summary>
+    /// Процесс сохранения игры. Используется, когда игру надо сохранить после некоторого промежутка времени.ё
+    /// </summary>
+    IEnumerator SaveGameProcess(int checkpointNumb, bool generally, string levelName)
+    {
+        yield return new WaitForSeconds(.5f);
+        SaveGame(checkpointNumb, generally, levelName);
     }
 
     /// <summary>
@@ -282,6 +346,7 @@ public class GameController : MonoBehaviour
         GameGeneralData gGData = gData.gGData;
         LevelData lData = gData.lData;
         GameStatistics gStats = GetComponent<GameStatistics>();
+        Summoner summoner = GetComponent<Summoner>();
 
         #region GeneralLoad
 
@@ -332,7 +397,8 @@ public class GameController : MonoBehaviour
 
                 Hero.SetBuffs(new BuffListData(new List<BuffClass>()));
 
-                GetComponent<GameStatistics>().ResetStatistics();
+                gStats.ResetStatistics();
+                gStats.gameHistoryProgress.SetStoryProgressData(gGData.progressInfo);
 
                 #endregion //heroEquipment
 
@@ -350,6 +416,13 @@ public class GameController : MonoBehaviour
             CheckpointController currentCheckpoint = checkpoints.Find(x => (x.checkpointNumb == lData.checkpointNumber));
             if (currentCheckpoint != null)
                 SpecialFunctions.MoveToCheckpoint(currentCheckpoint);
+
+            SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
+            if (lightManager != null)
+            {
+                lightManager.intensity = lData.lightIntensity;
+                lightManager.HDRRatio = lData.lightHDR;
+            }
 
             #region heroEquipment
 
@@ -402,6 +475,8 @@ public class GameController : MonoBehaviour
             {
                 history.LoadHistory(sInfo, qInfo);
             }
+
+            gStats.gameHistoryProgress.SetStoryProgressData(lData.progressInfo);
 
             #endregion //Quests&Story
 
@@ -459,16 +534,54 @@ public class GameController : MonoBehaviour
             #region Enemies
 
             List<EnemyData> enInfo = lData.enInfo;
+            Dictionary<string, GameObject> monsterObjects = new Dictionary<string, GameObject>();
 
             if (enInfo != null && monsters != null)
             {
                 foreach (EnemyData enData in enInfo)
                 {
                     int objId = enData.objId;
-                    if (objId < monsters.Count? monsters[objId]!=null:false)
+                    if (objId < monsters.Count ? monsters[objId] != null : false)
                     {
                         monsters[objId].SetAIData(enData);
                         monsters[objId] = null;
+                    }
+                    else if (objId >= monsters.Count)
+                    {
+                        GameObject newMonster = null;
+                        GameObject _obj = null;
+                        SummonClass summon = null;
+                        if (summoner != null)
+                            summon = summoner.GetSummon(enData.objName);
+                        if (summon != null)
+                        {
+                            _obj = summon.summon;
+                            _obj.SetActive(true);
+                            DialogObject dObj = _obj.GetComponent<DialogObject>();
+                            if (dObj != null)
+                                if (SpecialFunctions.dialogWindow != null)
+                                    SpecialFunctions.dialogWindow.AddDialogObjectInDictionary(dObj);
+                        }
+                        else
+                        {
+                            if (!monsterObjects.ContainsKey(enData.objName))
+                            {
+                                newMonster = Resources.Load(enData.objName) as GameObject;
+                                monsterObjects.Add(enData.objName, newMonster);
+                            }
+                            else
+                                newMonster = monsterObjects[enData.objName];
+                            if (newMonster != null)
+                                _obj = InstantiateWithId(newMonster, enData.position, Quaternion.identity);
+                             
+                        }
+                        if (_obj == null)
+                            continue;
+                        AIController _ai = _obj.GetComponent<AIController>();
+                        if (_ai != null)
+                            _ai.SetAIData(enData);
+                        if (objId >= monstersIdCount)
+                            monstersIdCount = objId + 1;
                     }
                 }
                 for (int i = 0; i < monsters.Count; i++)
@@ -483,30 +596,59 @@ public class GameController : MonoBehaviour
             #region InteractiveObjects
 
             List<InterObjData> intInfo = lData.intInfo;
+            Dictionary<string, GameObject> interObjects = new Dictionary<string, GameObject>();
 
             if (intInfo != null && intObjects != null)
             {
                 foreach (InterObjData interData in intInfo)
                 {
                     int objId = interData.objId;
-                    if (objId < intObjects.Count && objId>0 ? intObjects[objId] != null : false)
+
+                    if (objId < intObjects.Count && objId >= 0 ? intObjects[objId] != null : false)
                     {
-                        IInteractive iInter = intObjects[objId].GetComponent<IInteractive>();
-                        IMechanism iMech = intObjects[objId].GetComponent<IMechanism>();
-                        IDamageable iDmg = intObjects[objId].GetComponent<IDamageable>();
-                        if (iInter != null)
-                        {
-                            iInter.SetData(interData);
-                        }
-                        else if (iMech != null)
-                        {
-                            iMech.SetData(interData);
-                        }
-                        else if (iDmg != null)
-                        {
-                            iDmg.SetData(interData);
-                        }
+                        IHaveID inter = intObjects[objId].GetComponent<IHaveID>();
+                        if (inter != null)
+                            inter.SetData(interData);
                         intObjects[objId] = null;
+                    }
+                    else if (objId >= intObjects.Count)
+                    {
+                        GameObject newObject = null;
+                        GameObject _obj = null;
+                        SummonClass summon = null;
+                        if (summoner != null)
+                            summon = summoner.GetSummon(interData.objName);
+                        if (summon != null)
+                        {
+                            _obj = summon.summon;
+                            _obj.SetActive(true);
+                            DialogObject dObj = _obj.GetComponent<DialogObject>();
+                            if (dObj != null)
+                                if (SpecialFunctions.dialogWindow != null)
+                                    SpecialFunctions.dialogWindow.AddDialogObjectInDictionary(dObj);
+                        }
+                        else
+                        {
+                            if (!interObjects.ContainsKey(interData.objName))
+                            {
+                                newObject = Resources.Load(interData.objName + ".prefab") as GameObject;
+                                interObjects.Add(interData.objName, newObject);
+                            }
+                            else
+                                newObject = interObjects[interData.objName];
+                            if (newObject != null)
+                                _obj = InstantiateWithId(newObject, interData.position, Quaternion.identity);
+                        }
+                        if (_obj == null)
+                            continue;
+                        IHaveID _inter = _obj.GetComponent<IHaveID>();
+                        if (_inter != null)
+                        {
+                            _inter.SetData(interData);
+
+                        }
+                        if (objId >= objectsIdCount)
+                            objectsIdCount = objId + 1;
                     }
                 }
                 for (int i = 0; i < intObjects.Count; i++)
@@ -527,7 +669,7 @@ public class GameController : MonoBehaviour
                         {
                             SecretPlaceTrigger secretPlace = intObjects[i].GetComponent<SecretPlaceTrigger>();
                             FindSecretPlace();
-                            Destroy(secretPlace);
+                            secretPlace.RevealTruth();
                         }
                         else
                             DestroyImmediate(intObjects[i]);
@@ -540,6 +682,7 @@ public class GameController : MonoBehaviour
             #region NPCs
 
             List<NPCData> npcInfo = lData.npcInfo;
+            Dictionary<string, GameObject> npcObjects = new Dictionary<string, GameObject>();
 
             if (npcInfo != null && NPCs != null)
             {
@@ -550,6 +693,43 @@ public class GameController : MonoBehaviour
                     {
                         NPCs[objId].SetData(npcData);
                         NPCs[objId] = null;
+                    }
+                    else if (objId >= NPCs.Count)
+                    {
+                        GameObject newNPC = null;
+                        GameObject _obj = null;
+                        SummonClass summon = null;
+                        if (summoner != null)
+                            summon = summoner.GetSummon(npcData.objName);
+                        if (summon != null)
+                        {
+                            _obj = summon.summon;
+                            _obj.SetActive(true);
+                            DialogObject dObj = _obj.GetComponent<DialogObject>();
+                            if (dObj != null)
+                                if (SpecialFunctions.dialogWindow != null)
+                                    SpecialFunctions.dialogWindow.AddDialogObjectInDictionary(dObj);
+                        }
+                        else
+                        {
+                            if (!npcObjects.ContainsKey(npcData.objName))
+                            {
+                                newNPC = Resources.Load(npcData.objName + ".prefab") as GameObject;
+                                npcObjects.Add(npcData.objName, newNPC);
+                            }
+                            else
+                                newNPC = npcObjects[npcData.objName];
+                            if (newNPC != null)
+                                _obj = InstantiateWithId(newNPC, npcData.position, Quaternion.identity);
+                        }
+                        if (_obj == null)
+                            continue;
+                        NPCController _npc = _obj.GetComponent<NPCController>();
+                        if (_npc != null)
+                            _npc.SetData(npcData);
+                        if (objId >= npcsIdCount)
+                            npcsIdCount = objId + 1;
+
                     }
                 }
                 for (int i = 0; i < NPCs.Count; i++)
@@ -648,6 +828,10 @@ public class GameController : MonoBehaviour
 
         #region enemies
 
+        if (setID)
+        {
+            monstersIdCount = 0; objectsIdCount = 0; npcsIdCount = 0;
+        }
         GameObject[] enemiesObjs = GameObject.FindGameObjectsWithTag("enemy");
         monsters = new List<AIController>();
         foreach (GameObject obj in enemiesObjs)
@@ -656,7 +840,10 @@ public class GameController : MonoBehaviour
             if (ai != null? !ai.Dead:false)
             {
                 if (setID)
-                    ai.ID = monsters.Count;
+                {
+                    ai.ID = monstersIdCount;
+                    monstersIdCount++;
+                }
                 monsters.Add(ai);
             }
         }
@@ -668,7 +855,10 @@ public class GameController : MonoBehaviour
             if (ai != null)
             {
                 if (setID)
-                    ai.ID = monsters.Count;
+                {
+                    ai.ID = monstersIdCount;
+                    monstersIdCount++;
+                }
                 monsters.Add(ai);
             }
         }
@@ -688,6 +878,10 @@ public class GameController : MonoBehaviour
 
         ConsiderObjectsWithTag("box", setID);
 
+        ConsiderObjectsWithTag("interObject", setID);
+
+        ConsiderSaveMeObjects(setID);
+
         intObjects.Sort((x, y) => { return x.GetComponent<IHaveID>().GetID().CompareTo(y.GetComponent<IHaveID>().GetID()); });
 
         #region NPCs
@@ -700,7 +894,10 @@ public class GameController : MonoBehaviour
             if (npc != null)
             {
                 if (setID)
-                    npc.SetID(NPCs.Count);
+                {
+                    npc.SetID(npcsIdCount);
+                    npcsIdCount++;
+                }
                 NPCs.Add(npc);
             }
         }
@@ -712,7 +909,10 @@ public class GameController : MonoBehaviour
             if (spirit != null)
             {
                 if (setID)
-                    spirit.SetID(NPCs.Count);
+                {
+                    spirit.SetID(npcsIdCount);
+                    npcsIdCount++;
+                }
                 NPCs.Add(spirit);
             }
         }
@@ -723,6 +923,20 @@ public class GameController : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Функция, которая заставляет всех патрулирующих 
+    /// </summary>
+    public void SetPatrollingEnemiesToHome()
+    {
+        AIController[] ais = FindObjectsOfType<AIController>();
+        foreach (AIController ai in ais)
+            if (ai.Loyalty == LoyaltyEnum.enemy && ai.Behavior == BehaviorEnum.patrol)
+                ai.GoHome();
+    }
+
+    /// <summary>
+    /// Учесть все объекты с данным тэгом и внести их в список объектов, задав им id при необходимости
+    /// </summary>
     public void ConsiderObjectsWithTag(string tag,bool setID)
     {
         GameObject[] intObjs = GameObject.FindGameObjectsWithTag(tag);
@@ -732,11 +946,77 @@ public class GameController : MonoBehaviour
             if (inter != null)
             {
                 if (setID)
-                    inter.SetID(intObjects.Count);
+                {
+                    inter.SetID(objectsIdCount);
+                    objectsIdCount++;
+                }
                 intObjects.Add(obj);
             }
         }
     }
+
+    /// <summary>
+    /// Учесть все объекты, имеющие компонент SaveMeScript и внести их в список объектв, задав им id при необходимости
+    /// </summary>
+    public void ConsiderSaveMeObjects(bool setID)
+    {
+        SaveMeScript[] saveMeScripts = FindObjectsOfType<SaveMeScript>();
+        foreach (SaveMeScript saveMe in saveMeScripts)
+        {
+            IHaveID inter = saveMe.GetComponent<IHaveID>();
+            GameObject obj = saveMe.gameObject;
+            if (inter == null)
+                continue;
+            if (intObjects.Contains(obj))
+                continue;
+            if (setID)
+            {
+                inter.SetID(objectsIdCount);
+                objectsIdCount++;
+            }
+            intObjects.Add(obj);
+        }
+    }
+
+    /// <summary>
+    /// Создать игровой объект и задать ему id
+    /// </summary>
+    public GameObject InstantiateWithId(GameObject _gameObject, Vector3 _position, Quaternion _rotation)
+    {
+        GameObject obj = Instantiate(_gameObject, _position, _rotation) as GameObject;
+        SetIDToNewObject(obj);
+        return obj;        
+    }
+
+    /// <summary>
+    /// Задать id новому объекту
+    /// </summary>
+    public void SetIDToNewObject(GameObject obj)
+    {
+        AIController ai = obj.GetComponent<AIController>();
+        IHaveID inter = obj.GetComponent<IHaveID>();
+        NPCController npc = obj.GetComponent<NPCController>();
+        DialogObject dObj = obj.GetComponent<DialogObject>();
+        if (ai != null && !monsters.Contains(ai))
+        {
+            ai.ID = monstersIdCount;
+            monstersIdCount++;
+        }
+        else if (npc != null && !NPCs.Contains(npc))
+        {
+            npc.SetID(npcsIdCount);
+            npcsIdCount++;
+        }
+        else if (inter != null && !intObjects.Contains(obj))
+        {
+            inter.SetID(objectsIdCount);
+            objectsIdCount++;
+        }
+        
+        if (dObj!=null)
+            if (SpecialFunctions.dialogWindow != null)
+                SpecialFunctions.dialogWindow.AddDialogObjectInDictionary(dObj);
+    }  
 
     #region gameEffects
 
@@ -1063,7 +1343,7 @@ public class GameController : MonoBehaviour
     /// <param name="_time">Длительность эффекта</param>
     IEnumerator AncientDarknessProcess()
     {
-        SpriteLightKitImageEffect lightManager = SpecialFunctions.СamController.GetComponent<SpriteLightKitImageEffect>();
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
         int prevIntensity = Mathf.RoundToInt(lightManager.intensity * 100f);
         Hero.AddBuff(new BuffClass("AncientDarkness", Time.fixedTime, ancientDarknessTime, prevIntensity, (lightManager.HDRRatio > .1f ? "changed" : "")));
         activeGameEffects.Add("AncientDarkness");
@@ -1090,7 +1370,7 @@ public class GameController : MonoBehaviour
         if (!activeGameEffects.Contains("AncientDarkness"))
             return;
         StopCoroutine("AncientDarknessProcess");
-        SpriteLightKitImageEffect lightManager = SpecialFunctions.СamController.GetComponent<SpriteLightKitImageEffect>();
+        SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
         lightManager.intensity = argument / 100f;
         if (id == "changed")
             lightManager.HDRRatio += .1f;
@@ -1136,12 +1416,94 @@ public class GameController : MonoBehaviour
     /// <param name="nextLevelName">Название следующего уровня</param>
     public void CompleteLevel(string nextLevelName)
     {
+        SpecialFunctions.StartStoryEvent(this, EndGameEvent, new StoryEventArgs());
         GameStatistics statistics = SpecialFunctions.statistics;
         List<ItemCollection> itemCollections = statistics != null ? statistics.ItemCollections : null;
         string sceneName = SceneManager.GetActiveScene().name;
         ItemCollection _collection = itemCollections != null ? itemCollections.Find(x=>sceneName.Contains(x.settingName)):null;
         levelCompleteScreen.SetLevelCompleteScreen(nextLevelName, secretsFoundNumber, secretsTotalNumber, _collection);
     }
+
+    #region musicAndSounds
+
+    /// <summary>
+    /// Поменять громкость музыки
+    /// </summary>
+    public void ChangeMusicVolume(float _volume)
+    {
+        if (musicSource != null)
+            musicSource.volume = _volume;
+    }
+
+    /// <summary>
+    /// Обработка события "Поменялась громкость звуков"
+    /// </summary>
+    private void HandleSoundVolumeChange(object sender, SoundChangesEventArgs e)
+    {
+        if (soundSource != null)
+            soundSource.volume = e.SoundVolume;
+        if (ambientSource != null)
+            ambientSource.volume = e.SoundVolume;
+    }
+
+    /// <summary>
+    /// Начать проигрывать звуки окружающего мира, которые имеют заданное название
+    /// </summary>
+    public void ChangeAmbientSound(string clipName)
+    {
+        if (ambientSource == null)
+            return;
+        ambientSource.Stop();
+        if (clipName!="")
+        {
+            AudioClip _clip = ambientClips.Find(x => x.name.Contains(clipName));
+            if (_clip != null)
+            {
+                ambientSource.clip = _clip;
+                ambientSource.Play();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Начать проигрывать музыкальную тему с заданным названием
+    /// </summary>
+    public void ChangeMusicTheme(string clipName)
+    {
+        if (musicSource == null)
+            return;
+        musicSource.Stop();
+        if (clipName != "")
+        {
+            AudioClip _clip = musicClips.Find(x => x.name.Contains(clipName));
+            if (_clip != null)
+            {
+                musicSource.clip = _clip;
+                musicSource.Play();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Проиграть игровой звук с заданным названием
+    /// </summary>
+    /// <param name="soundName"></param>
+    public void PlaySound(string soundName)
+    {
+        if (soundSource == null)
+            return;
+        if (soundName != "")
+        {
+            AudioClip _clip = soundClips.Find(x => x.name.Contains(soundName));
+            if (_clip != null)
+            {
+                soundSource.clip = _clip;
+                soundSource.Play();
+            }
+        }
+    }
+
+    #endregion //musicAndSounds
 
     #region eventHandlers
 

@@ -244,7 +244,7 @@ public class MovingPlatform : MonoBehaviour, IMechanism
     /// </summary>
     public virtual InterObjData GetData()
     {
-        MovPlatformData mData = new MovPlatformData(id, moving, transform.position,orientation, currentPosition);
+        MovPlatformData mData = new MovPlatformData(id, moving, transform.position,orientation, currentPosition, gameObject.name);
         return mData;
     }
 
@@ -376,7 +376,7 @@ public class MovingPlatformEditor : Editor
         textureStyleAct.normal.background = textureStyle.active.background;
 
         base.OnInspectorGUI();
-        
+
         if (GUILayout.Button("DeleteLines"))
         {
             lines = mov.Lines;
@@ -388,7 +388,10 @@ public class MovingPlatformEditor : Editor
         if (GUILayout.Button("CreateLines"))
         {
             foreach (LineRenderer line in lines)
-                DestroyImmediate(line.gameObject);
+            {
+                if (line)
+                    DestroyImmediate(line.gameObject);
+            }
             lines.Clear();
             for (int i = 1; i < mov.PlatformPositions.Count; i++)
             {
