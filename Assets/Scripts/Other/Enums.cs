@@ -84,3 +84,14 @@ public enum DamageType: byte
     Poison=0x32
 }
 
+public enum AttackTypeEnum { melee=0,range=1, other=2 }
+
+/// <summary>
+/// Тип эффекта от тринкета, а точнее способ, которым эффект инициализируется
+/// </summary>
+public enum TrinketEffectTypeEnum { monsterDeath=0, investigation=1, getDamage=2}
+
+/// <summary>
+/// Панель, которая отображается на экране инвентаря
+/// </summary>
+public enum EquipmentModeEnum { weapon=0, trinket=1, item=2}

@@ -11,6 +11,7 @@ using System.Xml.Serialization;
 [XmlInclude(typeof(MechData))]
 [XmlInclude(typeof(MovPlatformData))]
 [XmlInclude(typeof(BoxData))]
+[XmlInclude(typeof(AlchemyLabData))]
 [XmlInclude(typeof(NPCData))]
 [XmlInclude(typeof(SpiderSpyData))]
 public class InterObjData
@@ -172,5 +173,29 @@ public class BoxData : InterObjData
         objId = _id;
         health = _hp;
         objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
+    }
+}
+
+/// <summary>
+/// Информация об алхимическом столе
+/// </summary>
+[XmlType("Alchemy Lab Data")]
+public class AlchemyLabData : InterObjData
+{
+    [XmlArray("Usage List")]
+    [XmlArrayItem("Usage Data")]
+    public List<bool> usageList=new List<bool>();//Данные о том, какие зелья уже были использованы игроком
+
+    public AlchemyLabData()
+    {
+    }
+
+    public AlchemyLabData(int _id, string _name, List<PotionClass> potions)
+    {
+        objId = _id;
+        objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
+        usageList = new List<bool>();
+        foreach (PotionClass potion in potions)
+            usageList.Add(potion.haveUsed);
     }
 }

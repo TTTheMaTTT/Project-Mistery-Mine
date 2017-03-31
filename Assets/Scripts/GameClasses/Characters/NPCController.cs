@@ -13,6 +13,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
 
     protected const float disableTalkTime = .2f;//Время, в течение которого нельзя снова заговорить с персонажем
     private const float pushForceY = 50f, pushForceX = 25f;//С какой силой НПС выбрасывает дроп
+    protected const float talkDistance = 2f;//Максимальное расстояние, на котором ещё может произойти диалог
 
     #endregion //consts
 
@@ -35,6 +36,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
 
     [SerializeField]
     protected List<Dialog> dialogs = new List<Dialog>();//Диалоги, что могут произойти с этим персонажем
+    public List<Dialog> Dialogs { get { return dialogs; } }
 
     protected bool canTalk = true;//Может ли персонаж разговаривать
     //public bool CanTalk { get { return canTalk; } set {if (value) StartTalking(); else StopTalking(); } }
@@ -56,6 +58,10 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     protected Color outlineColor = Color.yellow;//Цвет контура
     protected bool possibleTalk = true;//Возможно ли впринципе говорить с персонажем
 
+    [NonSerialized][HideInInspector]public bool waitingForDialog=false;//Ждёт ли НПС того, чтобы воспроизвести диалог
+    [HideInInspector]public List<Dialog> waitDialogs = new List<Dialog>();//Диалоги, которые ожидают своего воспроизведения
+    public bool considerDistance = false;
+
     #endregion //parametres
 
     protected virtual void Awake()
@@ -65,11 +71,30 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
 
     protected virtual void Update()
     {
-
+        if (considerDistance && waitingForDialog)
+        {
+            if (Vector2.SqrMagnitude(SpecialFunctions.player.transform.position - transform.position) < talkDistance * talkDistance)
+            {
+                if (waitDialogs.Count > 0)
+                    foreach (Dialog _dialog in waitDialogs)
+                        SpecialFunctions.dialogWindow.AddDialogInQueue(new DialogQueueElement(_dialog, this));
+            }
+            else
+            {
+                if (waitDialogs.Count == 0)
+                    waitDialogs = SpecialFunctions.dialogWindow.RemoveDialogsFromQueue(this);
+            }
+        }
     }
+
+    /*protected virtual void OnDestroy()
+    {
+        List<Dialog> removeDialogs = SpecialFunctions.dialogWindow.RemoveDialogsFromQueue(this);
+    }*/
 
     protected virtual void Initialize()
     {
+        waitDialogs = new List<Dialog>();
         if (GetComponent<CharacterController>() != null)
             anim = GetComponentInChildren<Animator>();
         else
@@ -93,7 +118,40 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// </summary>
     protected virtual void StartDialog(Dialog _dialog)
     {
-        SpecialFunctions.gameController.StartDialog(_dialog);
+        if (!SpecialFunctions.gameController.StartDialog(_dialog))
+        {
+            waitingForDialog = true;
+            if (considerDistance && Vector2.SqrMagnitude(SpecialFunctions.player.transform.position - transform.position) < talkDistance * talkDistance)
+                waitDialogs.Add(_dialog);
+            else
+                SpecialFunctions.dialogWindow.AddDialogInQueue(new DialogQueueElement(_dialog, this));
+        }
+    }
+
+    /// <summary>
+    /// Начать диалог с заданным названием (в отличие от функции talk, эта функция не может вызваться при взаимодействии, а только при использовании сюжетного действия)
+    /// </summary>
+    public virtual void StartDialog(string _dialogName)
+    {
+        Dialog _dialog = dialogs.Find(x => x.dialogName == _dialogName);
+        if (_dialog != null)
+            if (!SpecialFunctions.gameController.StartDialog(_dialog))
+            {
+                waitingForDialog = true;
+                if (considerDistance && Vector2.SqrMagnitude(SpecialFunctions.player.transform.position - transform.position) < talkDistance * talkDistance)
+                    waitDialogs.Add(_dialog);
+                else
+                    SpecialFunctions.dialogWindow.AddDialogInQueue(new DialogQueueElement(_dialog, this));
+            }
+    }
+
+    /// <summary>
+    /// Начать диалог через некоторое время
+    /// </summary>
+    IEnumerator StartDialogProcess(Dialog _dialog, float _time)
+    {
+        yield return new WaitForSeconds(_time);
+        StartDialog(_dialog);
     }
 
     /// <summary>
@@ -127,13 +185,30 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
                         break;
                     }
             }
-            SpecialFunctions.gameController.StartDialog(this, dialog);
+            if (!SpecialFunctions.gameController.StartDialog(this, dialog))
+            {
+                waitingForDialog = true;
+                if (considerDistance && Vector2.SqrMagnitude(SpecialFunctions.player.transform.position - transform.position) < talkDistance * talkDistance)
+                    waitDialogs.Add(dialog);
+                else
+                    SpecialFunctions.dialogWindow.AddDialogInQueue(new DialogQueueElement(dialog, this));
+            }
         }
         if (!spoken)
         {
             spoken = true;
             SpecialFunctions.statistics.ConsiderStatistics(this);
         }
+    }
+
+    /// <summary>
+    /// Начать разговор через некоторое время
+    /// </summary>
+    /// <param name="_time">Время, через которое начнётся диалог</param>
+    protected IEnumerator StartTalkProcess(float _time)
+    {
+        yield return new WaitForSeconds(_time);
+        Talk();
     }
 
     /// <summary>
@@ -208,10 +283,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     public void SpeechAction(StoryAction _action)
     {
         Dialog _dialog = null;
-        if (_action.argument > 0)
-            _dialog = dialogs[_action.argument];
-        else
-            _dialog = dialogs.Find(x => (x.dialogName == _action.id2));
+        _dialog = dialogs.Find(x => (x.dialogName == _action.id2));
         if (_dialog != null)
         {
             if (_action.id1 == "change speech")
@@ -219,10 +291,10 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
             else if (_action.id1 == "talk")
             {
                 dialogs[0] = _dialog;
-                Talk();
+                StartCoroutine(StartTalkProcess(_action.argument / 10f));
             }
             else if (_action.id1 == "startDialog")
-                StartDialog(_dialog);
+                StartCoroutine(StartDialogProcess(_dialog, _action.argument / 10f));
             else if (_action.id1 == "setTalkPossibility")
                 possibleTalk = _action.argument > 0;
         }
@@ -327,6 +399,13 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
                 if (dialog != null)
                     dialogs.Add(dialog);
             }
+            waitingForDialog = npcData.waiting;
+            foreach (string dialogName in npcData.waitDialogs)
+            {
+                Dialog _dialog = dialogs.Find(x => x.dialogName == dialogName);
+                if (_dialog != null)
+                    waitDialogs.Add(_dialog);
+            }
             if (transform.parent != null ? transform.parent.GetComponent<DialogObject>() : false)
                 transform.parent.position = npcData.position;//Частые случаи, когда НПС находится внутри другого объекта, 
                                                             //и он должен быть в координатном нуле относительно него
@@ -343,7 +422,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// </summary>
     public InterObjData GetData()
     {
-        return new NPCData(id, dialogs,gameObject.name, transform.position);
+        return new NPCData(id, dialogs,gameObject.name, transform.position, waitingForDialog, waitDialogs);
     }
 
     #endregion //IHaveID
@@ -382,7 +461,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// </summary>
     public virtual bool IsInteractive()
     {
-        return SpecialFunctions.battleField.enemiesCount == 0 && possibleTalk;
+        return SpecialFunctions.battleField.enemiesCount == 0 && possibleTalk && SpecialFunctions.dialogWindow.CurrentDialog == null;
     }
 
     #endregion //IInteractive
@@ -431,7 +510,8 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     {
         return new Dictionary<string, List<string>>() { { "", new List<string>()},
                                                         { "compare", new List<string>()},
-                                                        { "compareSpeech", GetSpeeches()}};
+                                                        { "compareSpeech", GetSpeeches()},
+                                                        { "compareHistoryProgress",SpecialFunctions.statistics.HistoryBase.stories.ConvertAll(x=>x.storyName)}};
     }
 
     /// <summary>

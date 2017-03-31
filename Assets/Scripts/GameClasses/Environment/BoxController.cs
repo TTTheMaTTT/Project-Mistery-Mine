@@ -60,9 +60,9 @@ public class BoxController : MonoBehaviour, IDamageable
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public void TakeDamage(float damage, DamageType _dType, int attackPower=0)
+    public void TakeDamage(HitParametres hitData)
     {
-        health -= damage;
+        health -= hitData.damage;
         StopAllCoroutines();
         if (health <= 0f)
             Destroy();
@@ -73,9 +73,9 @@ public class BoxController : MonoBehaviour, IDamageable
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public void TakeDamage(float damage,DamageType _dType, bool ignoreInvul, int attackPower=0)
+    public void TakeDamage(HitParametres hitData, bool ignoreInvul)
     {
-        health -= damage;
+        health -= hitData.damage;
         StopAllCoroutines();
         if (health <= 0f)
             Destroy();

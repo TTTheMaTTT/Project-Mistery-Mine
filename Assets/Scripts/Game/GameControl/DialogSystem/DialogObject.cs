@@ -75,12 +75,19 @@ public class DialogObject : MonoBehaviour
     public void SetImmobile(bool _immobile)
     {
         CharacterController charControl = GetComponent<CharacterController>();
-        NPCController npcControl = GetComponent<NPCController>();
         if (charControl != null)
             charControl.SetImmobile(_immobile);
+    }
+    
+    /// <summary>
+    /// Переключить объект в состояние разговора, если это возможно
+    /// </summary>
+    public void SetTalking(bool _talking)
+    {
+        NPCController npcControl = GetComponent<NPCController>();
         if (npcControl != null)
         {
-            if (_immobile)
+            if (_talking)
                 npcControl.StartTalking();
             else
                 npcControl.StopTalking();

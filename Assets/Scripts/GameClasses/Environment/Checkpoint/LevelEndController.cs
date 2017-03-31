@@ -35,6 +35,7 @@ public class LevelEndController : MonoBehaviour
     /// </summary>
     protected IEnumerator NextLevelProcess()
     {
+        SpecialFunctions.gameController.RemoveHeroDeathLevelEnd();
         PlayerPrefs.SetInt("Checkpoint Number", checkpointNumber);
         //PlayerPrefs.SetFloat("Hero Health", SpecialFunctions.Player.GetComponent<HeroController>().GetHealth());
         SpecialFunctions.gameController.SaveGame(checkpointNumber,true, nextLevelName);

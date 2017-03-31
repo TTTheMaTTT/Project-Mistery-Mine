@@ -61,6 +61,7 @@ public class NextLevelDoor : DoorClass
     /// </summary>
     protected IEnumerator NextLevelProcess()
     {
+        SpecialFunctions.gameController.RemoveHeroDeathLevelEnd();
         PlayerPrefs.SetInt("Checkpoint Number", checkpointNumber);
         SpecialFunctions.gameController.SaveGame(checkpointNumber,true, nextLevelName);
         PlayerPrefs.SetFloat("Hero Health", SpecialFunctions.Player.GetComponent<HeroController>().MaxHealth);

@@ -102,8 +102,12 @@ public static class SpecialFunctions
     /// </summary>
     public static void SwitchPlayer(HeroController _hero)
     {
+        HeroController prevHero = player.GetComponent<HeroController>();
         if (battleField != null)
             battleField.ResetBattlefield();
+        _hero.Equipment = prevHero.Equipment;
+        _hero.CurrentWeapon = prevHero.CurrentWeapon;
+        _hero.Health = prevHero.Health;
         player = _hero.gameObject;
         battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
         if (CamController != null)
@@ -112,6 +116,8 @@ public static class SpecialFunctions
             gameUI.ConsiderPlayer(_hero);
         if (dialogWindow.activated)
             _hero.SetImmobile(true);
+        if (equipWindow != null)
+            equipWindow.ConsiderPlayer(_hero);
     }
 
     /// <summary>

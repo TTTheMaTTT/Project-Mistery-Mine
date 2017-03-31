@@ -8,7 +8,7 @@ using UnityEngine;
 public class GameHistoryProgressClass
 {
 
-    private const string defaultStoryProgressName = "not started";//Что возвращается, когда запрашиваемая история не имеет своего прогресса
+    private const string defaultStoryProgressName = "notStarted";//Что возвращается, когда запрашиваемая история не имеет своего прогресса
 
     public Dictionary<string, string> gameHistoryDictionary = new Dictionary<string, string>();//Словарь, в котором хранится информация о каждой значимой в прогрессе игры статье. Считаем, что ключи этого словаря - это
                                                                                                //истории, а значения - состояния историй

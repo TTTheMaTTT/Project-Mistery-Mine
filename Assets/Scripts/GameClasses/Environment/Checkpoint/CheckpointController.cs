@@ -103,7 +103,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
     /// </summary>
     public virtual bool IsInteractive()
     {
-        return true;
+        return SpecialFunctions.battleField.enemiesCount == 0 && SpecialFunctions.dialogWindow.CurrentDialog == null;
     }
 
     #endregion //IInteractive

@@ -45,6 +45,7 @@ public class DialogWindowScript : MonoBehaviour
     protected CameraController cam;
 
     protected Dialog currentDialog = null;
+    public Dialog CurrentDialog { get { return currentDialog; } }
 
     protected Speech currentSpeech = null;
     public Speech CurrentSpeech { get { return currentSpeech; }
@@ -53,6 +54,9 @@ public class DialogWindowScript : MonoBehaviour
 
     protected List<DialogObject> dialogObjs = new List<DialogObject>();
 
+    private List<DialogQueueElement> dialogQueue = new List<DialogQueueElement>();//Очередь из нереализованных диалогов (да да, это список, а не очередь, но ведём мы с этим списком, как с очередью, за исключением 
+                                                                                 //в некоторых случаях удобны его свойстав, как списка
+    public List<DialogQueueElement> DialogQueue { get { return dialogQueue; }}
 
     #endregion //fields
 
@@ -85,7 +89,7 @@ public class DialogWindowScript : MonoBehaviour
             if (waitingForInput)
             {
                 Event e = Event.current;
-                if (Input.anyKeyDown && !Input.GetButtonDown("Horizontal") && !Input.GetButtonDown("Vertical") && 
+                if (Input.anyKeyDown && !Input.GetButtonDown("Horizontal") && !Input.GetButtonDown("Vertical") &&
                     !Input.GetButtonDown("Cancel") && !noInput && InterfaceWindow.openedWindow == null)
                     NextSpeech();
             }
@@ -168,80 +172,71 @@ public class DialogWindowScript : MonoBehaviour
     /// <summary>
     /// Начать диалог (Обычно эта функция вызывается, когда герой сам подходит к НПС и начинает с ним разговор)
     /// </summary>
-    public void BeginDialog(NPCController _npc, Dialog dialog)
+    public bool BeginDialog(NPCController _npc, Dialog dialog)
     {
-        if (!canvas.enabled)
+        if (currentDialog != null)
+            return false;
+        _npc.waitingForDialog = true;
+        ExecuteDialog(_npc, dialog);
+        return true;
+    }
+
+    /// <summary>
+    /// Воспроизвести диалог
+    /// </summary>
+    /// <param name="_npc">НПС, с которым происходит диалог</param>
+    /// <param name="dialog">Воспроизводимый диалог</param>
+    public void ExecuteDialog(NPCController _npc, Dialog dialog)
+    {
+        if (_npc != null ? _npc.waitingForDialog : false)
         {
             npc = _npc;
-            currentDialog = dialog;
-            currentDialog.stage = 0;
-            answerPanel.SetActive(false);
-
-            GetAllDialogObjectsInDialog(dialog);
-            foreach (DialogObject _dObject in dialogObjs)
-                _dObject.SetImmobile(true);
-
-            CurrentSpeech = dialog.speeches[0];
-
-            canvas.enabled = true;
-
             //Повернуть НПС к герою
             prevScale = npc.transform.localScale.x;
-            if (npc.transform.lossyScale.x * ( hero.position- npc.transform.position).x < 0f)
+            if (npc.transform.lossyScale.x * (hero.position - npc.transform.position).x < 0f)
                 npc.transform.localScale += new Vector3(-2f * prevScale, 0f);
-
-            if (currentDialog.pause)
-            {
-                SpecialFunctions.PauseGame();
-                SpecialFunctions.totalPaused = true;
-            }
-
-            if (currentDialog.sentPatrolHome)
-                SpecialFunctions.gameController.SetPatrollingEnemiesToHome();
-
-            StartCoroutine(NoInputProcess());
-            OnDialogChange(new DialogEventArgs(true));
+            npc.waitingForDialog = NPCHasDialogFromQueue(npc);
         }
-        /*else//Занести диалог и НПС в резерв, чтобы пообщатся с ним потом
+        currentDialog = dialog;
+        currentDialog.stage = 0;
+        answerPanel.SetActive(false);
+
+        GetAllDialogObjectsInDialog(dialog);
+
+        foreach (DialogObject _dObject in dialogObjs)
         {
-            if (_npc != npc)
-                _npc.StopTalking();
-            reserveDialogs.Add(dialog);
-            reserveNPCs.Add(_npc);
-        }*/
+            if (_dObject == null)
+                continue;
+            _dObject.SetImmobile(dialog.stopGameProcess);
+            _dObject.SetTalking(true);
+        }
+
+        CurrentSpeech = dialog.speeches[0];
+
+        canvas.enabled = true;
+
+        if (currentDialog.pause)
+        {
+            SpecialFunctions.PauseGame();
+            SpecialFunctions.totalPaused = true;
+        }
+
+        if (currentDialog.sentPatrolHome)
+            SpecialFunctions.gameController.SetPatrollingEnemiesToHome();
+
+        StartCoroutine(NoInputProcess());
+        OnDialogChange(new DialogEventArgs(true, dialog.stopGameProcess));
     }
 
     /// <summary>
     /// Начать диалог
     /// </summary>
-    public void BeginDialog(Dialog dialog)
+    public bool BeginDialog(Dialog dialog)
     {
-        if (currentDialog == null)
-        {
-            currentDialog = dialog;
-            currentDialog.stage = 0;
-            answerPanel.SetActive(false);
-
-            GetAllDialogObjectsInDialog(dialog);
-            foreach (DialogObject _dObject in dialogObjs)
-                _dObject.SetImmobile(true);
-
-            CurrentSpeech = dialog.speeches[0];
-
-            canvas.enabled = true;
-
-            if (currentDialog.pause)
-            {
-                SpecialFunctions.PauseGame();
-                SpecialFunctions.totalPaused = true;
-            }
-
-            if (currentDialog.sentPatrolHome)
-                SpecialFunctions.gameController.SetPatrollingEnemiesToHome();
-
-            StartCoroutine(NoInputProcess());
-            OnDialogChange(new DialogEventArgs(true));
-        }
+        if (currentDialog != null)
+            return false;
+        ExecuteDialog(null, dialog);
+        return true;
     }
 
     /// <summary>
@@ -254,7 +249,13 @@ public class DialogWindowScript : MonoBehaviour
 
         GetAllDialogObjectsInDialog(currentDialog);
         foreach (DialogObject _dObject in dialogObjs)
-            _dObject.SetImmobile(false);
+        {
+            if (_dObject == null)
+                continue;
+            if (currentDialog.stopGameProcess)
+                _dObject.SetImmobile(false);
+            _dObject.SetTalking(false);
+        }
 
         if (npc != null)
         {
@@ -267,10 +268,60 @@ public class DialogWindowScript : MonoBehaviour
         SpecialFunctions.totalPaused = false;
         SpecialFunctions.PlayGame();
         SpecialFunctions.SetDefaultFadeSpeed();
+        OnDialogChange(new DialogEventArgs(false, currentDialog.stopGameProcess));
         currentDialog = null;
         npc = null;
         dialogObjs.Clear();
-        OnDialogChange(new DialogEventArgs(false));
+
+        //Реализовать диалоги, стоящие в очереди
+        if (dialogQueue.Count > 0)
+        {
+            DialogQueueElement nextDialog = dialogQueue[0];
+            dialogQueue.RemoveAt(0);
+            ExecuteDialog(nextDialog.npc, nextDialog.dialog);
+        }
+    }
+
+    /// <summary>
+    /// Убрать диалоги данного НПС из очереди на исполнение
+    /// </summary>
+    public List<Dialog> RemoveDialogsFromQueue(NPCController _npc)
+    {
+        List<Dialog> _dialogs = new List<Dialog>();
+        for (int i = dialogQueue.Count - 1; i >= 0; i--)
+        {
+            DialogQueueElement dElement = dialogQueue[i];
+            if (dElement.npc == _npc)
+            {
+                dialogQueue.RemoveAt(i);
+                _dialogs.Insert(0, dElement.dialog);
+            }
+        }
+        return _dialogs;
+
+    }
+
+    /// <summary>
+    /// Добавить диалог в очередь диалогов
+    /// </summary>
+    public void AddDialogInQueue(DialogQueueElement _dElement)
+    {
+        dialogQueue.Add(_dElement);
+        //Если нет активного диалога, то сразу же реализовать очередь
+        if (currentDialog==null)
+        {
+            DialogQueueElement dElement = dialogQueue[0];
+            dialogQueue.RemoveAt(0);
+            ExecuteDialog(dElement.npc, dElement.dialog);
+        }
+    }
+
+    /// <summary>
+    /// Есть ли диалоги данного НПС в очереди на исполнение?
+    /// </summary>
+    public bool NPCHasDialogFromQueue(NPCController _npc)
+    {
+        return dialogQueue.Find(x => x.npc == _npc) != null;
     }
 
     /// <summary>
@@ -527,6 +578,9 @@ public class DialogWindowScript : MonoBehaviour
         answerText = answerPanel.transform.FindChild("AnswerText").GetComponent<Text>();
         answerPanel.SetActive(false);
         speechPanel.SetActive(false);
+
+        dialogQueue = new List<DialogQueueElement>();
+
     }
 
     #region events
@@ -547,5 +601,21 @@ public class DialogWindowScript : MonoBehaviour
     }
 
     #endregion //events
+
+}
+
+/// <summary>
+/// Специальный класс, который составляет диалоговую очередь
+/// </summary>
+public class DialogQueueElement
+{
+    public Dialog dialog;//Диалог
+    public NPCController npc;//НПС, который должен начать этот диалог
+
+    public DialogQueueElement(Dialog _dialog, NPCController _npc)
+    {
+        dialog = _dialog;
+        npc = _npc;
+    }
 
 }

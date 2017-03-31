@@ -10,6 +10,7 @@ public class SpiritController : CharacterController
     #region fields
 
     protected Transform hero;//Персонаж, за которым следует дух
+    public Transform Hero { get { return hero; } set { hero = value; } }
 
     #endregion //fields
 
@@ -32,6 +33,15 @@ public class SpiritController : CharacterController
             return;
         Vector2 pivot = hero.position + new Vector3(xOffset * Mathf.Sign(hero.lossyScale.x), yOffset);
         transform.position = Vector2.Lerp(transform.position, pivot, Time.fixedDeltaTime * speed);
+    }
+
+    /// <summary>
+    /// Воспроизвести вспышку света
+    /// </summary>
+    /// <param name="flashType"></param>
+    protected void MakeFlash(string flashType)
+    {
+        Animate(new AnimationEventArgs("flash", flashType, 0));
     }
 
 

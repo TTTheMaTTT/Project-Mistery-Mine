@@ -423,12 +423,12 @@ public class BatBossController: BossController
     /// Функция, вызываемая при получении урона, оповещающая о субъекте нападения
     /// </summary>
     /// <param name="attacker">Кто атаковал персонажа</param>
-    public override void TakeAttackerInformation(GameObject attacker)
+    public override void TakeAttackerInformation(AttackerClass attacker)
     {
         if (attacker != null)
         {
-            if (mainTarget.transform != attacker.transform)
-                MainTarget = new ETarget(attacker.transform);
+            if (mainTarget.transform != attacker.attacker.transform)
+                MainTarget = new ETarget(attacker.attacker.transform);
             if (behavior == BehaviorEnum.calm)
                 BecomeAgressive();
         }
@@ -437,25 +437,27 @@ public class BatBossController: BossController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
+    public override void TakeDamage(HitParametres hitData)
     {
-        if (_dType != DamageType.Physical)
+        if (hitData.damageType != DamageType.Physical)
         {
-            if (((DamageType)vulnerability & _dType) == _dType)
-                damage *= 1.25f;
-            else if (_dType == attackParametres.damageType)
-                damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
+            if (((DamageType)vulnerability & hitData.damageType) == hitData.damageType)
+                hitData.damage *= 1.25f;
+            else if (hitData.damageType == attackParametres.damageType)
+                hitData.damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
         }
-        Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
+        Health = Mathf.Clamp(Health - hitData.damage, 0f, maxHealth);
         if (health <= 0f)
         {
             Death();
             return;
         }
 
+        if ((hitData.damageType != DamageType.Physical) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
+            TakeDamageEffect(hitData.damageType);
         bool stunned = GetBuff("StunnedProcess") != null;
         bool frozen = GetBuff("FrozenProcess") != null;
-        if (attackPower > balance || frozen || stunned)
+        if (hitData.attackPower > balance || frozen || stunned)
         {
             StopMoving();
             balance = usualBalance;
@@ -476,7 +478,7 @@ public class BatBossController: BossController
             if (behavior == BehaviorEnum.patrol)
                 BecomeAgressive();
         }
-        Animate(new AnimationEventArgs("hitted", "", attackPower > balance ? 0 : 1));
+        Animate(new AnimationEventArgs("hitted", "", hitData.attackPower > balance ? 0 : 1));
     }
 
     #region damageEffects

@@ -29,6 +29,9 @@ public class GameStatistics : MonoBehaviour, IHaveStory
     Dictionary<string, WeaponClass> weaponDict = new Dictionary<string, WeaponClass>();//Словарь оружий
     public Dictionary<string, WeaponClass> WeaponDict { get { return weaponDict; } }
 
+    Dictionary<string, TrinketClass> trinketDict = new Dictionary<string, TrinketClass>();//Словарь тринкетов
+    public Dictionary<string, TrinketClass> TrinketDict { get { return trinketDict; } }
+
     Dictionary<string, ItemClass> itemDict = new Dictionary<string, ItemClass>();//Словарь предметов
     public Dictionary<string, ItemClass> ItemDict { get { return itemDict; } }
 
@@ -98,6 +101,13 @@ public class GameStatistics : MonoBehaviour, IHaveStory
         {
             if (!weaponDict.ContainsKey(weapon.itemName))
                 weaponDict.Add(weapon.itemName, weapon);
+        }
+
+        trinketDict = new Dictionary<string, TrinketClass>();
+        foreach (TrinketClass trinket in itemBase.trinkets)
+        {
+            if (!trinketDict.ContainsKey(trinket.itemName))
+                trinketDict.Add(trinket.itemName, trinket);
         }
 
         itemDict = new Dictionary<string, ItemClass>();

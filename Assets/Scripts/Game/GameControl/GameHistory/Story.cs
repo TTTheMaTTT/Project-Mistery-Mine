@@ -39,6 +39,9 @@ public class Story : ScriptableObject
     {
 
         History history = SpecialFunctions.history;
+        StoryInitializer init= history.FindInitializer(this);
+        if (init == null ? true : init.impossible)
+            return;
 
         if (!storyCondition.storyCondition(storyCondition,e))
         {
@@ -80,6 +83,29 @@ public class StoryAction
     public List<GameObject> actionObjects = new List<GameObject>();//С какими ещё игровыми объектами прооизвести указанное действие
     public StoryActionDelegate storyAction;//ссылка на функцию, которая соответствует названию выше
 
+    public StoryAction(string _actionName, string _id1, string _id2, int _argument)
+    {
+        storyActionName = "";
+        actionName = _actionName;
+        id1 = _id1;
+        id2 = _id2;
+        argument = _argument;
+        gameObj = null;
+        actionObjects = new List<GameObject>();
+    }
+
+    public StoryAction()
+    {
+        storyActionName = "";
+        actionName = "";
+        id1 = "";
+        id2 = "";
+        argument = 0;
+        gameObj = null;
+        actionObjects = new List<GameObject>();
+        storyAction = null;
+    }
+
 }
 
 /// <summary>
@@ -117,7 +143,7 @@ public class CustomStoryEditor : Editor
 
     List<int> actionNamesIndexes = new List<int>(), actionID1Indexes = new List<int>(), actionID2Indexes = new List<int>();
 
-    List<string> conditionNames = new List<string>(), initNames = new List<string>(), conditionIDs = new List<string>(), 
+    List<string> conditionNames = new List<string>(), initNames = new List<string>(), conditionIDs = new List<string>(),
         conditionIDs2 = new List<string>() { "<", "<=", "=", ">", ">=", "!=", "!" };
     IHaveStory currentConditionObject = null;//Объект, который является инициатором сюжетного события
 
@@ -272,11 +298,11 @@ public class CustomStoryEditor : Editor
 
         #region storyActions
 
-        EditorGUILayout.HelpBox("story actions",MessageType.Info);
+        EditorGUILayout.HelpBox("story actions", MessageType.Info);
 
         actionSize = story.storyActions.Count;
         actionSize = EditorGUILayout.IntField("action size", actionSize);
-        if (actionSize !=story.storyActions.Count)
+        if (actionSize != story.storyActions.Count)
         {
             int m = story.storyActions.Count;
             for (int i = m; i < actionSize; i++)
@@ -292,13 +318,13 @@ public class CustomStoryEditor : Editor
             storyActions = serStory.FindProperty("storyActions");
         }
 
-        if (init!=null? (init.eventObjectLists == null? true : init.eventObjectLists.Count<init.eventObjects.Count):false)
+        if (init != null ? (init.eventObjectLists == null ? true : init.eventObjectLists.Count < init.eventObjects.Count) : false)
         {
             init.eventObjectLists = new List<StoryObjectList>();
             foreach (GameObject eventObj in init.eventObjects)
                 init.eventObjectLists.Add(new StoryObjectList());
         }
-        if (init!=null? init.eventObjects.Count != story.storyActions.Count:false)
+        if (init != null ? init.eventObjects.Count != story.storyActions.Count : false)
         {
             int m = init.eventObjects.Count;
             for (int i = m; i < story.storyActions.Count; i++)
@@ -313,7 +339,7 @@ public class CustomStoryEditor : Editor
             }
         }
 
-        for (int i = 0; i <story.storyActions.Count;i++)
+        for (int i = 0; i < story.storyActions.Count; i++)
         {
 
             StoryAction _action = story.storyActions[i];
@@ -340,9 +366,9 @@ public class CustomStoryEditor : Editor
 
                 }
             }
-            _action.actionName= EditorGUILayout.TextField("action name", _action.actionName);
+            _action.actionName = EditorGUILayout.TextField("action name", _action.actionName);
 
-            if (storyObject!=null? storyObject.actionIDs1().ContainsKey(_action.actionName):false)
+            if (storyObject != null ? storyObject.actionIDs1().ContainsKey(_action.actionName) : false)
             {
                 List<string> IDs = storyObject.actionIDs1()[_action.actionName];
                 if (IDs.Count > 0)
@@ -372,9 +398,9 @@ public class CustomStoryEditor : Editor
             }
             _action.id2 = EditorGUILayout.TextField("id2", _action.id2);
 
-            _action.argument=EditorGUILayout.IntField("argument",_action.argument);
+            _action.argument = EditorGUILayout.IntField("argument", _action.argument);
 
-            GameObject newObj=(GameObject)EditorGUILayout.ObjectField("action object",_action.gameObj,typeof(GameObject), true);//с каким игровым объектом произвести действие
+            GameObject newObj = (GameObject)EditorGUILayout.ObjectField("action object", _action.gameObj, typeof(GameObject), true);//с каким игровым объектом произвести действие
             if (newObj != null ? newObj != _action.gameObj : _action.gameObj != null)
             {
                 _action.gameObj = newObj;
@@ -424,7 +450,7 @@ public class CustomStoryEditor : Editor
 
             if (GUILayout.Button("Delete"))
             {
-                if (sceneName==story.sceneName)
+                if (sceneName == story.sceneName)
                 {
                     if (init != null)
                     {
@@ -464,7 +490,7 @@ public class CustomStoryEditor : Editor
                 story.storyActions.RemoveAt(i);
         }
 
-        for (int i=0; i<story.presequences.Count;i++)
+        for (int i = 0; i < story.presequences.Count; i++)
         {
             EditorGUILayout.BeginHorizontal();
             {
@@ -644,12 +670,12 @@ public class CustomStoryEditor : Editor
 
             }
         }
-        _condition.conditionName= EditorGUILayout.TextField("condition name", _condition.conditionName);
+        _condition.conditionName = EditorGUILayout.TextField("condition name", _condition.conditionName);
 
-        if (_condition.obj != null && currentConditionObject!=null)
+        if (_condition.obj != null && currentConditionObject != null)
         {
             int newIndex = EditorGUILayout.Popup(conditionIDIndex, conditionIDs.ToArray());
-            if (newIndex != conditionIDIndex && conditionIDs.Count>0)
+            if (newIndex != conditionIDIndex && conditionIDs.Count > 0)
             {
                 conditionIDIndex = newIndex;
                 _condition.id1 = conditionIDs[newIndex];
@@ -657,7 +683,7 @@ public class CustomStoryEditor : Editor
         }
         _condition.id1 = EditorGUILayout.TextField("id", _condition.id1);
 
-        if (_condition.obj != null && currentConditionObject != null)
+        if (_condition.obj != null && currentConditionObject != null && ( _condition.conditionName == "compare" || _condition.conditionName=="compareStatistics" ))
         {
             int newIndex = EditorGUILayout.Popup(conditionID2Index, conditionIDs2.ToArray());
             if (newIndex != conditionID2Index)
@@ -865,7 +891,7 @@ public class CustomStoryEditor : Editor
                             conditionIDIndex = conditionIDs.IndexOf(sCondition.id1);
                             if (conditionIDs2.Contains(sCondition.id2))
                                 conditionID2Index = conditionIDs2.IndexOf(sCondition.id2);
-                            else
+                            else if (sCondition.conditionName=="compare"|| sCondition.conditionName=="compareStatistics")
                             {
                                 sCondition.id2 = string.Empty;
                                 conditionID2Index = -1;

@@ -38,6 +38,7 @@ public class GameUIScript : MonoBehaviour
     protected Transform buffPanel;//Панелька на которой размещаются иконки баффов
 
     protected List<Image> heartImages=new List<Image>();
+    protected int heartCount = 3;
 
     protected Transform breathPanel;
 
@@ -46,6 +47,7 @@ public class GameUIScript : MonoBehaviour
     protected Image weaponImage;
     public Sprite WeaponImage { set { weaponImage.sprite = value; if (value != null) weaponImage.color = Color.white; else weaponImage.color = new Color(1f, 1f, 1f, 0f); } }
 
+    protected bool cantShowMessages = true;//Если true, то не может показывать сообщения
     protected GameObject textPanel;//В этом окошечке будет выводится информация о процессе игры
     protected GameObject messagePanel;//В этом окошечке выводится информация, переданная от других персонажей или игровых объектов
     protected Text messageText;
@@ -59,6 +61,8 @@ public class GameUIScript : MonoBehaviour
     protected GameObject collectorScreen;//Панель, на которой отображается информация о собранных коллекциях
     protected GameObject oneItemScreen;//Экран, в котором показывается найденный коллекционный предмет
     protected GameObject collectionScreen;//Экран, в котором показывается, к каким коллекциям этот предмет принадлежит
+    protected bool itemProcess = false;//Включён ли CollectorScreen?
+    protected List<ItemClass> itemsOnProcess=new List<ItemClass>();//Какие ещё предметы должен отобразить itemScreen?
 
     protected Image fadeScreen;//Объект, ответственный за затемнение, происходящее в переходах между уровнями
     protected Image damageScreen;//Объект, ответственный за покраснения экрана при получении урона
@@ -154,17 +158,22 @@ public class GameUIScript : MonoBehaviour
         oneItemScreen.SetActive(false);
         collectionScreen.SetActive(false);
         collectorScreen.SetActive(false);
+        itemProcess = false;
+        itemsOnProcess = new List<ItemClass>();
 
         breathPanel = transform.FindChild("BreathPanel");
         hero.suffocateEvent += HandleSuffocate;
         ConsiderBreath(10);
 
         ConsiderHealth(hero.Health);
+        ConsiderMaxHP(hero.MaxHealth);
 
         bossHealthPanel = transform.FindChild("BossHealthPanel").gameObject;
         bossHP = bossHealthPanel.transform.FindChild("BossHP").GetComponent<Image>();
         bossNameText = bossHealthPanel.GetComponentInChildren<Text>();
         bossHealthPanel.SetActive(false);
+
+        StartCoroutine(CantShowMessagesProcess());
 
     }
 
@@ -193,6 +202,7 @@ public class GameUIScript : MonoBehaviour
         hero.suffocateEvent += HandleSuffocate;
 
         ConsiderHealth(_player.Health);
+        ConsiderMaxHP(_player.MaxHealth);
     }
 
     /// <summary>
@@ -220,6 +230,21 @@ public class GameUIScript : MonoBehaviour
         for (int j = i + 1; j < heartImages.Count; j++)
         {
             heartImages[j].sprite = emptyHeart;
+        }
+    }
+
+    /// <summary>
+    /// Учитывая текущее максимальное здоровье персонажа, правильно отобразить сердечки
+    /// </summary>
+    void ConsiderMaxHP(float maxHP)
+    {
+        heartCount = 0;
+        foreach (Image heartImage in heartImages)
+        {
+            heartImage.gameObject.SetActive(maxHP > 0f);
+            if (maxHP > 0f)
+                heartCount++;
+            maxHP -= 4f;            
         }
     }
 
@@ -306,12 +331,36 @@ public class GameUIScript : MonoBehaviour
         }
     }
 
+    protected IEnumerator CantShowMessagesProcess()
+    {
+        yield return new WaitForSeconds(2f);
+        cantShowMessages = false;
+    }
+
     /// <summary>
-    /// Функция, что учитывает информацию о собираемых поверхностях
+    /// Функция, что учитывает информацию о собираемых коллекциях
     /// </summary>
     public void ConsiderCollections(ItemClass _item, List<ItemCollection> _collections)
     {
-        StartCoroutine(CollectionProcess(_item, _collections));
+        if (cantShowMessages)
+            return;
+        if (!itemProcess)
+            StartCoroutine(CollectionProcess(_item, _collections));
+        else
+            itemsOnProcess.Add(_item);
+    }
+
+    /// <summary>
+    /// Функция, что учитывает инфрмацию о новом полученном предмете
+    /// </summary>
+    public void ConsiderItem(ItemClass _item, string _description)
+    {
+        if (cantShowMessages)
+            return;
+        if (!itemProcess)
+            StartCoroutine(ObtainItemProcess(_item,_description));
+        else
+            itemsOnProcess.Add(_item);
     }
 
     /// <summary>
@@ -319,7 +368,9 @@ public class GameUIScript : MonoBehaviour
     /// </summary>
     public IEnumerator CollectionProcess(ItemClass _item, List<ItemCollection> _collections)
     {
+        itemProcess = true;
         SpecialFunctions.PauseGame();
+        SpecialFunctions.totalPaused = true;
         collectorScreen.SetActive(true);
         oneItemScreen.SetActive(false);
         collectionScreen.SetActive(false);
@@ -328,7 +379,7 @@ public class GameUIScript : MonoBehaviour
         Image _img = oneItemScreen.transform.FindChild("CollectionItemImage").GetComponent<Image>();
         _img.sprite = _item.itemImage;
         Text _text = oneItemScreen.transform.FindChild("ItemNameText").GetComponent<Text>();
-        _text.text = _item.itemName;
+        _text.text = _item.itemTextName1;
         oneItemScreen.SetActive(true);
         yield return new WaitForSecondsRealtime(collectionItemTime);
 
@@ -372,7 +423,51 @@ public class GameUIScript : MonoBehaviour
         collectionScreen.SetActive(false);
         collectorScreen.SetActive(false);
 
+        SpecialFunctions.totalPaused = false;
         SpecialFunctions.PlayGame();
+        itemProcess = false;
+        if (itemsOnProcess.Count > 0)
+        {
+            ItemClass item1 = itemsOnProcess[0];
+            itemsOnProcess.RemoveAt(0);
+            StartCoroutine(ObtainItemProcess(item1,""));
+        }
+    }
+
+    /// <summary>
+    /// Процесс отображения информации о полученном предмете
+    /// </summary>
+    public IEnumerator ObtainItemProcess(ItemClass _item, string _description)
+    {
+        itemProcess = true;
+        SpecialFunctions.PauseGame();
+        SpecialFunctions.totalPaused = true;
+        collectorScreen.SetActive(true);
+        oneItemScreen.SetActive(false);
+        collectionScreen.SetActive(false);
+        yield return new WaitForSecondsRealtime(collectionItemTime / 2f);
+
+        Image _img = oneItemScreen.transform.FindChild("CollectionItemImage").GetComponent<Image>();
+        _img.sprite = _item.itemImage;
+        Text _text = oneItemScreen.transform.FindChild("ItemNameText").GetComponent<Text>();
+        Text descriptionText = oneItemScreen.transform.FindChild("ItemDescriptionText").GetComponent<Text>();
+        descriptionText.text = _description;
+        _text.text = _item.itemTextName1;
+        oneItemScreen.SetActive(true);
+        yield return new WaitForSecondsRealtime(collectionItemTime);
+        
+        oneItemScreen.SetActive(false);
+        collectorScreen.SetActive(false);
+
+        SpecialFunctions.totalPaused = false;
+        SpecialFunctions.PlayGame();
+        itemProcess = false;
+        if (itemsOnProcess.Count > 0)
+        {
+            ItemClass item1 = itemsOnProcess[0];
+            itemsOnProcess.RemoveAt(0);
+            StartCoroutine(ObtainItemProcess(item1,""));
+        }
     }
 
     /// <summary>
@@ -380,6 +475,8 @@ public class GameUIScript : MonoBehaviour
     /// </summary>
     public void SetMessage(string _info, float textTime)
     {
+        if (cantShowMessages)
+            return;
         messageText.text = _info;
         StopCoroutine("TextMessage");
         fadeTextTime = textTime;
@@ -401,6 +498,8 @@ public class GameUIScript : MonoBehaviour
     /// </summary>
     public void SetSecretMessage(float textTime, string _text="Вы нашли секретное место!")
     {
+        if (cantShowMessages)
+            return;
         if (secretPlaceText == null)
             return;
         secretPlaceText.text = _text;
@@ -548,7 +647,7 @@ public class GameUIScript : MonoBehaviour
     }*/
 
     /// <summary>
-    /// Определиться, какое состояниедолжно быть у экрана отображения урона
+    /// Определиться, какое состояние должно быть у экрана отображения урона
     /// </summary>
     void ConsiderDamageScreenState()
     {
@@ -564,6 +663,15 @@ public class GameUIScript : MonoBehaviour
             StartCoroutine("PoisonedFadeProcess");
         else
             dmgColor = new Color(0f, 0f, 0f, 0f);
+    }
+
+    /// <summary>
+    /// Переключить режим отображения игрового интерфейса
+    /// </summary>
+    public void ChangeVisibility()
+    {
+        Canvas canvas = GetComponent<Canvas>();
+        canvas.enabled = !canvas.enabled;
     }
 
     /// <summary>
@@ -587,6 +695,8 @@ public class GameUIScript : MonoBehaviour
     /// </summary>
     protected virtual void HandleHealthChanges(object sender, HealthEventArgs e)
     {
+        if (e.MaxHP > heartCount * 4f)
+            ConsiderMaxHP(e.MaxHP);
         ConsiderHealth(e.HP);
         if (e.HP < 5f)
             dmgScreenType |= DamageScreenType.LowHP; 

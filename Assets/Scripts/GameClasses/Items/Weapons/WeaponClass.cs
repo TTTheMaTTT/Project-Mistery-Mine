@@ -28,6 +28,8 @@ public abstract class WeaponClass : ItemClass
     {
         itemName = _weapon.itemName;
         itemTextName = _weapon.itemTextName;
+        itemTextName1 = _weapon.itemTextName1;
+        itemDescription = _weapon.itemDescription;
         itemImage = _weapon.itemImage;
         damage = _weapon.damage;
         attackTime = _weapon.attackTime;

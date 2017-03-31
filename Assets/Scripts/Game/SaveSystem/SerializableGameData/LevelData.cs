@@ -13,6 +13,7 @@ using System.Xml.Serialization;
 [XmlInclude(typeof(DropData))]
 [XmlInclude(typeof(EnemyData))]
 [XmlInclude(typeof(NPCData))]
+[XmlInclude(typeof(DialogData))]
 [XmlInclude(typeof(InterObjData))]
 [XmlInclude(typeof(QuestInfo))]
 [XmlInclude(typeof(StoryInfo))]
@@ -31,6 +32,9 @@ public class LevelData
 
     [XmlElement("Light HDR")]
     public float lightHDR = 0f;//Сила источников света
+
+    [XmlElement("Max HP")]
+    public float maxHP = 12f;//Максимальное здоровье перосонажа
 
     [XmlElement("Level Statistics Data")]
     public LevelStatsData lStatsInfo;
@@ -57,6 +61,9 @@ public class LevelData
     [XmlArrayItem("NPC Info")]
     public List<NPCData> npcInfo = new List<NPCData>();//Информация об НПС
 
+    [XmlElement("Dialog Data")]
+    public DialogData dInfo = new DialogData();//Информация о диалогах
+
     [XmlElement("Quests Data")]
     public QuestInfo qInfo;//Информация об активных квестах
 
@@ -71,7 +78,7 @@ public class LevelData
     }
 
     public LevelData(int cNumber, HeroController player, List<ItemCollection> _collection, List<DropClass> drops, History history, GameStatistics gStats,
-                                                                                List<EnemyData> _enInfo, List<InterObjData> _intInfo, List<NPCData> _npcInfo)
+                                                                                List<EnemyData> _enInfo, List<InterObjData> _intInfo, List<NPCData> _npcInfo, DialogWindowScript dWindow)
     {
         active = true;
         checkpointNumber = cNumber;
@@ -83,6 +90,7 @@ public class LevelData
         enInfo = _enInfo;
         intInfo = _intInfo;
         npcInfo = _npcInfo;
+        dInfo = new DialogData(dWindow.DialogQueue);
         SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
         if (lightManager!=null)
         {
@@ -94,6 +102,7 @@ public class LevelData
         for (int i = 0; i < _collection.Count; i++)
             cInfo.Add(new CollectionInfo(_collection[i]));
         progressInfo = new GameProgressData(gStats.gameHistoryProgress);
+        maxHP = player.MaxHealth;
 
     }
 

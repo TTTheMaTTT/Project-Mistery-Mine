@@ -149,12 +149,10 @@ public class HitBox : HitBoxController
                         {
                             rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
                         }
-                        if ((hitData.damageType != DamageType.Physical && !target.InInvul()) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
-                            target.TakeDamageEffect(hitData.damageType);
                         AIController ai = null;
                         if ((ai = other.GetComponent<AIController>()) != null)
-                            ai.TakeAttackerInformation(attacker);
-                        target.TakeDamage(hitData.damage, hitData.damageType, hitData.attackPower);
+                            ai.TakeAttackerInformation(attackerInfo);
+                        target.TakeDamage(hitData);
                         OnAttack(new HitEventArgs(target.GetHealth()-prevHP));
                         return;
                     }
@@ -167,12 +165,10 @@ public class HitBox : HitBoxController
                             rigid.velocity = Vector2.zero;
                             rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
                         }
-                        if ((hitData.damageType != DamageType.Physical && !target.InInvul()) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
-                            target.TakeDamageEffect(hitData.damageType);
                         AIController ai = null;
                         if ((ai = other.GetComponent<AIController>()) != null)
-                            ai.TakeAttackerInformation(attacker);
-                        target.TakeDamage(hitData.damage, hitData.damageType,hitData.attackPower);
+                            ai.TakeAttackerInformation(attackerInfo);
+                        target.TakeDamage(hitData);
                         OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
                     }
                 }
@@ -205,6 +201,20 @@ public struct HitParametres
     public DamageType damageType;//Каким способом наносится атака
     [Range(0f, 100f)]public float effectChance;//Какова вероятность срабатывания особого эффекта урона
     public int attackPower;//Насколько эффектно атака сбивает
+
+    public HitParametres(float _damage, DamageType _dType, int _attackPower=0, float _eChance = 0f)
+    {
+        damage = _damage;
+        preAttackTime = 0f;
+        actTime = 0f;
+        endAttackTime = 0f;
+        hitSize = Vector2.zero;
+        hitPosition = Vector2.zero;
+        hitForce = 0f;
+        damageType = _dType;
+        effectChance = _eChance;
+        attackPower = _attackPower;
+    }
 
     public HitParametres(float _damage, float _actTime, Vector2 _size, Vector2 _position, float _hitForce, 
                                         DamageType _dType=DamageType.Physical, float _eChance=0f, int _attackPower = 0, float _preAttackTime=0f, float _endAttackTime=0f)

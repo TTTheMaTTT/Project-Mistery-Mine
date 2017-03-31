@@ -15,7 +15,6 @@ public class HeroController : CharacterController
     protected const float groundRadius = .01f;
     protected const float jumpTime = .2f, jumpInputTime = .2f;
     protected const float flipTime = .6f;
-    protected const float deathTime = 2.1f;
 
     protected const int maxJumpInput = 10;
 
@@ -63,17 +62,19 @@ public class HeroController : CharacterController
             if (currentWeapon is BowClass)
             {
                 ((BowClass)currentWeapon).ReloadWeapon();
-                fightingMode = "range";
+                fightingMode = AttackTypeEnum.range;
             }
             else
-                fightingMode = "melee";
+                fightingMode = AttackTypeEnum.melee;
             OnEquipmentChanged(new EquipmentEventArgs(currentWeapon, null));
+            hitBox.AttackerInfo = new AttackerClass(gameObject, fightingMode);
         }
     }
 
     protected EquipmentClass equipment;//Инвентарь игрока.
-    public EquipmentClass Equipment { get { return equipment; } }
+    public EquipmentClass Equipment { get { return equipment; } set { equipment = value; } }
     public GameObject dropPrefab;
+    public List<TrinketClass> trinkets = new List<TrinketClass>();
 
     [SerializeField]protected GameObject summonedAnimal;//Животное, которое может призвать на помощь герой
 
@@ -81,8 +82,8 @@ public class HeroController : CharacterController
 
     #region parametres
 
-    public override float Health { get { return base.Health; } set { float prevHealth = health; base.Health = value; OnHealthChanged(new HealthEventArgs(value, health-prevHealth)); } }
-    public float MaxHealth { get { return base.maxHealth; } set { maxHealth = value; } }
+    public override float Health { get { return base.Health; } set { float prevHealth = health; base.Health = value; OnHealthChanged(new HealthEventArgs(value, health-prevHealth, maxHealth)); } }
+    public override float MaxHealth { get { return base.MaxHealth; } set { maxHealth = value; OnHealthChanged(new HealthEventArgs(value, 0f, maxHealth)); } }
     public int Balance { get { return balance;} set { balance = value; } }
     public float Speed { get { return speed; } set { speed = value; } }
     public float JumpForce { get { return jumpForce; } set { jumpForce = value; } }
@@ -145,9 +146,12 @@ public class HeroController : CharacterController
     public override bool OnLadder { get { return onLadder; } }
     protected bool dontShoot = false;
 
+    protected AttackerClass attacker;
+    protected TrinketEffectClass mutagenEffect;//Эффект, который связан с мутагеном
+    protected bool mutagenActive = false;//Действует ли мутаген
     protected bool invul;//Если true, то персонаж невосприимчив к урону
 
-    protected string fightingMode;
+    protected AttackTypeEnum fightingMode;
     public bool attacking = false;
     protected float chargeBeginTime = 0f;
 
@@ -315,12 +319,13 @@ public class HeroController : CharacterController
         jumping = false;
         onLadder = false;
 
+        mutagenEffect = null;
         equipment = new EquipmentClass();
         if (currentWeapon != null)
         {
             currentWeapon = currentWeapon.GetWeapon();//Сразу же в начале игры в это поле занесём независимую от 
                                                       //оригинала копию этого же поля, чтобы можно было производить операции с оружием, не меняя файловую структуру игры
-            fightingMode = (currentWeapon is SwordClass) ? "melee" : "range";
+            fightingMode = (currentWeapon is SwordClass) ? AttackTypeEnum.melee : AttackTypeEnum.range;
             SetItem(currentWeapon);
         }
 
@@ -366,7 +371,7 @@ public class HeroController : CharacterController
 
             if (fallSpeed > minDamageFallSpeed)
             {
-                TakeDamage(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed), DamageType.Physical, true, 1);
+                TakeDamage(new HitParametres(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed), DamageType.Physical,1), true);
             }
             if (fallSpeed > minDamageFallSpeed / 10f)
                 Animate(new AnimationEventArgs("fall"));
@@ -439,7 +444,7 @@ public class HeroController : CharacterController
         while (true)
         {
             yield return new WaitForSeconds(suffocateTime*4f);
-            TakeDamage(1f, DamageType.Physical,true,0);
+            TakeDamage(new HitParametres(1f, DamageType.Physical, 0), true);
         }
     }
 
@@ -542,10 +547,10 @@ public class HeroController : CharacterController
     /// </summary>
     protected virtual void StartCharge()
     {
-        if (fightingMode == "range" ? !((BowClass)currentWeapon).canShoot : false)
+        if (fightingMode == AttackTypeEnum.range ? !((BowClass)currentWeapon).canShoot : false)
             return;
         chargeBeginTime = Time.fixedTime;
-        int employmentDelta = fightingMode == "range" ? 5 : 3;
+        int employmentDelta = fightingMode == AttackTypeEnum.range ? 5 : 3;
         employment = Mathf.Clamp(employment - employmentDelta, 0, maxEmployment);
         Animate(new AnimationEventArgs("holdAttack", currentWeapon.itemName, 0));
     }
@@ -555,14 +560,13 @@ public class HeroController : CharacterController
     /// </summary>
     protected virtual void StopCharge()
     {
-        int employmentDelta = fightingMode == "range" ? 5 : 3;
+        int employmentDelta = fightingMode == AttackTypeEnum.range ? 5 : 3;
         float chargeTime = (Time.fixedTime - chargeBeginTime);
         if (chargeTime < minChargeTime)
             chargeBeginTime = 0f;
         currentWeapon.ChargeValue = chargeTime;
         employment = Mathf.Clamp(employment + employmentDelta, 0, maxEmployment);
-        Attack();
-            
+        Attack();            
     }
 
     /// <summary>
@@ -570,7 +574,7 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Attack()
     {
-        if (fightingMode == "melee")
+        if (fightingMode == AttackTypeEnum.melee)
         {
             if (chargeBeginTime > 0f)
                 Animate(new AnimationEventArgs("releaseAttack", currentWeapon.itemName, Mathf.RoundToInt(10 * currentWeapon.attackTime + currentWeapon.endAttackTime)));
@@ -581,7 +585,7 @@ public class HeroController : CharacterController
             }
             StartCoroutine(AttackProcess());
         }
-        else if (fightingMode == "range")
+        else if (fightingMode == AttackTypeEnum.range)
         {
             if (((BowClass)currentWeapon).canShoot)
             {
@@ -663,72 +667,110 @@ public class HeroController : CharacterController
         col2.enabled = false;
     }
 
-    /// <summary>
-    /// Функция получения урона
-    /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, int attackPower=0)
+    public override void TakeAttackerInformation(AttackerClass attackerInfo)
     {
-        if (!invul)
-        {
-            Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
-            if (health <= 0f)
-            {
-                if (damage > 200f && _dType == DamageType.Fire)
-                    Animate(new AnimationEventArgs("death", "fire", 0));
-                rigid.velocity = Vector2.zero;
-                rigid.isKinematic = true;
-                Death();
-                return;
-            }
-            else
-                Animate(new AnimationEventArgs("hitted", "", attackPower>balance ? 0 : 1));
-            bool stunned = GetBuff("StunnedProcess") != null;
-            if (attackPower>balance || stunned)
-            {
-                //StopCoroutine("AttackProcess");
-                //dontShoot = false;
-                if (onLadder)
-                    LadderOff();
-            }
-            if (attackPower>0)
-                StartCoroutine(InvulProcess(invulTime, true));
-            anim.Blink();
-        }
+        attacker = attackerInfo;
     }
 
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower=0)
+    public override void TakeDamage(HitParametres hitData)
     {
-        if (ignoreInvul || !invul)
+        if (!invul)
         {
-            Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
+            if (mutagenEffect != null)
+            {
+                float rand = UnityEngine.Random.Range(0f, 1f);
+                if (rand < mutagenEffect.effectProbability && attacker != null ? attacker.attackType == AttackTypeEnum.melee : false)
+                {
+                    SpiritShieldEffect(ref hitData.damage, hitData.damageType, attacker);
+                    return;
+                }
+            }
+            Health = Mathf.Clamp(Health - hitData.damage, 0f, maxHealth);
+
             if (health <= 0f)
             {
-                if (damage>200f && _dType==DamageType.Fire)
-                    Animate(new AnimationEventArgs("death", "fire",0));
-                rigid.velocity = Vector2.zero;
-                rigid.isKinematic = true;
+                if (hitData.damage > 200f && hitData.damageType == DamageType.Fire)
+                {
+                    Animate(new AnimationEventArgs("death", "fire", 0));
+                    rigid.velocity = Vector2.zero;
+                    rigid.isKinematic = true;
+                }
                 Death();
                 return;
             }
             else
-                Animate(new AnimationEventArgs("hitted", "", attackPower > balance ? 0 : 1));
-            SpriteRenderer sprite = GetComponentInChildren<SpriteRenderer>();
-            if (sprite != null) sprite.enabled = true;
+                Animate(new AnimationEventArgs("hitted", "", hitData.attackPower>balance ? 0 : 1));
+
+            if ((hitData.damageType != DamageType.Physical) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
+                TakeDamageEffect(hitData.damageType);
             bool stunned = GetBuff("StunnedProcess") != null;
-            if (attackPower > balance || stunned)
+            if (hitData.attackPower>balance || stunned)
             {
                 //StopCoroutine("AttackProcess");
                 //dontShoot = false;
                 if (onLadder)
                     LadderOff();
             }
-            if (attackPower>0)
+            if (hitData.attackPower>0)
                 StartCoroutine(InvulProcess(invulTime, true));
             anim.Blink();
         }
+        attacker = null;
+        mutagenActive = false;
+    }
+
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
+    {
+        if (ignoreInvul || !invul)
+        {
+            if (mutagenEffect != null && attacker!=null? attacker.attackType==AttackTypeEnum.melee:false)
+            {
+                float rand = UnityEngine.Random.Range(0f, 1f);
+                if (rand < mutagenEffect.effectProbability)
+                {
+                    SpiritShieldEffect(ref hitData.damage, hitData.damageType, attacker);
+                    return;
+                }
+            }
+            Health = Mathf.Clamp(Health - hitData.damage, 0f, maxHealth);
+            if (health <= 0f)
+            {
+                if (hitData.damage > 200f && hitData.damageType == DamageType.Fire)
+                {
+                    Animate(new AnimationEventArgs("death", "fire", 0));
+                    rigid.velocity = Vector2.zero;
+                    rigid.isKinematic = true;
+                }
+                Death();
+                return;
+            }
+            else
+                Animate(new AnimationEventArgs("hitted", "", hitData.attackPower > balance ? 0 : 1));
+
+            if ((hitData.damageType != DamageType.Physical) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
+                TakeDamageEffect(hitData.damageType);
+            SpriteRenderer sprite = GetComponentInChildren<SpriteRenderer>();
+            if (sprite != null) sprite.enabled = true;
+            bool stunned = GetBuff("StunnedProcess") != null;
+            if (hitData.attackPower > balance || stunned)
+            {
+                //StopCoroutine("AttackProcess");
+                //dontShoot = false;
+                if (onLadder)
+                    LadderOff();
+            }
+            if (hitData.attackPower>0)
+                StartCoroutine(InvulProcess(invulTime, true));
+            anim.Blink();
+        }
+        attacker = null;
+        mutagenActive = false;
     }
 
     /// <summary>
@@ -748,20 +790,35 @@ public class HeroController : CharacterController
             BuffClass buff = buffs[i];
             StopCustomBuff(new BuffData(buff));
         }
-        StartCoroutine(DeathProcess());
+        Animate(new AnimationEventArgs("death"));
+        immobile = true;
+        SpecialFunctions.StartStoryEvent(this, CharacterDeathEvent, new StoryEventArgs());
     }
 
     /// <summary>
-    /// Процесс смерти
+    /// Воскреснуть
     /// </summary>
-    protected virtual IEnumerator DeathProcess()
+    protected virtual void Resurect()
     {
-        Animate(new AnimationEventArgs("death"));
-        immobile = true;
-        SpecialFunctions.SetFade(true);
-        PlayerPrefs.SetFloat("Hero Health", maxHealth);
-        yield return new WaitForSeconds(deathTime);
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        Health = maxHealth;
+        immobile = false;
+        Animate(new AnimationEventArgs("stop"));
+    }
+
+    /// <summary>
+    /// Эффект духовного щита
+    /// </summary>
+    protected virtual void SpiritShieldEffect(ref float _damage, DamageType _dType, AttackerClass _attacker)
+    {
+        if (_attacker == null || _attacker.attackType != AttackTypeEnum.melee)
+            return;
+        _damage = 0f;
+        AIController ai = attacker.attacker.GetComponent<AIController>();
+        if (ai is BossController)
+            return;
+        ai.TakeDamageEffect(_dType);
+        ai.TakeDamage(new HitParametres(ai.MaxHealth*.2f, _dType,0), true);
+        attacker = null;
     }
 
     /// <summary>
@@ -777,6 +834,8 @@ public class HeroController : CharacterController
         }
     }
 
+    #region equipment
+
     /// <summary>
     /// Добавить предмет в инвентарь
     /// </summary>
@@ -788,28 +847,138 @@ public class HeroController : CharacterController
             if (equipment.weapons.Contains(_weapon))
                 return;
             equipment.weapons.Add(_weapon);
-            SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName);
+            //SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName1);
             OnEquipmentChanged(new EquipmentEventArgs(null, _weapon));
+            SpecialFunctions.gameUI.ConsiderItem(_weapon, _weapon.itemDescription);
         }
-        if (item is HeartClass)
+        else if (item is HeartClass)
         {
             Health = Mathf.Clamp(Health + ((HeartClass)item).hp, 0f, maxHealth);
         }
+        else if (item is TrinketClass)
+        {
+            TrinketClass _trinket = (TrinketClass)item;
+            if (item is MutagenClass)
+            {
+                MutagenClass _mutagen = (MutagenClass)item;
+                if (equipment.activeTrinkets.Contains(_mutagen))
+                    return;
+                equipment.activeTrinkets.Add(_mutagen);
+                SetMutagen(_mutagen);
+            }
+            else
+            {
+                if (equipment.trinkets.Contains(_trinket))
+                    return;
+                equipment.trinkets.Add(_trinket);
+            }
+            OnEquipmentChanged(new EquipmentEventArgs(null, _trinket));
+            SpecialFunctions.gameUI.ConsiderItem(_trinket, _trinket.itemDescription);
+        }
         else
         {
-            equipment.bag.Add(item);
-            SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName);
-            OnEquipmentChanged(new EquipmentEventArgs(null, item));
+            if (item.itemName == "GoldHeart")
+            {
+                SpecialFunctions.gameUI.ConsiderItem(item, "Увеличивает максимальное количество здоровья");
+                MaxHealth += 4f;
+            }
+            else
+            {
+                equipment.bag.Add(item);
+                OnEquipmentChanged(new EquipmentEventArgs(null, item));
+            }
+            if (item.itemName == "GoldHeartShard")
+            {
+                List<ItemClass> goldShards = equipment.bag.FindAll(x => x.itemName == "GoldHeartShard");
+                SpecialFunctions.gameUI.ConsiderItem(item, goldShards.Count.ToString() + "/5");
+                if (goldShards.Count == 5)
+                {
+                    for (int i = 0; i < 5; i++)
+                        RemoveItem(item);
+                    AddItem("GoldHeart");
+                }
+            }
+            else if (item.itemName == "LifeBookPage")
+                SpecialFunctions.gameUI.ConsiderItem(item, "Увеличивает максимальное число активных особых предметов");
+            else
+                SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName1);
         }
-            
     }
+
+    /// <summary>
+    /// Надеть тринкет
+    /// </summary>
+    public void SetTrinket(TrinketClass _trinket)
+    {
+        if (_trinket == null)
+            return;
+        foreach (TrinketClass trinket in equipment.activeTrinkets)
+            if (trinket.itemName == _trinket.itemName)
+                return;
+        equipment.activeTrinkets.Add(_trinket);
+    }
+
+    /// <summary>
+    /// Установить мутаген
+    /// </summary>
+    public void SetMutagen(MutagenClass mutagen)
+    {
+        if (mutagen == null)
+            return;
+        mutagenEffect = mutagen.trinketEffects[0];
+    }
+
+    /*
+    /// <summary>
+    /// Убрать мутаген
+    /// </summary>
+    public void RemoveMutagen()
+    {
+        mutagenEffect = null;
+    }*/
+
+    public void RemoveItem(ItemClass _item)
+    {
+        ItemClass rItem = equipment.bag.Find(x => x.itemName == _item.itemName);
+        if (rItem != null)
+        {
+            equipment.bag.Remove(rItem);
+            OnEquipmentChanged(new EquipmentEventArgs(null, null, rItem));
+        }
+    }
+
+    /// <summary>
+    /// Добавить предмет с данным названием в рюкзак
+    /// </summary>
+    /// <param name="id">Название предмета</param>
+    public void AddItem(string itemName)
+    {
+        Dictionary<string, ItemClass> itemDict = SpecialFunctions.statistics.ItemDict;
+        if (itemDict.ContainsKey(itemName))
+            SetItem(itemDict[itemName]);
+    }
+
+    /// <summary>
+    /// Убрать предмет с данным названием из рюкзака
+    /// </summary>
+    /// <param name="id">Название предмета</param>
+    public void RemoveItem(string itemName)
+    {
+        Dictionary<string, ItemClass> itemDict = SpecialFunctions.statistics.ItemDict;
+        if (itemDict.ContainsKey(itemName))
+            RemoveItem(itemDict[itemName]);
+    }
+
+    #endregion //equipment
 
     /// <summary>
     /// Процесс, при котором персонаж находится в инвуле
     /// </summary>
     protected IEnumerator InvulProcess(float _invulTime,bool hitted)
     {
-        HeroVisual hAnim = (HeroVisual)anim;
+        HeroVisual hAnim = null;
+        if ((anim is HeroVisual))
+            hAnim = (HeroVisual)anim;
         if (hAnim != null && hitted)
             hAnim.InvulBlink();
         invul = true;
@@ -947,21 +1116,21 @@ public class HeroController : CharacterController
     /// <summary>
     /// Вызвать эффект "Племенной ритуал"
     /// </summary>
-    public virtual void StartTribalRitual()
+    public virtual void StartTribalRitual(bool shortTime=true)
     {
         if (GetBuff("TribalRitual") != null)
             return;
-        StartCoroutine("TribalRitualProcess");
+        StartCoroutine("TribalRitualProcess", shortTime? tribalRitualTime: 10000f);
     }
 
     /// <summary>
     /// Процесс действия эффекта "Племенной ритуал"
     /// </summary>
-    protected virtual IEnumerator TribalRitualProcess()
+    protected virtual IEnumerator TribalRitualProcess(float _time)
     {
-        AddBuff(new BuffClass("TribalRitual", Time.fixedTime,tribalRitualTime));
+        AddBuff(new BuffClass("TribalRitual", Time.fixedTime,_time));
         speedCoof *= tribalRitualCoof;
-        yield return new WaitForSeconds(tribalRitualTime);
+        yield return new WaitForSeconds(_time);
         RemoveBuff("TribalRitual");
         speedCoof /= tribalRitualCoof;
     }
@@ -1043,5 +1212,96 @@ public class HeroController : CharacterController
     }
 
     #endregion //events
+
+    #region storyActions
+
+    /// <summary>
+    /// Добавить предмет в рюкзак
+    /// </summary>
+    protected virtual void AddItem(StoryAction _action)
+    {
+        StartCoroutine(StoryAddItemProcess(_action.argument/10f, _action.id1));
+    }
+
+    /// <summary>
+    /// Процесс выдачи герою предмета (Скриптовый процесс)
+    /// </summary>
+    protected virtual IEnumerator StoryAddItemProcess(float itemTime, string itemName)
+    {
+        yield return new WaitForSeconds(itemTime);
+        AddItem(itemName);
+    }
+
+    /// <summary>
+    /// Убрать предмет из рюкзака, если он так есть
+    /// </summary>
+    protected virtual void RemoveItem(StoryAction _action)
+    {
+        RemoveItem(_action.id1);
+    }
+
+    /// <summary>
+    /// Воскреснуть
+    /// </summary>
+    protected virtual void Resurect(StoryAction _action)
+    {
+        Resurect();
+    }
+
+    /// <summary>
+    /// Сформировать словарь сюжетных действий
+    /// </summary>
+    protected override void FormDictionaries()
+    {
+        base.FormDictionaries();
+        storyActionBase.Add("addItem", AddItem);
+        storyActionBase.Add("removeItem", RemoveItem);
+        storyActionBase.Add("resurect", Resurect);
+    }
+
+    #endregion //storyActions
+
+    #region IHaveStory
+
+    /// <summary>
+    /// Вернуть список сюжетных действий, которые может воспроизводить персонаж
+    /// </summary>
+    /// <returns></returns>
+    public override List<string> actionNames()
+    {
+        List<string> _actionNames = base.actionNames();
+        _actionNames.Add("addItem");
+        _actionNames.Add("removeItem");
+        _actionNames.Add("resurect");
+        return _actionNames;
+    }
+
+    /// <summary>
+    /// Вернуть словарь первых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public override Dictionary<string, List<string>> actionIDs1()
+    {
+        Dictionary<string, List<string>> _actionIDs1 = base.actionIDs1();
+        _actionIDs1.Add("addItem", SpecialFunctions.statistics.itemBase.ItemNames);
+        _actionIDs1.Add("removeItem", SpecialFunctions.statistics.itemBase.ItemNames);
+        _actionIDs1.Add("resurect", new List<string>());
+        return _actionIDs1;
+    }
+
+    /// <summary>
+    /// Вернуть словарь вторых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public override Dictionary<string, List<string>> actionIDs2()
+    {
+        Dictionary<string, List<string>> _actionIDs2 = base.actionIDs2();
+        _actionIDs2.Add("addItem", new List<string>());
+        _actionIDs2.Add("removeItem", new List<string>());
+        _actionIDs2.Add("resurect", new List<string>());
+        return _actionIDs2;
+    }
+
+    #endregion //IHaveStory
 
 }

@@ -16,7 +16,8 @@ public class Dialog : ScriptableObject
     public List<Speech> speeches;//Из каких реплик состоит диалог
     public List<int> dialogParticipants = new List<int>();//ID участников диалога
 
-    public bool pause;
+    public bool stopGameProcess=true;//Если true, персонажи перестают передвигаться, героем нельзя управлять, а враги уходят домой
+    public bool pause;//Ставится ли игра на паузу при воспроизведении диалога
     public bool sentPatrolHome=false;//Если true, то патрулирующие монстры при начале диалога будут сразу идти домой
 
     [HideInInspector]
@@ -223,8 +224,10 @@ public class CustomDialogEditor : Editor
             //speeches = serDialog.FindProperty("speeches");
             AddNewSpeech();
         }
-        
+
+        dialog.stopGameProcess = EditorGUILayout.Toggle("Stop Game Process", dialog.stopGameProcess, GUILayout.Width(width));
         dialog.pause = EditorGUILayout.Toggle("pause", dialog.pause, GUILayout.Width(width));
+        dialog.sentPatrolHome = EditorGUILayout.Toggle("Sent Patrol Enemies To Home", dialog.sentPatrolHome, GUILayout.Width(width));
 
         serDialog.ApplyModifiedProperties();
         EditorUtility.SetDirty(dialog);

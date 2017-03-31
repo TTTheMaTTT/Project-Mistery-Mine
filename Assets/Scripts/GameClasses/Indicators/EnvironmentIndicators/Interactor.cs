@@ -183,7 +183,7 @@ public class Interactor : MonoBehaviour {
     /// </summary>
     void HandleDialogChange(object sender, DialogEventArgs e)
     {
-        SetActivated(!e.Begin);
+        SetActivated(!e.StopGameProcess || !e.Begin);
     }
 
     #endregion //eventHandlers

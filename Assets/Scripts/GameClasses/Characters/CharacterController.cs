@@ -51,6 +51,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     [SerializeField] protected float maxHealth=100f;
     [SerializeField] protected float health = 100f;
     public virtual float Health { get { return health; } set { health = value; } }
+    public virtual float MaxHealth { get { return maxHealth; } set { maxHealth = value; } }
     [SerializeField]protected int balance = 0;//Баланс персонажа. Если при получаемый урон имеет параметр силы атаки больше баланса, то персонаж сбивается, вводится в микростан
 
     [SerializeField] protected float speed = 1f;
@@ -147,7 +148,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
 
         if (hitBox != null)
         {
-            hitBox.Attacker = gameObject;
+            hitBox.AttackerInfo = new AttackerClass(gameObject,AttackTypeEnum.melee);
             hitBox.SetEnemies(enemies);
         }
 
@@ -174,6 +175,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     {
         storyActionBase = new Dictionary<string, storyActionDelegate>();
         storyActionBase.Add("destroy", StoryDestroy);
+        storyActionBase.Add("death", StoryDeath);
     }
 
     /// <summary>
@@ -296,11 +298,18 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     }
 
     /// <summary>
+    /// Функция, вызываемая при получении урона, оповещающая о субъекте нападения
+    /// </summary>
+    /// <param name="attackerInfo">Кто атаковал персонажа</param>
+    public virtual void TakeAttackerInformation(AttackerClass attackerInfo)
+    {}
+
+    /// <summary>
     /// Функция получения урона
     /// </summary>
-    public virtual void TakeDamage(float damage, DamageType _dType, int attackPower=0)
+    public virtual void TakeDamage(HitParametres hitData)
     {
-        Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
+        Health = Mathf.Clamp(Health - hitData.damage, 0f, maxHealth);
         if (health <= 0f)
         {
             Death();
@@ -308,32 +317,36 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         }
         else
         {
-            if (_dType == DamageType.Physical || _dType == DamageType.Crushing)
+            if ((hitData.damageType != DamageType.Physical) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
+                TakeDamageEffect(hitData.damageType);
+            if (hitData.damageType == DamageType.Physical || hitData.damageType == DamageType.Crushing)
                 if (UnityEngine.Random.Range(0f, 1f) < frozenCrushChance)
                     if (GetBuff("FrozenProcess") != null)
                     {
                         Death();//Персонаж, находясь в замороженном состоянии, рискует быть мгновенно убит
                         return;
                     }
-            Animate(new AnimationEventArgs("hitted","", attackPower>balance ? 0 :1));
+            Animate(new AnimationEventArgs("hitted","", hitData.attackPower>balance ? 0 :1));
         }
     }
 
     /// <summary>
     /// Ещё одна функция получения урона, что не обращает на неуязвимость поражённого персонажа, если таковая имеется
     /// </summary>
-    public virtual void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower = 0)
+    public virtual void TakeDamage(HitParametres hitData, bool ignoreInvul)
     {
-        Health = Mathf.Clamp(Health - damage, 0f,maxHealth);
+        Health = Mathf.Clamp(Health - hitData.damage, 0f,maxHealth);
         if (health <= 0f)
             Death();
         else
         {
-            if (_dType == DamageType.Physical || _dType == DamageType.Crushing)
+            if ((hitData.damageType != DamageType.Physical) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
+                TakeDamageEffect(hitData.damageType);
+            if (hitData.damageType == DamageType.Physical || hitData.damageType == DamageType.Crushing)
                 if (UnityEngine.Random.Range(0f, 1f) < frozenCrushChance)
                     if (GetBuff("FrozenProcess") != null)
                         Death();//Персонаж, находясь в замороженном состоянии, рискует быть мгновенно убит
-            Animate(new AnimationEventArgs("hitted","",attackPower>balance?0:1));
+            Animate(new AnimationEventArgs("hitted","",hitData.attackPower>balance?0:1));
         }
     }
 
@@ -383,7 +396,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         {
             AIController ai = (AIController)this;
             if (ai.Loyalty != LoyaltyEnum.ally && !(this is BossController) && !questCharacter)
-                SpecialFunctions.gameController.AddRandomGameEffect(this);
+                SpecialFunctions.gameController.AddRandomDeathGameEffect(this);
         }
         if (!dead)
             return;
@@ -635,7 +648,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         while (true)
         {
             yield return new WaitForSeconds(burnFrequency);
-            TakeDamage(burnDamage, DamageType.Fire, true,0);
+            TakeDamage(new HitParametres(burnDamage, DamageType.Fire), true);
         }
     }
 
@@ -770,7 +783,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         while (true)
         {
             yield return new WaitForSeconds(poisonFrequency);
-            TakeDamage(poisonDamage, DamageType.Poison, true, 0);
+            TakeDamage(new HitParametres(poisonDamage, DamageType.Poison, 0),true);
         }
     }
 
@@ -896,6 +909,20 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         Destroy(gameObject);
     }
 
+    /// <summary>
+    /// Смерть персонажа в результате скриптового действия
+    /// </summary>
+    protected virtual void StoryDeath(StoryAction _action)
+    {
+        StartCoroutine(StoryDeathProcess(_action.argument / 10f));
+    }
+
+    protected virtual IEnumerator StoryDeathProcess(float deathTime)
+    {
+        yield return new WaitForSeconds(deathTime);
+        Death();
+    }
+
     #endregion //storyActions
 
     #region IHaveStory
@@ -906,7 +933,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <returns></returns>
     public virtual List<string> actionNames()
     {
-        return new List<string>() {"destroy"};
+        return new List<string>() {"destroy","death"};
     }
 
     /// <summary>
@@ -915,7 +942,8 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <returns></returns>
     public virtual Dictionary<string, List<string>> actionIDs1()
     {
-        return new Dictionary<string, List<string>>() { { "destroy", new List<string>() { } } };
+        return new Dictionary<string, List<string>>() { { "destroy", new List<string>() { } },
+                                                        { "death", new List<string>() { } } };
     }
 
     /// <summary>
@@ -924,7 +952,8 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <returns></returns>
     public virtual Dictionary<string, List<string>> actionIDs2()
     {
-        return new Dictionary<string, List<string>>() { { "destroy", new List<string>() { } } };
+        return new Dictionary<string, List<string>>() { { "destroy", new List<string>() { } },
+                                                        { "death", new List<string>() { } } };
     }
 
     /// <summary>
@@ -934,7 +963,8 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     {
         return new Dictionary<string, List<string>>() {
                                                         {"", new List<string>() },
-                                                        {"compare",new List<string>()} };
+                                                        {"compare",new List<string>()},
+                                                        { "compareHistoryProgress",SpecialFunctions.statistics.HistoryBase.stories.ConvertAll(x=>x.storyName)}};
     }
 
     /// <summary>

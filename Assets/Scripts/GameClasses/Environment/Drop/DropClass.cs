@@ -1,11 +1,12 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Класс, характеризующий подбираемые предметы
 /// </summary>
-public class DropClass : MonoBehaviour, IInteractive
+public class DropClass : MonoBehaviour, IInteractive, IHaveStory
 {
 
     #region consts
@@ -18,6 +19,7 @@ public class DropClass : MonoBehaviour, IInteractive
     #region eventHandlers
 
     public EventHandler<EventArgs> DropIsGot;//Событие "Дроп был взят" 
+    public EventHandler<StoryEventArgs> StoryDropIsGot;//Сюжетное событие "Дроп был взят"
 
     #endregion //eventHandlers
 
@@ -87,6 +89,7 @@ public class DropClass : MonoBehaviour, IInteractive
             OnDropGet(new EventArgs());
             Destroy(gameObject);
             SpecialFunctions.statistics.ConsiderStatistics(this);
+            SpecialFunctions.StartStoryEvent(this, StoryDropIsGot, new StoryEventArgs());
         }
     }
 
@@ -148,6 +151,60 @@ public class DropClass : MonoBehaviour, IInteractive
     }
 
     #endregion //IHaveID
+
+    #region IHaveStory
+
+    /// <summary>
+    /// Вернуть список сюжетных действий, которые может воспроизводить скрипт
+    /// </summary>
+    /// <returns></returns>
+    public List<string> actionNames()
+    {
+        return new List<string>() { };
+    }
+
+    /// <summary>
+    /// Вернуть словарь первых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public Dictionary<string, List<string>> actionIDs1()
+    {
+        return new Dictionary<string, List<string>>() { };
+    }
+
+    /// <summary>
+    /// Вернуть словарь вторых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public Dictionary<string, List<string>> actionIDs2()
+    {
+        return new Dictionary<string, List<string>>() { };
+    }
+
+    /// <summary>
+    /// Вернуть словарь id-шников, связанных с конкретной функцией проверки условия сюжетного события
+    /// </summary>
+    public Dictionary<string, List<string>> conditionIDs()
+    {
+        return new Dictionary<string, List<string>>() { { "", new List<string>() },
+                                                        { "compareHistoryProgress",SpecialFunctions.statistics.HistoryBase.stories.ConvertAll(x=>x.storyName)} };
+    }
+
+    /// <summary>
+    /// Возвращает ссылку на сюжетное действие, соответствующее данному имени
+    /// </summary>
+    public StoryAction.StoryActionDelegate GetStoryAction(string s)
+    {
+        return null;
+    }
+
+    /// <summary>
+    /// Функция-пустышка
+    /// </summary>
+    public void NullFunction(StoryAction _action)
+    { }
+
+    #endregion //IHaveStory
 
     #region events
 

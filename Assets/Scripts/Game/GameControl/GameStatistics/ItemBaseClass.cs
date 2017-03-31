@@ -11,6 +11,7 @@ public class ItemBaseClass : ScriptableObject
 
     public string databaseName;
     public List<WeaponClass> weapons;//Список оружий, используемых в игре
+    public List<TrinketClass> trinkets;//Список тринкетов
     public List<ItemClass> items;//Список предметов, используемых в игре
     public List<GameObject> drops;//Список оигровых объектов, представляющих собой дроп
 
@@ -19,6 +20,17 @@ public class ItemBaseClass : ScriptableObject
     public GameObject customDrop;//Префаб, который может содержать в себе любой дроп
 
     #endregion //fields
+
+    public List<string> ItemNames
+    {
+        get
+        {
+            List<string> _itemNames = new List<string>();
+            foreach (ItemClass _item in items)
+                _itemNames.Add(_item.itemName);
+            return _itemNames;
+        }
+    }
 
 }
 
