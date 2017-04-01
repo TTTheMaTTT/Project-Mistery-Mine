@@ -6,7 +6,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Класс, реализующий поведение сундука
 /// </summary>
-public class ChestController : MonoBehaviour, IInteractive
+public class ChestController : MonoBehaviour, IInteractive, IHaveStory
 {
 
     #region consts
@@ -72,6 +72,8 @@ public class ChestController : MonoBehaviour, IInteractive
         if (anim != null)
             anim.Play("Opened");
         SpecialFunctions.PlaySound(aSource);
+        if (gameObject.layer == LayerMask.NameToLayer("hidden"))
+            gameObject.layer = LayerMask.NameToLayer("hidden");
         OnChestOpened(new EventArgs());
         DestroyImmediate(this);
     }
@@ -165,8 +167,77 @@ public class ChestController : MonoBehaviour, IInteractive
         if (anim != null)
             anim.Play("Opened");
         DestroyImmediate(this);
+        if (gameObject.layer == LayerMask.NameToLayer("hidden"))
+            gameObject.layer = LayerMask.NameToLayer("Default");
     }
 
     #endregion //IHaveID
+
+    #region storyActions
+
+    /// <summary>
+    /// Считать, что объект спрятан
+    /// </summary>
+    protected virtual void SetHidden(StoryAction _action)
+    {
+        gameObject.layer = _action.id1 == "hidden" ? LayerMask.NameToLayer("hidden") : LayerMask.NameToLayer("Default");
+    }
+
+    /// <summary>
+    /// Функция-пустышка
+    /// </summary>
+    public void NullFunction(StoryAction _action)
+    { }
+
+    #endregion //storyActions
+
+    #region IHaveStory
+
+    /// <summary>
+    /// Вернуть список сюжетных действий, которые может воспроизводить скрипт
+    /// </summary>
+    /// <returns></returns>
+    public List<string> actionNames()
+    {
+        return new List<string>() { "setHidden" };
+    }
+
+    /// <summary>
+    /// Вернуть словарь первых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public Dictionary<string, List<string>> actionIDs1()
+    {
+        return new Dictionary<string, List<string>>() { { "setHidden", new List<string>() { "hidden" } } };
+    }
+
+    /// <summary>
+    /// Вернуть словарь вторых id-шников, связанных с конкретным сюжетным действием
+    /// </summary>
+    /// <returns></returns>
+    public Dictionary<string, List<string>> actionIDs2()
+    {
+        return new Dictionary<string, List<string>>() { { "setHidden", new List<string>() { } } };
+    }
+
+    /// <summary>
+    /// Вернуть словарь id-шников, связанных с конкретной функцией проверки условия сюжетного события
+    /// </summary>
+    public Dictionary<string, List<string>> conditionIDs()
+    {
+        return new Dictionary<string, List<string>>() { { "", new List<string>() }};
+    }
+
+    /// <summary>
+    /// Возвращает ссылку на сюжетное действие, соответствующее данному имени
+    /// </summary>
+    public StoryAction.StoryActionDelegate GetStoryAction(string s)
+    {
+        if (s == "setHidden")
+            return SetHidden;
+        return NullFunction;
+    }
+
+    #endregion //IHaveStory
 
 }

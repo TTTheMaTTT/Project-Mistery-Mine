@@ -87,6 +87,8 @@ public class DropClass : MonoBehaviour, IInteractive, IHaveStory
         {
             SpecialFunctions.Player.GetComponent<HeroController>().SetItem(item);
             OnDropGet(new EventArgs());
+            if (gameObject.layer == LayerMask.NameToLayer("hidden"))
+                gameObject.layer=LayerMask.NameToLayer("drop");
             Destroy(gameObject);
             SpecialFunctions.statistics.ConsiderStatistics(this);
             SpecialFunctions.StartStoryEvent(this, StoryDropIsGot, new StoryEventArgs());
@@ -152,6 +154,24 @@ public class DropClass : MonoBehaviour, IInteractive, IHaveStory
 
     #endregion //IHaveID
 
+    #region storyActions
+
+    /// <summary>
+    /// Считать, что объект спрятан
+    /// </summary>
+    protected virtual void SetHidden(StoryAction _action)
+    {
+        gameObject.layer = _action.id1 == "hidden"?LayerMask.NameToLayer("hidden"):LayerMask.NameToLayer("drop");        
+    }
+
+    /// <summary>
+    /// Функция-пустышка
+    /// </summary>
+    public void NullFunction(StoryAction _action)
+    { }
+
+    #endregion //storyActions
+
     #region IHaveStory
 
     /// <summary>
@@ -160,7 +180,7 @@ public class DropClass : MonoBehaviour, IInteractive, IHaveStory
     /// <returns></returns>
     public List<string> actionNames()
     {
-        return new List<string>() { };
+        return new List<string>() { "setHidden"};
     }
 
     /// <summary>
@@ -169,7 +189,7 @@ public class DropClass : MonoBehaviour, IInteractive, IHaveStory
     /// <returns></returns>
     public Dictionary<string, List<string>> actionIDs1()
     {
-        return new Dictionary<string, List<string>>() { };
+        return new Dictionary<string, List<string>>() { { "setHidden", new List<string>() { "hidden" } } };
     }
 
     /// <summary>
@@ -178,7 +198,7 @@ public class DropClass : MonoBehaviour, IInteractive, IHaveStory
     /// <returns></returns>
     public Dictionary<string, List<string>> actionIDs2()
     {
-        return new Dictionary<string, List<string>>() { };
+        return new Dictionary<string, List<string>>() { { "setHidden", new List<string>() { } } };
     }
 
     /// <summary>
@@ -195,14 +215,10 @@ public class DropClass : MonoBehaviour, IInteractive, IHaveStory
     /// </summary>
     public StoryAction.StoryActionDelegate GetStoryAction(string s)
     {
-        return null;
+        if (s == "setHidden")
+            return SetHidden;
+        return NullFunction;
     }
-
-    /// <summary>
-    /// Функция-пустышка
-    /// </summary>
-    public void NullFunction(StoryAction _action)
-    { }
 
     #endregion //IHaveStory
 

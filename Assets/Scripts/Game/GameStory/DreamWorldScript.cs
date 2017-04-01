@@ -171,7 +171,7 @@ public class DreamWorldScript : MonoBehaviour, IHaveStory
         if (stage == 3)
         {
             SpawnClass spawn = currentSpawnList.Find(x => ai.gameObject.name.Contains(x.monster.name));
-            if (spawn!=null)
+            if (spawn!=null? spawn.monsterCount>0:false)
                 spawn.monsterCount--;
         }
     }

@@ -48,6 +48,8 @@ public class SecretPlaceTrigger : StoryTrigger, IHaveID
         //Destroy(gameObject);
         foreach (GameObject ghostWall in ghostWalls)
             ghostWall.GetComponent<FadeScript>().Activate();
+        if (gameObject.layer == LayerMask.NameToLayer("hidden"))
+            gameObject.layer = LayerMask.NameToLayer("Default");
         Destroy(this);
     }
 
