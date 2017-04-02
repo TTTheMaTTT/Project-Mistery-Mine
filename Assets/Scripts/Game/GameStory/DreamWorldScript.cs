@@ -41,6 +41,7 @@ public class DreamWorldScript : MonoBehaviour, IHaveStory
 
     private GameObject batSpawn1, batSpawn2, spiderSpawn1, spiderSpawn2, minerSpawn1, minerSpawn2;//Места спавна монстров
     private List<AIController> spawnedMonsters = new List<AIController>();//Список созданных монстров
+    private GameObject wallOnFire;//Окошко, через который виден мир снов (объект, обеспечивающий эффект дрожания и фиолетового оттенка)
 
     #endregion //fields
 
@@ -66,6 +67,7 @@ public class DreamWorldScript : MonoBehaviour, IHaveStory
         minerSpawn2 = transform.FindChild("MinerSpawn2").gameObject;
         currentSpawnList = new List<SpawnClass>();
         spawnedMonsters = new List<AIController>();
+        wallOnFire = transform.FindChild("WallOnFire").gameObject;
         FormDictionaries();
     }
 
@@ -206,6 +208,8 @@ public class DreamWorldScript : MonoBehaviour, IHaveStory
         activated = true;
         stage = 0;
         ChangeStage();
+        wallOnFire.transform.SetParent(SpecialFunctions.CamController.transform);
+        wallOnFire.transform.localPosition = new Vector3(0f,0f,10f);
     }
 
     /// <summary>
@@ -227,6 +231,8 @@ public class DreamWorldScript : MonoBehaviour, IHaveStory
         lightManager.intensity = .4f;
         SpriteLightKit lightKit = lightManager.GetComponentInChildren<SpriteLightKit>();
         lightKit.GetComponent<Camera>().backgroundColor = new Color(0f, 0f, 0f, 0f);
+        wallOnFire.transform.SetParent(transform);
+        wallOnFire.transform.localPosition = new Vector3(0f, 0f, 10f);
     }
 
     /// <summary>

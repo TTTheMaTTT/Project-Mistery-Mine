@@ -387,7 +387,7 @@ public class GameController : MonoBehaviour
                     equip.bag.Clear();
                     foreach (string itemName in eInfo.bagItems)
                         if (gStats.ItemDict.ContainsKey(itemName))
-                            equip.bag.Add(gStats.ItemDict[itemName]);
+                            Hero.SetItem(gStats.ItemDict[itemName]);
 
                     equip.weapons.Clear();
                     foreach (string itemName in eInfo.weapons)
@@ -472,7 +472,7 @@ public class GameController : MonoBehaviour
                 equip.bag.Clear();
                 foreach (string itemName in eInfo.bagItems)
                     if (gStats.ItemDict.ContainsKey(itemName))
-                        equip.bag.Add(gStats.ItemDict[itemName]);
+                        Hero.SetItem(gStats.ItemDict[itemName]);
 
                 equip.weapons.Clear();
                 foreach (string itemName in eInfo.weapons)

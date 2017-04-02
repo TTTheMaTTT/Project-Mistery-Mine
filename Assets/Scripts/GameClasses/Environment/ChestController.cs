@@ -166,9 +166,9 @@ public class ChestController : MonoBehaviour, IInteractive, IHaveStory
         Animator anim = GetComponent<Animator>();
         if (anim != null)
             anim.Play("Opened");
-        DestroyImmediate(this);
         if (gameObject.layer == LayerMask.NameToLayer("hidden"))
             gameObject.layer = LayerMask.NameToLayer("Default");
+        DestroyImmediate(this);
     }
 
     #endregion //IHaveID

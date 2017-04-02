@@ -10,7 +10,7 @@ public class SpiritController : CharacterController
 
     #region consts
 
-    protected const float findHiddenTime = 1f;//Время через которое дух скажет, что нашёл что-то необычное, когда это необычное окажется рядом с ним
+    protected const float findHiddenTime = 20f;//Время через которое дух скажет, что нашёл что-то необычное, когда это необычное окажется рядом с ним
 
     #endregion //consts
 
@@ -98,7 +98,7 @@ public class SpiritController : CharacterController
     protected virtual IEnumerator FindHiddenProcess(GameObject hiddenObject)
     {
         yield return new WaitForSeconds(findHiddenTime);
-        if (hiddenObject!=null)
+        if (hiddenObject==null)
             goto end;
         FindHiddenRoutine _routine = hiddenObjects.Find(x => x.hiddenObject == hiddenObject);
         if (_routine == null)

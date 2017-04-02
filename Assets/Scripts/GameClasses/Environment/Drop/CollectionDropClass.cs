@@ -18,6 +18,8 @@ public class CollectionDropClass : DropClass
             SpecialFunctions.statistics.ConsiderCollectionItem(item);
             Destroy(gameObject);
             SpecialFunctions.statistics.ConsiderStatistics(this);
+            if (gameObject.layer == LayerMask.NameToLayer("hidden"))
+                gameObject.layer = LayerMask.NameToLayer("drop");
         }
     }
 

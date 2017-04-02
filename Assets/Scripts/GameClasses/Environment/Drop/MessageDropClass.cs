@@ -48,6 +48,8 @@ public class MessageDropClass : DropClass
             Destroy(gameObject);
             SpecialFunctions.statistics.ConsiderStatistics(this);
             SpecialFunctions.StartStoryEvent(this, StoryDropIsGot, new StoryEventArgs());
+            if (gameObject.layer == LayerMask.NameToLayer("hidden"))
+                gameObject.layer = LayerMask.NameToLayer("drop");
         }
     }
 
