@@ -16,6 +16,9 @@ public class GameGeneralData
     [XmlElement("First Checkpoint")]
     public int firstCheckpointNumber = 0;//Если игрок решит переиграть уровень, именно с этого чекпоинта он начнёт игру
 
+    [XmlElement("Max HP")]
+    public float maxHP = 12f;//Максимальное здоровье персонажа
+
     [XmlElement("Equipment Info")]
     public EquipmentInfo eInfo;//Данные об инвентаре персонажа
 
@@ -40,7 +43,7 @@ public class GameGeneralData
         GameStatistics gStats = SpecialFunctions.statistics;
         if (gStats!=null)
             progressInfo = new GameProgressData(gStats.gameHistoryProgress);
-
+        maxHP = player.MaxHealth;
     }
 
 }

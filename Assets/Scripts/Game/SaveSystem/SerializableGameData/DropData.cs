@@ -24,6 +24,17 @@ public class DropData
         foreach (DropClass _drop in _drops)
             drops.Add(new DropInfo(_drop));
     }
+
+    public List<string> dropObjectNames
+    {
+        get
+        {
+            List<string> _names = new List<string>();
+            foreach (DropInfo _dInfo in drops)
+                _names.Add(_dInfo.objectName);
+            return _names;
+        }
+    }
      
 }
 
@@ -35,6 +46,9 @@ public class DropInfo
 {
     [XmlElement("Position")]
     public Vector3 position;
+
+    [XmlElement("Object Name")]
+    public string objectName;
 
     [XmlElement("Item Name")]
     public string itemName;
@@ -49,6 +63,7 @@ public class DropInfo
     {
         position = drop.transform.position;
         itemName = drop.item!=null?drop.item.itemName:string.Empty;
+        objectName = drop.gameObject != null ? drop.gameObject.name : itemName;
         if (drop.gameObject.name.Contains("ItemDrop"))
             customDrop = true;
     }

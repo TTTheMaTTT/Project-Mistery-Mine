@@ -232,16 +232,16 @@ public class GhostMinerBossController : BossController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
+    public override void TakeDamage(HitParametres hitData)
     {
-        if (_dType != DamageType.Physical)
+        if (hitData.damageType != DamageType.Physical)
         {
-            if (((DamageType)vulnerability & _dType) == _dType)
-                damage *= 1.25f;
-            else if (_dType == attackParametres.damageType)
-                damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
+            if (((DamageType)vulnerability & hitData.damageType) == hitData.damageType)
+                hitData.damage *= 1.25f;
+            else if (hitData.damageType == attackParametres.damageType)
+                hitData.damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
         }
-        Health = Mathf.Clamp(Health - damage, 0f, maxHealth);
+        Health = Mathf.Clamp(Health - hitData.damage, 0f, maxHealth);
         if (health <= 0f)
             Death();
         GhostMinerBossVisual bAnim = (GhostMinerBossVisual)anim;

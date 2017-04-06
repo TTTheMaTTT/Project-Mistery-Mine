@@ -30,7 +30,6 @@ public class SpiderHeroController : HeroController
 
     protected WallChecker precipiceCheck;//Индикатор, отслеживающий пропасти
     protected HeroController originalController;
-    protected NavigationBunchedMap crawlMap;
 
     #endregion //fields
 
@@ -246,8 +245,6 @@ public class SpiderHeroController : HeroController
         onWeb = false;
         onCeil = false;
         tryingCatchWall = false;
-        crawlMap = (NavigationBunchedMap)SpecialFunctions.statistics.navSystem.GetMap(NavMapTypeEnum.crawl);
-        navCellSize = crawlMap.cellSize;
         StartCoroutine("CamProcess");
     }
 
@@ -613,7 +610,7 @@ public class SpiderHeroController : HeroController
             if (currentSurface.normal.y > .5f)
             {
                 if (fallSpeed > minDamageFallSpeed)
-                    TakeDamage(Mathf.Round((fallSpeed - spiderMinFallSpeed) * damagePerFallSpeed * 2f), DamageType.Physical, true, 1);
+                    TakeDamage(new HitParametres(Mathf.Round((fallSpeed - spiderMinFallSpeed) * damagePerFallSpeed * 2f), DamageType.Physical,1), true);
                 if (fallSpeed > minDamageFallSpeed / 10f)
                     Animate(new AnimationEventArgs("fall"));
             }
@@ -642,29 +639,29 @@ public class SpiderHeroController : HeroController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
+    public override void TakeDamage(HitParametres hitData)
     {
         if (!invul)
         {
             bool stunned = GetBuff("StunnedProcess") != null;
-            if (attackPower > balance || stunned)
+            if (hitData.attackPower > balance || stunned)
                 JumpDown();
         }
-        base.TakeDamage(damage, _dType, attackPower); 
+        base.TakeDamage(hitData); 
     }
 
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower = 0)
+    public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
     {
         if (ignoreInvul || !invul)
         {
             bool stunned = GetBuff("StunnedProcess") != null;
-            if (attackPower > balance || stunned)
+            if (hitData.attackPower > balance || stunned)
                 JumpDown();
         }
-        base.TakeDamage(damage,_dType,ignoreInvul,attackPower);
+        base.TakeDamage(hitData,ignoreInvul);
     }
 
     /// <summary>

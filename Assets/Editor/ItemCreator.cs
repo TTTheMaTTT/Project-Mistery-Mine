@@ -70,6 +70,20 @@ public class ItemCreator : EditorWindow
             AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
             Selection.activeObject = asset;
         }
+        else if (itemType=="trinket")
+        {
+            TrinketClass asset = ScriptableObject.CreateInstance<TrinketClass>();
+            asset.itemName = itemName;
+            AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
+            Selection.activeObject = asset;
+        }
+        else if (itemType == "mutagen")
+        {
+            MutagenClass asset = ScriptableObject.CreateInstance<MutagenClass>();
+            asset.itemName = itemName;
+            AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
+            Selection.activeObject = asset;
+        }
         AssetDatabase.SaveAssets();
         EditorUtility.FocusProjectWindow();
     }

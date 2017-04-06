@@ -71,11 +71,11 @@ public class BoomerangScript : MonoBehaviour
         currentTarget = newTarget;
     }
 
-    public virtual void SetHitBox(HitParametres _hit, List<string> enemies, GameObject attacker)
+    public virtual void SetHitBox(HitParametres _hit, List<string> enemies, AttackerClass attacker)
     {
         hitBox.SetEnemies(enemies);
         hitBox.SetHitBox(_hit);
-        hitBox.Attacker = attacker;
+        hitBox.AttackerInfo = attacker;
     }
 
     protected virtual void ChangePhase()

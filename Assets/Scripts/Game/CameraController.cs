@@ -34,6 +34,24 @@ public class CameraController : MonoBehaviour
     protected ETarget currentTarget;//Какую позицию стремится снять камера?
     [SerializeField]protected float camSpeed;
     protected bool instantMotion = true;//Камера мгновенно перемещается к текущей цели
+    protected bool freeMode = false;//Движется ли камера в свободном режиме (т.е. при помощи стрелок)
+    protected bool FreeMode
+    {
+        set
+        {
+            freeMode = value;
+            BattleField bField = SpecialFunctions.battleField;
+            if (bField != null)
+            {
+                Transform battlefieldTrans = bField.transform;
+                if (value)
+                    battlefieldTrans.parent = transform;
+                else
+                    battlefieldTrans.parent = SpecialFunctions.Player.transform.FindChild("Indicators");
+                battlefieldTrans.localPosition = Vector3.zero;
+            }
+        }
+    }
 
     #endregion //parametres
 
@@ -44,11 +62,21 @@ public class CameraController : MonoBehaviour
 
     protected void FixedUpdate()
     {
-        //if (Time.timeScale>0f) { 
-        if (instantMotion)
-            transform.position = currentTarget + offset;
+        if (freeMode)
+        {
+            if (Input.GetButton("CamHorizontal"))
+                transform.position += Vector3.right * Input.GetAxis("CamHorizontal") * camSpeed/2f * Time.fixedDeltaTime;
+            if (Input.GetButton("CamVertical"))
+                transform.position += Vector3.up * Input.GetAxis("CamVertical") * camSpeed/2f * Time.fixedDeltaTime;
+        }
         else
-            transform.position = Vector3.Lerp(transform.position, currentTarget + offset, Time.fixedDeltaTime * camSpeed);
+        {
+            //if (Time.timeScale>0f) { 
+            if (instantMotion)
+                transform.position = currentTarget + offset;
+            else
+                transform.position = Vector3.Lerp(transform.position, currentTarget + offset, Time.fixedDeltaTime * camSpeed);
+        }
     }
 
     /*protected void Update()
@@ -73,10 +101,19 @@ public class CameraController : MonoBehaviour
     }
 
     /// <summary>
+    /// Переключить камеру на камеру в свободном режиме
+    /// </summary>
+    public void ChangeFreeMode()
+    {
+        FreeMode = !freeMode;
+    }
+
+    /// <summary>
     /// Изменить режим работы камеры
     /// </summary>
     public void ChangeCameraMod(CameraModEnum _camMod)
     {
+        FreeMode = false;
         instantMotion = !(_camMod == CameraModEnum.move || _camMod == CameraModEnum.objMove || _camMod == CameraModEnum.playerMove);
         if (_camMod == CameraModEnum.player || _camMod == CameraModEnum.playerMove)
         {

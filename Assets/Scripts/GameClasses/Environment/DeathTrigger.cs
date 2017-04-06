@@ -10,7 +10,7 @@ public class DeathTrigger : MonoBehaviour
     {
         if (other.gameObject.CompareTag("player"))
         {
-            SpecialFunctions.Player.GetComponent<HeroController>().TakeDamage(1000f, DamageType.Physical, true,200);
+            SpecialFunctions.Player.GetComponent<HeroController>().TakeDamage(new HitParametres(1000f, DamageType.Physical, 200), true);
         }
     }
 }

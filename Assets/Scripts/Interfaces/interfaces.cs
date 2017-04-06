@@ -22,9 +22,9 @@ public interface IHaveID
 public interface IDamageable: IHaveID
 {
 
-    void TakeDamage(float damage, DamageType _dType, int attackPower=0);
+    void TakeDamage(HitParametres hitData);
 
-    void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower=0);
+    void TakeDamage(HitParametres hitData, bool ignoreInvul);
 
     float GetHealth();
 

@@ -75,12 +75,10 @@ public class BowClass : WeaponClass
                     if (enemies.Contains(targetObj.tag))
                     {
                         hitIndex = i;
-                        if (attackType != DamageType.Physical ? Random.Range(0f, 100f) <= effectChance : false)
-                            target.TakeDamageEffect(attackType);
                         AIController ai = targetObj.GetComponent<AIController>();
-                        if (ai!=null)
-                            ai.TakeAttackerInformation(SpecialFunctions.player);
-                        target.TakeDamage(damage,attackType,attackPower);
+                        if (ai != null)
+                            ai.TakeAttackerInformation(new AttackerClass(SpecialFunctions.player, AttackTypeEnum.range));
+                        target.TakeDamage(new HitParametres(damage,attackType,attackPower,effectChance));
                         break;
                     }
                 }

@@ -15,28 +15,14 @@ public class GameController : MonoBehaviour
     #region gameEffectConsts
 
     protected const float ancestorsRevengeTime = 60f;//Время и шанс эффекта "Месть предков"
-    protected const float ancestorsRevengeProbability = .1f;
-
     protected const float tribalLeaderTime = 30f;//Время и шанс эффекта "Вождь племени"
-    protected const float tribalLeaderProbability =.07f;
-
-    protected const float battleCryProbability = .05f;//Шанс и радиус действия эффекта "Боевой клич"
     protected const float battleCryRadius = 6f;
-
     protected const float treasureHunterTime = 30f;//Время действия и шанс эффекта "Кладоискатель"
-    protected const float treasureHunterProbability = .4f;
-
     protected const float collectorTime = 15f;//Время действия и шанс эффекта "Коллекционер"
-    protected const float collectorProbability = .3f;
-
     protected const float compassArrowOffsetY = 0.17f;//Насколько смещена по вертикали стрелка компаса относительно персонажа
-
     protected const float ancientDarknessTime = 15f;//Время и шанс эффекта "Древняя тьма"
-    protected const float ancientDarknessProbability = .05f;
 
-    protected const float totemAnimalProbability = .07f;//Шанс эффекта "Тотемное животное"
-
-    protected const float tribalRitualProbability = .07f;//Шанс эффекта "Ритуал племени"
+    protected const float deathTime = 2.1f;
 
     #endregion //gameEffectConsts
 
@@ -54,12 +40,19 @@ public class GameController : MonoBehaviour
                                                                                             {"TotemAnimal", "Тотемное животное"},
                                                                                             {"TribalRitual", "Ритуал племени"} };
 
+    protected Dictionary<string, GameEffectDeathFunction> deathEffectsDictionary = new Dictionary<string, GameEffectDeathFunction>();//Словарь игровых эффектов, вызываемых при смерти персонажей (монстров)
+    protected Dictionary<string, GameEffectUsualFunction> usualEffectsDictionary = new Dictionary<string, GameEffectUsualFunction>();//Словарь игровых эффектов, вызываемых при, например, 
+                                                                                                                                     //срабатывании исследовательского триггера
+
     #endregion //dictionaries
 
     #region delegates
 
     //protected delegate void BuffFunction(CharacterController _char, float _time, int argument, string id);
     protected delegate void StopBuffFunction(int argument, string id);
+
+    protected delegate void GameEffectDeathFunction(CharacterController _char);//Делегат функций - игровых эффектов, которые вызываются при смерти персонажей (монстров)
+    protected delegate void GameEffectUsualFunction();//Делегат функций - игровых эффектов, которые вызываются при достаточно простых условиях (например, при возникновении какой-нибудь игровой истории)
 
     #endregion //delegates
 
@@ -79,7 +72,8 @@ public class GameController : MonoBehaviour
 
     private List<CheckpointController> checkpoints = new List<CheckpointController>();
 
-    private static List<string> activeGameEffects = new List<string>();//Названия активных игровычх эффектов
+    private List<TrinketEffectClass> deathEffects = new List<TrinketEffectClass>(), usualEffects = new List<TrinketEffectClass>();//Список доступных игровых эффектов
+    private List<string> activeGameEffects = new List<string>();//Названия активных игровычх эффектов
 
     [SerializeField]private GameObject treasureHunterArrow;//Стрелка компаса охотника за сокровищами
     [SerializeField]private GameObject collectorArrow;//Стрелка компаса коллекционера
@@ -133,6 +127,10 @@ public class GameController : MonoBehaviour
     {
         if (Input.GetButtonDown("Cancel"))
             gameMenu.ChangeGameMod();
+        if (Input.GetKeyDown(KeyCode.I))
+            SpecialFunctions.gameUI.ChangeVisibility();
+        if (Input.GetKeyDown(KeyCode.J))
+            SpecialFunctions.CamController.ChangeFreeMode();
     }
 
     protected void Awake()
@@ -165,13 +163,15 @@ public class GameController : MonoBehaviour
         SpecialFunctions.StartStoryEvent(this, StartGameEvent, new StoryEventArgs());
         Resources.UnloadUnusedAssets();
 
-        Debug.LogWarning(GetComponent<GameStatistics>().gameHistoryProgress.GetStoryProgress("spiderStory"));
+        Debug.LogWarning(GetComponent<GameStatistics>().gameHistoryProgress.GetStoryProgress("alchemyQuest"));
 
     }
 
     protected void Initialize()
     {
         Resources.UnloadUnusedAssets();
+        deathEffects = new List<TrinketEffectClass>();
+        usualEffects = new List<TrinketEffectClass>();
         monstersIdCount = 0;
         objectsIdCount = 0;
         npcsIdCount = 0;
@@ -215,6 +215,7 @@ public class GameController : MonoBehaviour
             if (secretPlace.GetComponent<SecretPlaceTrigger>() != null)
                 secretsTotalNumber++;
         activeGameEffects = new List<string>();
+        SetHeroDeathLevelEnd();
 
         AudioSource[] audioSources = SpecialFunctions.CamController.GetComponents<AudioSource>();
         if (audioSources.Length >= 1)
@@ -250,6 +251,20 @@ public class GameController : MonoBehaviour
     /// </summary>
     void InitializeDictionaries()
     {
+
+        deathEffectsDictionary = new Dictionary<string, GameEffectDeathFunction>();
+        deathEffectsDictionary.Add("AncestorsRevenge", StartAncestorsRevenge);
+        deathEffectsDictionary.Add("TribalLeader", StartTribalLeader);
+        deathEffectsDictionary.Add("BattleCry", StartBattleCry);
+        deathEffectsDictionary.Add("AncientDarkness", StartAncientDarkness);
+        deathEffectsDictionary.Add("TotemAnimal", StartTotemAnimal);
+        deathEffectsDictionary.Add("TribalRitual", StartTribalRitual);
+
+        usualEffectsDictionary = new Dictionary<string, GameEffectUsualFunction>();
+        usualEffectsDictionary.Add("TreasureHunter", StartTreasureHunt);
+        usualEffectsDictionary.Add("Collector", StartСollectorProcess);
+
+        stopBuffFunctions = new Dictionary<string, StopBuffFunction>();
         stopBuffFunctions.Add("AncestorsRevenge", StopAncestorsRevenge);
         stopBuffFunctions.Add("TribalLeader", StopTribalLeader);
         stopBuffFunctions.Add("TreasureHunter", StopTreasureHunt);
@@ -271,14 +286,14 @@ public class GameController : MonoBehaviour
     /// <summary>
     ///  Начать диалог
     /// </summary>
-    public void StartDialog(NPCController npc, Dialog dialog)
+    public bool StartDialog(NPCController npc, Dialog dialog)
     {
-        dialogWindow.BeginDialog(npc, dialog);
+        return dialogWindow.BeginDialog(npc, dialog);
     }
 
-    public void StartDialog(Dialog dialog)
+    public bool StartDialog(Dialog dialog)
     {
-        dialogWindow.BeginDialog(dialog);
+        return dialogWindow.BeginDialog(dialog);
     }
 
     /// <summary>
@@ -313,7 +328,7 @@ public class GameController : MonoBehaviour
     {
         SpecialFunctions.battleField.KillAllies();//Все союзники героя погибают (ввиду их временного характера)
         Hero.RestoreStats();//При сохранении герой восстанавливает свои характеристики (восстановление здоровья, сброс отрицательных боевых эффектов)
-        Serializator.SaveXml(GetGameData(generally, checkpointNumb), datapath + profileNumber.ToString()+".xml");
+        Serializator.SaveXml(StoreGameData(generally, checkpointNumb), datapath + profileNumber.ToString()+".xml");
         SavesInfo savesInfo = Serializator.DeXmlSavesInfo(savesInfoPath);
         SaveInfo sInfo = savesInfo.saves[profileNumber];
         sInfo.saveTime = System.DateTime.Now.ToString();
@@ -367,19 +382,36 @@ public class GameController : MonoBehaviour
                 if (eInfo != null && gStats != null)
                 {
                     EquipmentClass equip = Hero.Equipment;
-                    SpecialFunctions.equipWindow.ClearCells();
+                    SpecialFunctions.equipWindow.ClearWeaponCells();
+
                     equip.bag.Clear();
                     foreach (string itemName in eInfo.bagItems)
                         if (gStats.ItemDict.ContainsKey(itemName))
-                            equip.bag.Add(gStats.ItemDict[itemName]);
+                            Hero.SetItem(gStats.ItemDict[itemName]);
+
                     equip.weapons.Clear();
                     foreach (string itemName in eInfo.weapons)
                         if (gStats.WeaponDict.ContainsKey(itemName))
                             Hero.SetItem(gStats.WeaponDict[itemName]);
+
+                    foreach (string itemName in eInfo.activeTrinkets)
+                        if (gStats.TrinketDict.ContainsKey(itemName))
+                        {
+                            TrinketClass _trinket = gStats.TrinketDict[itemName];
+                            Hero.SetTrinket(_trinket);
+                            SpecialFunctions.equipWindow.SetActiveTrinket(_trinket);
+                        }
+
+                    equip.trinkets.Clear();
+                    foreach (string itemName in eInfo.trinkets)
+                        if (gStats.TrinketDict.ContainsKey(itemName))
+                            Hero.SetItem(gStats.TrinketDict[itemName]);
+
                     if (gStats.WeaponDict.ContainsKey(eInfo.weapon))
                     {
                         Hero.CurrentWeapon = gStats.WeaponDict[eInfo.weapon];
                     }
+
                 }
 
                 List<CollectionInfo> cInfo = gGData.cInfo;
@@ -395,12 +427,14 @@ public class GameController : MonoBehaviour
                     }
                 }
 
+                #endregion //heroEquipment
+
                 Hero.SetBuffs(new BuffListData(new List<BuffClass>()));
+                Hero.MaxHealth = gGData.maxHP;
+                hero.Health = hero.MaxHealth;
 
                 gStats.ResetStatistics();
                 gStats.gameHistoryProgress.SetStoryProgressData(gGData.progressInfo);
-
-                #endregion //heroEquipment
 
             }
         }
@@ -424,21 +458,40 @@ public class GameController : MonoBehaviour
                 lightManager.HDRRatio = lData.lightHDR;
             }
 
+            Hero.MaxHealth = lData.maxHP;
+            hero.Health = hero.MaxHealth;
+
             #region heroEquipment
 
             EquipmentInfo eInfo = lData.eInfo;
             if (eInfo != null && gStats != null)
             {
                 EquipmentClass equip = Hero.Equipment;
-                SpecialFunctions.equipWindow.ClearCells();
+                SpecialFunctions.equipWindow.ClearWeaponCells();
+
                 equip.bag.Clear();
                 foreach (string itemName in eInfo.bagItems)
                     if (gStats.ItemDict.ContainsKey(itemName))
-                        equip.bag.Add(gStats.ItemDict[itemName]);
+                        Hero.SetItem(gStats.ItemDict[itemName]);
+
                 equip.weapons.Clear();
                 foreach (string itemName in eInfo.weapons)
                     if (gStats.WeaponDict.ContainsKey(itemName))
                         Hero.SetItem(gStats.WeaponDict[itemName]);
+
+                foreach (string itemName in eInfo.activeTrinkets)
+                    if (gStats.TrinketDict.ContainsKey(itemName))
+                    {
+                        TrinketClass _trinket = gStats.TrinketDict[itemName];
+                        Hero.SetTrinket(_trinket);
+                        SpecialFunctions.equipWindow.SetActiveTrinket(_trinket);
+                    }
+
+                equip.trinkets.Clear();
+                foreach (string itemName in eInfo.trinkets)
+                    if (gStats.TrinketDict.ContainsKey(itemName))
+                        Hero.SetItem(gStats.TrinketDict[itemName]);
+
                 if (gStats.WeaponDict.ContainsKey(eInfo.weapon))
                 {
                     Hero.CurrentWeapon = gStats.WeaponDict[eInfo.weapon];
@@ -495,19 +548,34 @@ public class GameController : MonoBehaviour
 
             DropData dropInfo = lData.dropInfo;
 
-            //Сначала надо уничтожить все объекты типа drop на уровне
+            List<string> dropObjectNames = dropInfo.dropObjectNames;
+            //Сначала надо уничтожить все объекты типа drop на уровне, которых нет в списке названий (это значит, что их уже подобрали)
             GameObject[] drops = GameObject.FindGameObjectsWithTag("drop");
             for (int i = drops.Length - 1; i >= 0; i--)
             {
-                DestroyImmediate(drops[i]);
+                string objName = drops[i].gameObject.name;
+                if (dropObjectNames.Contains(objName))
+                {
+                    dropInfo.drops.Remove(dropInfo.drops.Find(x => x.objectName == objName));
+                    dropObjectNames.Remove(objName);
+                }
+                else
+                    Destroy(drops[i]);
             }
             drops = GameObject.FindGameObjectsWithTag("heartDrop");
             for (int i = drops.Length - 1; i >= 0; i--)
             {
-                DestroyImmediate(drops[i]);
+                string objName = drops[i].gameObject.name;
+                if (dropObjectNames.Contains(objName))
+                {
+                    dropInfo.drops.Remove(dropInfo.drops.Find(x => x.objectName == objName));
+                    dropObjectNames.Remove(objName);
+                }
+                else
+                    Destroy(drops[i]);
             }
 
-            //А затем заново их создать
+            //Создадим дропы, которые остались в списке дропов (значит они появились в процессе игры, но не были подобраны игроком)
             if (dropInfo != null && gStats != null)
             {
                 foreach (DropInfo _dInfo in dropInfo.drops)
@@ -520,6 +588,11 @@ public class GameController : MonoBehaviour
                     {
                         GameObject newDrop = Instantiate(gStats.itemBase.customDrop, _dInfo.position, Quaternion.identity) as GameObject;
                         newDrop.GetComponent<DropClass>().item = gStats.WeaponDict[_dInfo.itemName];
+                    }
+                    else if (gStats.TrinketDict.ContainsKey(_dInfo.itemName))
+                    {
+                        GameObject newDrop = Instantiate(gStats.itemBase.customDrop, _dInfo.position, Quaternion.identity) as GameObject;
+                        newDrop.GetComponent<DropClass>().item = gStats.TrinketDict[_dInfo.itemName];
                     }
                     else if (gStats.ItemDict.ContainsKey(_dInfo.itemName))
                     {
@@ -682,6 +755,7 @@ public class GameController : MonoBehaviour
             #region NPCs
 
             List<NPCData> npcInfo = lData.npcInfo;
+            Dictionary<int, NPCController> npcDict = new Dictionary<int, NPCController>();
             Dictionary<string, GameObject> npcObjects = new Dictionary<string, GameObject>();
 
             if (npcInfo != null && NPCs != null)
@@ -691,6 +765,7 @@ public class GameController : MonoBehaviour
                     int objId = npcData.objId;
                     if (objId < NPCs.Count ? NPCs[objId] != null : false)
                     {
+                        npcDict.Add(objId, NPCs[objId]);
                         NPCs[objId].SetData(npcData);
                         NPCs[objId] = null;
                     }
@@ -727,6 +802,7 @@ public class GameController : MonoBehaviour
                         NPCController _npc = _obj.GetComponent<NPCController>();
                         if (_npc != null)
                             _npc.SetData(npcData);
+                        npcDict.Add(_npc.GetID(), _npc);
                         if (objId >= npcsIdCount)
                             npcsIdCount = objId + 1;
 
@@ -740,6 +816,24 @@ public class GameController : MonoBehaviour
             }
 
             #endregion //NPCs
+
+            #region dialogs
+
+            DialogWindowScript dWindow = SpecialFunctions.dialogWindow;
+            DialogData dInfo = lData.dInfo;
+            if (dWindow != null && dInfo!=null)
+            {
+                foreach (DialogInfo dialogInfo in dInfo.dialogs)
+                    if (npcDict.ContainsKey(dialogInfo.npcID))
+                    {
+                        NPCController dialogNPC = npcDict[dialogInfo.npcID];
+                        Dialog _dialog = dialogNPC.Dialogs.Find(x => x.dialogName == dialogInfo.dialogName);
+                        if (_dialog != null)
+                            dWindow.DialogQueue.Add(new DialogQueueElement(_dialog, dialogNPC));
+                    }
+            }
+
+            #endregion //dialogs
 
         }
 
@@ -759,9 +853,23 @@ public class GameController : MonoBehaviour
     /// в зависимости от параметра general
     /// </summary>
     /// <returns></returns>
-    GameData GetGameData(bool general, int cNumber)
+    GameData StoreGameData(bool general, int cNumber)
     {
-        GameData _gData= new GameData();
+        SavesInfo savesInfo = Serializator.DeXmlSavesInfo(savesInfoPath);
+        bool haveData = true;
+        GameData _gData = null;
+        if (!Serializator.HasSavesInfo(savesInfoPath))
+            haveData = false;
+        if (savesInfo == null)
+            haveData = false;
+        if (!savesInfo.saves[profileNumber].hasData)
+            haveData = false;
+        if (haveData)
+            _gData = Serializator.DeXml(datapath + profileNumber.ToString() + ".xml");
+        else
+            _gData= new GameData();
+        if (_gData == null)
+            _gData = new GameData();
         if (general)
         {
             _gData.ResetLevelData();
@@ -802,7 +910,7 @@ public class GameController : MonoBehaviour
             List<ItemCollection> _collection = SpecialFunctions.statistics.ItemCollections;
 
             _gData.SetLevelData(cNumber, Hero,  _collection, drops, GetComponent<GameHistory>().history,
-                                                                                                        GetComponent<GameStatistics>(),enInfo,intInfo, npcInfo);
+                                                                                                        GetComponent<GameStatistics>(),enInfo,intInfo, npcInfo, SpecialFunctions.dialogWindow);
         }
         return _gData;
     }
@@ -818,6 +926,40 @@ public class GameController : MonoBehaviour
             gData.ResetLevelData();
         }
         Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");
+    }
+
+    /// <summary>
+    /// Сменить информацию об используемом игроком оружии в данный момент
+    /// </summary>
+    /// <param name="general">Информация должна занестись в данные уровня (false) или в данные игры(true)</param>
+    public void ChangeInformationAboutActiveWeapon(bool general, string weaponName)
+    {
+        GameData gData = Serializator.DeXml(datapath + profileNumber.ToString() + ".xml");
+        if (gData!=null)
+        {
+            if (general)
+                gData.gGData.eInfo.weapon = weaponName;
+            else
+                gData.lData.eInfo.weapon = weaponName;
+            Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");
+        }
+    }
+
+    /// <summary>
+    /// Сменить информацию об инвентаре
+    /// </summary>
+    /// <param name="general">Информация должна занестись в данные уровня (false) или в данные игры(true)</param>
+    public void ChangeInformationAboutEquipment(bool general)
+    {
+        GameData gData = Serializator.DeXml(datapath + profileNumber.ToString() + ".xml");
+        if (gData != null)
+        {
+            if (general)
+                gData.gGData.eInfo= new EquipmentInfo(hero.CurrentWeapon,hero.Equipment);
+            else
+                gData.lData.eInfo = new EquipmentInfo(hero.CurrentWeapon, hero.Equipment);
+            Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");
+        }
     }
 
     /// <summary>
@@ -1016,7 +1158,7 @@ public class GameController : MonoBehaviour
         if (dObj!=null)
             if (SpecialFunctions.dialogWindow != null)
                 SpecialFunctions.dialogWindow.AddDialogObjectInDictionary(dObj);
-    }  
+    }
 
     #region gameEffects
 
@@ -1033,71 +1175,102 @@ public class GameController : MonoBehaviour
     }*/
 
     /// <summary>
-    /// Вызвать случайный игровой эффект (функция вызывет с некоторым шансом случайный положительный исследовательский объект при выполнении задания)
+    /// Добавить в списки эффектов все эффекты данного предмета
     /// </summary>
-    public void AddRandomGameEffect()
+    /// <param name="trinket">Предмет, который даёт возможность создавать пассивные эффекты</param>
+    public void AddTrinketEffect(TrinketClass trinket)
     {
-        float rand = UnityEngine.Random.RandomRange(0f, 1f);
-        if (rand < treasureHunterProbability)
-        {
-            StartTreasureHunt();
-            return;
-        }
-        else
-            rand -= treasureHunterProbability;
-        if (rand < collectorProbability)
-            StartСollectorProcess();
+        foreach (TrinketEffectClass effect in trinket.trinketEffects)
+            AddTrinketEffect(effect);
+
     }
 
     /// <summary>
-    /// Вызвать случайный игровой эффект
+    /// Добавить новый игровой эффект в список доступных эффектов
     /// </summary>
-    /// <param name="_char">Персонаж, который вызывает случайный эффект (например, своей смертью)</param>
-    public void AddRandomGameEffect(CharacterController _char)
+    public void AddTrinketEffect(TrinketEffectClass effect)
     {
+        if (effect.effectType == TrinketEffectTypeEnum.monsterDeath)
+            deathEffects.Add(effect);
+        else if (effect.effectType == TrinketEffectTypeEnum.investigation)
+            usualEffects.Add(effect);
+
+    }
+
+    /// <summary>
+    /// Убрать все эффекты тринкета
+    /// </summary>
+    public void RemoveEffectsOfTrinket(TrinketClass trinket)
+    {
+        foreach (TrinketEffectClass effect in trinket.trinketEffects)
+        {
+            if (effect.effectType == TrinketEffectTypeEnum.monsterDeath)
+            {
+                TrinketEffectClass _effect = deathEffects.Find(x => x.effectName == effect.effectName);
+                if (_effect!= null)
+                    deathEffects.Remove(_effect);
+            }
+            else if (effect.effectType == TrinketEffectTypeEnum.investigation)
+            {
+                TrinketEffectClass _effect = usualEffects.Find(x => x.effectName == effect.effectName);
+                if (_effect != null)
+                    usualEffects.Remove(_effect);
+            }
+
+        }
+    }
+
+    /// <summary>
+    /// Вызвать случайный игровой эффект (функция вызывет с некоторым шансом случайный положительный исследовательский объект при выполнении задания)
+    /// </summary>
+    public void AddRandomUsualGameEffect()
+    {
+        float normKoof = 0f;
+        foreach (TrinketEffectClass effect in usualEffects)
+        {
+            normKoof += effect.effectProbability;
+        }
+        if (normKoof < 1f)
+            normKoof = 1f;
         float rand = UnityEngine.Random.RandomRange(0f, 1f);
-        if (rand < ancestorsRevengeProbability)
+        foreach (TrinketEffectClass effect in usualEffects)
         {
-            StartAncestorsRevenge(_char);
-            return;
+            if (rand < effect.effectProbability / normKoof)
+            {
+                if (usualEffectsDictionary.ContainsKey(effect.effectName))
+                    usualEffectsDictionary[effect.effectName]();
+                break;
+            }
+            else
+                rand -= effect.effectProbability;
         }
-        else
-            rand -= ancestorsRevengeProbability;
+    }
 
-        if (rand < tribalLeaderProbability)
+    /// <summary>
+    /// Вызвать случайный игровой эффект, связанный со смертью персонажа
+    /// </summary>
+    /// <param name="_char">Персонаж, который вызывает случайный эффект своей смертью</param>
+    public void AddRandomDeathGameEffect(CharacterController _char)
+    {
+        float normKoof = 0f;
+        foreach (TrinketEffectClass effect in deathEffects)
         {
-            StartTribalLeader(_char);
-            return;
+            normKoof += effect.effectProbability;
         }
-        else
-            rand -= tribalLeaderProbability;
-
-        if (rand < battleCryProbability)
+        if (normKoof < 1f)
+            normKoof = 1f;
+        float rand = UnityEngine.Random.RandomRange(0f, 1f);
+        foreach (TrinketEffectClass effect in deathEffects)
         {
-            StartBattleCry();
-            return;
+            if (rand < effect.effectProbability / normKoof)
+            {
+                if (deathEffectsDictionary.ContainsKey(effect.effectName))
+                    deathEffectsDictionary[effect.effectName](_char);
+                break;
+            }
+            else
+                rand -= effect.effectProbability;
         }
-        else
-            rand -= battleCryProbability;
-
-        if (rand < ancientDarknessProbability)
-        {
-            StartAncientDarkness();
-            return;
-        }
-        else
-            rand -= ancientDarknessProbability;
-
-        if (rand < totemAnimalProbability)
-        {
-            StartTotemAnimal();
-            return;
-        }
-        else
-            rand -= totemAnimalProbability;
-
-        if (rand<tribalRitualProbability)
-            StartTribalRitual();
     }
 
     /// <summary>
@@ -1127,7 +1300,6 @@ public class GameController : MonoBehaviour
     /// </summary>
     /// <param name="_char">Смерть какого персонажа вызвал этот бафф (или на какого персонажа он должен подействовать</param>
     /// <param name="_time">Как долго он будет длит</param>
-    /// <param name="argument">Какой тип урона наносил персонаж, смертью которого был вызван этот эффект (0, если это неизвестно)</param>
     void StartAncestorsRevenge(CharacterController _char)
     {
         if (activeGameEffects.Contains("AncestorsRevenge"))
@@ -1174,7 +1346,6 @@ public class GameController : MonoBehaviour
     /// <summary>
     /// Процесс действия баффа "Месть предков"
     /// </summary>
-    /// <param name="_time">Время действия</param>
     IEnumerator AncestorsRevengeProcess()
     {
         yield return new WaitForSeconds(ancestorsRevengeTime);
@@ -1232,7 +1403,7 @@ public class GameController : MonoBehaviour
     {
         yield return new WaitForSeconds(tribalLeaderTime);
         if (_char != null ? !_char.Dead : false)
-            _char.TakeDamage(10000f, DamageType.Physical);
+            _char.TakeDamage(new HitParametres(10000f, DamageType.Physical));
     }
 
     /// <summary>
@@ -1250,7 +1421,7 @@ public class GameController : MonoBehaviour
     /// <summary>
     /// Вызвать "Боевой клич"
     /// </summary>
-    void StartBattleCry()
+    void StartBattleCry(CharacterController _char)
     {
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("enemy");
         Vector2 cryPosition = Hero.transform.position;
@@ -1330,7 +1501,7 @@ public class GameController : MonoBehaviour
     /// <summary>
     /// Начать действие эффекта "Древняя тьма"
     /// </summary>
-    void StartAncientDarkness()
+    void StartAncientDarkness(CharacterController _char)
     {
         if (activeGameEffects.Contains("AncientDarkness"))
             return;
@@ -1381,7 +1552,7 @@ public class GameController : MonoBehaviour
     /// <summary>
     /// Вызвать эффект "Тотемное животное"
     /// </summary>
-    void StartTotemAnimal()
+    void StartTotemAnimal(CharacterController _char)
     {
         if (activeGameEffects.Contains("TotemAnimal"))
             return;
@@ -1403,7 +1574,7 @@ public class GameController : MonoBehaviour
     /// <summary>
     /// Вызвать эффект "Племенной ритуал"
     /// </summary>
-    void StartTribalRitual()
+    void StartTribalRitual(CharacterController _char)
     {
         Hero.StartTribalRitual();
     }
@@ -1417,11 +1588,38 @@ public class GameController : MonoBehaviour
     public void CompleteLevel(string nextLevelName)
     {
         SpecialFunctions.StartStoryEvent(this, EndGameEvent, new StoryEventArgs());
+        SpecialFunctions.levelEnd = true;
         GameStatistics statistics = SpecialFunctions.statistics;
         List<ItemCollection> itemCollections = statistics != null ? statistics.ItemCollections : null;
         string sceneName = SceneManager.GetActiveScene().name;
         ItemCollection _collection = itemCollections != null ? itemCollections.Find(x=>sceneName.Contains(x.settingName)):null;
         levelCompleteScreen.SetLevelCompleteScreen(nextLevelName, secretsFoundNumber, secretsTotalNumber, _collection);
+    }
+
+    /// <summary>
+    /// Учесть смену главного героя
+    /// </summary>
+    /// <param name="_hero">Новый главный герой</param>
+    public void ConsiderHero(HeroController _hero)
+    {
+        hero = _hero;
+        SetHeroDeathLevelEnd();
+    }
+
+    /// <summary>
+    /// Сделать так, чтобы при смерти героя уровень заканчивался
+    /// </summary>
+    public void SetHeroDeathLevelEnd()
+    {
+        Hero.CharacterDeathEvent += HandleTargetDeathEvent;
+    }
+
+    /// <summary>
+    /// Сделать так, чтобы при смерти героя уровень заканчивался
+    /// </summary>
+    public void RemoveHeroDeathLevelEnd()
+    {
+        Hero.CharacterDeathEvent -= HandleTargetDeathEvent;
     }
 
     #region musicAndSounds
@@ -1506,6 +1704,24 @@ public class GameController : MonoBehaviour
     #endregion //musicAndSounds
 
     #region eventHandlers
+
+    /// <summary>
+    /// Узнать о смерти некого персонажа и завершить игру
+    /// </summary>
+    /// <param name="sender">Что вызвало событие</param>
+    /// <param name="e">Данные о событии</param>
+    protected virtual void HandleTargetDeathEvent(object sender, StoryEventArgs e)
+    {
+        StartCoroutine(DeathProcess());
+    }
+
+    IEnumerator DeathProcess()
+    {
+        SpecialFunctions.SetFade(true);
+        PlayerPrefs.SetFloat("Hero Health", hero.MaxHealth);
+        yield return new WaitForSeconds(deathTime);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
 
     /// <summary>
     /// Обработка события "Стрелка компаса перестала работать"

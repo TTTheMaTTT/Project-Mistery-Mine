@@ -520,13 +520,13 @@ public class AIController : CharacterController
     /// <summary>
     /// Функция, вызываемая при получении урона, оповещающая о субъекте нападения
     /// </summary>
-    /// <param name="attacker">Кто атаковал персонажа</param>
-    public virtual void TakeAttackerInformation(GameObject attacker)
+    /// <param name="attackerInfo">Кто атаковал персонажа</param>
+    public override void TakeAttackerInformation(AttackerClass attackerInfo)
     {
-        if (attacker != null)
+        if (attackerInfo != null)
         {
-            if (mainTarget.transform != attacker.transform)
-                MainTarget = new ETarget(attacker.transform);
+            if (mainTarget.transform != attackerInfo.attacker.transform)
+                MainTarget = new ETarget(attackerInfo.attacker.transform);
             if (behavior!=BehaviorEnum.agressive)
                 BecomeAgressive();
         }
@@ -535,20 +535,20 @@ public class AIController : CharacterController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
+    public override void TakeDamage( HitParametres hitData)
     {
-        if (_dType != DamageType.Physical)
+        if (hitData.damageType != DamageType.Physical)
         {
-            if (((DamageType)vulnerability & _dType) == _dType)
-                damage *= 1.25f;
-            else if (_dType == attackParametres.damageType)
-                damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
+            if (((DamageType)vulnerability & hitData.damageType) == hitData.damageType)
+                hitData.damage *= 1.25f;
+            else if (hitData.damageType == attackParametres.damageType)
+                hitData.damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
         }
-        base.TakeDamage(damage, _dType, attackPower);
+        base.TakeDamage(hitData);
         OnHealthChanged(new HealthEventArgs(health));
         bool stunned = GetBuff("StunnedProcess") != null;
         bool frozen = GetBuff("FrozenProcess") != null;
-        if (attackPower>balance || frozen || stunned)
+        if (hitData.attackPower >balance || frozen || stunned)
         {
             StopMoving();
             balance = usualBalance;
@@ -566,22 +566,22 @@ public class AIController : CharacterController
     /// Функция получения урона (в данной функции параметр ignoreInvul показывает, вводится ли персонаж в микростан при ударе или нет).
     /// </summary>
     /// <param name="damage">величина урона</param>
-    /// <param name="_dType">тип урона</param>
+    /// <param name="hitData.damageType">тип урона</param>
     /// <param name="ignoreInvul">показывает, вводится ли персонаж в микростан при ударе или нет</param>
-    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower = 0)
+    public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
     {
-        if (_dType != DamageType.Physical)
+        if (hitData.damageType != DamageType.Physical)
         {
-            if (((DamageType)vulnerability & _dType) == _dType)
-                damage *= 1.25f;
-            else if (_dType == attackParametres.damageType)
-                damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
+            if (((DamageType)vulnerability & hitData.damageType) == hitData.damageType)
+                hitData.damage *= 1.25f;
+            else if (hitData.damageType == attackParametres.damageType)
+                hitData.damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
         }
-        base.TakeDamage(damage, _dType, ignoreInvul, attackPower);
+        base.TakeDamage(hitData, ignoreInvul);
         OnHealthChanged(new HealthEventArgs(health));
         bool stunned = GetBuff("StunnedProcess") != null;
         bool frozen = GetBuff("FrozenProcess") != null;
-        if (attackPower>balance || stunned || frozen)
+        if (hitData.attackPower >balance || stunned || frozen)
         {
             StopMoving();
             if (!stunned && !frozen)
@@ -1207,7 +1207,8 @@ public class AIController : CharacterController
         //Если игрок случайно наткнулся на монстра и получил урон, то персонаж автоматически становится агрессивным
         if (behavior != BehaviorEnum.agressive)
         {
-            MainTarget = new ETarget(e.Target.transform);
+            if (e.Target!=null)
+                MainTarget = new ETarget(e.Target.transform);
             BecomeAgressive();
         }
     }

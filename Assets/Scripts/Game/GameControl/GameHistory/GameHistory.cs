@@ -35,10 +35,11 @@ public class GameHistory : MonoBehaviour, IHaveStory
     {
         Summoner summoner = GetComponent<Summoner>();
         if (summoner==null)
-            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame", "setText","setSecretText", "setLight", "setHDR"};
+            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress",
+                                        "saveGame", "setText","setSecretText", "setLight", "setHDR", "setDeathEvent"};
         else
             return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame",
-                                        "setText","setSecretText", "setLight", "setHDR", "summon","destroy","move" };
+                                        "setText","setSecretText", "setLight", "setHDR", "setDeathEvent", "summon","destroy","move" };
     }
 
     /// <summary>
@@ -59,6 +60,7 @@ public class GameHistory : MonoBehaviour, IHaveStory
                                             { "setSecretText", new List<string>() },
                                             { "setLight", new List<string>() },
                                             { "setHDR",new List<string>()},
+                                            { "setDeathEvent", new List<string> {"levelEnd", "nothing" } },
                                             { "summon", summoner!=null? summoner.summons.ConvertAll<string>(x=>x.summonName):new List<string>()},
                                             { "destroy", summoner!=null? summoner.destroys.ConvertAll<string>(x=>x.summonName):new List<string>()},
                                             { "move", summoner!=null? summoner.activeObjects.ConvertAll<string>(x=>x.summonName):new List<string>()}};
@@ -84,6 +86,7 @@ public class GameHistory : MonoBehaviour, IHaveStory
                                                     { "setSecretText", new List<string>() },
                                                     { "setLight", new List<string>() },
                                                     { "setHDR",new List<string>()},
+                                                    { "setDeathEvent", new List<string>()},
                                                     { "summon",new List<string>() },
                                                     { "destroy",new List<string>() },
                                                     { "move",new List<string>() } };
@@ -129,7 +132,7 @@ public class History
     {
         get
         {
-            return new List<string>() { "GameController", "GameStatistics", "CharacterController", "StoryTrigger", "NPCController" };
+            return new List<string>() { "GameController", "GameStatistics", "CharacterController", "StoryTrigger", "NPCController", "DropClass" };
         }
     }
 
@@ -139,7 +142,8 @@ public class History
                                                                                     { typeof(GameStatistics), new List<string> {"statisticCount"} },
                                                                                     { typeof(CharacterController),new List<string> { "characterDeath"} },
                                                                                     { typeof(StoryTrigger),new List<string> {"triggerEvent"} },
-                                                                                    { typeof(NPCController),new List<string> {"speech" } } }; } }
+                                                                                    { typeof(NPCController),new List<string> {"speech" } },
+                                                                                    { typeof(DropClass), new List<string> { "drop"} } }; } }
     //Возвращает имена сравнивающих функций для настройки причины сюжетного события
     public virtual Dictionary<Type, List<string>> compareNames
     {
@@ -148,9 +152,10 @@ public class History
             return new Dictionary<Type, List<string>> {
                                                                                     { typeof(GameController), new List<string> {"","compare", "compareHistoryProgress"} },
                                                                                     { typeof(GameStatistics), new List<string> {"", "compare", "compareStatistics" } },
-                                                                                    { typeof(CharacterController),new List<string> { "", "compare" } },
-                                                                                    { typeof(StoryTrigger),new List<string> { "", "compare" } },
-                                                                                    { typeof(NPCController),new List<string> { "", "compare", "compareSpeech"} } };
+                                                                                    { typeof(CharacterController),new List<string> { "", "compare", "compareHistoryProgress" } },
+                                                                                    { typeof(StoryTrigger),new List<string> { "", "compare", "compareHistoryProgress" } },
+                                                                                    { typeof(NPCController),new List<string> { "", "compare", "compareSpeech", "compareHistoryProgress" } },
+                                                                                    { typeof(DropClass),new List<string> { "", "compareHistoryProgress"} } };
         }
     }
 
@@ -225,6 +230,7 @@ public class History
         storyActionBase.Add("setSecretText", SetStorySecretText);
         storyActionBase.Add("setLight", SetStoryLight);
         storyActionBase.Add("setHDR", SetStoryHDRRatio);
+        storyActionBase.Add("setDeathEvent", SetDeathEvent);
         storyActionBase.Add("summon", Summon);
         storyActionBase.Add("destroy", StoryDestroy);
         storyActionBase.Add("move", StoryMove);
@@ -241,6 +247,7 @@ public class History
         storyInitBase.Add("characterDeath", (x, y) => { if (y.GetComponent<CharacterController>() != null) y.GetComponent<CharacterController>().CharacterDeathEvent += x.HandleStoryEvent; });
         storyInitBase.Add("triggerEvent", (x, y) => { if (y.GetComponent<StoryTrigger>() != null) y.GetComponent<StoryTrigger>().TriggerEvent += x.HandleStoryEvent; });
         storyInitBase.Add("speech", (x, y) => { if (SpecialFunctions.dialogWindow != null) SpecialFunctions.dialogWindow.SpeechSaidEvent += x.HandleStoryEvent; });
+        storyInitBase.Add("drop", (x, y) => { y.GetComponent<DropClass>().StoryDropIsGot += x.HandleStoryEvent; });
 
         storyDeInitBase.Add("startGame", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameController>().StartGameEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("endGame", (x, y) => { if (y.GetComponent<GameController>() != null) y.GetComponent<GameController>().EndGameEvent -= x.HandleStoryEvent; });
@@ -248,6 +255,7 @@ public class History
         storyDeInitBase.Add("characterDeath", (x, y) => { if (y.GetComponent<CharacterController>() != null) y.GetComponent<CharacterController>().CharacterDeathEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("triggerEvent", (x, y) => { if (y.GetComponent<StoryTrigger>() != null) y.GetComponent<StoryTrigger>().TriggerEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("speech", (x, y) => { if (SpecialFunctions.dialogWindow != null) SpecialFunctions.dialogWindow.SpeechSaidEvent -= x.HandleStoryEvent; });
+        storyDeInitBase.Add("drop", (x, y) => { y.GetComponent<DropClass>().StoryDropIsGot -= x.HandleStoryEvent; });
 
     }
 
@@ -473,7 +481,7 @@ public class History
     /// </summary>
     public void StartInvestigationEffect(StoryAction _action)
     {
-        SpecialFunctions.gameController.AddRandomGameEffect();
+        SpecialFunctions.gameController.AddRandomUsualGameEffect();
     }
 
     /// <summary>
@@ -602,6 +610,17 @@ public class History
         lightManager.HDRRatio = Mathf.Clamp(_action.argument / 100f, 0f, Mathf.Infinity);
     }
 
+    /// <summary>
+    /// Установить нужное событие при смерти главного героя
+    /// </summary>
+    public void SetDeathEvent(StoryAction _action)
+    {
+        if (_action.id1=="levelEnd")
+            SpecialFunctions.gameController.SetHeroDeathLevelEnd();
+        else if (_action.id1=="nothing")
+            SpecialFunctions.gameController.RemoveHeroDeathLevelEnd();
+    }
+
     #endregion //storyActions
 
     #region conditionFunctions
@@ -642,17 +661,23 @@ public class History
     }
 
     /// <summary>
-    /// Проверить учёт 
+    /// Проверить, на какой стадии находится определённая игровая история
     /// </summary>
     static bool CompareGameHistoryProgress(StoryCondition _condition, StoryEventArgs e)
     {
         GameStatistics gStats = SpecialFunctions.statistics;
+        string[] progressNames = _condition.id2.Split(' ');
         if (gStats == null)
             return false;
-        if (_condition.argument>=0)
-            return gStats.gameHistoryProgress.GetStoryProgress(_condition.id1) == _condition.id2;
-        else
-            return gStats.gameHistoryProgress.GetStoryProgress(_condition.id1) != _condition.id2;
+        bool coincide = _condition.argument<0;
+        string currentProgress = gStats.gameHistoryProgress.GetStoryProgress(_condition.id1);
+        foreach (string progressName in progressNames)
+            if (currentProgress == _condition.id2)
+            {
+                coincide = !coincide;
+                break;
+            }
+        return coincide;
     }
 
     #endregion //conditionFunctions

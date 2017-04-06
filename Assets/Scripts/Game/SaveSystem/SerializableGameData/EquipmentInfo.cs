@@ -16,9 +16,17 @@ public class EquipmentInfo
     [XmlArrayItem("Item")]
     public List<string> bagItems = new List<string>();
 
-    [XmlArray("Weapons")]
-    [XmlArrayItem("Available Weapon")]
+    [XmlArray("Available Weapons")]
+    [XmlArrayItem("Weapon")]
     public List<string> weapons = new List<string>();
+
+    [XmlArray("Available Trinkets")]
+    [XmlArrayItem("Trinket")]
+    public List<string> trinkets = new List<string>();
+
+    [XmlArray("Active Trinkets")]
+    [XmlArrayItem("Trinket")]
+    public List<string> activeTrinkets = new List<string>();
 
     public EquipmentInfo()
     { }
@@ -29,10 +37,16 @@ public class EquipmentInfo
 
         bagItems = new List<string>();
         weapons = new List<string>();
+        trinkets = new List<string>();
+        activeTrinkets = new List<string>();
 
         foreach (ItemClass _item in _equip.bag)
             bagItems.Add(_item != null ? _item.itemName : string.Empty);
         foreach (ItemClass _item in _equip.weapons)
             weapons.Add(_item != null ? _item.itemName : string.Empty);
+        foreach (ItemClass _item in _equip.trinkets)
+            trinkets.Add(_item != null ? _item.itemName : string.Empty);
+        foreach (ItemClass _item in _equip.activeTrinkets)
+            activeTrinkets.Add(_item != null ? _item.itemName : string.Empty);
     }
 }

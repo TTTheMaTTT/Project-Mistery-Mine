@@ -28,9 +28,9 @@ public class GameData
     /// Задать данные уровня
     /// </summary>
     public void SetLevelData(int cNumber,HeroController player, List<ItemCollection> _collection, List<DropClass> drops, History history,
-                                                                GameStatistics gStats, List<EnemyData> enemyList, List<InterObjData> intObjList, List<NPCData> npcList)
+                                                                GameStatistics gStats, List<EnemyData> enemyList, List<InterObjData> intObjList, List<NPCData> npcList, DialogWindowScript dWindow)
     {
-        lData = new LevelData(cNumber, player, _collection, drops, history, gStats, enemyList,intObjList, npcList);
+        lData = new LevelData(cNumber, player, _collection, drops, history, gStats, enemyList,intObjList, npcList, dWindow);
     }
 
     /// <summary>

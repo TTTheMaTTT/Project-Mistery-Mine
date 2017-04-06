@@ -67,7 +67,7 @@ public class IfritController : BatController
             missileHitBox.SetEnemies(enemies);
             missileHitBox.SetHitBox(new HitParametres(attackParametres));
             missileHitBox.allyHitBox = loyalty == LoyaltyEnum.ally;
-            missileHitBox.Attacker = gameObject;
+            missileHitBox.AttackerInfo = new AttackerClass(gameObject,AttackTypeEnum.range);
         }
         employment = Mathf.Clamp(employment + 5, 0, maxEmployment);
 

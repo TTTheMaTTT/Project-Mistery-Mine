@@ -56,14 +56,17 @@ public class HealthEventArgs : EventArgs
 {
     private float hp;
     private float hpDelta;
+    private float maxHP;
 
     public float HP { get { return hp; } }
     public float HPDelta { get { return hpDelta; } }
+    public float MaxHP { get { return maxHP; } }
 
-    public HealthEventArgs(float _hp, float _hpDelta=0f)
+    public HealthEventArgs(float _hp, float _hpDelta=0f, float _maxHP=12f)
     {
         hp = _hp;
         hpDelta = _hpDelta;
+        maxHP = _maxHP;
     }
 
 }
@@ -174,11 +177,13 @@ public class EquipmentEventArgs : EventArgs
 {
     private WeaponClass currentWeapon;
     private ItemClass item;
+    private ItemClass removedItem;
 
     public WeaponClass CurrentWeapon { get { return currentWeapon; } }
     public ItemClass Item { get { return item; } }
+    public ItemClass RemovedItem { get { return removedItem; } }
 
-    public EquipmentEventArgs(WeaponClass _weapon, ItemClass _item)
+    public EquipmentEventArgs(WeaponClass _weapon, ItemClass _item, ItemClass _removeItem=null)
     {
         currentWeapon = _weapon;
         item = _item;
@@ -248,12 +253,15 @@ public class LoyaltyEventArgs : EventArgs
 public class DialogEventArgs : EventArgs
 {
     private bool begin = true;//Если true - диалог начался, иначе - закончился
+    private bool stopGameProcess = true;//Если true, то данный диалог завершил процесс игры
 
     public bool Begin {get{return begin;}}
+    public bool StopGameProcess { get { return stopGameProcess; } }
 
-    public DialogEventArgs(bool _begin)
+    public DialogEventArgs(bool _begin, bool _stopGameProcess)
     {
         begin = _begin;
+        stopGameProcess = _stopGameProcess;
     }
 
 }

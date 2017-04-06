@@ -510,12 +510,12 @@ public class HumanoidController : AIController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
+    public override void TakeDamage(HitParametres hitData)
     {
-        base.TakeDamage(damage, _dType,attackPower);
+        base.TakeDamage(hitData);
         bool stunned = GetBuff("StunnedProcess") != null;
         bool frozen = GetBuff("FrozenProcess") != null;
-        if (attackPower > balance || stunned || frozen)
+        if (hitData.attackPower > balance || stunned || frozen)
         {
             if (onLadder && (!frozen))
                 LadderOff();//Сбросить с лестницы

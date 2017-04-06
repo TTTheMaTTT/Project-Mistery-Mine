@@ -15,8 +15,8 @@ public class HitBoxController : MonoBehaviour
     private HitBoxCollider HitCol { get { if (hitCol == null) hitCol=GetComponent<HitBoxCollider>(); return hitCol; } set { hitCol = value; } }
     protected HitParametres hitData = HitParametres.zero;
 
-    protected GameObject attacker = null;//Какой объект атакует данным хитбоксом
-    public virtual GameObject Attacker { get { return attacker; } set { attacker = value; } }
+    protected AttackerClass attackerInfo = null;//Какой объект атакует данным хитбоксом
+    public virtual AttackerClass AttackerInfo { get { return attackerInfo; } set { attackerInfo = value; } }
 
     #endregion //fields
 
@@ -126,12 +126,10 @@ public class HitBoxController : MonoBehaviour
         {
             rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
         }
-        if ((hitData.damageType != DamageType.Physical && !target.InInvul()) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
-            target.TakeDamageEffect(hitData.damageType);
-        AIController ai = null;
-        if ((ai = obj.GetComponent<AIController>()) != null)
-            ai.TakeAttackerInformation(attacker);
-        target.TakeDamage(hitData.damage, hitData.damageType, hitData.attackPower);
+        CharacterController _char = null;
+        if ((_char = obj.GetComponent<CharacterController>()) != null)
+            _char.TakeAttackerInformation(attackerInfo);
+        target.TakeDamage(hitData);
         OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
 
     }
@@ -154,5 +152,21 @@ public class HitBoxController : MonoBehaviour
     }
 
     #endregion //events
+
+}
+
+/// <summary>
+/// Информация об атакующем
+/// </summary>
+public class AttackerClass
+{
+    public GameObject attacker;//Что ялвялось атакующим объектом?
+    public AttackTypeEnum attackType;//Какой тип атаки?
+
+    public AttackerClass(GameObject _attacker, AttackTypeEnum _attackType)
+    {
+        attacker = _attacker;
+        attackType = _attackType;
+    }
 
 }

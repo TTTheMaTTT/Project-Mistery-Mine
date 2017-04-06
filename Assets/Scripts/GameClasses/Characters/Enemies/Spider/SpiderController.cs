@@ -256,6 +256,8 @@ public class SpiderController : AIController
     /// </summary>
     protected override void Turn()
     {
+        if (inGround)
+            return;
         base.Turn();
         wallCheck.SetPosition(transform.eulerAngles.z/180f*Mathf.PI, (int)orientation);
         precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
@@ -267,6 +269,8 @@ public class SpiderController : AIController
     /// <param name="_orientation">В какую сторону должен смотреть персонаж</param>
     public override void Turn(OrientationEnum _orientation)
     {
+        if (inGround)
+            return;
         base.Turn(_orientation);
         wallCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
         precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
@@ -549,11 +553,11 @@ public class SpiderController : AIController
     /// <summary>
     /// Функция получения урона
     /// </summary>
-    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
+    public override void TakeDamage(HitParametres hitData)
     {
-        base.TakeDamage(damage, _dType, attackPower);
+        base.TakeDamage(hitData);
         bool stunned = GetBuff("StunnedProcess") != null;
-        if (attackPower > balance || stunned)
+        if (hitData.attackPower > balance || stunned)
         {
             JumpDown();//Сбросить паука со стены ударом
         }

@@ -243,7 +243,7 @@ public class BattleField : MonoBehaviour
     {
         for (int i = 1; i < allies.Count; i++)//Героя эта функция не должна убивать, поэтому начинаем цикл с единицы
         {
-            allies[i].TakeDamage(10000f, DamageType.Physical);
+            allies[i].TakeDamage(new HitParametres(10000f, DamageType.Physical));
         }
     }
 
@@ -253,8 +253,8 @@ public class BattleField : MonoBehaviour
         //enemy.Waiting = false;
         KillAllies();
         agressiveEnemies.Clear();
-        foreach (AIController enemy in enemies)
-            enemy.ATrigger.TriggerOut();
+        for (int i=enemies.Count-1; i>=0;i--)
+            enemies[i].ATrigger.TriggerOut();
         enemies.Clear();
     }
     

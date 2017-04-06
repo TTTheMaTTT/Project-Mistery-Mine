@@ -29,8 +29,8 @@ uniform float _BumpAmt;
 
 half4 frag( v2f i ) : COLOR
 {
-	// Рассёт искажений
-	half2 bump = UnpackNormal(tex2D( _BumpMap, i.uvbump )).rg; // we could optimize this by just reading the x & y without reconstructing the Z
+	// Рассчёт искажений
+	half2 bump = UnpackNormal(tex2D( _BumpMap, i.uvbump )).rg;
 	float2 offset = bump * _BumpAmt * _GrabTexture_TexelSize.xy;
 	i.uvgrab.xy = offset + i.uvgrab.xy;
 	

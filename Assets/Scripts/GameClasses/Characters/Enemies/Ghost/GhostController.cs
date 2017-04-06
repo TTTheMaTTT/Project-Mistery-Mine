@@ -179,7 +179,7 @@ public class GhostController : AIController
             missileHitBox.SetEnemies(enemies);
             missileHitBox.SetHitBox(new HitParametres(attackParametres));
             missileHitBox.allyHitBox = loyalty == LoyaltyEnum.ally;
-            missileHitBox.Attacker = gameObject;
+            missileHitBox.AttackerInfo = new AttackerClass(gameObject,AttackTypeEnum.range);
         }
         employment = Mathf.Clamp(employment + 5, 0, maxEmployment);
 
@@ -187,17 +187,17 @@ public class GhostController : AIController
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
-    public override void TakeDamage(float damage, DamageType _dType, int attackPower = 0)
+    public override void TakeDamage(HitParametres hitData)
     {
-        base.TakeDamage(damage, _dType, attackPower);
-        if (attackPower>balance)
+        base.TakeDamage(hitData);
+        if (hitData.attackPower>balance)
             Animate(new AnimationEventArgs("stop"));
     }
 
-    public override void TakeDamage(float damage, DamageType _dType, bool ignoreInvul, int attackPower = 0)
+    public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
     {
-        base.TakeDamage(damage, _dType, ignoreInvul, attackPower);
-        if (attackPower>balance)
+        base.TakeDamage(hitData, ignoreInvul);
+        if (hitData.attackPower>balance)
             Animate(new AnimationEventArgs("stop"));
     }
 

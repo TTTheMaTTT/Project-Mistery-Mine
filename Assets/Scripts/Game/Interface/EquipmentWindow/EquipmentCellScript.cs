@@ -53,8 +53,8 @@ public class EquipmentCellScript : MonoBehaviour
         set
         {
             if (value)
-                eMenu.ResetActivatedCell();
-            eMenu.ActivatedCell = this;
+                eMenu.ResetActivatedWeaponCell();
+            eMenu.ActivatedWeaponCell = this;
             button.enabled = !value;
             buttonImage.color = value ? new Color(1f, 0.8f, 0f, 0.5f) : new Color(0f, 0f, 0f, 0f);
             activated = value;
@@ -72,7 +72,7 @@ public class EquipmentCellScript : MonoBehaviour
             if (value)
                 eMenu.ResetCurrentWeaponCell();
             activated = false;
-            eMenu.ActivatedCell = null;
+            eMenu.ActivatedWeaponCell = null;
             eMenu.currentWeaponCell = this;
             button.enabled = !value && weapon!=null;
             buttonImage.color = value ? new Color(0f, 1f, 0.5f, 0.5f) : new Color(0f, 0f, 0f, 0f);
@@ -80,16 +80,18 @@ public class EquipmentCellScript : MonoBehaviour
         }
     }
 
+    public static Text weaponNameText;//Текст, на котором отображается название оружия
+
     #endregion //fields
 
-    public void Initialize()
+    public void Initialize(EquipmentMenu _eMenu)
     {
         activated = false;
         isCurrentWeapon = false;
         buttonImage = GetComponent<Image>();
         button = GetComponent<Button>();
         weaponImage = transform.parent.FindChild("WeaponImage").GetComponent<Image>();
-        eMenu = transform.parent.parent.parent.parent.GetComponent<EquipmentMenu>();
+        eMenu = _eMenu;
     }
 
     /// <summary>
@@ -98,6 +100,15 @@ public class EquipmentCellScript : MonoBehaviour
     public void SetActive()
     {
         Activated = true;
+    }
+
+    /// <summary>
+    /// Отобразить текст с названием оружия
+    /// </summary>
+    public void ShowWeaponText()
+    {
+        if (weaponNameText != null && weapon != null)
+            weaponNameText.text = weapon.itemTextName;
     }
 
 

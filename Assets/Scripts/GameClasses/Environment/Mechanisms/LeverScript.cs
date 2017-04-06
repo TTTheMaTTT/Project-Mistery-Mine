@@ -148,6 +148,8 @@ public class LeverScript : MonoBehaviour, IInteractive
     /// </summary>
     public virtual void SetData(InterObjData _intObjData)
     {
+        if (!(_intObjData is MechData))
+            return;
         MechData mData = (MechData)_intObjData;
         if (mData != null)
         {
