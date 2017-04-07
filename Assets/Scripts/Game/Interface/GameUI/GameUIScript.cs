@@ -61,6 +61,7 @@ public class GameUIScript : MonoBehaviour
     protected GameObject collectorScreen;//Панель, на которой отображается информация о собранных коллекциях
     protected GameObject oneItemScreen;//Экран, в котором показывается найденный коллекционный предмет
     protected GameObject collectionScreen;//Экран, в котором показывается, к каким коллекциям этот предмет принадлежит
+    [SerializeField]protected GameObject collectionItemPanel;//Панелька, предназначаемая для одного коллекционного предмета
     protected bool itemProcess = false;//Включён ли CollectorScreen?
     protected List<ItemClass> itemsOnProcess=new List<ItemClass>();//Какие ещё предметы должен отобразить itemScreen?
 
@@ -403,18 +404,21 @@ public class GameUIScript : MonoBehaviour
             for (int i = 0; i < _collection.collection.Count; i++)
             {
                 xPosition += collectionImageWidth;
-                GameObject newObject = new GameObject("ItemImage" + i.ToString());
+                GameObject newObject = Instantiate(collectionItemPanel,transform.position,Quaternion.identity);
+                newObject.name = "ItemImage" + i.ToString();
                 newObject.layer = LayerMask.NameToLayer("UI");
                 newObject.transform.SetParent(collectionScreen.transform);
-                RectTransform rTrans = newObject.AddComponent<RectTransform>();
+                RectTransform rTrans = newObject.GetComponent<RectTransform>();
                 rTrans.localPosition = new Vector3(xPosition, 0f, 0f);
                 rTrans.localScale = new Vector3(1f, 1f, 1f);
-                _img=newObject.AddComponent<Image>();
+                _img = newObject.transform.FindChild("Item").GetComponent<Image>();
                 if (_collection.collection[i].itemFound)
                 {
                     secretsFoundCount++;
                     _img.sprite = _collection.collection[i].item.itemImage;
                 }
+                else
+                    _img.color = new Color(0f, 0f, 0f, 0f);
             }
             _text.text = secretsFoundCount.ToString() + "/" + _collection.collection.Count.ToString();
             yield return new WaitForSecondsRealtime(collectionItemTime);

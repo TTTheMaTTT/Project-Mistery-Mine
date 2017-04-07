@@ -10,7 +10,7 @@ public class GhostController : AIController
 
     #region fields
 
-    protected HitBoxController selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
+    protected HitBoxController selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с призраком. Этот хитбокс всегда активен и не перемещается
     [SerializeField]protected GameObject missile;//Снаряды стрелка
 
     protected Hearing hearing;//Слух персонажа
@@ -58,7 +58,8 @@ public class GhostController : AIController
 
     protected override void FixedUpdate()
     {
-        base.FixedUpdate();
+        if (!immobile)
+            base.FixedUpdate();
 
         Animate(new AnimationEventArgs("fly"));
 
@@ -154,7 +155,7 @@ public class GhostController : AIController
     /// </summary>
     protected override void Attack()
     {
-        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(10 * (attackParametres.preAttackTime ))));
+        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(100 * (attackParametres.preAttackTime ))));
         StopMoving();
         StartCoroutine("AttackProcess");
     }

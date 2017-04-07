@@ -138,7 +138,8 @@ public class BatController : AIController
         employment = Mathf.Clamp(employment - 4, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
         StopMoving();
-        rigid.AddForce((MainTarget - transform.position).normalized * attackForce*speedCoof);
+        hitBox.AttackDirection = (MainTarget - transform.position).normalized;
+        rigid.AddForce(hitBox.AttackDirection * attackForce*speedCoof);
         hitBox.SetHitBox(new HitParametres(attackParametres));
         employment = Mathf.Clamp(employment + 1, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.actTime);

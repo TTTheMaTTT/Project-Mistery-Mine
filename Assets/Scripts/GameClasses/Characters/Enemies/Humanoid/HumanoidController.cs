@@ -445,6 +445,7 @@ public class HumanoidController : AIController
         employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
         hitBox.SetHitBox(new HitParametres(attackParametres));
+        hitBox.AttackDirection = Vector2.right * (int)orientation;
         yield return new WaitForSeconds(attackParametres.actTime + attackParametres.endAttackTime);
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
         balance = usualBalance;

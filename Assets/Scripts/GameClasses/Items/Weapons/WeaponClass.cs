@@ -24,6 +24,20 @@ public abstract class WeaponClass : ItemClass
         return null;
     }
 
+    /// <summary>
+    /// Начать атаку этим оружиемё
+    /// </summary>
+    public virtual void StartAttack()
+    {
+    }
+
+    /// <summary>
+    /// Остановить атаку этим оружием
+    /// </summary>
+    public virtual void StopAttack()
+    {
+    }
+
     public WeaponClass(WeaponClass _weapon)
     {
         itemName = _weapon.itemName;

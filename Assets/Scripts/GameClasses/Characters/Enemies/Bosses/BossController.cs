@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Класс, являющийся родительским для всех боссов
@@ -8,13 +9,30 @@ using System.Collections;
 public class BossController : AIController
 {
 
+    #region delegates
+
+    protected delegate void BossAction();
+
+    #endregion //delegates
+
     #region eventHandlers
 
     public EventHandler<BossHealthEventArgs> bossHealthEvent;
 
     #endregion //eventHandlers
 
+    #region fields
+
+    protected BossAction bossAction;//Действия совершаемые боссом (в агрессивном состоянии)
+    [SerializeField]protected  List<GameObject> drop=new List<GameObject>();//что скидывается с босса после смерти
+
+    #endregion //fields
+
     #region parametres
+
+    [SerializeField]
+    protected string bossName;//Имя босса, что отображается в GUI
+    protected int bossPhase = 0;//Фаза сражения с боссом
 
     public override float Health { get { return health; } set { health = value; OnBossHealthChanged(new BossHealthEventArgs(health, maxHealth, gameObject.name)); } }
 
@@ -26,7 +44,7 @@ public class BossController : AIController
     protected virtual void ConnectToUI()
     {
         bossHealthEvent += SpecialFunctions.gameUI.HandleBossHealthChanges;
-        OnBossHealthChanged(new BossHealthEventArgs(health, maxHealth, gameObject.name));
+        OnBossHealthChanged(new BossHealthEventArgs(health, maxHealth, bossName));
     }
 
     /// <summary>
@@ -71,6 +89,10 @@ public class BossController : AIController
     protected override void Death()
     {
         DisconnectFromUI();
+        foreach (GameObject drop1 in drop)
+        {
+            GameObject _drop = Instantiate(drop1, transform.position, transform.rotation) as GameObject;
+        }
         base.Death();
     }
 

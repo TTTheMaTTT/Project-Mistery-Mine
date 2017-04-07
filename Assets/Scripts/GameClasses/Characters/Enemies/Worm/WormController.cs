@@ -324,6 +324,7 @@ public class WormController : AIController
             undergroundAttackTimes++;
             yield return new WaitForSeconds(upAttackParametres.preAttackTime / 2f);
             hitBox.SetHitBox(new HitParametres(upAttackParametres));
+            hitBox.AttackDirection = Vector2.up;
             yield return new WaitForSeconds(upAttackParametres.actTime + upAttackParametres.endAttackTime);
         }
         else
@@ -331,6 +332,7 @@ public class WormController : AIController
             Animate(new AnimationEventArgs("attack", "Attack", Mathf.RoundToInt(10 * (attackParametres.preAttackTime + attackParametres.actTime))));
             yield return new WaitForSeconds(attackParametres.preAttackTime);
             hitBox.SetHitBox(new HitParametres(attackParametres));
+            hitBox.AttackDirection = Vector2.right * (int)orientation;
             yield return new WaitForSeconds(attackParametres.actTime + attackParametres.endAttackTime);
         }
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);

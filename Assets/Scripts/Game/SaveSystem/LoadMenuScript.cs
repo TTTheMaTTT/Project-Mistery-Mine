@@ -13,7 +13,7 @@ public class LoadMenuScript : MonoBehaviour
 
     #region consts
 
-    private const string firstLevelName = "cave_lvl1";
+    private const string firstLevelName = "BeginComics";
 
     #endregion //consts
 

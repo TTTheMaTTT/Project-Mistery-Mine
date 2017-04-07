@@ -145,14 +145,22 @@ public class HitBox : HitBoxController
                     {
                         
                         Rigidbody2D rigid;
-                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null && !target.InInvul())
+                        if (!ignoreInvul && target.InInvul())
+                            return;
+                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null)
                         {
-                            rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
+                            if (attackDirection == Vector2.zero)
+                                rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
+                            else
+                                rigid.AddForce(attackDirection * hitData.hitForce);
                         }
                         AIController ai = null;
                         if ((ai = other.GetComponent<AIController>()) != null)
                             ai.TakeAttackerInformation(attackerInfo);
-                        target.TakeDamage(hitData);
+                        if (ignoreInvul)
+                            target.TakeDamage(hitData, true);
+                        else
+                            target.TakeDamage(hitData);
                         OnAttack(new HitEventArgs(target.GetHealth()-prevHP));
                         return;
                     }
@@ -160,15 +168,23 @@ public class HitBox : HitBoxController
                     {
                         list.Add(other.gameObject);
                         Rigidbody2D rigid;
-                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null && !target.InInvul())
+                        if (!ignoreInvul && target.InInvul())
+                            return;
+                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null)
                         {
-                            rigid.velocity = Vector2.zero;
-                            rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
+                            //rigid.velocity = Vector2.zero;
+                            if (attackDirection == Vector2.zero)
+                                rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
+                            else
+                                rigid.AddForce(attackDirection * hitData.hitForce);
                         }
                         AIController ai = null;
                         if ((ai = other.GetComponent<AIController>()) != null)
                             ai.TakeAttackerInformation(attackerInfo);
-                        target.TakeDamage(hitData);
+                        if (ignoreInvul)
+                            target.TakeDamage(hitData, true);
+                        else
+                            target.TakeDamage(hitData);
                         OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
                     }
                 }

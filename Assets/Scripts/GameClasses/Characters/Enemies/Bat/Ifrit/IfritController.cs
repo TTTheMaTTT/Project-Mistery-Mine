@@ -43,7 +43,7 @@ public class IfritController : BatController
     /// </summary>
     protected override void Attack()
     {
-        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(10 * (attackParametres.preAttackTime))));
+        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(100 * (attackParametres.preAttackTime))));
         StartCoroutine("AttackProcess");
     }
 

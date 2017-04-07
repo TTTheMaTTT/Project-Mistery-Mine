@@ -112,7 +112,8 @@ public class GameMenuScript : InterfaceWindow
     /// </summary>
     public void RestartGame()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        CloseWindow();
+        SpecialFunctions.gameController.EndLevel();
     }
 
     /// <summary>

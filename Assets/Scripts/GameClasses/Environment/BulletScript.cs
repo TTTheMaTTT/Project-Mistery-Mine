@@ -16,13 +16,36 @@ public class BulletScript : MonoBehaviour
     #region fields
 
     protected HitBoxController hitBox;
+    protected HitParametres attackParametres;
+    public HitParametres AttackParametres { get { return AttackParametres; } set { attackParametres = value; } }
+    protected bool groundDetect=true;
+    public bool GroundDetect { get { return groundDetect; } set { groundDetect = value; if (value) hitBox.SetHitBox(attackParametres); else hitBox.ResetHitBox(); } }
+    Rigidbody2D rigid;
+
+    [SerializeField]protected GameObject destroyParticles;
 
     #endregion //fields
+
+    #region parametres
+
+    [SerializeField]protected float minFallDamageSpeed = 1f;//Минимальная скорость падения, которая должна быть достигнута, чтобы падающий снаряд нанёс урон
+
+    #endregion //parametres
 
     public virtual void Awake()
     {
         hitBox = GetComponentInChildren<HitBoxController>();
         hitBox.AttackEventHandler += HandleAttackProcess;
+        rigid = GetComponent<Rigidbody2D>();
+    }
+
+    protected virtual void FixedUpdate()
+    {
+        hitBox.AttackDirection = rigid.velocity.normalized;
+        if (groundDetect)
+            return;
+        if (rigid.velocity.y < -minFallDamageSpeed)
+            GroundDetect = true;
     }
 
     /// <summary>
@@ -30,10 +53,24 @@ public class BulletScript : MonoBehaviour
     /// </summary>
     public void OnTriggerEnter2D(Collider2D other)
     {
+        if (!groundDetect)
+            return;
         if (LayerMask.LayerToName(other.gameObject.layer) == groundName)
-            Destroy(gameObject);
+            DestroyBullet();
     }
 
+    /// <summary>
+    /// Уничтожение снаряда
+    /// </summary>
+    protected virtual void DestroyBullet()
+    {
+        if (destroyParticles != null)
+        {
+            GameObject particles = Instantiate(destroyParticles, transform.position, Quaternion.identity);
+            Destroy(particles, 1.5f);
+        }
+        Destroy(gameObject);
+    }
 
     #region events
 
@@ -42,7 +79,7 @@ public class BulletScript : MonoBehaviour
     /// </summary>
     protected void HandleAttackProcess(object sender, HitEventArgs e)
     {
-        Destroy(gameObject);
+        DestroyBullet();
     }
 
     #endregion //events

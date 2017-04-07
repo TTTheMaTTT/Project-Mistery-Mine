@@ -64,7 +64,14 @@ public class AlchemyLab : MonoBehaviour, IInteractive
 
     public void SetID(int _id)
     {
+#if UNITY_EDITOR
+        UnityEditor.SerializedObject serLab = new UnityEditor.SerializedObject(this);
+        UnityEditor.SerializedProperty serID = serLab.FindProperty("id");
+        serID.intValue = _id;
+        serLab.ApplyModifiedProperties();
+#else
         id = _id;
+#endif //UNITY_EDITOR
     }
 
     /// <summary>

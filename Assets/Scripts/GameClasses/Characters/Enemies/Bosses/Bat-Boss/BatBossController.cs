@@ -23,7 +23,7 @@ public class BatBossController: BossController
 
     protected Hearing hearing;//Слух персонажа
 
-    public GameObject drop;//Что выпадает из летучей мыши, если её 2 раза ударить
+    public GameObject heartDrop;//Что выпадает из летучей мыши, если её 2 раза ударить
 
     protected UsualTrigger batTrigger1, batTrigger2, batTrigger3;
     protected bool inBatTrigger1 { get { if (batTrigger1 == null) return false; else return batTrigger1.playerInside; } }
@@ -206,7 +206,7 @@ public class BatBossController: BossController
     {
         Animate(new AnimationEventArgs("stop"));
         hitBox.ResetHitBox();
-        Animate(new AnimationEventArgs("attack", "Attack", Mathf.RoundToInt(10*attackParametres.wholeAttackTime)));
+        Animate(new AnimationEventArgs("attack", "Attack", Mathf.RoundToInt(100*attackParametres.wholeAttackTime)));
         StartCoroutine("AttackProcess");
     }
 
@@ -236,6 +236,7 @@ public class BatBossController: BossController
         }
         inAttack = true;
         hitBox.SetHitBox(new HitParametres(attackParametres));
+        hitBox.AttackDirection = currentDirection;
         employment = Mathf.Clamp(employment + 1, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.actTime);
         StopMoving();
@@ -314,7 +315,7 @@ public class BatBossController: BossController
         CurrentCurve = new BezierSimpleCurve(_attackParametres.curve, pos, Mathf.Sign(transform.lossyScale.x), false);
         specialAttackTimes++;
         StartCoroutine("SpecialAttackProcess",_attackParametres.hitParametres);
-        Animate(new AnimationEventArgs("attack", "Dive", Mathf.RoundToInt(10 * _attackParametres.hitParametres.wholeAttackTime)));
+        Animate(new AnimationEventArgs("attack", "Dive", Mathf.RoundToInt(100 * _attackParametres.hitParametres.wholeAttackTime)));
         behaviorActions = SpecialAttackBehavior;
     }
 
@@ -472,7 +473,7 @@ public class BatBossController: BossController
             damageCount++;
             if (damageCount >= 5)
             {
-                Instantiate(drop, transform.position, transform.rotation);
+                Instantiate(heartDrop, transform.position, transform.rotation);
                 damageCount = 0;
             }
             if (behavior == BehaviorEnum.patrol)
@@ -886,6 +887,7 @@ public class BatBossControllerEditor : AIControllerEditor
         BatBossController batBoss = (BatBossController)target;
 
         SerializedObject serBatBoss = new SerializedObject(batBoss);
+        SerializedProperty bossName = serBatBoss.FindProperty("bossName");
         SerializedProperty maxHP = serBatBoss.FindProperty("maxHealth");
         SerializedProperty health = serBatBoss.FindProperty("health");
         SerializedProperty phase2Health = serBatBoss.FindProperty("phase2Health");
@@ -893,6 +895,7 @@ public class BatBossControllerEditor : AIControllerEditor
         SerializedProperty speed = serBatBoss.FindProperty("speed");
         SerializedProperty loyalty = serBatBoss.FindProperty("loyalty");
         SerializedProperty acceleration = serBatBoss.FindProperty("acceleration");
+        SerializedProperty heartDrop = serBatBoss.FindProperty("heartDrop");
         SerializedProperty drop = serBatBoss.FindProperty("drop");
         SerializedProperty healthDrain = serBatBoss.FindProperty("healthDrain");
         SerializedProperty attackForce = serBatBoss.FindProperty("attackForce");
@@ -908,6 +911,7 @@ public class BatBossControllerEditor : AIControllerEditor
         SerializedProperty serHighDiveAttack = serBatBoss.FindProperty("highDiveAttack");
         SerializedProperty serAttackParametres = serBatBoss.FindProperty("attackParametres");
 
+        bossName.stringValue = EditorGUILayout.TextField("Boss Name", bossName.stringValue);
         maxHP.floatValue = EditorGUILayout.FloatField("Max HP", maxHP.floatValue);
         EditorGUILayout.PropertyField(health);
         EditorGUILayout.PropertyField(phase2Health);
@@ -915,7 +919,8 @@ public class BatBossControllerEditor : AIControllerEditor
         speed.floatValue = EditorGUILayout.FloatField("Speed", speed.floatValue);
         EditorGUILayout.PropertyField(loyalty);
         acceleration.floatValue = EditorGUILayout.FloatField("Acceleration", acceleration.floatValue);
-        drop.objectReferenceValue = EditorGUILayout.ObjectField("Drop", drop.objectReferenceValue,typeof(GameObject));
+        EditorGUILayout.PropertyField(heartDrop);
+        EditorGUILayout.PropertyField(drop);
         healthDrain.floatValue = EditorGUILayout.FloatField("Health Drain", healthDrain.floatValue);
         EditorGUILayout.PropertyField(serAttackParametres,true);
         attackForce.floatValue = EditorGUILayout.FloatField("Attack Force", attackForce.floatValue);

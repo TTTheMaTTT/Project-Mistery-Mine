@@ -1712,6 +1712,11 @@ public class GameController : MonoBehaviour
     /// <param name="e">Данные о событии</param>
     protected virtual void HandleTargetDeathEvent(object sender, StoryEventArgs e)
     {
+        EndLevel();
+    }
+
+    public void EndLevel()
+    {
         StartCoroutine(DeathProcess());
     }
 

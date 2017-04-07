@@ -132,7 +132,7 @@ public class HeroController : CharacterController
 
     [SerializeField] protected float jumpForce = 200f,
                                      jumpAdd = 20f,//Добавление к силе прыжка при зажимании
-                                     flipForce = 150f,
+                                     flipForce = 200f,
                                      ladderSpeed = .8f,
                                      waterCoof = .7f;
 
@@ -574,6 +574,7 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Attack()
     {
+        currentWeapon.StartAttack();
         if (fightingMode == AttackTypeEnum.melee)
         {
             if (chargeBeginTime > 0f)
@@ -617,9 +618,11 @@ public class HeroController : CharacterController
 
         attacking = true;
         sword.Attack(hitBox, transform.position);
+        hitBox.AttackDirection = Vector2.right * (int)orientation;
         yield return new WaitForSeconds(sword.attackTime);
         attacking = false;
         yield return new WaitForSeconds(sword.endAttackTime);
+        currentWeapon.StopAttack();
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
@@ -639,7 +642,18 @@ public class HeroController : CharacterController
         bow.Shoot(hitBox, transform.position + Vector3.right*(int)orientation*.05f, (int)orientation, whatIsAim, enemies);
         yield return new WaitForSeconds(currentWeapon.attackTime);
 
+        currentWeapon.StopAttack();
         employment = Mathf.Clamp(employment + 5, 0, maxEmployment);
+    }
+
+    /// <summary>
+    /// Остановить атаку
+    /// </summary>
+    protected override void StopAttack()
+    {
+        base.StopAttack();
+        Animate(new AnimationEventArgs("stop"));
+        currentWeapon.StopAttack();
     }
 
     /// <summary>
@@ -647,6 +661,7 @@ public class HeroController : CharacterController
     /// </summary>
     protected virtual void Flip()
     {
+        rigid.velocity = new Vector2(0f, 0f);
         rigid.AddForce(new Vector2((int)orientation*flipForce, 0f));
         StartCoroutine(InvulProcess(flipTime, false));
         StartCoroutine(FlipProcess());
@@ -713,6 +728,7 @@ public class HeroController : CharacterController
                 //dontShoot = false;
                 if (onLadder)
                     LadderOff();
+                StopAttack();
             }
             if (hitData.attackPower>0)
                 StartCoroutine(InvulProcess(invulTime, true));

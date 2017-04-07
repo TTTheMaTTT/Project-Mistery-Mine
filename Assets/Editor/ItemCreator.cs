@@ -49,6 +49,13 @@ public class ItemCreator : EditorWindow
             AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
             Selection.activeObject = asset;
         }
+        else if (itemType == "voodoDoll")
+        {
+            VoodoDollClass asset = ScriptableObject.CreateInstance<VoodoDollClass>();
+            asset.itemName = itemName;
+            AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
+            Selection.activeObject = asset;
+        }
         else if (itemType == "heart")
         {
             HeartClass asset = ScriptableObject.CreateInstance<HeartClass>();
@@ -70,7 +77,7 @@ public class ItemCreator : EditorWindow
             AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
             Selection.activeObject = asset;
         }
-        else if (itemType=="trinket")
+        else if (itemType == "trinket")
         {
             TrinketClass asset = ScriptableObject.CreateInstance<TrinketClass>();
             asset.itemName = itemName;

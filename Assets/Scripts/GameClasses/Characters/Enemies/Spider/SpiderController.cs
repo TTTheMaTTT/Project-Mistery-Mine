@@ -603,6 +603,7 @@ public class SpiderController : AIController
         employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
         yield return new WaitForSeconds(_attackParametres.preAttackTime);
         hitBox.SetHitBox(new HitParametres(_attackParametres));
+        hitBox.AttackDirection = Vector2.right * (int)orientation;
         yield return new WaitForSeconds(_attackParametres.actTime + _attackParametres.endAttackTime);
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
         balance = usualBalance;

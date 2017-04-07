@@ -24,6 +24,8 @@ public class LevelCompleteScreenScript : MonoBehaviour
     protected Text collectionNameText;
     protected Text collectionNumbText;
 
+    [SerializeField]protected GameObject collectionItemPanel;
+
     #endregion //fields
 
     #region parametres
@@ -73,21 +75,24 @@ public class LevelCompleteScreenScript : MonoBehaviour
             float xPosition = -collectionWidth / 2f * collection.collection.Count;
             int secretsFoundCount = 0;
             collectionNumbText.GetComponent<RectTransform>().localPosition = new Vector3(xPosition, -30f, 0f);
+
             for (int i = 0; i < collection.collection.Count; i++)
             {
                 xPosition += collectionWidth;
-                GameObject newObject = new GameObject("ItemImage" + i.ToString());
+                GameObject newObject = Instantiate(collectionItemPanel, transform.position, Quaternion.identity);
                 newObject.transform.SetParent(panel);
-                RectTransform rTrans = newObject.AddComponent<RectTransform>();
+                RectTransform rTrans = newObject.GetComponent<RectTransform>();
                 rTrans.localPosition = new Vector3(xPosition, -30f, 0f);
                 rTrans.localScale = new Vector3(1f, 1f, 1f);
                 rTrans.sizeDelta = new Vector2(collectionWidth, collectionWidth);
-                Image _img = newObject.AddComponent<Image>();
+                Image _img = newObject.transform.FindChild("Item").GetComponent<Image>();
                 if (collection.collection[i].itemFound)
                 {
                     secretsFoundCount++;
                     _img.sprite = collection.collection[i].item.itemImage;
                 }
+                else
+                    _img.color = new Color(0f, 0f, 0f, 0f);
             }
             collectionNumbText.text = secretsFoundCount.ToString() + "/" + collection.collection.Count.ToString();
             Animator anim=panel.FindChild("Image").GetComponent<Animator>();

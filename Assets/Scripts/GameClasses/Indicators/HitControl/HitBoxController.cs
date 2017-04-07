@@ -24,6 +24,11 @@ public class HitBoxController : MonoBehaviour
 
     private string enemyLayer = "hero";//Какой слой игровых оъектов подвергается атаке
     public virtual bool allyHitBox { get { return HitCol.allyHitBox; } set { HitCol.allyHitBox = value; } }
+    [SerializeField]protected bool ignoreInvul;
+    public bool IgnoreInvul { get { return ignoreInvul; } set { ignoreInvul = value; } }
+
+    protected Vector2 attackDirection=Vector2.zero;//В какую сторону производится атака (в какую сторону будет направлена сила)
+    public Vector2 AttackDirection { get { return attackDirection; } set { attackDirection = value; } }
 
     protected bool immobile;//Запрет на перемещение хитбокса
     public bool Immobile { set { immobile = value; } }
@@ -122,14 +127,22 @@ public class HitBoxController : MonoBehaviour
             return;
         IDamageable target = obj.GetComponent<IDamageable>();
         Rigidbody2D rigid;
-        if ((rigid = obj.GetComponent<Rigidbody2D>()) != null && !target.InInvul())
+        if (!ignoreInvul && target.InInvul())
+            return;
+        if ((rigid = obj.GetComponent<Rigidbody2D>()) != null)
         {
-            rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
+            if (attackDirection == Vector2.zero)
+                rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
+            else
+                rigid.AddForce(attackDirection * hitData.hitForce);
         }
         CharacterController _char = null;
         if ((_char = obj.GetComponent<CharacterController>()) != null)
             _char.TakeAttackerInformation(attackerInfo);
-        target.TakeDamage(hitData);
+        if (ignoreInvul)
+            target.TakeDamage(hitData, true);
+        else
+            target.TakeDamage(hitData);
         OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
 
     }

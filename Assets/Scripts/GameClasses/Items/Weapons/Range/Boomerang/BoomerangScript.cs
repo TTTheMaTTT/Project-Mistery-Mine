@@ -48,6 +48,7 @@ public class BoomerangScript : MonoBehaviour
         rigid.velocity = Vector3.Lerp(rigid.velocity, (currentTarget - transform.position).normalized * speed, acceleration * Time.fixedDeltaTime);
         if (Vector3.SqrMagnitude(currentTarget - transform.position) < eps * eps)
             ChangePhase();
+        hitBox.AttackDirection = rigid.velocity.normalized;
     }
 
     public virtual void SetBoomerang(float _speed, float _acceleration)

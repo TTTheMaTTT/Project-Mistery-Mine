@@ -47,7 +47,7 @@ public class AIController : CharacterController
     #region fields
 
     [SerializeField]protected int id;//ID монстра, по которому его можно отличить
-    public int ID
+    public virtual int ID
     {
         get
         {
@@ -318,6 +318,7 @@ public class AIController : CharacterController
         employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
         hitBox.SetHitBox(new HitParametres(attackParametres));
+        hitBox.AttackDirection = Vector2.right * (int)orientation;
         yield return new WaitForSeconds(attackParametres.actTime + attackParametres.endAttackTime);
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
@@ -392,7 +393,8 @@ public class AIController : CharacterController
         currentTarget.Exists = false;
         StopFollowOptPath();
         Waiting = false;
-        StopAttack();
+        if (!immobile)
+            StopAttack();
     }
 
     /// <summary>
@@ -795,9 +797,10 @@ public class AIController : CharacterController
     /// </summary>
     protected virtual void ChangeMainTarget()
     {
+        GameObject prevObj = mainTarget.transform != null ? mainTarget.transform.gameObject : null;
         MainTarget = ETarget.zero;
         Transform obj = SpecialFunctions.battleField.GetNearestCharacter(transform.position, loyalty == LoyaltyEnum.ally);
-        if (obj != null)
+        if (obj != null && obj!=prevObj)
         {
             MainTarget = new ETarget(obj);
             GoToThePoint(mainTarget);
@@ -1419,7 +1422,7 @@ public class AIControllerEditor : Editor
 
     #endregion //parametres
 
-    public void OnEnable()
+    public virtual void OnEnable()
     {
         AIController ai = (AIController)target;
         hitData = ai.AttackParametres;

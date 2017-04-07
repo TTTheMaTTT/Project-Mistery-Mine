@@ -36,6 +36,16 @@ public class FlyVisual : CharacterVisual
         visualFunctions.Add("idle", Idle);
         visualFunctions.Add("fly", Fly);
         visualFunctions.Add("attack", Attack);
+        visualFunctions.Add("appear", Appear);
+    }
+
+    /// <summary>
+    /// Анимировать появление
+    /// </summary>
+    protected virtual void Appear(string id, int argument)
+    {
+        StartVisualRoutine(8, 1.6f);
+        anim.Play("Appear");
     }
 
     /// <summary>
@@ -55,10 +65,8 @@ public class FlyVisual : CharacterVisual
     /// </summary>
     protected virtual void Fly(string id, int argument)
     {
-        if (employment <= 6)
-        {
+        if (employment <= 7)
             return;
-        }
         anim.Play("Fly");
     }
 
@@ -76,7 +84,7 @@ public class FlyVisual : CharacterVisual
             StartCoroutine(AttackProcess("Attack"));
         else
             StartCoroutine(AttackProcess(id));
-        StartVisualRoutine(5, argument != 0 ? argument / 10f : attackTime);
+        StartVisualRoutine(5, argument != 0 ? argument / 100f : attackTime);
     }
 
     IEnumerator AttackProcess(string attackName)

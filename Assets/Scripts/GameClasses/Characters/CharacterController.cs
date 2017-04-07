@@ -52,7 +52,9 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     [SerializeField] protected float health = 100f;
     public virtual float Health { get { return health; } set { health = value; } }
     public virtual float MaxHealth { get { return maxHealth; } set { maxHealth = value; } }
+
     [SerializeField]protected int balance = 0;//Баланс персонажа. Если при получаемый урон имеет параметр силы атаки больше баланса, то персонаж сбивается, вводится в микростан
+    public virtual int Balance { get { return balance; } set { balance = value; } }
 
     [SerializeField] protected float speed = 1f;
     protected float speedCoof = 1f;//Коэффициент скорости
@@ -121,6 +123,10 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     [SerializeField]
     protected bool questCharacter = false;//Является и персонаж квестовым (его смерть не вызывает игровых эффектов)
 
+    protected List<Timer> timers = new List<Timer>();
+    protected virtual List<Timer> Timers { get { return new List<Timer>(); } }
+    protected List<TimerInfo> timersInfo = new List<TimerInfo>();
+
     #endregion //parametres
 
     #region eventHandlers
@@ -164,6 +170,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         speedCoof = 1f;
 
         FormDictionaries();
+        SetTimers();
 
         buffs = new List<BuffClass>();
     }
@@ -424,6 +431,75 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     public virtual bool InInvul()
     {
         return false;
+    }
+
+    /// <summary>
+    /// Установить таймеры
+    /// </summary>
+    protected void SetTimers()
+    {
+        timers = Timers;
+    }
+
+    /// <summary>
+    /// Сбросить все таймеры
+    /// </summary>
+    protected void ResetTimers()
+    {
+        for (int i = timersInfo.Count - 1; i > -0; i--)
+            StopTimer(timersInfo[i].timerName, true);
+    }
+
+    /// <summary>
+    /// Запустить таймер с данным именем
+    /// </summary>
+    /// <param name="_timerName">Название таймера</param>
+    protected void StartTimer(string _timerName)
+    {
+        Timer _timer = timers.Find(x => x.timerName == _timerName);
+        TimerInfo _info = timersInfo.Find(x => x.timerName == _timerName);
+        if (_timer != null && _info == null)
+        {
+            IEnumerator _timerProcess = _timer.TimerProcess(this);
+            StartCoroutine(_timerProcess);
+            _timer.active = true;
+            timersInfo.Add(new TimerInfo(_timerName, _timerProcess));            
+        }
+    }
+
+    /// <summary>
+    /// Остановить таймер с данным названием
+    /// </summary>
+    /// <param name="_timerName">название таймера</param>
+    /// <param name="resetProcess"></param>
+    public void StopTimer(string _timerName, bool resetProcess)
+    {
+        TimerInfo _info = timersInfo.Find(x => x.timerName == _timerName);
+        if (resetProcess)
+        {
+            Timer _timer = timers.Find(x => x.timerName == _timerName);
+            if (_timer != null)
+                _timer.active = false;
+        }
+        if (_info != null)
+        {
+            if (resetProcess)
+                StopCoroutine(_info.process);
+            timersInfo.Remove(_info);
+        }
+    }
+
+    /// <summary>
+    /// Узнать, активен ли таймер с заданным именем
+    /// </summary>
+    /// <param name="_timerName">Название таймера</param>
+    protected bool IsTimerActive(string _timerName)
+    {
+        Timer _timer = timers.Find(x => x.timerName == _timerName);
+        if (_timer == null)
+            return false;
+        else
+            return _timer.active;
     }
 
     #region buffs
@@ -979,5 +1055,49 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     }
 
     #endregion //IHaveStory
+
+}
+
+/// <summary>
+/// Структура, представляющий собой таймер
+/// </summary>
+public class Timer
+{
+
+    public string timerName = "timer";
+    public bool active = false;
+    public float duration = 0f;
+
+    public Timer(string _timerName, float _duration)
+    {
+        timerName = _timerName;
+        active = false;
+        duration = _duration;
+    }
+
+    public IEnumerator TimerProcess(CharacterController _char)
+    {
+        active = true;
+        yield return new WaitForSeconds(duration);
+        active = false;
+        _char.StopTimer(timerName, false);
+    }
+
+}
+
+/// <summary>
+/// Информация об активном таймере
+/// </summary>
+public class TimerInfo
+{
+
+    public string timerName = "timer";
+    public IEnumerator process;
+
+    public TimerInfo(string _timerName, IEnumerator _process)
+    {
+        timerName = _timerName;
+        process = _process;
+    }
 
 }
