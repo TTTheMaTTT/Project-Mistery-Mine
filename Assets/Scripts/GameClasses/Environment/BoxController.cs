@@ -136,7 +136,8 @@ public class BoxController : MonoBehaviour, IDamageable, IMechanism
         Destroy(anim);
         Destroy(GetComponent<SpriteRenderer>());
         Destroy(GetComponent<Collider2D>());
-        yield return new WaitForSeconds(.2f);
+        content = new List<GameObject>();
+        yield return new WaitForSeconds(.6f);
         Destroy(gameObject);
         Destroy(this);
     }

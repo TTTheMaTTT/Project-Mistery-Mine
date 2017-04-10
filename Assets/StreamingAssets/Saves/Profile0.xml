@@ -1,2 +1,818 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Game_x0020_Data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xsi:nil="true" />
+<Game_x0020_Data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Level_x0020_Data Active="true">
+    <Checkpoint>1</Checkpoint>
+    <Light_x0020_Intensity>0.29</Light_x0020_Intensity>
+    <Light_x0020_HDR>0.35</Light_x0020_HDR>
+    <Max_x0020_HP>20</Max_x0020_HP>
+    <Level_x0020_Statistics_x0020_Data>
+      <Level_x0020_Statistics_x0020_List />
+    </Level_x0020_Statistics_x0020_Data>
+    <Equipment_x0020_Level_x0020_Data>
+      <Weapon>SpikedClub</Weapon>
+      <Bag_x0020_Items>
+        <Item>FragmentPerditio</Item>
+        <Item>FragmentIgnus</Item>
+        <Item>FragmentAqua</Item>
+        <Item>FragmentOrdo</Item>
+      </Bag_x0020_Items>
+      <Available_x0020_Weapons>
+        <Weapon>Knife</Weapon>
+        <Weapon>Club</Weapon>
+        <Weapon>SpikedClub</Weapon>
+      </Available_x0020_Weapons>
+      <Available_x0020_Trinkets />
+      <Active_x0020_Trinkets />
+    </Equipment_x0020_Level_x0020_Data>
+    <Collections_x0020_Level_x0020_Data>
+      <Coolection_x0020_Level_x0020_Information>
+        <Collection_x0020_Name>WeaponCollection</Collection_x0020_Name>
+        <Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+        </Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+      </Coolection_x0020_Level_x0020_Information>
+      <Coolection_x0020_Level_x0020_Information>
+        <Collection_x0020_Name>CaveCollection</Collection_x0020_Name>
+        <Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+        </Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+      </Coolection_x0020_Level_x0020_Information>
+      <Coolection_x0020_Level_x0020_Information>
+        <Collection_x0020_Name>MineCollection</Collection_x0020_Name>
+        <Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+        </Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+      </Coolection_x0020_Level_x0020_Information>
+      <Coolection_x0020_Level_x0020_Information>
+        <Collection_x0020_Name>DeepMineCollection</Collection_x0020_Name>
+        <Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+        </Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+      </Coolection_x0020_Level_x0020_Information>
+      <Coolection_x0020_Level_x0020_Information>
+        <Collection_x0020_Name>UnderworldCollection</Collection_x0020_Name>
+        <Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+        </Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+      </Coolection_x0020_Level_x0020_Information>
+    </Collections_x0020_Level_x0020_Data>
+    <Drop_x0020_Data>
+      <Drops />
+      <dropObjectNames />
+    </Drop_x0020_Data>
+    <Enemies_x0020_Info>
+      <Enemy_x0020_Data xsi:type="Spider_x0020_Data" In_x0020_Ground="false">
+        <ObjectName>IceSpider </ObjectName>
+        <ID>0</ID>
+        <Position>
+          <x>-4.239526</x>
+          <y>-3.13454</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>300</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="true">
+          <Target_x0020_Position>
+            <x>-2.81463671</x>
+            <y>-3.13344479</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+        <Spider_x0020_Orientation>
+          <x>0</x>
+          <y>1</y>
+        </Spider_x0020_Orientation>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data>
+        <ObjectName>Ghost </ObjectName>
+        <ID>1</ID>
+        <Position>
+          <x>-4.384225</x>
+          <y>-6.337468</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>340</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data xsi:type="Spider_x0020_Data" In_x0020_Ground="false">
+        <ObjectName>IceSpider </ObjectName>
+        <ID>2</ID>
+        <Position>
+          <x>-5.85742044</x>
+          <y>-8.255724</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>300</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="true">
+          <Target_x0020_Position>
+            <x>-4.04000235</x>
+            <y>-8.262035</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+        <Spider_x0020_Orientation>
+          <x>0</x>
+          <y>1</y>
+        </Spider_x0020_Orientation>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data xsi:type="Humanoid_x0020_Data" On_x0020_Ladder="false">
+        <ObjectName>FrozenDeadman </ObjectName>
+        <ID>3</ID>
+        <Position>
+          <x>-8.848085</x>
+          <y>-6.67508936</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>260</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+        <Platform_x0020_ID>-1</Platform_x0020_ID>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data>
+        <ObjectName>Ghost </ObjectName>
+        <ID>4</ID>
+        <Position>
+          <x>-7.90753555</x>
+          <y>-8.505663</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>340</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data>
+        <ObjectName>Ghost</ObjectName>
+        <ID>7</ID>
+        <Position>
+          <x>-11.837183</x>
+          <y>-2.40307236</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>340</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data>
+        <ObjectName>Ghost </ObjectName>
+        <ID>8</ID>
+        <Position>
+          <x>-14.94</x>
+          <y>-4.49701262</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>340</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data xsi:type="Spider_x0020_Data" In_x0020_Ground="false">
+        <ObjectName>IceSpider </ObjectName>
+        <ID>10</ID>
+        <Position>
+          <x>-13.1600018</x>
+          <y>-4.60000849</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>300</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="true">
+          <Target_x0020_Position>
+            <x>-13.1600018</x>
+            <y>-4.60000849</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+        <Spider_x0020_Orientation>
+          <x>0</x>
+          <y>1</y>
+        </Spider_x0020_Orientation>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data xsi:type="Spider_x0020_Data" In_x0020_Ground="false">
+        <ObjectName>IceSpider </ObjectName>
+        <ID>11</ID>
+        <Position>
+          <x>-3.98378944</x>
+          <y>-6.494464</y>
+          <z>0</z>
+        </Position>
+        <Orientation>-1</Orientation>
+        <Health>300</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="true">
+          <Target_x0020_Position>
+            <x>-5.76920748</x>
+            <y>-6.494464</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+        <Spider_x0020_Orientation>
+          <x>0</x>
+          <y>1</y>
+        </Spider_x0020_Orientation>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data xsi:type="Spider_x0020_Data" In_x0020_Ground="false">
+        <ObjectName>IceSpider </ObjectName>
+        <ID>12</ID>
+        <Position>
+          <x>-6.04261446</x>
+          <y>-6.97644758</y>
+          <z>0</z>
+        </Position>
+        <Orientation>-1</Orientation>
+        <Health>300</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="true">
+          <Target_x0020_Position>
+            <x>-8.072842</x>
+            <y>-6.97324228</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+        <Spider_x0020_Orientation>
+          <x>0</x>
+          <y>1</y>
+        </Spider_x0020_Orientation>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data>
+        <ObjectName>Ghost </ObjectName>
+        <ID>13</ID>
+        <Position>
+          <x>-7.765</x>
+          <y>-6.83</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>340</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data>
+        <ObjectName>Ghost </ObjectName>
+        <ID>14</ID>
+        <Position>
+          <x>-14.8139248</x>
+          <y>-2.34394646</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>340</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data xsi:type="Worm_x0020_Data">
+        <ObjectName>Worm</ObjectName>
+        <ID>16</ID>
+        <Position>
+          <x>-13.5804644</x>
+          <y>-4.59337473</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>390</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+        <Worm_x0020_State>usual</Worm_x0020_State>
+      </Enemy_x0020_Data>
+      <Enemy_x0020_Data xsi:type="Humanoid_x0020_Data" On_x0020_Ladder="false">
+        <ObjectName>FrozenDeadman </ObjectName>
+        <ID>17</ID>
+        <Position>
+          <x>-6.67359447</x>
+          <y>-8.275688</y>
+          <z>0</z>
+        </Position>
+        <Orientation>1</Orientation>
+        <Health>260</Health>
+        <Behaviour>calm</Behaviour>
+        <Main_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Main_x0020_Target_x0020_Data>
+        <Current_x0020_Target_x0020_Data Exists="false">
+          <Target_x0020_Position>
+            <x>0</x>
+            <y>0</y>
+          </Target_x0020_Position>
+          <Target_x0020_Name />
+        </Current_x0020_Target_x0020_Data>
+        <Waypoints />
+        <Buff_x0020_List_x0020_Data>
+          <List_x0020_of_x0020_Buff_x0020_Datas />
+        </Buff_x0020_List_x0020_Data>
+        <Platform_x0020_ID>-1</Platform_x0020_ID>
+      </Enemy_x0020_Data>
+    </Enemies_x0020_Info>
+    <Interactive_x0020_Objects_x0020_Info>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
+        <ObjectName>Startpoint</ObjectName>
+        <ID>-1</ID>
+        <Position>
+          <x>-9.13859</x>
+          <y>0.15594244</y>
+          <z>0</z>
+        </Position>
+        <Activated>true</Activated>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data>
+        <ObjectName>Chest </ObjectName>
+        <ID>0</ID>
+        <Position>
+          <x>-7.406036</x>
+          <y>-6.97499847</y>
+          <z>0</z>
+        </Position>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data>
+        <ObjectName>Chest </ObjectName>
+        <ID>1</ID>
+        <Position>
+          <x>-5.95100451</x>
+          <y>-3.78540134</y>
+          <z>0</z>
+        </Position>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
+        <ObjectName>Lever</ObjectName>
+        <ID>2</ID>
+        <Position>
+          <x>-4.510416</x>
+          <y>-3.14545679</y>
+          <z>0</z>
+        </Position>
+        <Activated>false</Activated>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Door_x0020_Data" Opened="false">
+        <ObjectName>LevelDoor</ObjectName>
+        <ID>4</ID>
+        <Position>
+          <x>0</x>
+          <y>0</y>
+          <z>0</z>
+        </Position>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Door_x0020_Data" Opened="true">
+        <ObjectName>TombDoor</ObjectName>
+        <ID>5</ID>
+        <Position>
+          <x>0</x>
+          <y>0</y>
+          <z>0</z>
+        </Position>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
+        <ObjectName>Checkpoint</ObjectName>
+        <ID>7</ID>
+        <Position>
+          <x>-6.58042145</x>
+          <y>-5.1331</y>
+          <z>0</z>
+        </Position>
+        <Activated>true</Activated>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Moving_x0020_Platform_x0020_Data">
+        <ObjectName>movPlatformAuto </ObjectName>
+        <ID>8</ID>
+        <Position>
+          <x>-6.966494</x>
+          <y>-4.68760443</y>
+          <z>0</z>
+        </Position>
+        <Activated>true</Activated>
+        <Direction>1</Direction>
+        <Current_x0020_Position>0</Current_x0020_Position>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Moving_x0020_Platform_x0020_Data">
+        <ObjectName>movPlatformAuto </ObjectName>
+        <ID>9</ID>
+        <Position>
+          <x>-11.66186</x>
+          <y>-7.302977</y>
+          <z>0</z>
+        </Position>
+        <Activated>true</Activated>
+        <Direction>-1</Direction>
+        <Current_x0020_Position>1</Current_x0020_Position>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Moving_x0020_Platform_x0020_Data">
+        <ObjectName>movPlatformAuto</ObjectName>
+        <ID>10</ID>
+        <Position>
+          <x>-12.8188572</x>
+          <y>-3.77485514</y>
+          <z>0</z>
+        </Position>
+        <Activated>true</Activated>
+        <Direction>-1</Direction>
+        <Current_x0020_Position>1</Current_x0020_Position>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
+        <ObjectName>Plate</ObjectName>
+        <ID>11</ID>
+        <Position>
+          <x>-6.600315</x>
+          <y>-4.030495</y>
+          <z>0</z>
+        </Position>
+        <Activated>false</Activated>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Moving_x0020_Platform_x0020_Data">
+        <ObjectName>movPlatform</ObjectName>
+        <ID>12</ID>
+        <Position>
+          <x>-6.600315</x>
+          <y>-4.023495</y>
+          <z>0</z>
+        </Position>
+        <Activated>false</Activated>
+        <Direction>1</Direction>
+        <Current_x0020_Position>0</Current_x0020_Position>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
+        <ObjectName>GhostPlatform_dm </ObjectName>
+        <ID>13</ID>
+        <Position>
+          <x>-6.486611</x>
+          <y>-6.804</y>
+          <z>0</z>
+        </Position>
+        <Activated>true</Activated>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
+        <ObjectName>GhostPlatform_dm </ObjectName>
+        <ID>14</ID>
+        <Position>
+          <x>-6.487</x>
+          <y>-6.96</y>
+          <z>0</z>
+        </Position>
+        <Activated>true</Activated>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Mechanism_x0020_Data">
+        <ObjectName>GhostPlatform_dm</ObjectName>
+        <ID>15</ID>
+        <Position>
+          <x>-6.48661137</x>
+          <y>-6.641</y>
+          <z>0</z>
+        </Position>
+        <Activated>true</Activated>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Box_x0020_Data">
+        <ObjectName>boxExploding_cold </ObjectName>
+        <ID>16</ID>
+        <Position>
+          <x>0</x>
+          <y>0</y>
+          <z>0</z>
+        </Position>
+        <Health>10</Health>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Box_x0020_Data">
+        <ObjectName>boxExploding_cold</ObjectName>
+        <ID>17</ID>
+        <Position>
+          <x>0</x>
+          <y>0</y>
+          <z>0</z>
+        </Position>
+        <Health>10</Health>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Box_x0020_Data">
+        <ObjectName>box_cold </ObjectName>
+        <ID>18</ID>
+        <Position>
+          <x>0</x>
+          <y>0</y>
+          <z>0</z>
+        </Position>
+        <Health>10</Health>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Box_x0020_Data">
+        <ObjectName>box_cold </ObjectName>
+        <ID>19</ID>
+        <Position>
+          <x>0</x>
+          <y>0</y>
+          <z>0</z>
+        </Position>
+        <Health>10</Health>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Box_x0020_Data">
+        <ObjectName>boxExploding_cold </ObjectName>
+        <ID>20</ID>
+        <Position>
+          <x>0</x>
+          <y>0</y>
+          <z>0</z>
+        </Position>
+        <Health>10</Health>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Box_x0020_Data">
+        <ObjectName>boxExploding_cold </ObjectName>
+        <ID>21</ID>
+        <Position>
+          <x>0</x>
+          <y>0</y>
+          <z>0</z>
+        </Position>
+        <Health>10</Health>
+      </Interactive_x0020_Object_x0020_Data>
+      <Interactive_x0020_Object_x0020_Data xsi:type="Box_x0020_Data">
+        <ObjectName>box_cold</ObjectName>
+        <ID>22</ID>
+        <Position>
+          <x>0</x>
+          <y>0</y>
+          <z>0</z>
+        </Position>
+        <Health>10</Health>
+      </Interactive_x0020_Object_x0020_Data>
+    </Interactive_x0020_Objects_x0020_Info>
+    <NPCs_x0020_Data>
+      <NPC_x0020_Info Waiting="false">
+        <ObjectName>Sarcophagus</ObjectName>
+        <ID>0</ID>
+        <Position>
+          <x>-8.506</x>
+          <y>-4.65962934</y>
+          <z>0</z>
+        </Position>
+        <Dialogs>
+          <Dialog>SarcophagusInteraction</Dialog>
+          <Dialog>SarcophagusOpen</Dialog>
+          <Dialog>SarcophagusInteraction1</Dialog>
+          <Dialog>SarcophagusOpen1</Dialog>
+          <Dialog>SarcophagusInteraction</Dialog>
+        </Dialogs>
+        <Wait_x0020_Dialogs />
+      </NPC_x0020_Info>
+      <NPC_x0020_Info Waiting="false">
+        <ObjectName>Spirit</ObjectName>
+        <ID>1</ID>
+        <Position>
+          <x>-7.007539</x>
+          <y>-4.3464613</y>
+          <z>0</z>
+        </Position>
+        <Dialogs>
+          <Dialog>SarcophagusIsNear</Dialog>
+          <Dialog>SarcophagusIsNear</Dialog>
+          <Dialog>SarcophagusAndSpirit</Dialog>
+          <Dialog>AfterLichBattleDialog</Dialog>
+          <Dialog>DontOpenSarcophagus</Dialog>
+          <Dialog>FailedTombQuest</Dialog>
+        </Dialogs>
+        <Wait_x0020_Dialogs />
+      </NPC_x0020_Info>
+    </NPCs_x0020_Data>
+    <Dialog_x0020_Data>
+      <Dialogs_x0020_Info />
+    </Dialog_x0020_Data>
+    <Quests_x0020_Data>
+      <Quests />
+    </Quests_x0020_Data>
+    <History_x0020_Data>
+      <Stories>
+        <Story>LichAwakens</Story>
+      </Stories>
+      <Completed_x0020_Stories>
+        <Completed_x0020_Story>FindTombDoor</Completed_x0020_Story>
+        <Completed_x0020_Story>InsideTomb</Completed_x0020_Story>
+        <Completed_x0020_Story>BeCarefulIsGood</Completed_x0020_Story>
+        <Completed_x0020_Story>TryOpenDoor</Completed_x0020_Story>
+        <Completed_x0020_Story>TryOpenSarcophagus</Completed_x0020_Story>
+        <Completed_x0020_Story>DontOpenSarcophagus</Completed_x0020_Story>
+      </Completed_x0020_Stories>
+    </History_x0020_Data>
+    <GameStoryData>
+      <Stories_x0020_Progress>
+        <Story_x0020_Progress>
+          <Story_x0020_Name>tombStory</Story_x0020_Name>
+          <Story_x0020_Progress>findTomb</Story_x0020_Progress>
+        </Story_x0020_Progress>
+      </Stories_x0020_Progress>
+    </GameStoryData>
+  </Level_x0020_Data>
+  <General_x0020_Game_x0020_Data>
+    <First_x0020_Checkpoint>0</First_x0020_Checkpoint>
+    <Max_x0020_HP>12</Max_x0020_HP>
+    <Collections_x0020_Info />
+  </General_x0020_Game_x0020_Data>
+</Game_x0020_Data>

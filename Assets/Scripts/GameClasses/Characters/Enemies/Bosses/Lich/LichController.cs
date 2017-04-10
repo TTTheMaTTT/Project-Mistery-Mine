@@ -36,9 +36,7 @@ public class LichController : BossController
 
         set
         {
-#if !UNITY_EDITOR
             StartCoroutine("AppearProcess");
-#endif //!UNITY_EDITOR
             base.ID = value;
         }
     }
@@ -62,7 +60,8 @@ public class LichController : BossController
                                                                            new Timer("summonCooldown", summonCooldown)}; } }
 
 
-#endregion //parametres
+
+    #endregion //parametres
 
     protected override void FixedUpdate()
     {
@@ -102,7 +101,7 @@ public class LichController : BossController
     {
         immobile = true;
         appearing = true;
-        yield return new WaitForSeconds(.2f);
+        yield return new WaitForSeconds(.05f);
         Animate(new AnimationEventArgs("appear"));
         yield return new WaitForSeconds(appearTime);
         immobile = false;
@@ -246,6 +245,26 @@ public class LichController : BossController
         base.StopAttack();
         StopCoroutine("SummonProcess");
         StopTimer("attackCooldown",true);
+    }
+
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    public override void TakeDamage(HitParametres hitData)
+    {
+        if (appearing)
+            return;
+        base.TakeDamage(hitData);
+    }
+
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
+    {
+        if (appearing)
+            return;
+        base.TakeDamage(hitData, ignoreInvul);
     }
 
     //Функция смерти
