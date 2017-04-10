@@ -125,7 +125,7 @@ public class GameController : MonoBehaviour
 
     protected void Update()
     {
-        if (Input.GetButtonDown("Cancel"))
+        if (Input.GetButtonDown("Menu") || JoystickController.instance.GetButtonDown(JButton.button0))
             gameMenu.ChangeGameMod();
         if (Input.GetKeyDown(KeyCode.I))
             SpecialFunctions.gameUI.ChangeVisibility();
@@ -211,8 +211,9 @@ public class GameController : MonoBehaviour
         //Определим, сколько секретных мест на уровне
         secretsTotalNumber = 0; secretsFoundNumber = 0;
         GameObject[] secretPlaces = GameObject.FindGameObjectsWithTag("mechanism");
+        SecretPlaceTrigger secretPlace1 = null;
         foreach (GameObject secretPlace in secretPlaces)
-            if (secretPlace.GetComponent<SecretPlaceTrigger>() != null)
+            if ((secretPlace1 = secretPlace.GetComponent<SecretPlaceTrigger>()) != null ? secretPlace1.ConsiderByGameController : false)
                 secretsTotalNumber++;
         activeGameEffects = new List<string>();
         SetHeroDeathLevelEnd();
@@ -741,7 +742,8 @@ public class GameController : MonoBehaviour
                         else if (intObjects[i].GetComponent<SecretPlaceTrigger>())
                         {
                             SecretPlaceTrigger secretPlace = intObjects[i].GetComponent<SecretPlaceTrigger>();
-                            FindSecretPlace();
+                            if (secretPlace.ConsiderByGameController)
+                                FindSecretPlace();
                             secretPlace.RevealTruth();
                         }
                         else

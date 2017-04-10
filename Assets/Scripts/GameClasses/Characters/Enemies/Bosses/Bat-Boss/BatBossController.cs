@@ -115,12 +115,13 @@ public class BatBossController: BossController
     /// </summary>
     protected override void Initialize()
     {
-        base.Initialize();
-
-        hitBox.AttackEventHandler += HandleAttackProcess;
+        indicators = transform.FindChild("Indicators");
         hearing = indicators.GetComponentInChildren<Hearing>();
         hearing.hearingEventHandler += HandleHearingEvent;
         hearing.AllyHearing = false;
+        base.Initialize();
+
+        hitBox.AttackEventHandler += HandleAttackProcess;
 
         if (areaTrigger != null)
         {

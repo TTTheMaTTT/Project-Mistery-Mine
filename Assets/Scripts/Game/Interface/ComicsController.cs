@@ -41,7 +41,7 @@ public class ComicsController : MonoBehaviour
 	void Update ()
     {
         comicsPageImage.color = Color.Lerp(comicsPageImage.color, targetColor, Time.deltaTime * fadeSpeed);
-        if (Input.GetButtonDown("Jump"))
+        if (Input.GetButtonDown("Jump") || JoystickController.instance.GetButtonDown(JButton.button2))
             NextPage();
 	}
 

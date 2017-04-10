@@ -423,6 +423,8 @@ public class GhostController : AIController
             }
             else
             {
+                transform.position = beginPosition;
+                Turn(beginOrientation);
                 BecomeCalm();
             }
 

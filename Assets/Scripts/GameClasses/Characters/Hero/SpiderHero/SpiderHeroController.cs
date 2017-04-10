@@ -129,14 +129,17 @@ public class SpiderHeroController : HeroController
         if (employment <= 6)
             goto analyseRegion;
 
-        if (Input.GetButton("Horizontal"))
+        float horValue = Input.GetAxis("Horizontal");
+        float jHorValue = JoystickController.instance.GetAxis(JAxis.Horizontal);
+        if (Input.GetButton("Horizontal") || Mathf.Abs(jHorValue) > .1f)
         {
+            float value = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
             if (moveDirection.x >= moveDirection.y - .1f)
-                Move(Input.GetAxis("Horizontal"));
+                Move(value);
             if (nextSurface.exists ? nextSurface.normal.y > .1f || nextSurface.normal.y < -.8f : false)
             {
                 Vector2 _moveDirection = GetNormal(nextSurface.normal) * (int)orientation;
-                if (Input.GetAxis("Horizontal") * _moveDirection.x > 0f)
+                if (value * _moveDirection.x > 0f)
                     ChangeSurface(nextSurface);
             }
         }
@@ -147,21 +150,24 @@ public class SpiderHeroController : HeroController
             //StopCatchingWall();//Если игрок не зажимает клавишу движения, то он не сможет закрепиться за отвесную стену
         }
 
-        if (Input.GetButton("Vertical"))
+        float vertValue = Input.GetAxis("Vertical");
+        float jVertValue = JoystickController.instance.GetAxis(JAxis.Vertical);
+        if (Input.GetButton("Vertical") || Mathf.Abs(jVertValue) > .1f)
         {
+            float value = Mathf.Abs(vertValue) > Mathf.Abs(jVertValue) ? vertValue : jVertValue;
             if (moveDirection.y > moveDirection.x - .1f)
-                Move(Input.GetAxis("Vertical"));
+                Move(value);
             if (nextSurface.exists ? nextSurface.normal.y < .1f && nextSurface.normal.y > -.8f : false)
             {
                 Vector2 _moveDirection = GetNormal(nextSurface.normal) * (int)orientation;
-                if (Input.GetAxis("Vertical") * _moveDirection.y > 0f)
+                if (value * _moveDirection.y > 0f)
                     ChangeSurface(nextSurface);
             }
         }
         else if (moveDirection.y > moveDirection.x - .1f)
             StopMoving();
 
-        if (Input.GetButtonDown("Jump"))
+        if (Input.GetButtonDown("Jump") || JoystickController.instance.GetButtonDown(JButton.button2))
         {
             jumpInput = 0;
             if (groundState == GroundStateEnum.grounded && !jumping)
@@ -170,12 +176,12 @@ public class SpiderHeroController : HeroController
             }
         }
 
-        if (Input.GetButtonUp("Jump"))
+        if (Input.GetButtonUp("Jump") || JoystickController.instance.GetButtonUp(JButton.button2))
         {
             jumpInput = 0;
         }
 
-        if (Input.GetButtonDown("Attack"))
+        if (Input.GetButtonDown("Attack") || JoystickController.instance.GetButtonDown(JButton.button7))
         {
             if (spiderOrientation.y < -Mathf.Abs(spiderOrientation.x) - .1f && currentSurface.exists)
             {
@@ -192,17 +198,22 @@ public class SpiderHeroController : HeroController
     #region onWeb
 
     onWeb:
-        if (Input.GetButton("Vertical"))
-            WebMove(Input.GetAxis("Vertical"));
+        vertValue = Input.GetAxis("Vertical");
+        jVertValue = JoystickController.instance.GetAxis(JAxis.Vertical);
+        if (Input.GetButton("Vertical") || Mathf.Abs(jVertValue) > .1f)
+        {
+            float value = Mathf.Abs(vertValue) > Mathf.Abs(jVertValue) ? vertValue : jVertValue;
+            WebMove(value);
+        }
         else StopWebMove();
 
-        if (Input.GetButtonDown("Jump"))
+        if (Input.GetButtonDown("Jump") || JoystickController.instance.GetButtonDown(JButton.button2))
         {
             jumpInput = 0;
             Jump();
         }
 
-        if (Input.GetButtonDown("Attack"))
+        if (Input.GetButtonDown("Attack") || JoystickController.instance.GetButtonDown(JButton.button7))
             if (Vector2.SqrMagnitude((Vector2)transform.position - webConnectionPoint) < 1.5 * spiderOffset * spiderOffset)
                 WebOff();
 

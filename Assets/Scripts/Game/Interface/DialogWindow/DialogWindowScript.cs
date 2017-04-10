@@ -89,8 +89,10 @@ public class DialogWindowScript : MonoBehaviour
             if (waitingForInput)
             {
                 Event e = Event.current;
-                if (Input.anyKeyDown && !Input.GetButtonDown("Horizontal") && !Input.GetButtonDown("Vertical") &&
-                    !Input.GetButtonDown("Cancel") && !noInput && InterfaceWindow.openedWindow == null)
+                if ((Input.anyKeyDown || JoystickController.instance.GetButtonDown(JButton.button2))?
+                    !Input.GetButtonDown("Horizontal") && Mathf.Abs(JoystickController.instance.GetAxis(JAxis.Horizontal))<.1f &&
+                    !Input.GetButtonDown("Vertical") && Mathf.Abs(JoystickController.instance.GetAxis(JAxis.Vertical)) < .1f &&
+                    !Input.GetButtonDown("Cancel") && !JoystickController.instance.GetButtonDown(JButton.button0) && !noInput && InterfaceWindow.openedWindow == null : false)
                     NextSpeech();
             }
         }
@@ -193,7 +195,7 @@ public class DialogWindowScript : MonoBehaviour
             npc = _npc;
             //Повернуть НПС к герою
             prevScale = npc.transform.localScale.x;
-            if (npc.transform.lossyScale.x * (hero.position - npc.transform.position).x < 0f)
+            if (npc.CanTurn? npc.transform.lossyScale.x * (hero.position - npc.transform.position).x < 0f: false)
                 npc.transform.localScale += new Vector3(-2f * prevScale, 0f);
             npc.waitingForDialog = NPCHasDialogFromQueue(npc);
         }
@@ -261,7 +263,8 @@ public class DialogWindowScript : MonoBehaviour
         {
             //Повернуть НПС в изначальную ориентацию(если это он инициализировал диалог)
             Vector3 vect = npc.transform.localScale;
-            npc.transform.localScale = new Vector3(prevScale, vect.y, vect.z);
+            if (npc.CanTurn)
+                npc.transform.localScale = new Vector3(prevScale, vect.y, vect.z);
             npc.StopTalking();
         }
 

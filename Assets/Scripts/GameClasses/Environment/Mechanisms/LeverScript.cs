@@ -80,6 +80,8 @@ public class LeverScript : MonoBehaviour, IInteractive
         {
             foreach (GameObject obj in mechanisms)
             {
+                if (obj == null)
+                    continue;
                 IMechanism mech = obj.GetComponent<IMechanism>();
                 if (mech != null)
                     mech.ActivateMechanism();
@@ -117,7 +119,7 @@ public class LeverScript : MonoBehaviour, IInteractive
     /// </summary>
     public virtual bool IsInteractive()
     {
-        return true;
+        return !once;
     }
 
     #endregion //IInteractive

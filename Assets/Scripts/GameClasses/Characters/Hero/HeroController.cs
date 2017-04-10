@@ -189,13 +189,15 @@ public class HeroController : CharacterController
             {
                 if (employment > 6)
                 {
-
-                    if (Input.GetButton("Horizontal"))
+                    float horValue = Input.GetAxis("Horizontal");
+                    float jHorValue = JoystickController.instance.GetAxis(JAxis.Horizontal);
+                    if (Input.GetButton("Horizontal") || Mathf.Abs(jHorValue) > .1f)
                     {
-                        Move(Input.GetAxis("Horizontal") > 0f ? OrientationEnum.right : OrientationEnum.left);
+                        float value = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
+                        Move(value > 0f ? OrientationEnum.right : OrientationEnum.left);
                     }
 
-                    if (Input.GetButtonDown("Jump"))
+                    if (Input.GetButtonDown("Jump") || JoystickController.instance.GetButtonDown(JButton.button2))
                     {
                         jumpInput = 0;
                         if (groundState == GroundStateEnum.grounded && !jumping)
@@ -204,25 +206,25 @@ public class HeroController : CharacterController
                         }
                     }
 
-                    if (Input.GetButton("Jump"))
-                    {
+                    //if (Input.GetButton("Jump"))
+                    //{
                         //if (jumpInput)
                         //rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
-                    }
+                    //}
 
-                    if (Input.GetButtonUp("Jump"))
+                    if (Input.GetButtonUp("Jump") || JoystickController.instance.GetButtonUp(JButton.button2))
                     {
                         jumpInput = 0;
                     }
 
-                    if (Input.GetButtonDown("Up"))
+                    if (Input.GetAxis("Vertical") > .2f || JoystickController.instance.GetAxis(JAxis.Vertical)>.2f)
                     {
                         LadderOn();
                     }
 
                     if (employment > 7)
                     {
-                        if (Input.GetButtonDown("Attack"))
+                        if (Input.GetButtonDown("Attack") || JoystickController.instance.GetButtonDown(JButton.button7))
                         {
                             if (groundState != GroundStateEnum.crouching)
                             {
@@ -237,17 +239,17 @@ public class HeroController : CharacterController
                                 }
                             }
                         }
-                        else if (Input.GetButtonDown("Flip"))
+                        else if (Input.GetButtonDown("Flip") || JoystickController.instance.GetButtonDown(JButton.button6))
                             if ((rigid.velocity.x * (int)orientation > .1f) && (groundState == GroundStateEnum.grounded) && (employment > 8))
                                 Flip();
-                        if (Input.GetButtonDown("ChangeInteraction"))
+                        if (Input.GetButtonDown("ChangeInteraction") || JoystickController.instance.GetButtonDown(JButton.button5))
                             interactor.ChangeInteraction();
                     }
                 }
 
                 if (currentWeapon.chargeable)
                 {
-                    if (Input.GetButtonUp("Attack") && chargeBeginTime>0f)
+                    if ((Input.GetButtonUp("Attack") || JoystickController.instance.GetButtonUp(JButton.button7)) && chargeBeginTime>0f)
                     {
                         StopCharge();
                     }
@@ -260,11 +262,13 @@ public class HeroController : CharacterController
 
             else
             {
-                if (Input.GetButton("Vertical"))
-                    LadderMove(Input.GetAxis("Vertical"));
+                float vertValue = Input.GetAxis("Vertical");
+                float jVertValue = JoystickController.instance.GetAxis(JAxis.Vertical);
+                if ( Input.GetButton("Vertical") || Mathf.Abs(jVertValue)>.1f)
+                    LadderMove(Mathf.Abs(vertValue)>Mathf.Abs(jVertValue)? vertValue: jVertValue);
                 else
                     StopLadderMoving();
-                if (Input.GetButtonDown("Jump"))
+                if (Input.GetButtonDown("Jump") || JoystickController.instance.GetButtonDown(JButton.button2))
                 {
                     LadderOff();
                     rigid.AddForce(new Vector2(0f, jumpForce / 2));
@@ -391,7 +395,8 @@ public class HeroController : CharacterController
 
         if (onLadder)
         {
-            if (!Physics2D.OverlapCircle(transform.position - transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")))
+            if (Input.GetAxis("Vertical") < -.2f || JoystickController.instance.GetAxis(JAxis.Vertical)<-.2f ? 
+                !Physics2D.OverlapCircle(transform.position - transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")):false)
             {
                 LadderOff();
                 rigid.AddForce(new Vector2(0f, jumpForce / 2));
@@ -453,8 +458,11 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
+        float horValue = Input.GetAxis("Horizontal");
+        float jHorValue = JoystickController.instance.GetAxis(JAxis.Horizontal);
+        float value = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
         bool crouching = (groundState == GroundStateEnum.crouching);
-        rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : Input.GetAxis("Horizontal") * speed*speedCoof, rigid.velocity.y);
+        rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : value * speed*speedCoof, rigid.velocity.y);
         if (orientation != _orientation)
         {
             Turn(_orientation);
@@ -662,7 +670,7 @@ public class HeroController : CharacterController
     protected virtual void Flip()
     {
         rigid.velocity = new Vector2(0f, 0f);
-        rigid.AddForce(new Vector2((int)orientation*flipForce, 0f));
+        rigid.AddForce(new Vector2((int)orientation*flipForce*(underWater ? waterCoof : 1f), 0f));
         StartCoroutine(InvulProcess(flipTime, false));
         StartCoroutine(FlipProcess());
         Animate(new AnimationEventArgs("flip"));

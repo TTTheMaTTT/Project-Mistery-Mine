@@ -15,7 +15,7 @@ public class MainMenuScript : MonoBehaviour
 
     public void Update()
     {
-        if (Input.GetButtonDown("Cancel"))
+        if (Input.GetButtonDown("Menu") || JoystickController.instance.GetButtonDown(JButton.button0))
             Application.Quit();
     }
 
