@@ -33,7 +33,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
 
     #endregion //parametres
 
-    void Awake()
+    protected virtual void Awake()
     {
         col = GetComponent<Collider2D>();
         anim = GetComponent<Animator>();

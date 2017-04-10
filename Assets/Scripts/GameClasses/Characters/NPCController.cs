@@ -57,7 +57,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
 
     protected Color outlineColor = Color.yellow;//Цвет контура
     protected bool possibleTalk = true;//Возможно ли впринципе говорить с персонажем
-    protected bool canTurn = true;//Поворачивается ли НПС к персонажу для разговора?
+    [SerializeField]protected bool canTurn = true;//Поворачивается ли НПС к персонажу для разговора?
     public bool CanTurn { get { return canTurn; } }
 
     [NonSerialized][HideInInspector]public bool waitingForDialog=false;//Ждёт ли НПС того, чтобы воспроизвести диалог
