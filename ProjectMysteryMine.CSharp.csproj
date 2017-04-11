@@ -459,6 +459,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Items\Weapons\Range\VoodoDollClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\Weapons\WeaponClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Obstacles\ObstacleScript.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Obstacles\RockScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Obstacles\SpikesScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Obstacles\StalactiteScript.cs" />
     <Compile Include="Assets\Scripts\Interfaces\interfaces.cs" />

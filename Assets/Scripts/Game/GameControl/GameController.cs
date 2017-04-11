@@ -140,6 +140,12 @@ public class GameController : MonoBehaviour
 
     protected void Start()
     {
+        if (JoystickController.instance == null)
+        {
+            GameObject inputManager = new GameObject("InputManager");
+            inputManager.AddComponent<JoystickController>();
+        }
+
         SpecialFunctions.SetDark();
         SpecialFunctions.SetFade(false);
 
@@ -152,7 +158,7 @@ public class GameController : MonoBehaviour
         objectsIdCount = intObjects.Count;
 
         #endregion //RegisterObjects
-
+        GetComponent<GameStatistics>().ClearStatistics();
         LoadGame();
 
         //monsters = null;
@@ -1010,6 +1016,9 @@ public class GameController : MonoBehaviour
         #endregion //enemies
 
         monsters.Sort((x, y) => { return x.ID.CompareTo(y.ID); });
+        for (int i = monsters.Count - 1; i >= 0; i--)
+            if (monsters[i].ID == -1)
+                monsters.RemoveAt(i);
 
         intObjects = new List<GameObject>();
         ConsiderObjectsWithTag("lever", setID);
@@ -1027,6 +1036,9 @@ public class GameController : MonoBehaviour
         ConsiderSaveMeObjects(setID);
 
         intObjects.Sort((x, y) => { return x.GetComponent<IHaveID>().GetID().CompareTo(y.GetComponent<IHaveID>().GetID()); });
+        for (int i = intObjects.Count - 1; i >= 0; i--)
+            if (intObjects[i].GetComponent<IHaveID>().GetID() == -1)
+                intObjects.RemoveAt(i);
 
         #region NPCs
 
@@ -1062,6 +1074,9 @@ public class GameController : MonoBehaviour
         }
 
         NPCs.Sort((x, y) => { return x.GetID().CompareTo(y.GetID()); });
+        for (int i = NPCs.Count - 1; i >= 0; i--)
+            if (NPCs[i].GetID() == -1)
+                NPCs.RemoveAt(i);
 
         #endregion //NPCs
 
@@ -1087,7 +1102,7 @@ public class GameController : MonoBehaviour
         foreach (GameObject obj in intObjs)
         {
             IHaveID inter = obj.GetComponent<IHaveID>();
-            if (inter != null)
+            if (inter != null? inter.GetID()!=-1:false)
             {
                 if (setID)
                 {
@@ -1141,20 +1156,32 @@ public class GameController : MonoBehaviour
         IHaveID inter = obj.GetComponent<IHaveID>();
         NPCController npc = obj.GetComponent<NPCController>();
         DialogObject dObj = obj.GetComponent<DialogObject>();
-        if (ai != null && !monsters.Contains(ai))
+        if (ai != null)
         {
-            ai.ID = monstersIdCount;
-            monstersIdCount++;
+            if (!monsters.Contains(ai))
+            {
+                ai.ID = monstersIdCount;
+                monstersIdCount++;
+                monsters.Add(ai);
+            }
         }
-        else if (npc != null && !NPCs.Contains(npc))
+        else if (npc != null)
         {
-            npc.SetID(npcsIdCount);
-            npcsIdCount++;
+            if (!NPCs.Contains(npc))
+            {
+                npc.SetID(npcsIdCount);
+                npcsIdCount++;
+                NPCs.Add(npc);
+            }
         }
-        else if (inter != null && !intObjects.Contains(obj))
+        else if (inter != null)
         {
-            inter.SetID(objectsIdCount);
-            objectsIdCount++;
+            if (!intObjects.Contains(obj))
+            {
+                inter.SetID(objectsIdCount);
+                objectsIdCount++;
+                intObjects.Add(obj);
+            }
         }
         
         if (dObj!=null)

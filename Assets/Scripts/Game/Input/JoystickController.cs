@@ -11,7 +11,7 @@ public class JoystickController : MonoBehaviour
     private List<ButtonPressedState> wasPressed;
     private List<ButtonPressedState> wasUpped;
 
-    void Start()
+    void Awake()
     {
         if (instance == null || instance == this)
         {

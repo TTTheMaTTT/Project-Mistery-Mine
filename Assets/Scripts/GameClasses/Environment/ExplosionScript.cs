@@ -12,7 +12,6 @@ public class ExplosionScript : MonoBehaviour
 
     protected const float lifeTime = .5f, setFireTime = 0.25f;
     protected const float fireOffset = -.07f;
-    protected const float fireChance = 20f;
 
     #endregion //consts
 
@@ -20,7 +19,7 @@ public class ExplosionScript : MonoBehaviour
 
     [SerializeField]protected List<string> enemies = new List<string>();
 
-    protected HitBox hitBox;
+    protected HitBoxController hitBox;
     protected Transform groundCheck;
 
     [SerializeField]protected GameObject fire;//Огонь, что оставляет за собой этот взрыв
@@ -30,7 +29,7 @@ public class ExplosionScript : MonoBehaviour
     #region parametres
 
     string lName = "ground";
-    [SerializeField]protected float damage = 2f;
+    [SerializeField] protected HitParametres hitParametres;//Параметры атаки
     [SerializeField]protected bool fireable = true;//Если true, то взрыв оставляет за собой огонь
 
     protected bool isSet;
@@ -39,10 +38,11 @@ public class ExplosionScript : MonoBehaviour
 
     public void Start()
     {
-        hitBox = GetComponent<HitBox>();
+        hitBox = GetComponent<HitBoxController>();
         hitBox.Immobile = true;
         hitBox.SetEnemies(enemies);
-        hitBox.SetHitBox(new HitParametres(damage, -1f, Vector2.zero, transform.position, 0f,DamageType.Fire, fireChance));
+        hitBox.EnemyLayers.AddRange(new string[] { "character", "characterWithoutPlatform", "hero", "destructable" });
+        hitBox.SetHitBox(hitParametres);
         groundCheck = transform.FindChild("GroundCheck");
         isSet = false;
     }

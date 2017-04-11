@@ -172,7 +172,7 @@ public class MovingPlatform : MonoBehaviour, IMechanism
 
     public void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.GetComponent<Rigidbody2D>() != null && (other.gameObject.tag != "boss"))
+        if (other.GetComponent<Rigidbody2D>() != null && other.GetComponent<IHaveID>()!=null && other.gameObject.tag != "boss")
         {
             other.transform.SetParent(transform);
         }

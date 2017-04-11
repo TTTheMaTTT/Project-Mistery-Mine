@@ -74,8 +74,9 @@ public class CheckpointController : MonoBehaviour, IInteractive
         if (!activated)
         {
             activated = true;
-            SpecialFunctions.gameController.SaveGame(checkpointNumb, false, SceneManager.GetActiveScene().name);
             ChangeCheckpoint();
+            SpecialFunctions.gameController.SaveGame(checkpointNumb, false, SceneManager.GetActiveScene().name);
+            
         }
         else
         {

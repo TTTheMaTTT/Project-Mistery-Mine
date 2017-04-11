@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// Скрипт, управляющий сталактитом
 /// </summary>
-public class StalactiteScript : MonoBehaviour, IMechanism
+public class StalactiteScript : MonoBehaviour, IMechanism, IInteractive
 {
 
     #region consts
@@ -30,13 +30,19 @@ public class StalactiteScript : MonoBehaviour, IMechanism
     private Transform stalactiteBase;
     private Transform groundCheck;
 
+    private SpriteRenderer sRenderer;
+
     #endregion //fields
 
     #region parametres
 
     [SerializeField]
     protected float gravityScale = 1f;//Насколько сильно гравитация воздействует на падение
+    [SerializeField]
+    protected bool allyHitBox = false;//Атакует союзников или врагов?
     private bool fall = false;//падает ли сталактит
+
+    protected Color outlineColor = Color.green;
 
     #endregion //parametres
 
@@ -45,12 +51,16 @@ public class StalactiteScript : MonoBehaviour, IMechanism
         hitBox = GetComponent<HitBoxController>();
         hitBox.Immobile = true;
         hitBox.SetEnemies(enemies);
+        hitBox.allyHitBox = allyHitBox;
 
         rigid = GetComponent<Rigidbody2D>();
         rigid.isKinematic = true;
         rigid.gravityScale = gravityScale;
         stalactiteBase = transform.FindChild("StalactiteBase");
         groundCheck = transform.FindChild("GroundCheck");
+
+        sRenderer = GetComponent<SpriteRenderer>();
+
     }
 
     void Update()
@@ -59,6 +69,21 @@ public class StalactiteScript : MonoBehaviour, IMechanism
             return;
         if (Physics2D.OverlapCircle(groundCheck.position, grRadius, LayerMask.GetMask(grLayerName)))
             DestroyStalactite();
+    }
+
+    void ActivateStalactite()
+    {
+
+        if (fall)
+            return;
+        stalactiteBase.SetParent(null);
+
+        rigid.isKinematic = false;
+        hitBox.SetHitBox(hitData);
+        fall = true;
+        BoxCollider2D col = GetComponent<BoxCollider2D>();
+        if (col)
+            Destroy(col);
     }
 
     /// <summary>
@@ -95,17 +120,50 @@ public class StalactiteScript : MonoBehaviour, IMechanism
     public void SetData(InterObjData _intObjData)
     { }
 
+    #endregion //IHaveID
+
+    #region IMechanism
+
     public void ActivateMechanism()
     {
-        if (fall)
-            return;
-        stalactiteBase.SetParent(null);
-
-        rigid.isKinematic = false;
-        hitBox.SetHitBox(hitData);
-        fall = true;
+        ActivateStalactite();
     }
 
-    #endregion //IHaveID
+    #endregion //IMechanism
+
+    #region IInteractive
+
+    /// <summary>
+    /// Провести взаимодействие со сталактитом
+    /// </summary>
+    public virtual void Interact()
+    {
+        ActivateStalactite();
+    }
+
+    /// <summary>
+    /// Отрисовать контур, если происзодит взаимодействие (или убрать этот контур)
+    /// </summary>
+    public virtual void SetOutline(bool _outline)
+    {
+        if (sRenderer != null)
+        {
+            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+            sRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat("_Outline", _outline ? 1f : 0);
+            mpb.SetColor("_OutlineColor", outlineColor);
+            sRenderer.SetPropertyBlock(mpb);
+        }
+    }
+
+    /// <summary>
+    /// Можно ли провзаимодействовать с объектом в данный момент?
+    /// </summary>
+    public virtual bool IsInteractive()
+    {
+        return !fall;
+    }
+
+    #endregion //IInteractive
 
 }

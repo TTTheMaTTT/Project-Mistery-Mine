@@ -49,7 +49,8 @@ public class HitBox : HitBoxController
             }
         }
     }
-
+    public override List<string> EnemyLayers { get { return new List<string>(); } set {} }
+    
     #endregion //parametres
 
     //Инициализация

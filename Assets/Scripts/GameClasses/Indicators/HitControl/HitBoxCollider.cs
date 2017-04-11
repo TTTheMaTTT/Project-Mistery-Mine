@@ -25,8 +25,19 @@ public class HitBoxCollider : MonoBehaviour
     public bool Immobile { set { immobile = value; } }
     
     public bool againstHero = true;//Если true, то хитбокс может атаковать только героя
-    protected string enemyLayer = "hero";
-    public bool allyHitBox { get { return enemyLayer == "character"; }  set { enemyLayer = value ? "character" : "hero"; } }
+    protected List<string> enemyLayers = new List<string> { "hero" };
+    public bool allyHitBox
+    {
+        get
+        {
+            return enemyLayers == new List<string> { "character", "characterWithoutPlatform" };
+        }
+        set
+        {
+            enemyLayers = value ? new List<string> { "character", "characterWithoutPlatform" } : new List<string> { "hero" };
+        }
+    }
+    public List<string> EnemyLayers { get { return enemyLayers; } set { enemyLayers = value; } }
 
     protected bool alwaysAttack = false;//Если true, то хитбокс будет пытаться нанести атаку вне зависимости от того было ли переключение или нет (постоянна ли атака хитбокса, или это хитбокс одного удара?)
     public bool AlwaysAttack { set { alwaysAttack = value; } }
@@ -67,7 +78,7 @@ public class HitBoxCollider : MonoBehaviour
             Vector2 pos = transform.position;
             Vector2 _pos = immobile ? Vector2.zero : new Vector2(position.x * Mathf.Sign(transform.lossyScale.x), position.y);
             //Collider2D col = Physics2D.OverlapArea(pos + _pos + size, pos + _pos - size, LayerMask.GetMask(hLayer));
-            Collider2D[] cols = Physics2D.OverlapBoxAll(pos+_pos, size, transform.eulerAngles.z, LayerMask.GetMask(enemyLayer));
+            Collider2D[] cols = Physics2D.OverlapBoxAll(pos+_pos, size, transform.eulerAngles.z, LayerMask.GetMask(enemyLayers.ToArray()));
             bool damaged = false;
             for (int i=0;i<cols.Length;i++)
             {
@@ -95,7 +106,7 @@ public class HitBoxCollider : MonoBehaviour
         if (alwaysAttack || !attacked)
         {
             Vector2 pos = transform.position;
-            Collider2D[] cols = Physics2D.OverlapBoxAll(pos,size,transform.eulerAngles.z, LayerMask.GetMask(enemyLayer));
+            Collider2D[] cols = Physics2D.OverlapBoxAll(pos,size,transform.eulerAngles.z, LayerMask.GetMask(enemyLayers.ToArray()));
             bool damaged = false;
             for (int i=0;i< cols.Length;i++)
             {

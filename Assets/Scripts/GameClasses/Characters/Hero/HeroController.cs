@@ -592,7 +592,7 @@ public class HeroController : CharacterController
                 Animate(new AnimationEventArgs("releaseAttack", "",0));
                 Animate(new AnimationEventArgs("attack", currentWeapon.itemName, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime + currentWeapon.endAttackTime))));
             }
-            StartCoroutine(AttackProcess());
+            StartCoroutine("AttackProcess");
         }
         else if (fightingMode == AttackTypeEnum.range)
         {
@@ -606,7 +606,7 @@ public class HeroController : CharacterController
                     Animate(new AnimationEventArgs("releaseAttack", "", 0));
                     Animate(new AnimationEventArgs("shoot", currentWeapon.itemName, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime))));
                 }
-                StartCoroutine(ShootProcess());
+                StartCoroutine("ShootProcess");
             }
         }
     }
@@ -662,6 +662,8 @@ public class HeroController : CharacterController
         base.StopAttack();
         Animate(new AnimationEventArgs("stop"));
         currentWeapon.StopAttack();
+        StopCoroutine("ShootProcess");
+        employment = maxEmployment;
     }
 
     /// <summary>
@@ -788,6 +790,7 @@ public class HeroController : CharacterController
                 //dontShoot = false;
                 if (onLadder)
                     LadderOff();
+                StopAttack();
             }
             if (hitData.attackPower>0)
                 StartCoroutine(InvulProcess(invulTime, true));

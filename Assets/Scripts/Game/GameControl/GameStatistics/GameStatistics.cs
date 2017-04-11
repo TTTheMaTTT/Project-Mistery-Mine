@@ -220,6 +220,15 @@ public class GameStatistics : MonoBehaviour, IHaveStory
     }
 
     /// <summary>
+    /// Очистить данные по всем статистикам
+    /// </summary>
+    public void ClearStatistics()
+    {
+        foreach (Statistics currentStatistics in statistics)
+            currentStatistics.value = 0;
+    }
+
+    /// <summary>
     /// Произвести расчёт по нужным статистическим данным
     /// </summary>
     public void ConsiderStatistics(UnityEngine.Object obj)

@@ -24,6 +24,7 @@ public class HitBoxController : MonoBehaviour
 
     private string enemyLayer = "hero";//Какой слой игровых оъектов подвергается атаке
     public virtual bool allyHitBox { get { return HitCol.allyHitBox; } set { HitCol.allyHitBox = value; } }
+    public virtual List<string> EnemyLayers { get { return HitCol.EnemyLayers; } set { HitCol.EnemyLayers = value; } }
     [SerializeField]protected bool ignoreInvul;
     public bool IgnoreInvul { get { return ignoreInvul; } set { ignoreInvul = value; } }
 
