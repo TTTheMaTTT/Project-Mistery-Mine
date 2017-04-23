@@ -353,7 +353,7 @@ public class LichController : BossController
                     GoHome();
             }
             CheckMinions();
-        }       
+        }
     }
 
     /// <summary>

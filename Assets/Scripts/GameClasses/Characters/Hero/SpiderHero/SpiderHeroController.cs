@@ -131,7 +131,7 @@ public class SpiderHeroController : HeroController
 
         float horValue = Input.GetAxis("Horizontal");
         float jHorValue = JoystickController.instance.GetAxis(JAxis.Horizontal);
-        if (Input.GetButton("Horizontal") || Mathf.Abs(jHorValue) > .1f)
+        if (Input.GetButton("Horizontal") || Mathf.Abs(jHorValue) > .4f)
         {
             float value = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
             if (moveDirection.x >= moveDirection.y - .1f)
@@ -152,7 +152,7 @@ public class SpiderHeroController : HeroController
 
         float vertValue = Input.GetAxis("Vertical");
         float jVertValue = JoystickController.instance.GetAxis(JAxis.Vertical);
-        if (Input.GetButton("Vertical") || Mathf.Abs(jVertValue) > .1f)
+        if (Input.GetButton("Vertical") || Mathf.Abs(jVertValue) > .4f)
         {
             float value = Mathf.Abs(vertValue) > Mathf.Abs(jVertValue) ? vertValue : jVertValue;
             if (moveDirection.y > moveDirection.x - .1f)

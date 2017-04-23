@@ -17,6 +17,9 @@ public class CameraController : MonoBehaviour
     protected const float shakeDistance = .02f;
     protected const float shakeTime = .02f;
 
+    protected const float lightFadeSpeed = 3f;//Скорость изменения освещения уровня
+    protected const float lightTransitionTime=1.3f;//Сколько времени будет происходить изменение уровня освещённости
+
     #endregion //consts
 
     #region fields
@@ -24,6 +27,7 @@ public class CameraController : MonoBehaviour
     protected Transform player;//Трансформ героя
     protected Transform currentObject = null;//Текущий объект, за которым следит камера
     protected AreaTriggerIndicator aTriggerIndicator;//Индикатор, который закрепляется за камерой и следит за оптимизацией монстров
+    protected SpriteLightKitImageEffect lightManager;//Компонент, ответственный за освещение игры
 
     #endregion //fields
 
@@ -53,6 +57,10 @@ public class CameraController : MonoBehaviour
         }
     }
 
+    protected float targetIntensity;//Целевой уровень окружающего освещения
+    protected float targetHDRRatio;//Целевой уровень освещения от источников
+    protected bool lightTransition;//Происходит ли постепенное изменения уровня освещённости в данный момент?
+
     #endregion //parametres
 
     protected void Awake()
@@ -77,6 +85,13 @@ public class CameraController : MonoBehaviour
             else
                 transform.position = Vector3.Lerp(transform.position, currentTarget + offset, Time.fixedDeltaTime * camSpeed);
         }
+
+        if (lightTransition)
+        {
+            //Постепенное изменение уровня освещённости
+            lightManager.intensity = Mathf.Lerp(lightManager.intensity, targetIntensity, Time.fixedDeltaTime * lightFadeSpeed);
+            lightManager.HDRRatio = Mathf.Lerp(lightManager.HDRRatio, targetHDRRatio, Time.fixedDeltaTime * lightFadeSpeed);
+        }
     }
 
     /*protected void Update()
@@ -96,6 +111,7 @@ public class CameraController : MonoBehaviour
     {
         player = GameObject.FindGameObjectWithTag("player").transform;
         ChangeCameraMod(CameraModEnum.player);
+        lightManager = GetComponent<SpriteLightKitImageEffect>();
         //aTriggerIndicator = GetComponentInChildren<AreaTriggerIndicator>();
         //aTriggerIndicator.Activate(false);
     }
@@ -187,6 +203,13 @@ public class CameraController : MonoBehaviour
         StartCoroutine("ShakeCameraProcess");
     }
 
+    public void ShakeCamera(float _shakeTime)
+    {
+        offset = new Vector3(offsetX, offsetY, offsetZ);
+        StopCoroutine("ShakeCameraForTimeProcess");
+        StartCoroutine("ShakeCameraForTimeProcess", _shakeTime);
+    }
+
     /// <summary>
     /// Процесс тряски камеры
     /// </summary>
@@ -201,6 +224,43 @@ public class CameraController : MonoBehaviour
             _shakeDistance -= shakeReduce;
         }
         offset = new Vector3(offsetX, offsetY, offsetZ);
+    }
+
+    //Процесс тряски камеры в течение определённого времени
+    IEnumerator ShakeCameraForTimeProcess(float _time)
+    {
+        float _shakeDistance = shakeDistance;
+        while (_time>0f)
+        {
+            offset = new Vector3(offsetX + Random.Range(-shakeDistance, _shakeDistance), offsetY + Random.Range(-shakeDistance, _shakeDistance), offsetZ);
+            yield return new WaitForSeconds(shakeTime);
+            _time -= shakeTime;
+        }
+        offset = new Vector3(offsetX, offsetY, offsetZ);
+    }
+
+    /// <summary>
+    /// Начать переход к новому уровню освещённости
+    /// </summary>
+    /// <param name="_intensity">Какой должна стать интенсивность</param>
+    /// <param name="_HDRRatio">Какой должна стать интенсивность источников освещения</param>
+    public void StartLightTransition(float _intensity, float _HDRRatio)
+    {
+        StopCoroutine("LightTransitionProcess");
+        targetIntensity = _intensity;
+        targetHDRRatio = _HDRRatio;
+        StartCoroutine("LightTransitionProcess");
+    }
+
+    /// <summary>
+    /// Процесс изменения уровня освещённости
+    /// </summary>
+    /// <returns></returns>
+    IEnumerator LightTransitionProcess()
+    {
+        lightTransition = true;
+        yield return new WaitForSeconds(lightTransitionTime);
+        lightTransition = false;
     }
 
     public void SetPlayer(Transform _player)

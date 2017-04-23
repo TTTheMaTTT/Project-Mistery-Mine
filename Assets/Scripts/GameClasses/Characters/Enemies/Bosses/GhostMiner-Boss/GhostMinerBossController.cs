@@ -133,8 +133,7 @@ public class GhostMinerBossController : BossController
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if ((int)orientation*targetVelocity.x<0f) 
-            Turn();
-        
+            Turn();       
     }
 
     /// <summary>
@@ -173,7 +172,6 @@ public class GhostMinerBossController : BossController
                 BecomeAgressive();
             }
         }
-
     }
 
     #region bossActions
@@ -808,7 +806,7 @@ public class GhostMinerBossController : BossController
 }
 
 /// <summary>
-/// Редактор персонажей с ИИ
+/// Редактор сущности шахтёров
 /// </summary>
 #if UNITY_EDITOR
 [CustomEditor(typeof(GhostMinerBossController))]

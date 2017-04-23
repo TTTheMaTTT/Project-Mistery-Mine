@@ -252,7 +252,7 @@ public class BatController : AIController
                     if (loyalty == LoyaltyEnum.ally && !mainTarget.exists) //Если нет основной цели и летучая мышь - союзник героя, то она следует к нему
                     {
                         float sqDistance = Vector2.SqrMagnitude(beginPosition - pos);
-                        if (sqDistance > allyDistance * 1.2f && followAlly)
+                        if (followAlly)
                         {
                             if (Vector2.SqrMagnitude(beginPosition - (Vector2)prevTargetPosition) > minCellSqrMagnitude)
                             {

@@ -95,6 +95,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
             sRenderer.GetPropertyBlock(mpb);
             mpb.SetFloat("_Outline", _outline ? 1f : 0);
             mpb.SetColor("_OutlineColor", outlineColor);
+            mpb.SetFloat("_OutlineWidth", .08f / ((Vector2)transform.lossyScale).magnitude);
             sRenderer.SetPropertyBlock(mpb);
         }
     }

@@ -54,7 +54,7 @@ public class GameStatistics : MonoBehaviour, IHaveStory
     #region fields
 
     [HideInInspector]
-    public List<Statistics> statistics=new List<Statistics>();//Здесь задаётся, подсчёт каких игровых параметров нас интересует
+    public List<Statistics> statistics = new List<Statistics>();//Здесь задаётся, подсчёт каких игровых параметров нас интересует
 
     public DatabaseClass database;//База данных в игре
     public ItemBaseClass itemBase;//База предметов в игре
@@ -63,12 +63,12 @@ public class GameStatistics : MonoBehaviour, IHaveStory
     {
         get
         {
-            #if UNITY_EDITOR
+#if UNITY_EDITOR
             if (historyBase == null)
             {
                 if (!File.Exists(databasePath + "HistoryBase.asset"))
                 {
-                    historyBase= new HistoryBaseClass();
+                    historyBase = new HistoryBaseClass();
                     AssetDatabase.CreateAsset(historyBase, databasePath + "HistoryBase.asset");
                     AssetDatabase.SaveAssets();
                 }
@@ -77,7 +77,7 @@ public class GameStatistics : MonoBehaviour, IHaveStory
                     historyBase = AssetDatabase.LoadAssetAtPath<HistoryBaseClass>(databasePath + "HistoryBase.asset");
                 }
             }
-            #endif
+#endif
 
             return historyBase;
         }
@@ -91,6 +91,9 @@ public class GameStatistics : MonoBehaviour, IHaveStory
 
     [HideInInspector]
     public string statisticsPath = "Assets/Database/Stories/Statistics/";
+
+    [SerializeField] private string levelTextName;//Название уровня, что может отображаться в игре
+    public string LevelTextName { get { return levelTextName; } }
 
     #endregion //parametres
 

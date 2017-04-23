@@ -53,23 +53,9 @@ public class NextLevelDoor : DoorClass
     public override void Open()
     {
         base.Open();
-        StartCoroutine(NextLevelProcess());
+        SpecialFunctions.gameController.CompleteLevel(nextLevelName, true, checkpointNumber);
     }
 
-    /// <summary>
-    /// Процесс перехода на следующий уровень
-    /// </summary>
-    protected IEnumerator NextLevelProcess()
-    {
-        SpecialFunctions.gameController.RemoveHeroDeathLevelEnd();
-        PlayerPrefs.SetInt("Checkpoint Number", checkpointNumber);
-        SpecialFunctions.gameController.SaveGame(checkpointNumber,true, nextLevelName);
-        PlayerPrefs.SetFloat("Hero Health", SpecialFunctions.Player.GetComponent<HeroController>().MaxHealth);
-        SpecialFunctions.SetFade(true);
-        yield return new WaitForSeconds(nextLevelTime);
-        if (nextLevelName != string.Empty)
-            SpecialFunctions.gameController.CompleteLevel(nextLevelName);
-    }
 
     /// <summary>
     /// Активировать механизм

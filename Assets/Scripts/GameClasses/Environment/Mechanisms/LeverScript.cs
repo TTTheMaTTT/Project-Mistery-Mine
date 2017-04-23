@@ -110,6 +110,7 @@ public class LeverScript : MonoBehaviour, IInteractive
             sRenderer.GetPropertyBlock(mpb);
             mpb.SetFloat("_Outline", _outline ? 1f : 0);
             mpb.SetColor("_OutlineColor", outlineColor);
+            mpb.SetFloat("_OutlineWidth", .08f / ((Vector2)transform.lossyScale).magnitude);
             sRenderer.SetPropertyBlock(mpb);
         }
     }
@@ -158,7 +159,6 @@ public class LeverScript : MonoBehaviour, IInteractive
             activated = mData.activated;
             if (anim != null)
             {
-                anim.Stop();
                 anim.Play(activated ? "Active" : "Inactive");
             }
         }

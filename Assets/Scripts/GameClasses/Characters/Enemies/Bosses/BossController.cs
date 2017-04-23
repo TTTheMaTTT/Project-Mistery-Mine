@@ -34,7 +34,7 @@ public class BossController : AIController
     protected string bossName;//Имя босса, что отображается в GUI
     protected int bossPhase = 0;//Фаза сражения с боссом
 
-    public override float Health { get { return health; } set { health = value; OnBossHealthChanged(new BossHealthEventArgs(health, maxHealth, gameObject.name)); } }
+    public override float Health { get { return health; } set { health = value; OnBossHealthChanged(new BossHealthEventArgs(health, maxHealth, bossName)); } }
 
     #endregion //parametres
 

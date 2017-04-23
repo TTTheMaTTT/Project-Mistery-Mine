@@ -17,7 +17,7 @@ public class HumanoidController : AIController
 
     #region fields
 
-    protected WallChecker wallCheck, precipiceCheck;
+    protected WallChecker wallCheck, precipiceCheck, obstacleCheck;//Индикаторы, отслеживающие обстановку вокруг персонажа
     protected WallChecker groundCheck;
 
     protected Hearing hearing;//Слух персонажа
@@ -144,6 +144,7 @@ public class HumanoidController : AIController
         {
             wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
             precipiceCheck = indicators.FindChild("PrecipiceCheck").GetComponent<WallChecker>();
+            obstacleCheck = indicators.FindChild("ObstacleCheck").GetComponent<WallChecker>();
             groundCheck = indicators.FindChild("GroundCheck").GetComponent<WallChecker>();
 
             hearing = indicators.GetComponentInChildren<Hearing>();
@@ -187,6 +188,7 @@ public class HumanoidController : AIController
     {
         base.Turn(_orientation);
         wallCheck.SetPosition(0f, (int)orientation);
+        obstacleCheck.SetPosition(0f, (int)orientation);
         precipiceCheck.SetPosition(0f, (int)orientation);
     }
 
@@ -197,6 +199,7 @@ public class HumanoidController : AIController
     {
         base.Turn();
         wallCheck.SetPosition(0f, (int)orientation);
+        obstacleCheck.SetPosition(0f, (int)orientation);
         precipiceCheck.SetPosition(0f, (int)orientation);
     }
 
@@ -375,7 +378,7 @@ public class HumanoidController : AIController
                     if (loyalty == LoyaltyEnum.ally? !mainTarget.exists && grounded: false) 
                     {
                         float sqDistance = Vector2.SqrMagnitude(beginPosition - pos);
-                        if (sqDistance > allyDistance * 1.2f && followAlly)
+                        if (followAlly)
                         {
                             if (Vector2.SqrMagnitude(beginPosition - (Vector2)prevTargetPosition) > minCellSqrMagnitude)
                             {
@@ -735,7 +738,7 @@ public class HumanoidController : AIController
 
                     if (sqDistance < waitingNearDistance)
                     {
-                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
+                        if (!wallCheck.WallInFront && !obstacleCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
                             Move((OrientationEnum)Mathf.RoundToInt(-Mathf.Sign(targetDistance.x)));
                     }
                     else if (sqDistance < waitingFarDistance)
@@ -746,7 +749,7 @@ public class HumanoidController : AIController
                     }
                     else
                     {
-                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !targetCharacter.OnLadder))
+                        if (!wallCheck.WallInFront && !obstacleCheck.WallInFront && (precipiceCheck.WallInFront || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !targetCharacter.OnLadder))
                         {
                             Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
                         }
@@ -777,7 +780,7 @@ public class HumanoidController : AIController
 
                         if (Vector2.SqrMagnitude(targetDistance) > attackDistance * attackDistance)
                         {
-                            if (!wallCheck.WallInFront && (precipiceCheck.WallInFront || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !targetCharacter.OnLadder))
+                            if (!wallCheck.WallInFront && !obstacleCheck.WallInFront && (precipiceCheck.WallInFront || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !targetCharacter.OnLadder))
                             {
                                 if (Mathf.Abs(targetDistance.x) > attackDistance)
                                     Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
@@ -788,14 +791,17 @@ public class HumanoidController : AIController
                                 Turn();
                             else
                             {
-                                StopMoving();
                                 if (Vector2.SqrMagnitude(pos - mainPos) > minCellSqrMagnitude * 16f &&
                                     (Vector2.SqrMagnitude(mainPos - prevTargetPosition) > minCellSqrMagnitude || !prevTargetPosition.exists))
                                 {
                                     Waypoints = FindPath(targetPosition, maxAgressivePathDepth);
-                                    if (waypoints == null)
-                                        StopMoving();
+                                    if (waypoints != null)
+                                        return;
                                 }
+                                if (obstacleCheck.WallInFront)
+                                    Move(orientation);//Если перед персонажем стоит препятствие, но он никак не может его обойти, то он просто идёт напролом
+                                else
+                                    StopMoving();
                             }
 
                         }
@@ -1040,17 +1046,21 @@ public class HumanoidController : AIController
 
                 if (waypoints.Count == 0)//Если маршрут кончился, перестать следовать ему
                 {
-                    StopMoving();
+                    float sqDistance = Vector2.SqrMagnitude(beginPosition - pos);
                     //Достигли конца маршрута
-                    if (Vector3.Distance(beginPosition, currentWaypoint.cellPosition) < navCellSize)
+                    if (sqDistance < (loyalty == LoyaltyEnum.ally? allyDistance * 1.2f : navCellSize*navCellSize))
                     {
-                        transform.position = beginPosition;
-                        Turn(beginOrientation);
+                        StopMoving();
+                        if (loyalty != LoyaltyEnum.ally)
+                        {
+                            transform.position = beginPosition;
+                            Turn(beginOrientation);
+                        }
                         BecomeCalm();
                         return;
                     }
                     else
-                        GoHome();//Никого в конце маршрута не оказалось, значит, возвращаемся домой
+                        GoHome(); 
                 }
                 else
                 {

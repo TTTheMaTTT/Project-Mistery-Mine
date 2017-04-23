@@ -67,8 +67,8 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     protected bool dead = false;//Мёртв ли персонаж
     public bool Dead { get { return dead; } }
 
-    [SerializeField]
-    protected bool immobile;//Можно ли управлять персонажем
+    [SerializeField]protected bool immobile;//Можно ли управлять персонажем
+    public bool Immobile { get { return immobile; } }
 
     protected bool underWater;//Находится ли персонаж под водой?
     protected virtual bool Underwater//Свойство, которое описывает погружение и выход из воды
@@ -536,7 +536,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// Добавить бафф в соответствии с данными этого баффа
     /// </summary>
     /// <param name="_bData">данные баффа</param>
-    protected virtual void AddCustomBuff(BuffData _bData)
+    public virtual void AddCustomBuff(BuffData _bData)
     {
         switch (_bData.buffName)
         {
@@ -639,7 +639,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         {
             if (GetBuff("BurningProcess") != null)
             {
-                AddBuff(new BuffClass("StunnedProcess", Time.fixedTime, _time));
+                AddBuff(new BuffClass("StunnedProcess", Time.time, _time));
                 Death();//Если персонаж находится в подожённом состоянии, то при стане он должен осыпаться пеплом
                 return;
             }
@@ -653,7 +653,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <param name="_time">Время действия стана</param>
     protected virtual IEnumerator StunnedProcess(float _time)
     {
-        AddBuff(new BuffClass("StunnedProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("StunnedProcess", Time.time, _time));
         immobile = true;//Запретить двигаться во время стана
         Animate(new AnimationEventArgs("startStun"));
         yield return new WaitForSeconds(_time);
@@ -688,7 +688,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         {
             if (GetBuff("StunnedProcess") != null)
             {
-                AddBuff(new BuffClass("BurningProcess", Time.fixedTime, _time));
+                AddBuff(new BuffClass("BurningProcess", Time.time, _time));
                 Death();//Если персонажа подожгли, когда он находился в стане, то он осыпется пеплом
             }
         }
@@ -707,7 +707,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <param name="_time">Время горения</param>
     protected virtual IEnumerator BurningProcess(float _time)
     {
-        AddBuff(new BuffClass("BurningProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("BurningProcess", Time.time, _time));
         Animate(new AnimationEventArgs("startBurning"));
         StartCoroutine("BurningDamageProcess");
         yield return new WaitForSeconds(_time);
@@ -724,7 +724,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         while (true)
         {
             yield return new WaitForSeconds(burnFrequency);
-            TakeDamage(new HitParametres(burnDamage, DamageType.Fire), true);
+            TakeDamage(new HitParametres(burnDamage, DamageType.Fire,-1), true);
         }
     }
 
@@ -762,7 +762,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <param name="_time">Продолжительность процесса</param>
     protected virtual IEnumerator WetProcess(float _time)
     {
-        AddBuff(new BuffClass("WetProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("WetProcess", Time.time, _time));
         Animate(new AnimationEventArgs("startWet"));
         yield return new WaitForSeconds(_time);
         RemoveBuff("WetProcess");
@@ -788,7 +788,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// </summary>
     protected virtual void BecomeCold(float _time)
     {
-        if (GetBuff("ColdProcess") != null)
+        if (GetBuff("ColdProcess") != null || GetBuff("FrozenProcess") != null)
             return;//Нельзя во второй раз замёрзнуть
         if (GetBuff("BurningProcess") != null)
             return;//Нельзя замёрзнуть, когда горишь
@@ -804,7 +804,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <returns></returns>
     protected virtual IEnumerator ColdProcess(float _time)
     {
-        AddBuff(new BuffClass("ColdProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("ColdProcess", Time.time, _time));
         speedCoof *= coldSpeedCoof;
         Animate(new AnimationEventArgs("startCold"));
         yield return new WaitForSeconds(_time);
@@ -842,7 +842,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <param name="_time">Длительность процесса</param>
     protected virtual IEnumerator PoisonProcess(float _time)
     {
-        AddBuff(new BuffClass("PoisonProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("PoisonProcess", Time.time, _time));
         StartCoroutine("PoisonDamageProcess");
         Animate(new AnimationEventArgs("startPoison"));
         yield return new WaitForSeconds(_time);
@@ -859,7 +859,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         while (true)
         {
             yield return new WaitForSeconds(poisonFrequency);
-            TakeDamage(new HitParametres(poisonDamage, DamageType.Poison, 0),true);
+            TakeDamage(new HitParametres(poisonDamage, DamageType.Poison, -1),true);
         }
     }
 
@@ -893,9 +893,10 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <param name="_time">Длительность процесса</param>
     protected virtual IEnumerator FrozenProcess(float _time)
     {
-        AddBuff(new BuffClass("FrozenProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("FrozenProcess", Time.time, _time));
         immobile = true;//Потерять способность двигаться
         Animate(new AnimationEventArgs("startFrozen"));
+        if (underWater)
         Underwater = false;//Считаем, что в замороженном состоянии персонажу не требуется энергия, поэтому он не будет задыхаться
         yield return new WaitForSeconds(_time);
         RemoveBuff("FrozenProcess");
@@ -918,7 +919,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
 
     #endregion //buffs
 
-    #region events
+    #region animation
 
     /// <summary>
     /// Событие, вызываемое при запросе новой анимации у аниматора персонажа
@@ -932,8 +933,16 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         }
     }
 
-    #endregion //events
+    /// <summary>
+    /// Создать эффект
+    /// </summary>
+    /// <param name="effectName">Название эффекта</param>
+    public void SpawnEffect(string effectName)
+    {
+        Animate(new AnimationEventArgs("spawnEffect", effectName, 0));   
+    }
 
+    #endregion //animation
     #region IHaveID
 
     /// <summary>
@@ -996,6 +1005,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     protected virtual IEnumerator StoryDeathProcess(float deathTime)
     {
         yield return new WaitForSeconds(deathTime);
+        Health = 0f;
         Death();
     }
 

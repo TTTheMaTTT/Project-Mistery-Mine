@@ -8,9 +8,19 @@ using UnityEngine;
 public class InterfaceWindow : MonoBehaviour
 {
 
+    #region fields
+
     public static InterfaceWindow openedWindow = null;//Окно интерфейса, открытое в данный момент
 
     [HideInInspector]public Canvas canvas;
+
+    #endregion //fields
+
+    #region parametres
+
+    protected bool setImmoblie = false;//Управляет ли данное окошко подвижностью главного персонажа
+
+    #endregion //parametres
 
     protected virtual void Awake()
     {
@@ -27,7 +37,11 @@ public class InterfaceWindow : MonoBehaviour
             return;
         openedWindow = this;
         canvas.enabled = true;
-        SpecialFunctions.Player.GetComponent<HeroController>().SetImmobile(true);
+        HeroController hero = SpecialFunctions.Player.GetComponent<HeroController>();
+        setImmoblie = !hero.Immobile;
+        if (setImmoblie)  
+            hero.SetImmobile(true); 
+        
         Cursor.visible = true;
         SpecialFunctions.PauseGame();
     }
@@ -39,7 +53,8 @@ public class InterfaceWindow : MonoBehaviour
     {
         openedWindow = null;
         canvas.enabled = false;
-        SpecialFunctions.Player.GetComponent<HeroController>().SetImmobile(false);
+        if (setImmoblie)
+            SpecialFunctions.Player.GetComponent<HeroController>().SetImmobile(false);
         Cursor.visible = true;
         SpecialFunctions.PlayGame();
     }

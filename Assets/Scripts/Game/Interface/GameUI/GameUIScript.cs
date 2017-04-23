@@ -683,7 +683,7 @@ public class GameUIScript : MonoBehaviour
     /// </summary>
     public void SetInactiveBossPanel()
     {
-        StartCoroutine(BossPanelInactiveProcess());
+        StartCoroutine("BossPanelInactiveProcess");
     }
 
     protected IEnumerator BossPanelInactiveProcess()
@@ -799,6 +799,7 @@ public class GameUIScript : MonoBehaviour
     public virtual void HandleBossHealthChanges(object sender, BossHealthEventArgs e)
     {
         bossHealthPanel.SetActive(true);
+        StopCoroutine("BossPanelInactiveProcess");
         Vector2 size = bossHP.GetComponent<RectTransform>().sizeDelta;
         bossHP.GetComponent<RectTransform>().sizeDelta = new Vector2(bossHPMaxWidth * e.HP / e.MaxHP,size.y);
         bossNameText.text = e.BossName;

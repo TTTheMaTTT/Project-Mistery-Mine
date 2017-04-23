@@ -70,6 +70,7 @@ public class HeroController : CharacterController
             hitBox.AttackerInfo = new AttackerClass(gameObject, fightingMode);
         }
     }
+    [SerializeField]protected WeaponClass additionalWeapon;//Дополнительное оружие
 
     protected EquipmentClass equipment;//Инвентарь игрока.
     public EquipmentClass Equipment { get { return equipment; } set { equipment = value; } }
@@ -84,7 +85,7 @@ public class HeroController : CharacterController
 
     public override float Health { get { return base.Health; } set { float prevHealth = health; base.Health = value; OnHealthChanged(new HealthEventArgs(value, health-prevHealth, maxHealth)); } }
     public override float MaxHealth { get { return base.MaxHealth; } set { maxHealth = value; OnHealthChanged(new HealthEventArgs(value, 0f, maxHealth)); } }
-    public int Balance { get { return balance;} set { balance = value; } }
+    public override int Balance { get { return balance;} set { balance = value; } }
     public float Speed { get { return speed; } set { speed = value; } }
     public float JumpForce { get { return jumpForce; } set { jumpForce = value; } }
     public float JumpAdd { get { return jumpAdd;} set { jumpAdd = value; } }
@@ -149,11 +150,13 @@ public class HeroController : CharacterController
     protected AttackerClass attacker;
     protected TrinketEffectClass mutagenEffect;//Эффект, который связан с мутагеном
     protected bool mutagenActive = false;//Действует ли мутаген
-    protected bool invul;//Если true, то персонаж невосприимчив к урону
+    protected bool invul;//Если true, то персонаж обычно невосприимчив к урону
+    protected bool noDamage;//Если true, то персонаж не может получить урон
 
     protected AttackTypeEnum fightingMode;
     public bool attacking = false;
     protected float chargeBeginTime = 0f;
+    protected bool k;
 
     #region effectParametres
 
@@ -181,6 +184,9 @@ public class HeroController : CharacterController
 
     protected virtual void Update()
     {
+        if (Input.GetKeyDown(KeyCode.K))
+            k = !k;
+
         if (!immobile)
         {
             #region usualMovement
@@ -191,13 +197,18 @@ public class HeroController : CharacterController
                 {
                     float horValue = Input.GetAxis("Horizontal");
                     float jHorValue = JoystickController.instance.GetAxis(JAxis.Horizontal);
-                    if (Input.GetButton("Horizontal") || Mathf.Abs(jHorValue) > .1f)
+                    if (Input.GetButton("Horizontal") || Mathf.Abs(jHorValue) > .4f)
                     {
                         float value = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
                         Move(value > 0f ? OrientationEnum.right : OrientationEnum.left);
                     }
 
-                    if (Input.GetButtonDown("Jump") || JoystickController.instance.GetButtonDown(JButton.button2))
+                    if (k)
+                    {
+                        Move(orientation);
+                    }
+
+                    if (Input.GetButtonDown("Jump"))
                     {
                         jumpInput = 0;
                         if (groundState == GroundStateEnum.grounded && !jumping)
@@ -212,19 +223,19 @@ public class HeroController : CharacterController
                         //rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
                     //}
 
-                    if (Input.GetButtonUp("Jump") || JoystickController.instance.GetButtonUp(JButton.button2))
+                    if (Input.GetButtonUp("Jump"))
                     {
                         jumpInput = 0;
                     }
 
-                    if (Input.GetAxis("Vertical") > .2f || JoystickController.instance.GetAxis(JAxis.Vertical)>.2f)
+                    if (Input.GetAxis("Vertical") > .3f || JoystickController.instance.GetAxis(JAxis.Vertical)>.6f)
                     {
                         LadderOn();
                     }
 
                     if (employment > 7)
                     {
-                        if (Input.GetButtonDown("Attack") || JoystickController.instance.GetButtonDown(JButton.button7))
+                        if (Input.GetButtonDown("Attack"))
                         {
                             if (groundState != GroundStateEnum.crouching)
                             {
@@ -239,17 +250,17 @@ public class HeroController : CharacterController
                                 }
                             }
                         }
-                        else if (Input.GetButtonDown("Flip") || JoystickController.instance.GetButtonDown(JButton.button6))
+                        else if (Input.GetButtonDown("Flip"))
                             if ((rigid.velocity.x * (int)orientation > .1f) && (groundState == GroundStateEnum.grounded) && (employment > 8))
                                 Flip();
-                        if (Input.GetButtonDown("ChangeInteraction") || JoystickController.instance.GetButtonDown(JButton.button5))
+                        if (Input.GetButtonDown("ChangeInteraction"))
                             interactor.ChangeInteraction();
                     }
                 }
 
                 if (currentWeapon.chargeable)
                 {
-                    if ((Input.GetButtonUp("Attack") || JoystickController.instance.GetButtonUp(JButton.button7)) && chargeBeginTime>0f)
+                    if ((Input.GetButtonUp("Attack")) && chargeBeginTime>0f)
                     {
                         StopCharge();
                     }
@@ -264,11 +275,11 @@ public class HeroController : CharacterController
             {
                 float vertValue = Input.GetAxis("Vertical");
                 float jVertValue = JoystickController.instance.GetAxis(JAxis.Vertical);
-                if ( Input.GetButton("Vertical") || Mathf.Abs(jVertValue)>.1f)
+                if ( Input.GetButton("Vertical") || Mathf.Abs(jVertValue)>.4f)
                     LadderMove(Mathf.Abs(vertValue)>Mathf.Abs(jVertValue)? vertValue: jVertValue);
                 else
                     StopLadderMoving();
-                if (Input.GetButtonDown("Jump") || JoystickController.instance.GetButtonDown(JButton.button2))
+                if (Input.GetButtonDown("Jump"))
                 {
                     LadderOff();
                     rigid.AddForce(new Vector2(0f, jumpForce / 2));
@@ -277,6 +288,14 @@ public class HeroController : CharacterController
             }
 
             #endregion //ladderMovement
+
+            if (Input.GetButtonDown("ChangeWeapon")? additionalWeapon != null : false)
+            {
+                StopAttack();
+                WeaponClass _weapon = currentWeapon;
+                CurrentWeapon = additionalWeapon;
+                additionalWeapon = _weapon;
+            }
 
         }
 
@@ -310,6 +329,7 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Initialize()
     {
+        k = false;
         base.Initialize();
         indicators = transform.FindChild("Indicators");
         waterCheck = indicators.FindChild("WaterCheck");
@@ -461,6 +481,8 @@ public class HeroController : CharacterController
         float horValue = Input.GetAxis("Horizontal");
         float jHorValue = JoystickController.instance.GetAxis(JAxis.Horizontal);
         float value = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
+        if (k)
+            value = (int)orientation;
         bool crouching = (groundState == GroundStateEnum.crouching);
         rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : value * speed*speedCoof, rigid.velocity.y);
         if (orientation != _orientation)
@@ -517,7 +539,7 @@ public class HeroController : CharacterController
                          Physics2D.OverlapCircle(transform.position + Mathf.Sign(direction) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? 
                          direction * ladderSpeed * speedCoof : 0f);
     }
-
+    
     /// <summary>
     /// Развернуться
     /// </summary>
@@ -702,7 +724,7 @@ public class HeroController : CharacterController
     /// </summary>
     public override void TakeDamage(HitParametres hitData)
     {
-        if (!invul)
+        if (!invul && (!noDamage || hitData.attackPower!=-1))
         {
             if (mutagenEffect != null)
             {
@@ -740,7 +762,7 @@ public class HeroController : CharacterController
                     LadderOff();
                 StopAttack();
             }
-            if (hitData.attackPower>0)
+            if (hitData.attackPower>=0)
                 StartCoroutine(InvulProcess(invulTime, true));
             anim.Blink();
         }
@@ -753,7 +775,7 @@ public class HeroController : CharacterController
     /// </summary>
     public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
     {
-        if (ignoreInvul || !invul)
+        if (ignoreInvul || !invul && (!noDamage || hitData.attackPower != -1))
         {
             if (mutagenEffect != null && attacker!=null? attacker.attackType==AttackTypeEnum.melee:false)
             {
@@ -805,6 +827,9 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Death()
     {
+        if (dead)
+            return;
+        dead = true;
         StopCoroutine("AttackProcess");
         if (indicators != null)
         {
@@ -828,6 +853,7 @@ public class HeroController : CharacterController
     protected virtual void Resurect()
     {
         Health = maxHealth;
+        dead = false;
         immobile = false;
         Animate(new AnimationEventArgs("stop"));
     }
@@ -877,6 +903,7 @@ public class HeroController : CharacterController
             //SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName1);
             OnEquipmentChanged(new EquipmentEventArgs(null, _weapon));
             SpecialFunctions.gameUI.ConsiderItem(_weapon, _weapon.itemDescription);
+            additionalWeapon = _weapon;
         }
         else if (item is HeartClass)
         {
@@ -955,6 +982,14 @@ public class HeroController : CharacterController
         mutagenEffect = mutagen.trinketEffects[0];
     }
 
+    /// <summary>
+    /// Сбросить доп оружие
+    /// </summary>
+    public void ResetAdditionalWeapon()
+    {
+        additionalWeapon = null;
+    }
+
     /*
     /// <summary>
     /// Убрать мутаген
@@ -1009,7 +1044,11 @@ public class HeroController : CharacterController
         if (hAnim != null && hitted)
             hAnim.InvulBlink();
         invul = true;
+        if (hitted)
+            noDamage = true;
         yield return new WaitForSeconds(_invulTime);
+        if (hitted)
+            noDamage = false;
         invul = false;
         //yield return new WaitForSeconds(0f);
     }

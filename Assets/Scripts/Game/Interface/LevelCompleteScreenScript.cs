@@ -65,7 +65,7 @@ public class LevelCompleteScreenScript : MonoBehaviour
         SpecialFunctions.PauseGame();
         Cursor.visible = true;
         nextLevelName = _nextLevelName;
-        levelCompleteText.text = "Уровень " + SceneManager.GetActiveScene().name + " пройден!";
+        levelCompleteText.text = "Уровень " + SpecialFunctions.GetLevelName() + " пройден!";
 
         secretsFoundText.text = "Найдено секретных мест " + currentSecretsCount.ToString() + "/" + totalSecretsCount.ToString();
 
@@ -109,7 +109,8 @@ public class LevelCompleteScreenScript : MonoBehaviour
     /// </summary>
     public void GoToTheNextLevel()
     {
-        SceneManager.LoadScene(nextLevelName);
+        LoadingScreenScript.instance.LoadScene(nextLevelName);
+        //SceneManager.LoadScene(nextLevelName);
     }
 
     /// <summary>
@@ -117,7 +118,8 @@ public class LevelCompleteScreenScript : MonoBehaviour
     /// </summary>
     public void GoToTheMainMenu()
     {
-        SceneManager.LoadScene(mainMenuName);
+        LoadingScreenScript.instance.LoadScene(mainMenuName);
+        //SceneManager.LoadScene(mainMenuName);
     }
 
     /// <summary>

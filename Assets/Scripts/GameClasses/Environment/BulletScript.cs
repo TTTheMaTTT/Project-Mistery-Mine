@@ -67,6 +67,8 @@ public class BulletScript : MonoBehaviour
         if (destroyParticles != null)
         {
             GameObject particles = Instantiate(destroyParticles, transform.position, Quaternion.identity);
+            Vector3 scal = particles.transform.localScale;
+            particles.transform.localScale = new Vector3(Mathf.Sign(transform.localScale.x) * scal.x, scal.y, scal.z);
             Destroy(particles, 1.5f);
         }
         Destroy(gameObject);

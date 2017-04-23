@@ -241,7 +241,7 @@ public class EquipmentMenu : InterfaceWindow
             ActiveTrinketCell tCell = activeTrinketCells[i];
             tCell.SetTrinket(null);
             if (i >= magicSlotsCount)
-                tCell.gameObject.SetActive(false);
+                tCell.transform.parent.gameObject.SetActive(false);
         }
 
     }
@@ -292,7 +292,10 @@ public class EquipmentMenu : InterfaceWindow
             return;
         foreach (TrinketCell tCell in trinketCells)
             if (tCell.Trinket == null)
+            {
                 tCell.Trinket = _trinket;
+                break;
+            }
     }
 
     /// <summary>
@@ -362,7 +365,10 @@ public class EquipmentMenu : InterfaceWindow
     public void TakeOffActivatedTrinket()
     {
         if (ActiveTrinketCell.activatedTrinketCell)
+        {
             TakeOffTrinket(ActiveTrinketCell.activatedTrinketCell.Trinket);
+            ActiveTrinketCell.activatedTrinketCell.Trinket = null; 
+        }
     }
 
     /// <summary>

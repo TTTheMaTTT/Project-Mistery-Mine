@@ -70,10 +70,11 @@ public class HitBoxController : MonoBehaviour
         if (!immobile)
             hitCol.position = hitData.hitPosition;
         hitCol.size = hitData.hitSize;
+        StopCoroutine("HitProcess");
         if (hitData.actTime != -1f)
         {
             hitCol.AlwaysAttack = false;
-            StartCoroutine(HitProcess(hitData.actTime));
+            StartCoroutine("HitProcess",hitData.actTime);
         }
         else
             hitCol.AlwaysAttack = true;
@@ -144,7 +145,7 @@ public class HitBoxController : MonoBehaviour
             target.TakeDamage(hitData, true);
         else
             target.TakeDamage(hitData);
-        OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
+        OnAttack(new HitEventArgs(target.GetHealth() - prevHP,obj));
 
     }
 

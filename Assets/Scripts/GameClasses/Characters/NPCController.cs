@@ -453,6 +453,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
             MaterialPropertyBlock mpb = new MaterialPropertyBlock();
             sRenderer.GetPropertyBlock(mpb);
             mpb.SetFloat("_Outline", _outline ? 1f : 0);
+            mpb.SetFloat("_OutlineWidth", .08f / ((Vector2)transform.lossyScale).magnitude);
             mpb.SetColor("_OutlineColor", outlineColor);
             sRenderer.SetPropertyBlock(mpb);
         }

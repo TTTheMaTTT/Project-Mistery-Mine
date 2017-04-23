@@ -49,10 +49,18 @@ public class BuffData
     public BuffData()
     { }
 
+    public BuffData(string _buffName, float _duration, int _buffArgument = 0, string _buffID = "")
+    {
+        buffName = _buffName;
+        buffDuration = _duration;
+        buffArgument = _buffArgument;
+        buffID = _buffID;
+    }
+
     public BuffData(BuffClass _buff)
     {
         buffName = _buff.buffName;
-        buffDuration = Time.fixedTime - _buff.beginTime;
+        buffDuration = Time.time - _buff.beginTime;
         buffArgument = _buff.argument;
         buffID = _buff.id;
     }

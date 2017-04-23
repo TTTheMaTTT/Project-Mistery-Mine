@@ -52,13 +52,8 @@ public class GolemController : AIController
         if (!immobile)
         {
             base.FixedUpdate();
+            Animate(new AnimationEventArgs("groundMove"));
         }
-    }
-
-    protected override void Update()
-    {
-        base.Update();
-        Animate(new AnimationEventArgs("groundMove"));
     }
 
     /// <summary>
@@ -134,6 +129,29 @@ public class GolemController : AIController
 
     #region attack
 
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    /// <param name="hitData">Данные урона</param>
+    public override void TakeDamage(HitParametres hitData)
+    {
+        if (hitData.attackPower == 0)//Голем не подвергается действиям препятствий
+            return;
+        base.TakeDamage(hitData);
+    }
+
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    /// <param name="hitData">Данные урона</param>
+    /// <param name="ignoreInvul">Игнорирует ли прошедшая атака инвул персонажа</param>
+    public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
+    {
+        if (hitData.attackPower == 0)//Голем не подвергается действиям препятствий
+            return;
+        base.TakeDamage(hitData, ignoreInvul);
+    }
+
     /*
     /// <summary>
     /// Функция получения урона
@@ -188,6 +206,10 @@ public class GolemController : AIController
             base.BecomeStunned(_time);
     }
 
+    protected override void BecomePoisoned(float _time)
+    {
+    }
+
     #endregion //effects
 
     /// <summary>
@@ -221,7 +243,7 @@ public class GolemController : AIController
             case BehaviorEnum.patrol:
                 {
                     Vector2 direction = Vector2.right * (int)orientation;
-                    RaycastHit2D hit = Physics2D.Raycast(pos + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
+                    RaycastHit2D hit = Physics2D.Raycast(pos + sightOffset * direction + .04f * Vector2.down, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
                     if (hit)
                     {
                         if (enemies.Contains(hit.collider.gameObject.tag))
@@ -247,7 +269,7 @@ public class GolemController : AIController
             case BehaviorEnum.calm:
                 {
                     Vector2 direction = Vector3.right * (int)orientation;
-                    RaycastHit2D hit = Physics2D.Raycast(pos + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
+                    RaycastHit2D hit = Physics2D.Raycast(pos + sightOffset * direction+.04f*Vector2.down, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
                     if (hit)
                     {
                         if (enemies.Contains(hit.collider.gameObject.tag))

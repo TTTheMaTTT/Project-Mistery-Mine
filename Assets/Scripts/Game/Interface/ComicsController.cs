@@ -51,7 +51,8 @@ public class ComicsController : MonoBehaviour
     void ShowPage()
     {
         if (currentPageNumber >= comicsPages.Count)
-            SceneManager.LoadScene(nextLevelName);
+            LoadingScreenScript.instance.LoadScene(nextLevelName);
+        //SceneManager.LoadScene(nextLevelName);
         else
             StartCoroutine("PageProcess");
     }

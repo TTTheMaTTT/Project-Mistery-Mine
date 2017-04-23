@@ -138,7 +138,7 @@ public class DogController : HumanoidController
                     if (loyalty == LoyaltyEnum.ally ? !mainTarget.exists && grounded : false)
                     {
                         float sqDistance = Vector2.SqrMagnitude(beginPosition - pos);
-                        if (sqDistance > allyDistance * 1.2f && followAlly)
+                        if (followAlly)
                         {
                             if (Vector2.SqrMagnitude(beginPosition - (Vector2)prevTargetPosition) > minCellSqrMagnitude)
                             {
@@ -319,7 +319,7 @@ public class DogController : HumanoidController
 
                     if (sqDistance < waitingNearDistance)
                     {
-                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
+                        if (!wallCheck.WallInFront && !obstacleCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
                             Move((OrientationEnum)Mathf.RoundToInt(-Mathf.Sign(targetDistance.x)));
                     }
                     else if (sqDistance < waitingFarDistance)
@@ -330,7 +330,7 @@ public class DogController : HumanoidController
                     }
                     else
                     {
-                        if (!wallCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
+                        if (!wallCheck.WallInFront && !obstacleCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
                         {
                             Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
                         }
@@ -361,7 +361,7 @@ public class DogController : HumanoidController
 
                         if (Vector2.SqrMagnitude(targetDistance) > attackDistance * attackDistance)
                         {
-                            if (!wallCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
+                            if (!wallCheck.WallInFront && !obstacleCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
                             {
                                 if (Mathf.Abs(targetDistance.x) > attackDistance)
                                     Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
@@ -372,14 +372,17 @@ public class DogController : HumanoidController
                                 Turn();
                             else
                             {
-                                StopMoving();
                                 if (Vector2.SqrMagnitude(pos - mainPos) > minCellSqrMagnitude * 16f &&
                                     (Vector2.SqrMagnitude(mainPos - prevTargetPosition) > minCellSqrMagnitude || !prevTargetPosition.exists))
                                 {
                                     Waypoints = FindPath(targetPosition, maxAgressivePathDepth);
-                                    if (waypoints == null)
-                                        StopMoving();
+                                    if (waypoints != null)
+                                        return;
                                 }
+                                if (obstacleCheck.WallInFront)
+                                    Move(orientation);//Если перед персонажем стоит препятствие, но он никак не может его обойти, то он просто идёт напролом
+                                else
+                                    StopMoving();
                             }
 
                         }

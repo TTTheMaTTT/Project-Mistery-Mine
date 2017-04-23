@@ -39,19 +39,11 @@ public class IfritController : BatController
     }
 
     /// <summary>
-    /// Совершить атаку
-    /// </summary>
-    protected override void Attack()
-    {
-        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(100 * (attackParametres.preAttackTime))));
-        StartCoroutine("AttackProcess");
-    }
-
-    /// <summary>
     /// Процесс совершения атаки
     /// </summary>
     protected override IEnumerator AttackProcess()
     {
+        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(100f * (attackParametres.preAttackTime))));
         employment = Mathf.Clamp(employment - 8, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
 
@@ -75,6 +67,28 @@ public class IfritController : BatController
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    /// <param name="hitData">Данные урона</param>
+    public override void TakeDamage(HitParametres hitData)
+    {
+        if (hitData.attackPower == 0 && hitData.damageType == DamageType.Fire)//Ифрит не подвергается действия лавы или огня
+            return;
+        base.TakeDamage(hitData);
+    }
+
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    /// <param name="hitData">Данные урона</param>
+    /// <param name="ignoreInvul">Игнорирует ли прошедшая атака инвул персонажа</param>
+    public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
+    {
+        if (hitData.attackPower == 0 && hitData.damageType == DamageType.Fire)//Ифрит не подвергается действия лавы или огня
+            return;
+        base.TakeDamage(hitData, ignoreInvul);
+    }
 
     #region damageEffects
 

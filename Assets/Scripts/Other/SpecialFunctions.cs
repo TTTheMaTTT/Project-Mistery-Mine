@@ -51,6 +51,14 @@ public static class SpecialFunctions
     public static float soundVolume;//Громкость звуков
 
     /// <summary>
+    /// Получиьб название уровня
+    /// </summary>
+    public static string GetLevelName()
+    {
+        return statistics.LevelTextName;
+    }
+
+    /// <summary>
     /// Проинициализировать важные игровые объекты перед началом игры
     /// </summary>
     public static void InitializeObjects()
@@ -108,6 +116,7 @@ public static class SpecialFunctions
         _hero.Equipment = prevHero.Equipment;
         _hero.CurrentWeapon = prevHero.CurrentWeapon;
         _hero.Health = prevHero.Health;
+        _hero.MaxHealth = prevHero.MaxHealth;
         player = _hero.gameObject;
         battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
         if (CamController != null)
@@ -118,6 +127,7 @@ public static class SpecialFunctions
             _hero.SetImmobile(true);
         if (equipWindow != null)
             equipWindow.ConsiderPlayer(_hero);
+        gameController.ConsiderHero(_hero);
     }
 
     /// <summary>

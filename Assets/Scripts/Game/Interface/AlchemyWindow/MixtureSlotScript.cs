@@ -7,12 +7,18 @@ using UnityEngine.UI;
 /// <summary>
 /// Слот, в котором находится ингредиент для смешивания
 /// </summary>
-public class MixtureSlotScript : MonoBehaviour, IDropHandler
+public class MixtureSlotScript : UIElementScript, IDropHandler
 {
+
+    #region const
+
+    protected const float inactiveIntensity = 1f, activeIntensity = .8f, clickedIntensity = .6f;//Как будет подкрашиваться кнопка при различных уровнях взаимодействия с ней
+
+    #endregion const
 
     #region fields
 
-    private Image ingredientImage, buttonImage;
+    private Image ingredientImage, buttonImage, cellImage;
     private AlchemyWindow aWindow;
 
     public static MixtureSlotScript activeMixtureSlot = null;
@@ -67,12 +73,40 @@ public class MixtureSlotScript : MonoBehaviour, IDropHandler
             if (value)
             {
                 activeMixtureSlot = this;
-                buttonImage.color = new Color(1f, 1f, 0f, .4f);
+                buttonImage.color = new Color(0f, 0.67f, 0.72f, 0.5f);
             }
             else
             {
                 activeMixtureSlot = null;
                 buttonImage.color = new Color(0f, 0f, 0f, 0f);
+            }
+        }
+    }
+
+    public override UIElementStateEnum ElementState
+    {
+        get
+        {
+            return base.ElementState;
+        }
+
+        set
+        {
+            base.ElementState = value;
+            switch (value)
+            {
+                case UIElementStateEnum.inactive:
+                    cellImage.color = new Color(inactiveIntensity, inactiveIntensity, inactiveIntensity, 1f);
+                    break;
+                case UIElementStateEnum.active:
+                    cellImage.color = new Color(activeIntensity, activeIntensity, activeIntensity, 1f);
+                    break;
+                case UIElementStateEnum.clicked:
+                    cellImage.color = new Color(clickedIntensity, clickedIntensity, clickedIntensity, 1f);
+                    break;
+                default:
+                    cellImage.color = new Color(inactiveIntensity, inactiveIntensity, inactiveIntensity, 1f);
+                    break;
             }
         }
     }
@@ -87,6 +121,8 @@ public class MixtureSlotScript : MonoBehaviour, IDropHandler
         aWindow = _aWindow;
         ingredientImage = transform.parent.FindChild("IngredientImage").GetComponent<Image>();
         buttonImage = GetComponent<Image>();
+        GetComponent<Button>().enabled = false;
+        cellImage = transform.parent.GetComponent<Image>();
         SetActive(false);
     }
 
@@ -100,9 +136,19 @@ public class MixtureSlotScript : MonoBehaviour, IDropHandler
     }
 
     /// <summary>
+    /// Активировать данную кнопку
+    /// </summary>
+    public override void Activate()
+    {
+        base.Activate();
+        ActivateMixtureSlot();
+        SetActive();
+    }
+
+    /// <summary>
     /// Включить/выключить режим выбора ингредиента
     /// </summary>
-    public void SetActive()
+    public void ActivateMixtureSlot()
     {
         Activated = !activated;
         if (activated && IngredientSlotScript.activeIngredientSlot)

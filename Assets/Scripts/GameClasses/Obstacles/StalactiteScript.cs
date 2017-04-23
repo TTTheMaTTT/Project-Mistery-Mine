@@ -76,7 +76,8 @@ public class StalactiteScript : MonoBehaviour, IMechanism, IInteractive
 
         if (fall)
             return;
-        stalactiteBase.SetParent(null);
+        if (stalactiteBase!=null)
+            stalactiteBase.SetParent(null);
 
         rigid.isKinematic = false;
         hitBox.SetHitBox(hitData);
@@ -152,6 +153,7 @@ public class StalactiteScript : MonoBehaviour, IMechanism, IInteractive
             sRenderer.GetPropertyBlock(mpb);
             mpb.SetFloat("_Outline", _outline ? 1f : 0);
             mpb.SetColor("_OutlineColor", outlineColor);
+            mpb.SetFloat("_OutlineWidth", .08f / ((Vector2)transform.lossyScale).magnitude);
             sRenderer.SetPropertyBlock(mpb);
         }
     }

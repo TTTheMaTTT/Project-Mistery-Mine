@@ -105,11 +105,6 @@ public class BatBossController: BossController
 
     #endregion //parametres
 
-    protected override void Update()
-    {
-        base.Update();
-    }
-
     /// <summary>
     /// Инициализация
     /// </summary>
@@ -300,6 +295,7 @@ public class BatBossController: BossController
         StartCoroutine("AttackShockProcess");
         balance = usualBalance;
         inAttack = false;
+        hitBox.IgnoreInvul = false;
     }
 
     /// <summary>
@@ -330,7 +326,9 @@ public class BatBossController: BossController
         employment = Mathf.Clamp(employment - 4, 0, maxEmployment);
         yield return new WaitForSeconds(_attackParametres.preAttackTime);
         hitBox.SetHitBox(new HitParametres(_attackParametres));
+        hitBox.IgnoreInvul = true;
         yield return new WaitForSeconds(_attackParametres.actTime + _attackParametres.endAttackTime);
+        hitBox.IgnoreInvul = false;
         employment = Mathf.Clamp(employment + 4, 0, maxEmployment);
         balance = usualBalance;
     }
@@ -472,7 +470,7 @@ public class BatBossController: BossController
             StopSpecialAttack();
             employment = maxEmployment;
             damageCount++;
-            if (damageCount >= 5)
+            if (damageCount >= 4)
             {
                 Instantiate(heartDrop, transform.position, transform.rotation);
                 damageCount = 0;

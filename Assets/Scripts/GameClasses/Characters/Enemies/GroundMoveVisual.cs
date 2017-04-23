@@ -118,12 +118,12 @@ public class GroundMoveVisual : CharacterVisual
         {
             return;
         }
-        anim.Play("Idle");
+        //anim.Play("Idle");
         if (id == "")
             anim.Play("Attack");
         else
             anim.Play(id);
-        StartVisualRoutine(5, argument != 0? argument/10f : attackTime);
+        StartVisualRoutine(5, argument != 0? argument/100f : attackTime);
     }
 
 }

@@ -91,10 +91,9 @@ public class HitBox : HitBoxController
         if (!immobile)
             transform.localPosition = hitData.hitPosition;
         col.size = hitData.hitSize;
-        if (hitData.actTime != -1f)
-        {
-            StartCoroutine(HitProcess(hitData.actTime));
-        }
+        StopCoroutine("HitProcess");
+        if (hitData.actTime != -1f) 
+            StartCoroutine("HitProcess",hitData.actTime);
     }
 
     /// <summary>
@@ -162,7 +161,7 @@ public class HitBox : HitBoxController
                             target.TakeDamage(hitData, true);
                         else
                             target.TakeDamage(hitData);
-                        OnAttack(new HitEventArgs(target.GetHealth()-prevHP));
+                        OnAttack(new HitEventArgs(target.GetHealth()-prevHP, other.gameObject));
                         return;
                     }
                     if (!list.Contains(other.gameObject))
@@ -186,7 +185,7 @@ public class HitBox : HitBoxController
                             target.TakeDamage(hitData, true);
                         else
                             target.TakeDamage(hitData);
-                        OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
+                        OnAttack(new HitEventArgs(target.GetHealth() - prevHP, other.gameObject));
                     }
                 }
             }
@@ -316,6 +315,16 @@ public struct HitParametres
     /// Возвращает всё время, необходимое для совершения атаки
     /// </summary>
     public float wholeAttackTime { get { return preAttackTime + actTime + endAttackTime; } }
+
+    /// <summary>
+    /// Возвращает сумму подготовки к атаке и выхода из атакующего состояния
+    /// </summary>
+    public float prepareAttackTime { get { return preAttackTime + endAttackTime; } }
+
+    /// <summary>
+    /// Возвращает время атаки без времени подготовки
+    /// </summary>
+    public float withoutPrepareAttackTime { get { return actTime + endAttackTime; } }
 
 }
 

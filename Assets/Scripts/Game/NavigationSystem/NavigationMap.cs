@@ -387,7 +387,8 @@ public class NavigationBunchedMap: NavigationMap
             for (int i = 0; i < _path.Count - 2; i++)
             {
                 ComplexNavigationCell checkPoint1 = (ComplexNavigationCell)_path[i], checkPoint2 = (ComplexNavigationCell)_path[i + 1];
-                if (checkPoint1.cellType == NavCellTypeEnum.jump || checkPoint1.cellType == NavCellTypeEnum.movPlatform)
+                NeighborCellStruct neighbConnection = checkPoint1.GetNeighbor(checkPoint2.groupNumb, checkPoint2.cellNumb), prevNeighbConnection;
+                if (neighbConnection.connectionType == NavCellTypeEnum.jump || checkPoint1.cellType == NavCellTypeEnum.movPlatform)
                     continue;
                 if (checkPoint1.cellType != checkPoint2.cellType)
                     continue;
@@ -395,8 +396,10 @@ public class NavigationBunchedMap: NavigationMap
                 Vector2 movDirection2 = Vector2.zero;
                 int index = i + 2;
                 ComplexNavigationCell checkPoint3 = (ComplexNavigationCell)_path[index];
+                prevNeighbConnection = neighbConnection;
+                neighbConnection = checkPoint2.GetNeighbor(checkPoint3.groupNumb, checkPoint3.cellNumb);
                 while (Vector2.SqrMagnitude(movDirection1 - (checkPoint3.cellPosition - checkPoint2.cellPosition).normalized) < .01f &&
-                       checkPoint1.cellType == checkPoint3.cellType &&
+                       (checkPoint1.cellType == checkPoint3.cellType? true : prevNeighbConnection.connectionType==neighbConnection.connectionType) &&
                        index < _path.Count)
                 {
                     index++;
@@ -404,12 +407,31 @@ public class NavigationBunchedMap: NavigationMap
                     {
                         checkPoint2 = checkPoint3;
                         checkPoint3 = (ComplexNavigationCell)_path[index];
+                        prevNeighbConnection = neighbConnection;
+                        neighbConnection = checkPoint2.GetNeighbor(checkPoint3.groupNumb, checkPoint3.cellNumb);
                     }
                 }
                 for (int j = i + 1; j < index - 1; j++)
                 {
                     _path.RemoveAt(i + 1);
                 }
+            }
+        }
+
+        //Рассмотрим первые 2 точки. Чтобы персонаж не возвращался назад к первой точке, когда вторая точка в другой стороне движения - удалим первую точку (если она не имеет значения)
+        if (_path.Count >= 2)
+        {
+            ComplexNavigationCell checkPoint1 = (ComplexNavigationCell)_path[0], checkPoint2 = (ComplexNavigationCell)_path[1];
+            NeighborCellStruct neighbInfo = checkPoint1.GetNeighbor(checkPoint2.groupNumb, checkPoint2.cellNumb);
+            if (neighbInfo.groupNumb == -1)
+            {
+                if (checkPoint1.cellType != NavCellTypeEnum.ladder)
+                    _path.RemoveAt(0);
+            }
+            else
+            {
+                if (neighbInfo.connectionType == NavCellTypeEnum.usual)
+                    _path.RemoveAt(0);
             }
         }
 

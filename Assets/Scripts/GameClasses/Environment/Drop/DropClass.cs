@@ -72,6 +72,12 @@ public class DropClass : MonoBehaviour, IInteractive, IHaveStory
     {
         dropped = false;
         sRenderer = GetComponent<SpriteRenderer>();
+        if (sRenderer == null)
+        {
+            Transform visual = transform.FindChild("Visual");
+            if (visual != null)
+                sRenderer = visual.GetComponent<SpriteRenderer>();
+        }
         yield return new WaitForSeconds(dropTime);
         dropped = true;
     }
@@ -106,6 +112,7 @@ public class DropClass : MonoBehaviour, IInteractive, IHaveStory
             sRenderer.GetPropertyBlock(mpb);
             mpb.SetFloat("_Outline", _outline ? 1f : 0);
             mpb.SetColor("_OutlineColor", outlineColor);
+            mpb.SetFloat("_OutlineWidth", .08f / ((Vector2)sRenderer.transform.lossyScale).magnitude);
             sRenderer.SetPropertyBlock(mpb);
         }
     }

@@ -11,6 +11,7 @@ public class SpiritVisual: CharacterVisual
     #region consts
 
     protected const float smallFlashTime = 1f, bigFlashTime=2f;
+    protected const float enhancedProcessTime = 1f;//Время перехода в усиленное состояние
 
     #endregion //consts
 
@@ -29,6 +30,9 @@ public class SpiritVisual: CharacterVisual
     [SerializeField] protected float xOffset = -1f, yOffset = 0f;//Смещение
     [SerializeField] protected float period=5f;//Период синусоидального движения
     [SerializeField] protected float amplitude = .1f;//Амплитуда синусоидального движения
+
+    protected bool enhanced = false;//Находится ли дух в усиленном состоянии?
+    public bool Enhanced { set { enhanced = value; } }
 
     #endregion //parametres
 
@@ -50,6 +54,9 @@ public class SpiritVisual: CharacterVisual
     {
         base.FormDictionaries();
         visualFunctions.Add("flash", Flash);
+        visualFunctions.Add("idle", Idle);
+        visualFunctions.Add("charge", Charge);
+        visualFunctions.Add("setEnhanced", SetEnhanced);
     }
 
     /// <summary>
@@ -62,10 +69,46 @@ public class SpiritVisual: CharacterVisual
         StartCoroutine("FlashProcess", id == "Small" ? smallFlashTime : bigFlashTime);
     }
 
+
     protected virtual IEnumerator FlashProcess(float _flashTime)
     {
         yield return new WaitForSeconds(_flashTime);
-        anim.Play("Idle");
+        anim.Play(enhanced? "Enhanced":"Idle");
+    }
+
+    /// <summary>
+    /// Перейти в состояние стояния
+    /// </summary>
+    protected virtual void Idle(string id, int argument)
+    {
+        anim.Play(enhanced ? "Enhanced" : "Idle");
+    }
+
+    /// <summary>
+    /// Перейти в состояние заряда магической энергии
+    /// </summary>
+    protected virtual void Charge(string id, int argument)
+    {
+        StartCoroutine("ChargeProcess");
+    }
+
+    IEnumerator ChargeProcess()
+    {
+        yield return new WaitForSeconds(1f);
+        anim.Play("Charge");
+    }
+
+    /// <summary>
+    /// Перейти в усиленное состояние
+    /// </summary>
+    protected virtual void SetEnhanced(string id, int argument)
+    {
+        enhanced = argument>0;
+        if (id == "process")
+        {
+            anim.Play(enhanced?"BecomeEnhanced":"BecomeUsual");
+            StartVisualRoutine(5, enhancedProcessTime);
+        }
     }
 
 }

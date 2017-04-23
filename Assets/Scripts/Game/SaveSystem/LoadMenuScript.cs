@@ -13,7 +13,7 @@ public class LoadMenuScript : MonoBehaviour
 
     #region consts
 
-    private const string firstLevelName = "BeginComics";
+    private const string firstLevelName = "DM_lvl4";
 
     #endregion //consts
 
@@ -109,8 +109,7 @@ public class LoadMenuScript : MonoBehaviour
         PlayerPrefs.SetInt("Profile Number", _profileNumber);
         PlayerPrefs.SetFloat("Hero Health", 12f);
 
-        SceneManager.LoadScene(savesInfo.saves[_profileNumber].loadSceneName);
-
+        LoadingScreenScript.instance.LoadScene(savesInfo.saves[_profileNumber].loadSceneName);
 
     }
 

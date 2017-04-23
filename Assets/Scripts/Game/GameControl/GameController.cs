@@ -26,6 +26,8 @@ public class GameController : MonoBehaviour
 
     #endregion //gameEffectConsts
 
+    protected const float nextLevelTime = 2.1f;//Время, за которое происходит переход на следующий уровень
+
     #endregion //consts
 
     #region dictionaries
@@ -79,7 +81,8 @@ public class GameController : MonoBehaviour
     [SerializeField]private GameObject collectorArrow;//Стрелка компаса коллекционера
 
     private AudioSource ambientSource, musicSource, soundSource;//Источники звуков окружающего мира и музыки, а также источник игровых звуков
-    [SerializeField]private List<AudioClip> ambientClips, musicClips, soundClips;//Аудиоклипы, ответственные за создание звуков окружающего мира и за музыкальные темы игры, а также игровые звуки
+    [SerializeField]
+    private List<AudioClip> ambientClips = new List<AudioClip>(), musicClips = new List<AudioClip>(), soundClips = new List<AudioClip>();
 
     #region saveSystem
 
@@ -125,7 +128,7 @@ public class GameController : MonoBehaviour
 
     protected void Update()
     {
-        if (Input.GetButtonDown("Menu") || JoystickController.instance.GetButtonDown(JButton.button0))
+        if (Input.GetButtonDown("Menu"))
             gameMenu.ChangeGameMod();
         if (Input.GetKeyDown(KeyCode.I))
             SpecialFunctions.gameUI.ChangeVisibility();
@@ -335,6 +338,7 @@ public class GameController : MonoBehaviour
     {
         SpecialFunctions.battleField.KillAllies();//Все союзники героя погибают (ввиду их временного характера)
         Hero.RestoreStats();//При сохранении герой восстанавливает свои характеристики (восстановление здоровья, сброс отрицательных боевых эффектов)
+        Hero.ResetAdditionalWeapon();//При сохранении идёт сброс доп оружия
         Serializator.SaveXml(StoreGameData(generally, checkpointNumb), datapath + profileNumber.ToString()+".xml");
         SavesInfo savesInfo = Serializator.DeXmlSavesInfo(savesInfoPath);
         SaveInfo sInfo = savesInfo.saves[profileNumber];
@@ -942,6 +946,7 @@ public class GameController : MonoBehaviour
     /// <param name="general">Информация должна занестись в данные уровня (false) или в данные игры(true)</param>
     public void ChangeInformationAboutActiveWeapon(bool general, string weaponName)
     {
+        Hero.ResetAdditionalWeapon();//При сохранении идёт сброс доп оружия
         GameData gData = Serializator.DeXml(datapath + profileNumber.ToString() + ".xml");
         if (gData!=null)
         {
@@ -959,6 +964,7 @@ public class GameController : MonoBehaviour
     /// <param name="general">Информация должна занестись в данные уровня (false) или в данные игры(true)</param>
     public void ChangeInformationAboutEquipment(bool general)
     {
+        Hero.ResetAdditionalWeapon();//При сохранении идёт сброс доп оружия
         GameData gData = Serializator.DeXml(datapath + profileNumber.ToString() + ".xml");
         if (gData != null)
         {
@@ -1335,6 +1341,7 @@ public class GameController : MonoBehaviour
             return;
         WeaponClass _weapon = Hero.CurrentWeapon;
         DamageType newType = _weapon.attackType;
+        string newTypeName = "";
         DamageType dType = ((AIController)_char).AttackParametres.damageType;
         if (!(_char is AIController))
             return;
@@ -1343,21 +1350,25 @@ public class GameController : MonoBehaviour
             case DamageType.Fire:
                 {
                     newType = DamageType.Water;
+                    newTypeName = "Water";
                     break;
                 }
             case DamageType.Cold:
                 {
                     newType = DamageType.Fire;
+                    newTypeName = "Fire";
                     break;
                 }
             case DamageType.Water:
                 {
                     newType = DamageType.Fire;
+                    newTypeName = "Fire";
                     break;
                 }
             case DamageType.Poison:
                 {
                     newType = DamageType.Crushing;
+                    newTypeName = "Crushing";
                     break;
                 }
             default:
@@ -1366,7 +1377,8 @@ public class GameController : MonoBehaviour
         if (newType != _weapon.attackType)
         {
             _weapon.attackType = newType;
-            Hero.AddBuff(new BuffClass("AncestorsRevenge", Time.fixedTime, ancestorsRevengeTime));
+            Hero.AddBuff(new BuffClass("AncestorsRevenge", Time.time, ancestorsRevengeTime));
+            Hero.SpawnEffect("AncestorsRevenge" + newTypeName);
             activeGameEffects.Add("AncestorsRevenge");
             StartCoroutine("AncestorsRevengeProcess");
         }
@@ -1417,8 +1429,9 @@ public class GameController : MonoBehaviour
         if (!(_char is AIController) || activeGameEffects.Contains("TribalLeader"))
             return;
         ((AIController)_char).Loyalty = LoyaltyEnum.ally;
-        _char.AddBuff(new BuffClass("TribalLeader", Time.fixedTime, tribalLeaderTime));
-        Hero.AddBuff(new BuffClass("TribalLeader", Time.fixedTime, tribalLeaderTime));
+        _char.AddBuff(new BuffClass("TribalLeader", Time.time, tribalLeaderTime));
+        _char.SpawnEffect("TribalLeader");
+        Hero.AddBuff(new BuffClass("TribalLeader", Time.time, tribalLeaderTime));
         activeGameEffects.Add("TribalLeader");
         StartCoroutine("TribalLeaderProcess",_char);
     }
@@ -1476,7 +1489,7 @@ public class GameController : MonoBehaviour
         {
             StopCollectorProcess(0,"");
         }
-        Hero.AddBuff(new BuffClass("TreasureHunter", Time.fixedTime,treasureHunterTime));
+        Hero.AddBuff(new BuffClass("TreasureHunter", Time.time,treasureHunterTime));
         activeGameEffects.Add("TreasureHunter");
         GameObject _treasureHunterArrow = Instantiate(treasureHunterArrow, Hero.transform.position + Vector3.up * compassArrowOffsetY, Quaternion.identity, hero.transform) as GameObject;
         TreasureHuntArrow thArrow = _treasureHunterArrow.GetComponent<TreasureHuntArrow>();
@@ -1507,7 +1520,7 @@ public class GameController : MonoBehaviour
         {
             StopTreasureHunt(0,"");
         }
-        Hero.AddBuff(new BuffClass("Collector", Time.fixedTime, collectorTime));
+        Hero.AddBuff(new BuffClass("Collector", Time.time, collectorTime));
         activeGameEffects.Add("Collector");
         GameObject _collectorArrow = Instantiate(collectorArrow, Hero.transform.position + Vector3.up * compassArrowOffsetY, Quaternion.identity, hero.transform) as GameObject;
         CollectorArrow colArrow = _collectorArrow.GetComponent<CollectorArrow>();
@@ -1545,19 +1558,12 @@ public class GameController : MonoBehaviour
     {
         SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
         int prevIntensity = Mathf.RoundToInt(lightManager.intensity * 100f);
-        Hero.AddBuff(new BuffClass("AncientDarkness", Time.fixedTime, ancientDarknessTime, prevIntensity, (lightManager.HDRRatio > .1f ? "changed" : "")));
+        Hero.AddBuff(new BuffClass("AncientDarkness", Time.time, ancientDarknessTime, prevIntensity, (lightManager.HDRRatio > .1f ? "changed" : "")));
         activeGameEffects.Add("AncientDarkness");
-        lightManager.intensity = Mathf.Clamp(lightManager.intensity - 1f, 0f, 2f);
-        bool changedHDRRatio = false;
-        if (lightManager.HDRRatio > 0.1f)
-        {
-            changedHDRRatio = true;
-            lightManager.HDRRatio -= .1f;
-        }
+        bool changedHDRRatio = lightManager.HDRRatio > 0.1f;
+        SpecialFunctions.CamController.StartLightTransition(Mathf.Clamp(lightManager.intensity - 1f, 0f, 2f), changedHDRRatio ? lightManager.HDRRatio - .1f : lightManager.HDRRatio);
         yield return new WaitForSeconds(ancientDarknessTime);
-        lightManager.intensity = prevIntensity/100f;
-        if (changedHDRRatio)
-            lightManager.HDRRatio += .1f;
+        SpecialFunctions.CamController.StartLightTransition(prevIntensity / 100f, changedHDRRatio ? lightManager.HDRRatio + .1f : lightManager.HDRRatio);
         hero.RemoveBuff("AncientDarkness");
         activeGameEffects.Remove("AncientDarkness");
     }
@@ -1571,9 +1577,7 @@ public class GameController : MonoBehaviour
             return;
         StopCoroutine("AncientDarknessProcess");
         SpriteLightKitImageEffect lightManager = SpecialFunctions.CamController.GetComponent<SpriteLightKitImageEffect>();
-        lightManager.intensity = argument / 100f;
-        if (id == "changed")
-            lightManager.HDRRatio += .1f;
+        SpecialFunctions.CamController.StartLightTransition(argument / 100f, id == "changed" ? lightManager.HDRRatio + .1f : lightManager.HDRRatio);
         hero.RemoveBuff("AncientDarkness");
         activeGameEffects.Remove("AncientDarkness");
     }
@@ -1614,15 +1618,41 @@ public class GameController : MonoBehaviour
     /// Функция завершения данного уровня
     /// </summary>
     /// <param name="nextLevelName">Название следующего уровня</param>
-    public void CompleteLevel(string nextLevelName)
+    /// <param name="withCompleteLevelScreen">Отображать ли экран конца уровня?</param> 
+    /// <param name="checkpointNumber">Номер чекпоинта, с которого начнётся следующий уровень</param>
+    public void CompleteLevel(string nextLevelName, bool withCompleteLevelScreen, int checkpointNumber=0)
     {
-        SpecialFunctions.StartStoryEvent(this, EndGameEvent, new StoryEventArgs());
-        SpecialFunctions.levelEnd = true;
-        GameStatistics statistics = SpecialFunctions.statistics;
-        List<ItemCollection> itemCollections = statistics != null ? statistics.ItemCollections : null;
-        string sceneName = SceneManager.GetActiveScene().name;
-        ItemCollection _collection = itemCollections != null ? itemCollections.Find(x=>sceneName.Contains(x.settingName)):null;
-        levelCompleteScreen.SetLevelCompleteScreen(nextLevelName, secretsFoundNumber, secretsTotalNumber, _collection);
+        SpecialFunctions.gameController.RemoveHeroDeathLevelEnd();
+        PlayerPrefs.SetInt("Checkpoint Number", checkpointNumber);
+        SpecialFunctions.gameController.SaveGame(checkpointNumber, true, nextLevelName);
+        PlayerPrefs.SetFloat("Hero Health", SpecialFunctions.Player.GetComponent<HeroController>().MaxHealth);
+        SpecialFunctions.SetFade(true);
+        StartCoroutine(CompleteLevelProcess(nextLevelName, withCompleteLevelScreen));
+    }
+
+    /// <summary>
+    /// Процесс успешного завершения данного уровня
+    /// </summary>
+    /// <param name="nextLevelName">Название следующего уровня</param>
+    /// <param name="withCompleteLevelScreen">Отображать ли экран конца уровня</param>
+    IEnumerator CompleteLevelProcess(string nextLevelName, bool withCompleteLevelScreen)
+    {
+        yield return new WaitForSeconds(nextLevelTime);
+        if (nextLevelName != string.Empty)
+        {
+            SpecialFunctions.StartStoryEvent(this, EndGameEvent, new StoryEventArgs());
+            SpecialFunctions.levelEnd = true;
+            GameStatistics statistics = SpecialFunctions.statistics;
+            List<ItemCollection> itemCollections = statistics != null ? statistics.ItemCollections : null;
+            string sceneName = SceneManager.GetActiveScene().name;
+            ItemCollection _collection = itemCollections != null ? itemCollections.Find(x => sceneName.Contains(x.settingName)) : null;
+            if (withCompleteLevelScreen)
+                levelCompleteScreen.SetLevelCompleteScreen(nextLevelName, secretsFoundNumber, secretsTotalNumber, _collection);
+            else
+                LoadingScreenScript.instance.LoadScene(nextLevelName);
+        }
+        else
+            Application.Quit();
     }
 
     /// <summary>
@@ -1644,7 +1674,7 @@ public class GameController : MonoBehaviour
     }
 
     /// <summary>
-    /// Сделать так, чтобы при смерти героя уровень заканчивался
+    /// Сделать так, чтобы при смерти героя уровень не заканчивался
     /// </summary>
     public void RemoveHeroDeathLevelEnd()
     {
@@ -1744,17 +1774,23 @@ public class GameController : MonoBehaviour
         EndLevel();
     }
 
+    /// <summary>
+    /// Завершения процесса игры и рестарт
+    /// </summary>
     public void EndLevel()
     {
         StartCoroutine(DeathProcess());
     }
+
+
 
     IEnumerator DeathProcess()
     {
         SpecialFunctions.SetFade(true);
         PlayerPrefs.SetFloat("Hero Health", hero.MaxHealth);
         yield return new WaitForSeconds(deathTime);
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        LoadingScreenScript.instance.LoadScene(SceneManager.GetActiveScene().name);
+        //SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     /// <summary>

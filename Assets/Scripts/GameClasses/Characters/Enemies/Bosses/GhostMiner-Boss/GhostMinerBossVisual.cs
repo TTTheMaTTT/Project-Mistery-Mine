@@ -49,6 +49,9 @@ public class GhostMinerBossVisual : GroundMoveVisual
         StartVisualRoutine(5, argument/100f);
     }
 
+    /// <summary>
+    /// Анимировать горизонтальную атаку
+    /// </summary>
     protected virtual void HorizontalAttack(string id, int argument)
     {
         anim.Play("HorizontalAttack");

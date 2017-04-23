@@ -36,7 +36,7 @@ public class BatHeroController : HeroController
 
         float jVertValue = JoystickController.instance.GetAxis(JAxis.Vertical);
 
-        if (Input.GetButton("Horizontal") || Input.GetButton("Vertical") || Mathf.Abs(jVertValue) > .1f)
+        if (Input.GetButton("Horizontal") || Input.GetButton("Vertical") || Mathf.Abs(jVertValue) > .4f || Mathf.Abs(jHorValue) > .4f)
         {
             float value = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
             Move(value > 0f ? OrientationEnum.right : OrientationEnum.left);
