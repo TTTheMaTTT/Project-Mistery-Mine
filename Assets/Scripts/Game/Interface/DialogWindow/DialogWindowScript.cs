@@ -89,10 +89,10 @@ public class DialogWindowScript : MonoBehaviour
             if (waitingForInput)
             {
                 Event e = Event.current;
-                if ((Input.anyKeyDown || JoystickController.instance.GetButtonDown(JButton.button2))?
-                    !Input.GetButtonDown("Horizontal") && Mathf.Abs(JoystickController.instance.GetAxis(JAxis.Horizontal))<.1f &&
-                    !Input.GetButtonDown("Vertical") && Mathf.Abs(JoystickController.instance.GetAxis(JAxis.Vertical)) < .1f &&
-                    !Input.GetButtonDown("Cancel") && !JoystickController.instance.GetButtonDown(JButton.button0) && !noInput && InterfaceWindow.openedWindow == null : false)
+                if ((Input.anyKeyDown || InputCollection.instance.GetButtonDown("Submit"))?
+                    !InputCollection.instance.GetButtonDown("Horizontal") &&
+                    !InputCollection.instance.GetButtonDown("Vertical") &&
+                    !InputCollection.instance.GetButtonDown("Menu") && !noInput && InterfaceWindow.openedWindow == null : false)
                     NextSpeech();
             }
         }

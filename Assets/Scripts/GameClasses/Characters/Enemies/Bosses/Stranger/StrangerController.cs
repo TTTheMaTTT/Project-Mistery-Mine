@@ -452,6 +452,7 @@ public class StrangerController : BossController
         {
             missileHitBox.SetEnemies(enemies);
             missileHitBox.SetHitBox(new HitParametres(magicWaveAttackParametres));
+            missileHitBox.IgnoreInvul = true;
             missileHitBox.allyHitBox = false;
         }
 
@@ -468,6 +469,7 @@ public class StrangerController : BossController
             {
                 missileHitBox.SetEnemies(enemies);
                 missileHitBox.SetHitBox(new HitParametres(magicWaveAttackParametres));
+                missileHitBox.IgnoreInvul = true;
                 missileHitBox.allyHitBox = false;
             }
         }
@@ -654,14 +656,10 @@ public class StrangerController : BossController
     #region damageEffects
 
     /// <summary>
-    /// Оглушить
+    /// Оглушить незнакомца невозможно
     /// </summary>
     protected override void BecomeStunned(float _time)
     {
-        if (GetBuff("StunnedProcess") != null)//Если на персонаже уже висит стан, то нельзя навесить ещё один
-            return;
-        StopMoving();
-        StartCoroutine("StunnedProcess", _time == 0 ? stunTime : _time);
     }
 
     /// <summary>

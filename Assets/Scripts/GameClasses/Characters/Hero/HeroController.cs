@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using InControl;
 
 /// <summary>
 /// Контроллер, управляющий ГГ
@@ -156,7 +157,6 @@ public class HeroController : CharacterController
     protected AttackTypeEnum fightingMode;
     public bool attacking = false;
     protected float chargeBeginTime = 0f;
-    protected bool k;
 
     #region effectParametres
 
@@ -184,8 +184,6 @@ public class HeroController : CharacterController
 
     protected virtual void Update()
     {
-        if (Input.GetKeyDown(KeyCode.K))
-            k = !k;
 
         if (!immobile)
         {
@@ -195,20 +193,12 @@ public class HeroController : CharacterController
             {
                 if (employment > 6)
                 {
-                    float horValue = Input.GetAxis("Horizontal");
-                    float jHorValue = JoystickController.instance.GetAxis(JAxis.Horizontal);
-                    if (Input.GetButton("Horizontal") || Mathf.Abs(jHorValue) > .4f)
+                    if (InputCollection.instance.GetButton("Horizontal"))
                     {
-                        float value = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
-                        Move(value > 0f ? OrientationEnum.right : OrientationEnum.left);
+                        Move(InputCollection.instance.GetAxis("Horizontal") > 0f ? OrientationEnum.right : OrientationEnum.left);
                     }
 
-                    if (k)
-                    {
-                        Move(orientation);
-                    }
-
-                    if (Input.GetButtonDown("Jump"))
+                    if (InputCollection.instance.GetButtonDown("Jump"))
                     {
                         jumpInput = 0;
                         if (groundState == GroundStateEnum.grounded && !jumping)
@@ -219,23 +209,22 @@ public class HeroController : CharacterController
 
                     //if (Input.GetButton("Jump"))
                     //{
-                        //if (jumpInput)
-                        //rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
+                    //if (jumpInput)
+                    //rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
                     //}
 
-                    if (Input.GetButtonUp("Jump"))
-                    {
+                    if (InputCollection.instance.GetButtonUp("Jump"))
                         jumpInput = 0;
-                    }
+                    
 
-                    if (Input.GetAxis("Vertical") > .3f || JoystickController.instance.GetAxis(JAxis.Vertical)>.6f)
+                    if (InputCollection.instance.GetAxis("Vertical") > .3f)
                     {
                         LadderOn();
                     }
 
                     if (employment > 7)
                     {
-                        if (Input.GetButtonDown("Attack"))
+                        if (InputCollection.instance.GetButtonDown("Attack"))
                         {
                             if (groundState != GroundStateEnum.crouching)
                             {
@@ -250,17 +239,17 @@ public class HeroController : CharacterController
                                 }
                             }
                         }
-                        else if (Input.GetButtonDown("Flip"))
+                        else if (InputCollection.instance.GetButtonDown("Flip"))
                             if ((rigid.velocity.x * (int)orientation > .1f) && (groundState == GroundStateEnum.grounded) && (employment > 8))
                                 Flip();
-                        if (Input.GetButtonDown("ChangeInteraction"))
+                        if (InputCollection.instance.GetButtonDown("ChangeInteraction"))
                             interactor.ChangeInteraction();
                     }
                 }
 
                 if (currentWeapon.chargeable)
                 {
-                    if ((Input.GetButtonUp("Attack")) && chargeBeginTime>0f)
+                    if ((InputCollection.instance.GetButtonUp("Attack")) && chargeBeginTime>0f)
                     {
                         StopCharge();
                     }
@@ -273,13 +262,12 @@ public class HeroController : CharacterController
 
             else
             {
-                float vertValue = Input.GetAxis("Vertical");
-                float jVertValue = JoystickController.instance.GetAxis(JAxis.Vertical);
-                if ( Input.GetButton("Vertical") || Mathf.Abs(jVertValue)>.4f)
-                    LadderMove(Mathf.Abs(vertValue)>Mathf.Abs(jVertValue)? vertValue: jVertValue);
+
+                if (Mathf.Abs(InputCollection.instance.GetAxis("Vertical"))>.3f)
+                    LadderMove(InputCollection.instance.GetAxis("Vertical"));
                 else
                     StopLadderMoving();
-                if (Input.GetButtonDown("Jump"))
+                if (InputCollection.instance.GetButtonDown("Jump"))
                 {
                     LadderOff();
                     rigid.AddForce(new Vector2(0f, jumpForce / 2));
@@ -289,7 +277,7 @@ public class HeroController : CharacterController
 
             #endregion //ladderMovement
 
-            if (Input.GetButtonDown("ChangeWeapon")? additionalWeapon != null : false)
+            if (InputCollection.instance.GetButtonDown("ChangeWeapon")? additionalWeapon != null : false)
             {
                 StopAttack();
                 WeaponClass _weapon = currentWeapon;
@@ -329,7 +317,6 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Initialize()
     {
-        k = false;
         base.Initialize();
         indicators = transform.FindChild("Indicators");
         waterCheck = indicators.FindChild("WaterCheck");
@@ -415,7 +402,7 @@ public class HeroController : CharacterController
 
         if (onLadder)
         {
-            if (Input.GetAxis("Vertical") < -.2f || JoystickController.instance.GetAxis(JAxis.Vertical)<-.2f ? 
+            if (InputCollection.instance.GetAxis("Vertical") < -.2f ? 
                 !Physics2D.OverlapCircle(transform.position - transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")):false)
             {
                 LadderOff();
@@ -478,13 +465,8 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        float horValue = Input.GetAxis("Horizontal");
-        float jHorValue = JoystickController.instance.GetAxis(JAxis.Horizontal);
-        float value = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
-        if (k)
-            value = (int)orientation;
         bool crouching = (groundState == GroundStateEnum.crouching);
-        rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : value * speed*speedCoof, rigid.velocity.y);
+        rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : InputCollection.instance.GetAxis("Horizontal") * speed*speedCoof, rigid.velocity.y);
         if (orientation != _orientation)
         {
             Turn(_orientation);

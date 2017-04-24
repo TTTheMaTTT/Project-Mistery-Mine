@@ -129,11 +129,9 @@ public class SpiderHeroController : HeroController
         if (employment <= 6)
             goto analyseRegion;
 
-        float horValue = Input.GetAxis("Horizontal");
-        float jHorValue = JoystickController.instance.GetAxis(JAxis.Horizontal);
-        if (Input.GetButton("Horizontal") || Mathf.Abs(jHorValue) > .4f)
+        if (InputCollection.instance.GetButton("Horizontal"))
         {
-            float value = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
+            float value = InputCollection.instance.GetAxis("Horizontal");
             if (moveDirection.x >= moveDirection.y - .1f)
                 Move(value);
             if (nextSurface.exists ? nextSurface.normal.y > .1f || nextSurface.normal.y < -.8f : false)
@@ -150,11 +148,9 @@ public class SpiderHeroController : HeroController
             //StopCatchingWall();//Если игрок не зажимает клавишу движения, то он не сможет закрепиться за отвесную стену
         }
 
-        float vertValue = Input.GetAxis("Vertical");
-        float jVertValue = JoystickController.instance.GetAxis(JAxis.Vertical);
-        if (Input.GetButton("Vertical") || Mathf.Abs(jVertValue) > .4f)
+        if (InputCollection.instance.GetButton("Vertical"))
         {
-            float value = Mathf.Abs(vertValue) > Mathf.Abs(jVertValue) ? vertValue : jVertValue;
+            float value = InputCollection.instance.GetAxis("Vertical");
             if (moveDirection.y > moveDirection.x - .1f)
                 Move(value);
             if (nextSurface.exists ? nextSurface.normal.y < .1f && nextSurface.normal.y > -.8f : false)
@@ -167,7 +163,7 @@ public class SpiderHeroController : HeroController
         else if (moveDirection.y > moveDirection.x - .1f)
             StopMoving();
 
-        if (Input.GetButtonDown("Jump") || JoystickController.instance.GetButtonDown(JButton.button2))
+        if (InputCollection.instance.GetButtonDown("Jump"))
         {
             jumpInput = 0;
             if (groundState == GroundStateEnum.grounded && !jumping)
@@ -176,12 +172,12 @@ public class SpiderHeroController : HeroController
             }
         }
 
-        if (Input.GetButtonUp("Jump") || JoystickController.instance.GetButtonUp(JButton.button2))
+        if (InputCollection.instance.GetButtonUp("Jump"))
         {
             jumpInput = 0;
         }
 
-        if (Input.GetButtonDown("Attack") || JoystickController.instance.GetButtonDown(JButton.button7))
+        if (InputCollection.instance.GetButtonDown("Attack"))
         {
             if (spiderOrientation.y < -Mathf.Abs(spiderOrientation.x) - .1f && currentSurface.exists)
             {
@@ -198,22 +194,21 @@ public class SpiderHeroController : HeroController
     #region onWeb
 
     onWeb:
-        vertValue = Input.GetAxis("Vertical");
-        jVertValue = JoystickController.instance.GetAxis(JAxis.Vertical);
-        if (Input.GetButton("Vertical") || Mathf.Abs(jVertValue) > .1f)
+
+        if (InputCollection.instance.GetButton("Vertical"))
         {
-            float value = Mathf.Abs(vertValue) > Mathf.Abs(jVertValue) ? vertValue : jVertValue;
+            float value = InputCollection.instance.GetAxis("Vertical");
             WebMove(value);
         }
         else StopWebMove();
 
-        if (Input.GetButtonDown("Jump") || JoystickController.instance.GetButtonDown(JButton.button2))
+        if (InputCollection.instance.GetButtonDown("Jump"))
         {
             jumpInput = 0;
             Jump();
         }
 
-        if (Input.GetButtonDown("Attack") || JoystickController.instance.GetButtonDown(JButton.button7))
+        if (InputCollection.instance.GetButtonDown("Attack"))
             if (Vector2.SqrMagnitude((Vector2)transform.position - webConnectionPoint) < 1.5 * spiderOffset * spiderOffset)
                 WebOff();
 

@@ -1,2 +1,78 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Game_x0020_Data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xsi:nil="true" />
+<Game_x0020_Data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Level_x0020_Data Active="false">
+    <Checkpoint>0</Checkpoint>
+    <Light_x0020_Intensity>0</Light_x0020_Intensity>
+    <Light_x0020_HDR>0</Light_x0020_HDR>
+    <Max_x0020_HP>12</Max_x0020_HP>
+    <Collections_x0020_Level_x0020_Data />
+    <Enemies_x0020_Info />
+    <Interactive_x0020_Objects_x0020_Info />
+    <NPCs_x0020_Data />
+    <Dialog_x0020_Data>
+      <Dialogs_x0020_Info />
+    </Dialog_x0020_Data>
+  </Level_x0020_Data>
+  <General_x0020_Game_x0020_Data>
+    <First_x0020_Checkpoint>0</First_x0020_Checkpoint>
+    <Max_x0020_HP>12</Max_x0020_HP>
+    <Equipment_x0020_Info>
+      <Weapon>Knife</Weapon>
+      <Bag_x0020_Items />
+      <Available_x0020_Weapons>
+        <Weapon>Knife</Weapon>
+      </Available_x0020_Weapons>
+      <Available_x0020_Trinkets />
+      <Active_x0020_Trinkets />
+    </Equipment_x0020_Info>
+    <Collections_x0020_Info>
+      <Information_x0020_About_x0020_Collection>
+        <Collection_x0020_Name>WeaponCollection</Collection_x0020_Name>
+        <Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+        </Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+      </Information_x0020_About_x0020_Collection>
+      <Information_x0020_About_x0020_Collection>
+        <Collection_x0020_Name>CaveCollection</Collection_x0020_Name>
+        <Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+        </Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+      </Information_x0020_About_x0020_Collection>
+      <Information_x0020_About_x0020_Collection>
+        <Collection_x0020_Name>MineCollection</Collection_x0020_Name>
+        <Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+        </Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+      </Information_x0020_About_x0020_Collection>
+      <Information_x0020_About_x0020_Collection>
+        <Collection_x0020_Name>DeepMineCollection</Collection_x0020_Name>
+        <Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+        </Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+      </Information_x0020_About_x0020_Collection>
+      <Information_x0020_About_x0020_Collection>
+        <Collection_x0020_Name>UnderworldCollection</Collection_x0020_Name>
+        <Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+          <Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>false</Was_x0020_Item_x0020_With_x0020_This_x0020_Index_x0020_Found_x003F_>
+        </Which_x0020_Items_x0020_Were_x0020_Found_x003F_>
+      </Information_x0020_About_x0020_Collection>
+    </Collections_x0020_Info>
+    <progressInfo>
+      <Stories_x0020_Progress />
+    </progressInfo>
+  </General_x0020_Game_x0020_Data>
+</Game_x0020_Data>

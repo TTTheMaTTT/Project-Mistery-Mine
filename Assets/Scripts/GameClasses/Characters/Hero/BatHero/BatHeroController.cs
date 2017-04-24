@@ -31,25 +31,19 @@ public class BatHeroController : HeroController
         if (immobile || employment <= 6)
             goto analyseSection;
 
-        float horValue = Input.GetAxis("Horizontal");
-        float jHorValue = JoystickController.instance.GetAxis(JAxis.Horizontal);
-
-        float jVertValue = JoystickController.instance.GetAxis(JAxis.Vertical);
-
-        if (Input.GetButton("Horizontal") || Input.GetButton("Vertical") || Mathf.Abs(jVertValue) > .4f || Mathf.Abs(jHorValue) > .4f)
+        if (InputCollection.instance.GetButton("Horizontal") || InputCollection.instance.GetButton("Vertical"))
         {
-            float value = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
-            Move(value > 0f ? OrientationEnum.right : OrientationEnum.left);
+            Move(InputCollection.instance.GetAxis("Horizontal") > 0f ? OrientationEnum.right : OrientationEnum.left);
         }
         else
             StopMoving();
 
         if (employment > 7)
         {
-            if (Input.GetButtonDown("Attack") || JoystickController.instance.GetButtonDown(JButton.button7))
+            if (InputCollection.instance.GetButtonDown("Attack"))
                 if (interactor.ReadyForInteraction())
                     interactor.Interact();
-            if (Input.GetButtonDown("ChangeInteraction") || JoystickController.instance.GetButtonDown(JButton.button7))
+            if (InputCollection.instance.GetButtonDown("ChangeInteraction"))
                 interactor.ChangeInteraction();
         }
 
@@ -109,16 +103,8 @@ public class BatHeroController : HeroController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        float horValue = Input.GetAxis("Horizontal");
-        float jHorValue = JoystickController.instance.GetAxis(JAxis.Horizontal);
 
-        float vertValue = Input.GetAxis("Vertical");
-        float jVertValue = JoystickController.instance.GetAxis(JAxis.Vertical);
-
-        float vValue = Mathf.Abs(vertValue) > Mathf.Abs(jVertValue) ? vertValue : jVertValue;
-        float hValue = Mathf.Abs(horValue) > Mathf.Abs(jHorValue) ? horValue : jHorValue;
-
-        Vector2 targetVelocity = new Vector2(hValue,vValue).normalized * speed * speedCoof;
+        Vector2 targetVelocity = new Vector2(InputCollection.instance.GetAxis("Horizontal"), InputCollection.instance.GetAxis("Vertical")).normalized * speed * speedCoof;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)

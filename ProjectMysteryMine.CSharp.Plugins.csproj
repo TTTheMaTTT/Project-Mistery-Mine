@@ -228,8 +228,8 @@
     <Compile Include="Assets\Standard Assets\Utility\WaypointProgressTracker.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\InControl\Readme\README.txt" />
     <None Include="Assets\Plugins\Steamworks.NET\redist\steam_appid.txt" />
+    <None Include="Assets\Scripts\InControl\Readme\README.txt" />
     <None Include="Assets\Scripts\Shaders\CharacterShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Blue.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\CharacterUnderWater.shader" />

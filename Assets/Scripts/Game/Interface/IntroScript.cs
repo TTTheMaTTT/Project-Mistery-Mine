@@ -28,7 +28,7 @@ public class IntroScript : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetButtonDown("Jump"))
+        if (InputCollection.instance.GetButtonDown("Jump"))
             SceneManager.LoadScene("MainMenu");
     }
 

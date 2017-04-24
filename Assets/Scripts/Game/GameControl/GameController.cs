@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using InControl;
 
 /// <summary>
 /// Объект, ответственный за управление игрой
@@ -128,7 +129,7 @@ public class GameController : MonoBehaviour
 
     protected void Update()
     {
-        if (Input.GetButtonDown("Menu"))
+        if (InputCollection.instance.GetButtonDown("Menu"))
             gameMenu.ChangeGameMod();
         if (Input.GetKeyDown(KeyCode.I))
             SpecialFunctions.gameUI.ChangeVisibility();
@@ -143,10 +144,11 @@ public class GameController : MonoBehaviour
 
     protected void Start()
     {
-        if (JoystickController.instance == null)
+        if (GetComponent<InControlManager>()==null)
         {
-            GameObject inputManager = new GameObject("InputManager");
-            inputManager.AddComponent<JoystickController>();
+            //GameObject inputManager = new GameObject("InputManager");
+            //inputManager.AddComponent<JoystickController>();
+            InControlManager _control=gameObject.AddComponent<InControlManager>();
         }
 
         SpecialFunctions.SetDark();
