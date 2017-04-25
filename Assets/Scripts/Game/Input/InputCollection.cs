@@ -15,6 +15,7 @@ public class InputCollection : MonoBehaviour
     public static InputCollection instance;
 
     public List<InputDataClass> inputData = new List<InputDataClass>();
+    //private bool initialized;
 
     public void Start()
     {
@@ -40,8 +41,12 @@ public class InputCollection : MonoBehaviour
         if (InputManager.ActiveDevice != null)
             InitializeData();
         InputManager.OnDeviceAttached += inputDevice => InitializeData();
-    end:
-        bool k = false;
+        yield return new WaitForSeconds(initializeTime);
+        if (InputManager.ActiveDevice != null)
+            InitializeData();
+        yield return new WaitForSeconds(initializeTime);
+        if (InputManager.ActiveDevice != null)
+            InitializeData();
     }
 
 /*    public void Update()

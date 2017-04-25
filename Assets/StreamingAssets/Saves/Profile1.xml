@@ -72,7 +72,12 @@
       </Information_x0020_About_x0020_Collection>
     </Collections_x0020_Info>
     <progressInfo>
-      <Stories_x0020_Progress />
+      <Stories_x0020_Progress>
+        <Story_x0020_Progress>
+          <Story_x0020_Name>spiderStory</Story_x0020_Name>
+          <Story_x0020_Progress>SpiderQuest1</Story_x0020_Progress>
+        </Story_x0020_Progress>
+      </Stories_x0020_Progress>
     </progressInfo>
   </General_x0020_Game_x0020_Data>
 </Game_x0020_Data>
