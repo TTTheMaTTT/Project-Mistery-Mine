@@ -22,7 +22,9 @@ public class HeroController : CharacterController
     protected const float invulTime = 1f;
     protected const float minChargeTime = .3f;//Какое минимальное время нужно дердать кнопку атаки, чтобы начать зарядку оружия (используется, чтобы отличить обычную атаку от заряженной атаки)
 
-    protected const float ladderCheckOffset = .05f, ladderStep = .01f;
+    protected const float ladderCheckOffset = .05f, ladderStep = .01f, noGrabSameLadderTime=.5f;
+    protected const float ladderOffsetY = 0.03f, ladderOffsetX = .1f;//Максимальное относительное положение лестницы, чтобы на неё ещё можно было взобраться
+    protected const string ladderLayerName = "ladder";
 
     protected const float minDamageFallSpeed = 4.2f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
     protected const float damagePerFallSpeed = 2f;
@@ -36,6 +38,8 @@ public class HeroController : CharacterController
     protected const float totemAnimalTime = 20f;//Время действия эффекта "Тотемное животное"
     protected const float tribalRitualTime = 15f;//Время действия эффекта "Ритуал племени"
     protected const float tribalRitualCoof = 1.3f;//Во сколько раз увеличивается скорость при эффекте "Ритуал племени"
+
+    protected const float waterSpeedReduce = 20f;//Насколько скорость падения уменьшится при соприкосновении с водой
 
     #endregion //consts
 
@@ -114,6 +118,7 @@ public class HeroController : CharacterController
                 }
                 speedCoof *= waterCoof;
                 rigid.gravityScale = .6f;
+                rigid.velocity = new Vector2(rigid.velocity.x, Mathf.Clamp(rigid.velocity.y + 20f, Mathf.NegativeInfinity, 0f));
                 waterIndicator.StartCoroutine(SuffocateProcess());
             }
             else
@@ -144,8 +149,12 @@ public class HeroController : CharacterController
     protected int jumpInput = 0;
     protected GroundStateEnum groundState;
     protected float fallSpeed = 0f;
+
     protected bool onLadder;
     public override bool OnLadder { get { return onLadder; } }
+    protected float ladderPrevX = 0f;//Предыдущая x-координата лестницы
+    protected bool canGrabSameLadder = true;//Может ли герой цепляться за лестницу с ladderPrevX
+
     protected bool dontShoot = false;
 
     protected AttackerClass attacker;
@@ -487,13 +496,21 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void LadderOn()
     {
-        if (interactor.Ladder != null)
+        Vector2 pos = transform.position;
+        Collider2D _ladder = Physics2D.OverlapArea(pos + new Vector2(ladderOffsetX, ladderOffsetY), pos - new Vector2(ladderOffsetX, ladderOffsetY), LayerMask.GetMask(ladderLayerName));
+        if (_ladder != null)
         {
-            base.LadderOn();
-            onLadder = true;
-            Animate(new AnimationEventArgs("setLadderMove", "", 1));
-            Vector3 vect = transform.position;
-            transform.position = new Vector3(interactor.Ladder.transform.position.x, vect.y, vect.z);
+            float ladderX = _ladder.transform.position.x;
+            if (canGrabSameLadder || Mathf.Abs(ladderX - ladderPrevX) > ladderStep)
+            {
+                base.LadderOn();
+                onLadder = true;
+                Animate(new AnimationEventArgs("setLadderMove", "", 1));
+                Vector3 vect = transform.position;
+                transform.position = new Vector3(ladderX, vect.y, vect.z);
+                StopCoroutine("NoGrabSameLadderProcess");
+                canGrabSameLadder = true;
+            }
         }
     }
 
@@ -505,6 +522,7 @@ public class HeroController : CharacterController
         onLadder = false;
         rigid.gravityScale = underWater? .6f: 1f;
         Animate(new AnimationEventArgs("setLadderMove", "", 0));
+        StartCoroutine("NoGrabSameLadderProcess");
         //if (Input.GetAxis("Vertical")>0f)
         //{
         //  rigid.AddForce(new Vector2(0f, jumpForce / 2));
@@ -521,7 +539,18 @@ public class HeroController : CharacterController
                          Physics2D.OverlapCircle(transform.position + Mathf.Sign(direction) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? 
                          direction * ladderSpeed * speedCoof : 0f);
     }
-    
+
+    /// <summary>
+    /// Процесс, в течение которого герой не может цепляться за предыдущую лестницу (или за лестницу с такой же абсциссой)
+    /// </summary>
+    protected IEnumerator NoGrabSameLadderProcess()
+    {
+        ladderPrevX = transform.position.x;
+        canGrabSameLadder = false;
+        yield return new WaitForSeconds(noGrabSameLadderTime);
+        canGrabSameLadder = true;
+    }
+
     /// <summary>
     /// Развернуться
     /// </summary>
@@ -736,13 +765,14 @@ public class HeroController : CharacterController
             if ((hitData.damageType != DamageType.Physical) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
                 TakeDamageEffect(hitData.damageType);
             bool stunned = GetBuff("StunnedProcess") != null;
-            if (hitData.attackPower>balance || stunned)
+            if (hitData.attackPower>balance/2 || stunned)
             {
                 //StopCoroutine("AttackProcess");
                 //dontShoot = false;
                 if (onLadder)
                     LadderOff();
-                StopAttack();
+                if (hitData.attackPower>balance)
+                    StopAttack();
             }
             if (hitData.attackPower>=0)
                 StartCoroutine(InvulProcess(invulTime, true));
@@ -788,13 +818,14 @@ public class HeroController : CharacterController
             SpriteRenderer sprite = GetComponentInChildren<SpriteRenderer>();
             if (sprite != null) sprite.enabled = true;
             bool stunned = GetBuff("StunnedProcess") != null;
-            if (hitData.attackPower > balance || stunned)
+            if (hitData.attackPower > balance / 2 || stunned)
             {
                 //StopCoroutine("AttackProcess");
                 //dontShoot = false;
                 if (onLadder)
                     LadderOff();
-                StopAttack();
+                if (hitData.attackPower > balance)
+                    StopAttack();
             }
             if (hitData.attackPower>0)
                 StartCoroutine(InvulProcess(invulTime, true));
@@ -915,7 +946,7 @@ public class HeroController : CharacterController
         {
             if (item.itemName == "GoldHeart")
             {
-                SpecialFunctions.gameUI.ConsiderItem(item, "Увеличивает максимальное количество здоровья");
+                SpecialFunctions.gameUI.ConsiderItem(item, "Увеличивает максимальное количество здоровья",4.5f);
                 MaxHealth += 4f;
             }
             else
@@ -935,7 +966,7 @@ public class HeroController : CharacterController
                 }
             }
             else if (item.itemName == "LifeBookPage")
-                SpecialFunctions.gameUI.ConsiderItem(item, "Увеличивает максимальное число активных особых предметов");
+                SpecialFunctions.gameUI.ConsiderItem(item, "Увеличивает максимальное число активных особых предметов",4.5f);
             else
                 SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName1);
         }

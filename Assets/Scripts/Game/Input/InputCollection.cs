@@ -29,7 +29,7 @@ public class InputCollection : MonoBehaviour
         }
         if (InputManager.ActiveDevice != null)
             InitializeData();
-        InputManager.OnDeviceAttached += inputDevice => InitializeData();
+        InputManager.OnDeviceAttached += inputDevice => StartCoroutine("InitializeProcess"); 
     }
 
     /// <summary>

@@ -62,7 +62,7 @@ public class GameUIScript : MonoBehaviour
     protected GameObject oneItemScreen;//Экран, в котором показывается найденный коллекционный предмет
     protected GameObject collectionScreen;//Экран, в котором показывается, к каким коллекциям этот предмет принадлежит
     [SerializeField]protected GameObject collectionItemPanel;//Панелька, предназначаемая для одного коллекционного предмета
-    protected bool itemProcess = false;//Включён ли CollectorScreen?
+    protected IEnumerator itemProcess = null, collectionProcess=null;//Включён ли отображения экрана колекции
     protected List<ItemClass> itemsOnProcess=new List<ItemClass>();//Какие ещё предметы должен отобразить itemScreen?
 
     protected Image fadeScreen;//Объект, ответственный за затемнение, происходящее в переходах между уровнями
@@ -96,6 +96,8 @@ public class GameUIScript : MonoBehaviour
     {
         fadeScreen.color=Color.Lerp(fadeScreen.color,fadeColor,Time.fixedDeltaTime*fadeSpeed);
         damageScreen.color = Color.Lerp(damageScreen.color, dmgColor, Time.fixedDeltaTime * dmgScreenFadeSpeed);
+        if (itemProcess != null ? InputCollection.instance.GetButtonDown("Jump") : false)
+            StopItemProcess();
     }
 
     void FixedUpdate()
@@ -159,7 +161,8 @@ public class GameUIScript : MonoBehaviour
         oneItemScreen.SetActive(false);
         collectionScreen.SetActive(false);
         collectorScreen.SetActive(false);
-        itemProcess = false;
+        itemProcess = null;
+        collectionProcess = null;
         itemsOnProcess = new List<ItemClass>();
 
         breathPanel = transform.FindChild("BreathPanel");
@@ -345,8 +348,11 @@ public class GameUIScript : MonoBehaviour
     {
         if (cantShowMessages)
             return;
-        if (!itemProcess)
-            StartCoroutine(CollectionProcess(_item, _collections));
+        if (collectionProcess == null)
+        {
+            collectionProcess = CollectionProcess(_item, _collections);
+            StartCoroutine(collectionProcess);
+        }
         else
             itemsOnProcess.Add(_item);
     }
@@ -354,12 +360,15 @@ public class GameUIScript : MonoBehaviour
     /// <summary>
     /// Функция, что учитывает инфрмацию о новом полученном предмете
     /// </summary>
-    public void ConsiderItem(ItemClass _item, string _description)
+    public void ConsiderItem(ItemClass _item, string _description, float _time=collectionItemTime)
     {
         if (cantShowMessages)
             return;
-        if (!itemProcess)
-            StartCoroutine(ObtainItemProcess(_item,_description));
+        if (itemProcess == null)
+        {
+            itemProcess=ObtainItemProcess(_item, _description, _time);
+            StartCoroutine(itemProcess);
+        }
         else
             itemsOnProcess.Add(_item);
     }
@@ -369,7 +378,6 @@ public class GameUIScript : MonoBehaviour
     /// </summary>
     public IEnumerator CollectionProcess(ItemClass _item, List<ItemCollection> _collections)
     {
-        itemProcess = true;
         SpecialFunctions.PauseGame();
         SpecialFunctions.totalPaused = true;
         collectorScreen.SetActive(true);
@@ -381,6 +389,8 @@ public class GameUIScript : MonoBehaviour
         _img.sprite = _item.itemImage;
         Text _text = oneItemScreen.transform.FindChild("ItemNameText").GetComponent<Text>();
         _text.text = _item.itemTextName1;
+        Text descriptionText = oneItemScreen.transform.FindChild("ItemDescriptionText").GetComponent<Text>();
+        descriptionText.text = _item.itemDescription;
         oneItemScreen.SetActive(true);
         yield return new WaitForSecondsRealtime(collectionItemTime);
 
@@ -429,21 +439,21 @@ public class GameUIScript : MonoBehaviour
 
         SpecialFunctions.totalPaused = false;
         SpecialFunctions.PlayGame();
-        itemProcess = false;
+        collectionProcess = null;
         if (itemsOnProcess.Count > 0)
         {
             ItemClass item1 = itemsOnProcess[0];
             itemsOnProcess.RemoveAt(0);
-            StartCoroutine(ObtainItemProcess(item1,""));
+            itemProcess = ObtainItemProcess(item1, "", collectionItemTime);
+            StartCoroutine(itemProcess);
         }
     }
 
     /// <summary>
     /// Процесс отображения информации о полученном предмете
     /// </summary>
-    public IEnumerator ObtainItemProcess(ItemClass _item, string _description)
+    public IEnumerator ObtainItemProcess(ItemClass _item, string _description, float _time)
     {
-        itemProcess = true;
         SpecialFunctions.PauseGame();
         SpecialFunctions.totalPaused = true;
         collectorScreen.SetActive(true);
@@ -465,12 +475,34 @@ public class GameUIScript : MonoBehaviour
 
         SpecialFunctions.totalPaused = false;
         SpecialFunctions.PlayGame();
-        itemProcess = false;
+        itemProcess = null;
         if (itemsOnProcess.Count > 0)
         {
             ItemClass item1 = itemsOnProcess[0];
             itemsOnProcess.RemoveAt(0);
-            StartCoroutine(ObtainItemProcess(item1,""));
+            itemProcess = ObtainItemProcess(item1, "", collectionItemTime);
+            StartCoroutine(itemProcess);
+        }
+    }
+
+    /// <summary>
+    /// Остановить процесс показа предмета
+    /// </summary>
+    void StopItemProcess()
+    {
+        StopCoroutine(itemProcess);
+        oneItemScreen.SetActive(false);
+        collectorScreen.SetActive(false);
+
+        SpecialFunctions.totalPaused = false;
+        SpecialFunctions.PlayGame();
+        itemProcess = null;
+        if (itemsOnProcess.Count > 0)
+        {
+            ItemClass item1 = itemsOnProcess[0];
+            itemsOnProcess.RemoveAt(0);
+            itemProcess = ObtainItemProcess(item1, "", collectionItemTime);
+            StartCoroutine(itemProcess);
         }
     }
 

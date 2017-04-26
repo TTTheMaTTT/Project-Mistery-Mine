@@ -444,6 +444,7 @@ public class HumanoidController : AIController
     /// </summary>
     protected override IEnumerator AttackProcess()
     {
+        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(100f * attackParametres.wholeAttackTime)));
         balance = attackBalance;
         employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);

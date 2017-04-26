@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Скрипт, реализующий поведение летучей мыши
@@ -121,19 +122,13 @@ public class BatController : AIController
     }
 
     /// <summary>
-    /// Совершить атаку
-    /// </summary>
-    protected override void Attack()
-    {
-        StartCoroutine("AttackProcess");
-    }
-
-    /// <summary>
     /// Процесс атаки
     /// </summary>
     /// <returns></returns>
     protected override IEnumerator AttackProcess()
     {
+        StopMoving();
+        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(100 * attackParametres.withoutEndAttackTime )));
         StartCoroutine(CooldownProcess());
         employment = Mathf.Clamp(employment - 4, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
@@ -143,6 +138,8 @@ public class BatController : AIController
         hitBox.SetHitBox(new HitParametres(attackParametres));
         employment = Mathf.Clamp(employment + 1, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.actTime);
+        Animate(new AnimationEventArgs("stop"));
+        Animate(new AnimationEventArgs("fly"));
         StopMoving();
         employment = Mathf.Clamp(employment - 1, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.endAttackTime);
@@ -194,9 +191,16 @@ public class BatController : AIController
         {
             case BehaviorEnum.agressive:
                 {
-                    if (currentTarget.exists ? Physics2D.Raycast(pos, currentTarget - pos, batSize, whatIsGround) : false)
+                    Vector2 targetDistance = mainTarget - pos;
+                    if (mainTarget.exists ? Physics2D.Raycast(pos, targetDistance.normalized, targetDistance.magnitude, whatIsGround) : false)
                     {
-                        currentTarget = FindPath();
+                        waypoints = FindPath(mainTarget, 0);
+                        currentTarget.exists = false;
+                    }
+                    else
+                    {
+                        currentTarget = mainTarget;
+                        waypoints = null;
                     }
 
                     if (rigid.velocity.magnitude < minSpeed && employment>7)
@@ -214,15 +218,6 @@ public class BatController : AIController
                             }
                             angle += Mathf.PI / 4f;
                         }
-                    }
-
-                    if (currentTarget != mainTarget)
-                    {
-                        Vector2 direction = (mainTarget - pos).normalized;
-                        RaycastHit2D hit = Physics2D.Raycast(pos + direction * batSize, direction, sightRadius);
-                        if (hit)
-                            if (hit.collider.transform == mainTarget.transform)
-                                currentTarget = mainTarget;
                     }
 
                     //Если текущая цель убежала достаточно далеко, то мышь просто возвращается домой
@@ -348,7 +343,7 @@ public class BatController : AIController
 
         Vector2 targetPosition = currentTarget;
         Vector2 pos = transform.position;
-        if (currentTarget == mainTarget)
+        if (waypoints == null)
         {
             if (!waiting)
             {
@@ -387,10 +382,34 @@ public class BatController : AIController
         }
         else
         {
+            if (!currentTarget.exists)
+                currentTarget = new ETarget(waypoints[0].cellPosition);
+
+            targetPosition = currentTarget;
+            pos = transform.position;
             Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-            if (currentTarget != mainTarget && Vector2.SqrMagnitude(targetPosition - pos) < batSize * batSize)
+            if (currentTarget != mainTarget && Vector2.SqrMagnitude(currentTarget - pos) < batSize * batSize)
             {
-                currentTarget = FindPath();
+                waypoints.RemoveAt(0);
+                if (waypoints.Count == 0)
+                {
+                    waypoints = null;
+                    currentTarget.Exists = false;
+                    //Достигли конца маршрута
+                    if (Vector3.Distance(beginPosition, transform.position) < batSize)
+                    {
+                        transform.position = beginPosition;
+                        Animate(new AnimationEventArgs("idle"));
+                        BecomeCalm();
+                    }
+                    else
+                        GoHome();//Никого в конце маршрута не оказалось, значит, возвращаемся домой
+                }
+                else
+                {
+                    //Продолжаем следование
+                    currentTarget = new ETarget(waypoints[0].cellPosition);
+                }
             }
         }
 
@@ -553,37 +572,16 @@ public class BatController : AIController
     #endregion //optimization
 
     /// <summary>
-    /// Простейший алгоритм обхода препятствий
+    /// Функция, которая строит маршрут
     /// </summary>
-    protected ETarget FindPath()
+    /// <param name="endPoint">точка назначения</param>
+    ///<param name="maxDepth">Максимальная сложность маршрута</param>
+    /// <returns>Навигационные ячейки, составляющие маршрут</returns>
+    protected override List<NavigationCell> FindPath(Vector2 endPoint, int _maxDepth)
     {
-
-        Vector2 pos = transform.position;
-        bool a1 = Physics2D.Raycast(pos, Vector2.up, batSize, whatIsGround) && (mainTarget.y- pos.y >avoidOffset);
-        bool a2 = Physics2D.Raycast(pos, Vector2.right, batSize, whatIsGround) && (mainTarget.x > pos.x);
-        bool a3 = Physics2D.Raycast(pos, Vector2.down, batSize, whatIsGround) && (mainTarget.y - pos.y < avoidOffset );
-        bool a4 = Physics2D.Raycast(pos, Vector2.left, batSize, whatIsGround) && (mainTarget.x < pos.x);
-
-        bool open1=false, open2=false;
-        Vector2 aimDirection = a1 ? Vector2.up : a2 ? Vector2.right : a3 ? Vector2.down : a4 ? Vector2.left : Vector2.zero;
-        if (aimDirection == Vector2.zero)
-            return mainTarget;
-        else
-        {
-            Vector2 vect1 = new Vector2(aimDirection.y, aimDirection.x);
-            Vector2 vect2 = new Vector2(-aimDirection.y, -aimDirection.x);
-            Vector2 pos1 = pos;
-            Vector2 pos2 =pos1;
-            while (Physics2D.Raycast(pos1, aimDirection, batSize, whatIsGround) && ((pos1-pos).magnitude<maxAvoidDistance))
-                pos1 += vect1 * batSize;
-            open1 = !Physics2D.Raycast(pos1, aimDirection, batSize, whatIsGround);
-            while (Physics2D.Raycast(pos2, aimDirection, batSize, whatIsGround) && ((pos2 - pos).magnitude < maxAvoidDistance))
-                pos2 += vect2 * batSize;
-            open2 = !Physics2D.Raycast(pos2, aimDirection, batSize, whatIsGround);
-            Vector2 targetPosition = mainTarget;
-            Vector2 newTargetPosition=(open1 && !open2)? pos1 :(open2 && !open1)? pos2 : ((targetPosition-pos1).magnitude<(targetPosition-pos2).magnitude)? pos1 :pos2;
-            return new ETarget(newTargetPosition);
-        }
+        if (navMap == null)
+            return null;
+        return navMap.GetPath(transform.position, endPoint, true);
     }
 
     /// <summary>

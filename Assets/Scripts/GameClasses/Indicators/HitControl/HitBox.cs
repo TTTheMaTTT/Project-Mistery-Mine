@@ -326,6 +326,11 @@ public struct HitParametres
     /// </summary>
     public float withoutPrepareAttackTime { get { return actTime + endAttackTime; } }
 
+    /// <summary>
+    /// Возвращает время атаки без времени конца атаки
+    /// </summary>
+    public float withoutEndAttackTime { get { return actTime + preAttackTime; } }
+
 }
 
 /// <summary>

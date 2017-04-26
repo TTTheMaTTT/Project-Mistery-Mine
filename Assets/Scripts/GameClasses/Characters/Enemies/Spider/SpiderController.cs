@@ -17,6 +17,8 @@ public class SpiderController : AIController
 
     protected const float jumpAttackMaxDistance = .85f, jumpAttackMinDistance = .3f;//Расстояние до цели, для совершения атаки в прыжке 
 
+    protected const float noChangeOrientationTime = .2f;
+
     #endregion //consts
 
     #region fields
@@ -95,6 +97,7 @@ public class SpiderController : AIController
         }
     }
     protected Vector2 movementDirection = Vector2.right;//В какую сторону движется паук, если он повёрнут вправо
+    protected bool canChangeOrientation = true;
 
     protected override float attackDistance { get { return .12f; } }//На каком расстоянии должен стоять ИИ, чтобы решить атаковать
     [SerializeField]protected Vector2 jumpAttackForce;//Сила отталкивания при прыжковой атаке
@@ -279,6 +282,16 @@ public class SpiderController : AIController
         precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
     }
 
+    /// <summary>
+    /// Процесс, в течение которого паук не может менять поверхность прикрепления
+    /// </summary>
+    IEnumerator ChangeOrientationProcess()
+    {
+        canChangeOrientation = false;
+        yield return new WaitForSeconds(noChangeOrientationTime);
+        canChangeOrientation = true;
+    }
+
     /*
     /// <summary>
     /// Процесс обхода препятствия
@@ -366,6 +379,7 @@ public class SpiderController : AIController
 
         transform.position = connectionPoint + spiderOffset * spiderOrientation;//Расположить паука
         StopMoving();
+        StartCoroutine(ChangeOrientationProcess());
     }
 
     /// <summary>
@@ -388,6 +402,7 @@ public class SpiderController : AIController
         SpiderOrientation = _spiderOrientation;
         transform.position = connectionPoint + spiderOffset * spiderOrientation;//Расположить паука
         StopMoving();
+        StartCoroutine(ChangeOrientationProcess());
     }
 
     /// <summary>
@@ -857,7 +872,8 @@ public class SpiderController : AIController
                     {
 
                         OrientationEnum nextOrientation = (OrientationEnum)Mathf.Sign(Vector2.Dot(targetPosition - pos, movementDirection));
-                        float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
+                        Vector2 targetDistance = targetPosition - pos;
+                        float sqDistance =targetDistance.sqrMagnitude;
 
                         if (jumpAttackIsPossible? 
                             Mathf.Approximately(spiderOrientation.y,1f)? 
@@ -870,7 +886,10 @@ public class SpiderController : AIController
                         }
                         else if (sqDistance > attackDistance * attackDistance)
                         {
-                            if (!wallCheck.WallInFront && precipiceCheck.WallInFront && !obstacleCheck.WallInFront)
+                            float projection = Vector2.Dot(targetDistance, movementDirection);
+                            if (Mathf.Abs(projection) <= attackDistance / 2f)
+                                StopMoving();
+                            else if (!wallCheck.WallInFront && precipiceCheck.WallInFront && !obstacleCheck.WallInFront && Mathf.Abs(projection) > attackDistance / 2f)
                                 Move(nextOrientation);
                             else if (orientation!=nextOrientation)
                                 Turn();
@@ -1005,7 +1024,7 @@ public class SpiderController : AIController
                             }
                         }
                     }
-                    if (!jumping)
+                    if (!jumping && canChangeOrientation)
                     {
                         //Учёт земных поверхностей, к которым может прикрепиться паук
                         if (wallCheck.WallInFront)
@@ -1108,7 +1127,7 @@ public class SpiderController : AIController
                     }
                 }
             }
-            if (!jumping)
+            if (!jumping && canChangeOrientation)
             {
                 //Учёт земных поверхностей, к которым может прикрепиться паук
                 if (wallCheck.CheckWall())

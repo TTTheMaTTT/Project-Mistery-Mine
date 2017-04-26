@@ -5,13 +5,8 @@ using System.Collections.Generic;
 /// <summary>
 /// Индикатор, ответственный за взаимодействия
 /// </summary>
-public class Interactor : MonoBehaviour {
-
-    #region consts
-
-    protected const float ladderOffsetY = 0.1f, ladderOffsetX = .1f;//Максимальное относительное положение лестницы, чтобы на неё ещё можно было взобраться
-
-    #endregion //consts
+public class Interactor : MonoBehaviour
+{
 
     #region fields
 
@@ -19,9 +14,6 @@ public class Interactor : MonoBehaviour {
     protected List<string> whatIsInteractable = new List<string>();//С какими объектами впринципе можно провзаимодействовать
 
     protected List<GameObject> interactions = new List<GameObject>();//С какими объектами можно провзаимодействовать в данный момент
-
-    protected GameObject ladder = null;
-    public GameObject Ladder { get { return ladder; } }
 
     #endregion //fields
 
@@ -107,22 +99,6 @@ public class Interactor : MonoBehaviour {
             {
                 interaction = interactions[0].GetComponent<IInteractive>();
                 interaction.SetOutline(true);
-            }
-        }
-        else if (ladder != null ? other.gameObject == ladder : false)
-        {
-            ladder = null;
-        }
-    }
-
-    protected virtual void OnTriggerStay2D(Collider2D other)
-    {
-        if (other.gameObject.tag == "ladder")
-        {
-            Vector2 offset = other.transform.position - transform.position;
-            if ((Mathf.Abs(offset.x) < ladderOffsetX) && (Mathf.Abs(offset.y) < ladderOffsetY))
-            {
-                ladder = other.gameObject;
             }
         }
     }

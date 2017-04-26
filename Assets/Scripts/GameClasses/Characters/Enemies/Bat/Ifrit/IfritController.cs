@@ -173,7 +173,7 @@ public class IfritController : BatController
             {
                 Vector2 targetPosition = currentTarget;
                 Vector2 pos = transform.position;
-                if (currentTarget == mainTarget)
+                if (waypoints == null)
                 {
                     float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
                     if (sqDistance < waitingNearDistance * waitingNearDistance)
@@ -204,10 +204,34 @@ public class IfritController : BatController
                 }
                 else
                 {
+                    if (!currentTarget.exists)
+                        currentTarget = new ETarget(waypoints[0].cellPosition);
+
+                    targetPosition = currentTarget;
+                    pos = transform.position;
                     Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-                    if (currentTarget != mainTarget && Vector2.SqrMagnitude(targetPosition - pos) < batSize * batSize)
+                    if (currentTarget != mainTarget && Vector2.SqrMagnitude(currentTarget - pos) < batSize * batSize)
                     {
-                        currentTarget = FindPath();
+                        waypoints.RemoveAt(0);
+                        if (waypoints.Count == 0)
+                        {
+                            waypoints = null;
+                            currentTarget.Exists = false;
+                            //Достигли конца маршрута
+                            if (Vector3.Distance(beginPosition, transform.position) < batSize)
+                            {
+                                transform.position = beginPosition;
+                                Animate(new AnimationEventArgs("idle"));
+                                BecomeCalm();
+                            }
+                            else
+                                GoHome();//Никого в конце маршрута не оказалось, значит, возвращаемся домой
+                        }
+                        else
+                        {
+                            //Продолжаем следование
+                            currentTarget = new ETarget(waypoints[0].cellPosition);
+                        }
                     }
                 }
             }
