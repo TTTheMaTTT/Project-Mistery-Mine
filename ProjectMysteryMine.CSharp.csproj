@@ -208,6 +208,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\SpiderController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\SpiderSpyVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\SpiderVisual.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\SpiderWarriorController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Worm\WormController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Worm\WormVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\BatHero\BatHeroController.cs" />

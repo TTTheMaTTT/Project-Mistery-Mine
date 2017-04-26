@@ -103,7 +103,6 @@ public class BatBossController: BossController
     private Vector2 curveEndPoint = Vector2.zero;
     private BezierSimpleCurve CurrentCurve { set { currentCurve = value;  currentCurveParameter = 0f; curveEndPoint = currentCurve.GetBezierPoint(1f); } }
     bool stillAgressive = false;//Переменная, используемая при переходе в патрулирующее состояние. Указывает на то что персонаж ещё не забыл о своём враге, просто временно меняет позицию для нанесения удара
-    bool goToSpecialAttack=false;//Босс готовится произвести специальную атаку
 
     #endregion //parametres
 
@@ -198,22 +197,14 @@ public class BatBossController: BossController
     #region attack
 
     /// <summary>
-    /// Совершить обычную атаку
-    /// </summary>
-    protected override void Attack()
-    {
-        Animate(new AnimationEventArgs("stop"));
-        hitBox.ResetHitBox();
-        Animate(new AnimationEventArgs("attack", "Attack", Mathf.RoundToInt(100*attackParametres.wholeAttackTime)));
-        StartCoroutine("AttackProcess");
-    }
-
-    /// <summary>
     /// Процесс атаки
     /// </summary>
     /// <returns></returns>
     protected override IEnumerator AttackProcess()
     {
+        Animate(new AnimationEventArgs("stop"));
+        hitBox.ResetHitBox();
+        Animate(new AnimationEventArgs("attack", "Attack", Mathf.RoundToInt(100 * attackParametres.wholeAttackTime)));
         RestartCooldown();
         employment = Mathf.Clamp(employment - 4, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
@@ -316,7 +307,6 @@ public class BatBossController: BossController
         StartCoroutine("SpecialAttackProcess",_attackParametres.hitParametres);
         Animate(new AnimationEventArgs("attack", "Dive", Mathf.RoundToInt(100 * _attackParametres.hitParametres.wholeAttackTime)));
         behaviorActions = SpecialAttackBehavior;
-        goToSpecialAttack = true;
     }
 
     /// <summary>
@@ -450,7 +440,7 @@ public class BatBossController: BossController
             else if (hitData.damageType == attackParametres.damageType)
                 hitData.damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
         }
-        if (goToSpecialAttack ? attacker.attackType == AttackTypeEnum.range: false)
+        if ( attacker.attackType == AttackTypeEnum.range)
             hitData.damage /= 2f;
 
         Health = Mathf.Clamp(Health - hitData.damage, 0f, maxHealth);
@@ -579,7 +569,6 @@ public class BatBossController: BossController
         CurrentDirection = Vector2.right * (int)orientation;
         StopCoroutine("SpecialAttackProcess");
         balance = usualBalance;
-        goToSpecialAttack = false;
     }
 
     /// <summary>
@@ -768,11 +757,11 @@ public class BatBossController: BossController
         currentCurveParameter = Mathf.Clamp(currentCurveParameter + Time.fixedDeltaTime * specialAttackSpeed, 0f, 1f);
         Vector2 nextPosition = currentCurve.GetBezierPoint(currentCurveParameter);
         CurrentDirection = (nextPosition - pos).normalized;
+        hitBox.AttackDirection = currentDirection;
         transform.position = nextPosition;
 
         if (Vector2.SqrMagnitude(pos - curveEndPoint) < minCellSqrMagnitude)//Закончили перемещение по кривой
         {
-            goToSpecialAttack = false;
             if (specialAttackTimes < 2)
                 ChooseSpecialAttack();
             else if (health < phase2Health? UnityEngine.Random.RandomRange(0f, 1f) < Mathf.Pow(specialNextAttackProbability, specialAttackTimes - 1): false)

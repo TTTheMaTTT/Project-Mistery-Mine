@@ -11,6 +11,7 @@ public class NextLevelDoor : DoorClass
     #region consts
 
     protected const float nextLevelTime = 2.1f;//Время, за которое происходит переход на следующий уровень
+    protected const string battleMessage = "Вы не можете воспользоваться дверью, пока находитесь в бою";
 
     #endregion //consts
 
@@ -31,6 +32,11 @@ public class NextLevelDoor : DoorClass
     /// </summary>
     public override void Interact()
     {
+        if (SpecialFunctions.battleField.enemiesCount > 0)
+        {
+            SpecialFunctions.SetText(battleMessage, 2.5f);
+            return;
+        }
         HeroController player = SpecialFunctions.Player.GetComponent<HeroController>();
         if (!closedByMechanism || opened)
         {
@@ -45,6 +51,14 @@ public class NextLevelDoor : DoorClass
         }
         else
             SpecialFunctions.SetText(closedDoorMessage, 2.5f);
+    }
+
+    /// <summary>
+    /// Можно ли провзаимодействовать с объектом в данный момент?
+    /// </summary>
+    public override bool IsInteractive()
+    {
+        return SpecialFunctions.dialogWindow.CurrentDialog == null;
     }
 
     /// <summary>

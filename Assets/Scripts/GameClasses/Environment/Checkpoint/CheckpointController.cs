@@ -8,6 +8,12 @@ using System.Collections;
 public class CheckpointController : MonoBehaviour, IInteractive
 {
 
+    #region consts
+
+    protected const string battleMessage = "Вы не можете воспользоваться тотемом, пока находитесь в бою";
+
+    #endregion //consts
+
     #region fields
 
     Animator anim;
@@ -71,6 +77,11 @@ public class CheckpointController : MonoBehaviour, IInteractive
     /// </summary>
     public void Interact()
     {
+        if (SpecialFunctions.battleField.enemiesCount > 0)
+        {
+            SpecialFunctions.SetText(battleMessage, 2.5f);
+            return;
+        }
         if (!activated)
         {
             activated = true;
@@ -105,7 +116,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
     /// </summary>
     public virtual bool IsInteractive()
     {
-        return SpecialFunctions.battleField.enemiesCount == 0 && SpecialFunctions.dialogWindow.CurrentDialog == null;
+        return SpecialFunctions.dialogWindow.CurrentDialog == null;
     }
 
     #endregion //IInteractive

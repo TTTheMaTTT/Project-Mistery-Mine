@@ -23,7 +23,7 @@ public class HeroController : CharacterController
     protected const float minChargeTime = .3f;//Какое минимальное время нужно дердать кнопку атаки, чтобы начать зарядку оружия (используется, чтобы отличить обычную атаку от заряженной атаки)
 
     protected const float ladderCheckOffset = .05f, ladderStep = .01f, noGrabSameLadderTime=.5f;
-    protected const float ladderOffsetY = 0.03f, ladderOffsetX = .1f;//Максимальное относительное положение лестницы, чтобы на неё ещё можно было взобраться
+    protected const float ladderOffsetY = 0.03f, ladderOffsetX = .05f;//Максимальное относительное положение лестницы, чтобы на неё ещё можно было взобраться
     protected const string ladderLayerName = "ladder";
 
     protected const float minDamageFallSpeed = 4.2f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
@@ -855,6 +855,7 @@ public class HeroController : CharacterController
             BuffClass buff = buffs[i];
             StopCustomBuff(new BuffData(buff));
         }
+        rigid.mass = 10f;
         Animate(new AnimationEventArgs("death"));
         immobile = true;
         SpecialFunctions.StartStoryEvent(this, CharacterDeathEvent, new StoryEventArgs());

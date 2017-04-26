@@ -96,7 +96,7 @@ public class GameUIScript : MonoBehaviour
     {
         fadeScreen.color=Color.Lerp(fadeScreen.color,fadeColor,Time.fixedDeltaTime*fadeSpeed);
         damageScreen.color = Color.Lerp(damageScreen.color, dmgColor, Time.fixedDeltaTime * dmgScreenFadeSpeed);
-        if (itemProcess != null ? InputCollection.instance.GetButtonDown("Jump") : false)
+        if (itemProcess != null ? InputCollection.instance.GetButtonDown("Attack") : false)
             StopItemProcess();
     }
 

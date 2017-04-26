@@ -23,7 +23,7 @@ public class SpiderController : AIController
 
     #region fields
 
-    protected WallChecker wallCheck, precipiceCheck, obstacleCheck;//Индикаторы, следящие за окружающей обстановкой
+    protected WallChecker wallCheck, precipiceCheck, obstacleCheck, groundCheck;//Индикаторы, следящие за окружающей обстановкой
     //protected SightFrustum sight;//Зрение персонажа
     //protected HitBoxController selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
 
@@ -93,6 +93,7 @@ public class SpiderController : AIController
                 rigid.gravityScale = 1f;
             wallCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
             obstacleCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
+            groundCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
             precipiceCheck.SetPosition(angle / 180f * Mathf.PI, (int)orientation);
         }
     }
@@ -171,7 +172,7 @@ public class SpiderController : AIController
             wallCheck = indicators.FindChild("WallCheck").GetComponent<WallChecker>();
             precipiceCheck = indicators.FindChild("PrecipiceCheck").GetComponent<WallChecker>();
             obstacleCheck = indicators.FindChild("ObstacleCheck").GetComponent<WallChecker>();
-
+            groundCheck = indicators.FindChild("GroundCheck").GetComponent<WallChecker>();
             /*Transform sightParent = indicators.FindChild("Sight");
             sight = sightParent!=null? sightParent.GetComponentInChildren<SightFrustum>():null;
             if (sight != null)
@@ -265,6 +266,7 @@ public class SpiderController : AIController
         base.Turn();
         wallCheck.SetPosition(transform.eulerAngles.z/180f*Mathf.PI, (int)orientation);
         obstacleCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
+        groundCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
         precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
     }
 
@@ -279,6 +281,7 @@ public class SpiderController : AIController
         base.Turn(_orientation);
         wallCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
         obstacleCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
+        groundCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
         precipiceCheck.SetPosition(transform.eulerAngles.z / 180f * Mathf.PI, (int)orientation);
     }
 
@@ -555,6 +558,11 @@ public class SpiderController : AIController
                     break;
                 }
         }
+
+        //Проверка на то, что паук находится на поверхности
+        if (spiderOrientation.y < Mathf.Abs(spiderOrientation.x))
+            if (!groundCheck.CheckWall())
+                JumpDown();
 
         prevPosition = new EVector3(pos, true);
     }
