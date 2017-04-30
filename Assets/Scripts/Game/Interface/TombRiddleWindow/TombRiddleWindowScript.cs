@@ -40,6 +40,8 @@ public class TombRiddleWindowScript : InterfaceWindow
             fragments[i].SetNextFragment(fragments[nextIndex]); 
         }
         TombRiddleFragmentScript.tombRiddleWindow = this;
+
+        SpecialFunctions.Settings.languageEventHandler += HandleLanguageChangeEvent;
     }
 
     /// <summary>
@@ -47,15 +49,21 @@ public class TombRiddleWindowScript : InterfaceWindow
     /// </summary>
     public override void OpenWindow()
     {
+        if (!canOpen)
+            return;
         base.OpenWindow();
         Restart();
+        StartCoroutine(CantInteractProcess());
     }
 
     public override void CloseWindow()
     {
+        if (!canClose)
+            return;
         if (dontCloseWindow)
             return;
         base.CloseWindow();
+        StartCoroutine(CantInteractProcess());
     }
 
 
@@ -75,7 +83,7 @@ public class TombRiddleWindowScript : InterfaceWindow
     {
         dontCloseWindow = true;
         foreach (TombRiddleFragmentScript fragment in fragments)
-            fragment.Activate();
+            fragment.Open();
         yield return new WaitForSecondsRealtime(1f);
         dontCloseWindow = false;
         CloseWindow();
@@ -92,6 +100,14 @@ public class TombRiddleWindowScript : InterfaceWindow
             fragments[i].SetOrientation(startFragmentValues[i]);
             fragmentValues[i] = startFragmentValues[i];
         }
+    }
+
+    /// <summary>
+    /// обработка события "Язык игры изменился"
+    /// </summary>
+    public void HandleLanguageChangeEvent(object sender, LanguageChangeEventArgs e)
+    {
+        MakeLanguageChanges(e.Language);
     }
 
 }

@@ -32,8 +32,8 @@ public class LevelCompleteScreenScript : UIPanel, ILanguageChangeable
 
     #region parametres
 
-    protected MultiLanguageText levelMLText = new MultiLanguageText("Уровень", "Level", "", "", ""), 
-                                completeMLText = new MultiLanguageText("пройден!", "complete!", "", "",""),
+    protected MultiLanguageText levelMLText = new MultiLanguageText("Уровень ", "Level ", "", "", ""), 
+                                completeMLText = new MultiLanguageText(" пройден!", " complete!", "", "",""),
                                 secretPlacesFoundMLText=new MultiLanguageText("Найдено секретных мест ", "Secret places were found: ","","","");
     protected string nextLevelName;
 

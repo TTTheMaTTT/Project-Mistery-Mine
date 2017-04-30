@@ -48,6 +48,21 @@ public class SoundChangesEventArgs : EventArgs
 
 }
 
+/// <summary>
+/// Событийные данные об изменения языка игры
+/// </summary>
+public class LanguageChangeEventArgs : EventArgs
+{
+    private LanguageEnum language;
+
+    public LanguageEnum Language { get { return language; } }
+
+    public LanguageChangeEventArgs(LanguageEnum _language)
+    {
+        language = _language;
+    }
+
+}
 
 /// <summary>
 /// Данные о событии, связанном с изменением уровня хп

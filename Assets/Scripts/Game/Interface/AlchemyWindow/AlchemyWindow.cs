@@ -11,7 +11,6 @@ public class AlchemyWindow : InterfaceWindow
 
     #region consts
 
-    private const string unknownPotionText = "Неизвестное зелье";
     private const float drinkTime = 1f;
 
     #endregion //consts
@@ -28,6 +27,7 @@ public class AlchemyWindow : InterfaceWindow
     private Image potionImage;//Изображение зелья
     private Text potionNameText;//Текст с названием зелья
     public Sprite emptyFlaskImage;//Изображение пустой фляги с зельем
+    private MultiLanguageText unknownPotionText = new MultiLanguageText("Неизвестное зелье", "Unknown potion","","","");
 
     private GameObject mixPotionButtonObject, drinkPotionButtonObject;//Кнопки, которые вызывают смешивание и выпивание зелья
 
@@ -44,7 +44,7 @@ public class AlchemyWindow : InterfaceWindow
             if (value!=null)
             {
                 potionImage.sprite = value.potionImage;
-                potionNameText.text = value.haveUsed? value.potionTextName:unknownPotionText;
+                potionNameText.text = value.haveUsed? value.potionTextName.GetText(SettingsScript.language):unknownPotionText.GetText(SettingsScript.language);
                 drinkPotionButtonObject.SetActive(true);
             }
             else
@@ -96,6 +96,9 @@ public class AlchemyWindow : InterfaceWindow
         MixIngredient2 = null;
         CurrentPotion = null;
         ResetActiveSlots();
+
+        SpecialFunctions.Settings.languageEventHandler += HandleLanguageChangeEvent;
+
     }
 
     /// <summary>
@@ -103,6 +106,8 @@ public class AlchemyWindow : InterfaceWindow
     /// </summary>
     public override void OpenWindow()
     {
+        if (!canOpen)
+            return;
         base.OpenWindow();
         EquipmentClass equip = SpecialFunctions.player.GetComponent<HeroController>().Equipment;
         ItemClass[] ingredients = new ItemClass[]{ equip.GetItem("Ambrosia"), equip.GetItem("RootkindPlant"), equip.GetItem("YellowLeaf"), equip.GetItem("EssorRoot")};
@@ -110,6 +115,7 @@ public class AlchemyWindow : InterfaceWindow
             return;
         for (int i = 0; i < ingredientSlots.Count; i++)
             ingredientSlots[i].Ingredient = ingredients[i];
+        StartCoroutine(CantInteractProcess());
     }
 
     /// <summary>
@@ -117,6 +123,9 @@ public class AlchemyWindow : InterfaceWindow
     /// </summary>
     public override void CloseWindow()
     {
+        if (!canClose)
+            return;
+
         base.CloseWindow();
 
         mixSlot1.Ingredient = null;
@@ -125,6 +134,7 @@ public class AlchemyWindow : InterfaceWindow
         MixIngredient2 = null;
         CurrentPotion = null;
         ResetActiveSlots();
+        StartCoroutine(CantInteractProcess());
     }
 
     /// <summary>
@@ -167,6 +177,21 @@ public class AlchemyWindow : InterfaceWindow
     {
         yield return new WaitForSeconds(drinkTime);
         lab.DrinkPotion(_potion);
+    }
+
+    /// <summary>
+    /// обработка события "Язык игры изменился"
+    /// </summary>
+    public void HandleLanguageChangeEvent(object sender, LanguageChangeEventArgs e)
+    {
+        MakeLanguageChanges(e.Language);
+    }
+
+    public override void MakeLanguageChanges(LanguageEnum _language)
+    {
+        base.MakeLanguageChanges(_language);
+        if (currentPotion != null)
+            potionNameText.text = currentPotion.haveUsed ? currentPotion.potionTextName.GetText(SettingsScript.language) : unknownPotionText.GetText(SettingsScript.language);
     }
 
 

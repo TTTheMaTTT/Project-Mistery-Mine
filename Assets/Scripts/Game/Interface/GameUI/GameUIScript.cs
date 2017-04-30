@@ -71,6 +71,7 @@ public class GameUIScript : MonoBehaviour, ILanguageChangeable
     protected GameObject bossHealthPanel;
     protected Image bossHP;
     protected Text bossNameText;
+    protected MultiLanguageText bossName;
 
     #endregion //fields
 
@@ -177,7 +178,6 @@ public class GameUIScript : MonoBehaviour, ILanguageChangeable
         bossHealthPanel = transform.FindChild("BossHealthPanel").gameObject;
         bossHP = bossHealthPanel.transform.FindChild("BossHP").GetComponent<Image>();
         bossNameText = bossHealthPanel.GetComponentInChildren<Text>();
-        MultiLanguageText bossName;
         bossHealthPanel.SetActive(false);
 
         StartCoroutine(CantShowMessagesProcess());
@@ -849,6 +849,7 @@ public class GameUIScript : MonoBehaviour, ILanguageChangeable
         Vector2 size = bossHP.GetComponent<RectTransform>().sizeDelta;
         bossHP.GetComponent<RectTransform>().sizeDelta = new Vector2(bossHPMaxWidth * e.HP / e.MaxHP,size.y);
         bossNameText.text = e.BossName.GetText(SettingsScript.language);
+        bossName = e.BossName;
     }
 
     #endregion //eventHandlers

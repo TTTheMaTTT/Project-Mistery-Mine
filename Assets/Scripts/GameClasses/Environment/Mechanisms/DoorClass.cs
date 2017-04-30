@@ -11,7 +11,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
     #region fields
 
     [SerializeField]protected string keyID;//Название ключа, что откроет эту дверь
-    [SerializeField][TextArea]protected MultiLanguageText closedDoorMessage = new MultiLanguageText("Для того чтобы открыть эту дверь тебе нужен ключ - найди его!",
+    [SerializeField]protected MultiLanguageText closedDoorMessage = new MultiLanguageText("Для того чтобы открыть эту дверь тебе нужен ключ - найди его!",
                                                                                                     "You need a key to open this door - you should find it!", "", "", ""),
                                                           openedDoorMessage = new MultiLanguageText("Дверь открыта",
                                                                                                     "Door is opened","","","");//Какое сообщение должно выводится при различных попытках открыть дверь

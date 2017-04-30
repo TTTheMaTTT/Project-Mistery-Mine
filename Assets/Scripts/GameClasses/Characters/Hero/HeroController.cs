@@ -869,6 +869,9 @@ public class HeroController : CharacterController
         Health = maxHealth;
         dead = false;
         immobile = false;
+        StopAttack();
+        employment = maxEmployment;
+        rigid.mass = 1f;
         Animate(new AnimationEventArgs("stop"));
     }
 

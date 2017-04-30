@@ -6,7 +6,7 @@ using UnityEngine.UI;
 /// <summary>
 /// Скрипт, управляющий одним фрагментом ключа в головоломке двери в гробницу
 /// </summary>
-public class TombRiddleFragmentScript : MonoBehaviour
+public class TombRiddleFragmentScript : UIElementScript
 {
 
     #region consts
@@ -31,6 +31,20 @@ public class TombRiddleFragmentScript : MonoBehaviour
     private bool turning = false;//Поворачивается ли фрагмент в данный момент
     public bool Turning { get { return turning; } }
     private bool activated=false;
+
+    public override UIElementStateEnum ElementState
+    {
+        get
+        {
+            return base.ElementState;
+        }
+
+        set
+        {
+            base.ElementState = value;
+            img.color = value!=UIElementStateEnum.inactive && !activated ? Color.yellow : new Color(0f, 0f, 0f, 0f);
+        }
+    }
 
     #endregion //parametres
 
@@ -103,20 +117,17 @@ public class TombRiddleFragmentScript : MonoBehaviour
         nextFragment = _nextFragment;
     }
 
-    public void Activate()
+    public override void Activate()
+    {
+        Turn();
+    }
+
+    public void Open()
     {
         activated = true;
         anim.PlayInFixedTime("Activate");
         img.color = new Color(0f, 0f, 0f, 0f);
     }
 
-    /// <summary>
-    /// Подсветить кнопку
-    /// </summary>
-    /// <param name="highlighted"></param>
-    public void Highlight(bool highlighted)
-    {
-        img.color = highlighted && !activated ? Color.yellow : new Color(0f, 0f, 0f, 0f);
-    }
 
 }

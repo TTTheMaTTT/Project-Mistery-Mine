@@ -13,6 +13,7 @@ public class SettingsScript : InterfaceWindow
     #region EventHandlers
 
     public EventHandler<SoundChangesEventArgs> soundEventHandler;
+    public EventHandler<LanguageChangeEventArgs> languageEventHandler;
 
     #endregion //eventHandlers
 
@@ -54,6 +55,10 @@ public class SettingsScript : InterfaceWindow
 
         languageText = panel.FindChild("LanguageChange").FindChild("LanguageText").GetComponent<Text>();
 
+    }
+
+    void Start()
+    {
         if (PlayerPrefs.HasKey("Language"))
         {
             language = (LanguageEnum)PlayerPrefs.GetInt("Language");
@@ -73,9 +78,8 @@ public class SettingsScript : InterfaceWindow
             ILanguageChangeable lChangeable = interfaceWindows.GetChild(i).GetComponent<ILanguageChangeable>();
             if (lChangeable != null)
                 lChangeable.MakeLanguageChanges(language);
-
         }
-
+        OnLanguageChange(new LanguageChangeEventArgs(language));
     }
 
     /// <summary>
@@ -126,6 +130,17 @@ public class SettingsScript : InterfaceWindow
                 lChangeable.MakeLanguageChanges(language);
 
         }
+        OnLanguageChange(new LanguageChangeEventArgs(language));
+    }
+
+    /// <summary>
+    /// Событие язык игры изменился
+    /// </summary>
+    /// <param name="e"></param>
+    protected void OnLanguageChange(LanguageChangeEventArgs e)
+    {
+        if (languageEventHandler != null)
+            languageEventHandler(this, e);
     }
 
     /// <summary>
