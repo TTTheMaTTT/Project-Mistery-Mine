@@ -8,12 +8,6 @@ using System.Collections;
 public class CheckpointController : MonoBehaviour, IInteractive
 {
 
-    #region consts
-
-    protected const string battleMessage = "Вы не можете воспользоваться тотемом, пока находитесь в бою";
-
-    #endregion //consts
-
     #region fields
 
     Animator anim;
@@ -23,6 +17,9 @@ public class CheckpointController : MonoBehaviour, IInteractive
     #endregion //fields
 
     #region parametres
+
+    protected MultiLanguageText battleMessage = new MultiLanguageText("Вы не можете воспользоваться тотемом, пока находитесь в бою",
+                                                                      "You can't use totem when you are in battle","","","");
 
     public int checkpointNumb = 0;//Номерной знак чекпоинта на уровне
     public bool activated = false;//Чекпоинт можно активировать лишь один раз
@@ -79,7 +76,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
     {
         if (SpecialFunctions.battleField.enemiesCount > 0)
         {
-            SpecialFunctions.SetText(battleMessage, 2.5f);
+            SpecialFunctions.SetText(2.5f,battleMessage);
             return;
         }
         if (!activated)

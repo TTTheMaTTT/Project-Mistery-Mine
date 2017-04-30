@@ -11,7 +11,7 @@ public class EquipmentCellScript : UIElementScript
 
     #region const
 
-    protected const float inactiveIntensity = 1f, activeIntensity = .8f, clickedIntensity = .6f;//Как будет подкрашиваться кнопка при различных уровнях взаимодействия с ней
+    protected const float inactiveIntensity = 1f, activeIntensity = .5f, clickedIntensity = .3f;//Как будет подкрашиваться кнопка при различных уровнях взаимодействия с ней
 
     #endregion const
 
@@ -97,8 +97,6 @@ public class EquipmentCellScript : UIElementScript
 
         set
         {
-            if (isCurrentWeapon || weapon==null)
-                return;
             base.ElementState = value;
             switch (value)
             {
@@ -139,7 +137,9 @@ public class EquipmentCellScript : UIElementScript
     /// </summary>
     public void SetEquipmentCellActive()
     {
-        if (weapon!=null)
+        if (activated)
+            eMenu.ChangeWeapon();
+        else if (weapon != null)
             Activated = true;
     }
 
@@ -148,11 +148,20 @@ public class EquipmentCellScript : UIElementScript
     /// </summary>
     public override void Activate()
     {
-        if (isCurrentWeapon)
+        if (isCurrentWeapon || weapon == null)
             return;
         base.Activate();
         button.onClick.Invoke();
         SetActive();
+    }
+
+    /// <summary>
+    /// Сделать ячейку активной
+    /// </summary>
+    public override void SetActive()
+    {
+        base.SetActive();
+        ShowWeaponText();
     }
 
     /// <summary>
@@ -161,7 +170,7 @@ public class EquipmentCellScript : UIElementScript
     public void ShowWeaponText()
     {
         if (weaponNameText != null && weapon != null)
-            weaponNameText.text = weapon.itemTextName;
+            weaponNameText.text = weapon.itemMLTextName.GetText(SettingsScript.language);
     }
 
 

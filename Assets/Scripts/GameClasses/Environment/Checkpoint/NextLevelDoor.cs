@@ -11,11 +11,13 @@ public class NextLevelDoor : DoorClass
     #region consts
 
     protected const float nextLevelTime = 2.1f;//Время, за которое происходит переход на следующий уровень
-    protected const string battleMessage = "Вы не можете воспользоваться дверью, пока находитесь в бою";
 
     #endregion //consts
 
     #region parametres
+
+    protected MultiLanguageText battleMessage = new MultiLanguageText("Вы не можете воспользоваться дверью, пока находитесь в бою",
+                                                                      "You can't use the door when you are in battle", "", "", "");
 
     [SerializeField]
     protected string nextLevelName;//Следующий уровень, на который произойдёт переход
@@ -34,7 +36,7 @@ public class NextLevelDoor : DoorClass
     {
         if (SpecialFunctions.battleField.enemiesCount > 0)
         {
-            SpecialFunctions.SetText(battleMessage, 2.5f);
+            SpecialFunctions.SetText(2.5f, battleMessage);
             return;
         }
         HeroController player = SpecialFunctions.Player.GetComponent<HeroController>();
@@ -47,10 +49,10 @@ public class NextLevelDoor : DoorClass
             else if (player.Equipment.bag.Find(x => x.itemName == keyID))
                 Open();
             else
-                SpecialFunctions.SetText(closedDoorMessage, 2.5f);
+                SpecialFunctions.SetText(2.5f, closedDoorMessage);
         }
         else
-            SpecialFunctions.SetText(closedDoorMessage, 2.5f);
+            SpecialFunctions.SetText(2.5f, closedDoorMessage);
     }
 
     /// <summary>

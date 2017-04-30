@@ -24,9 +24,9 @@ public class TombRiddleWindowScript : InterfaceWindow
 
     #endregion //parametres
 
-    protected override void Awake()
+    public override void Initialize()
     {
-        base.Awake();
+        base.Initialize();
         tombDoor = FindObjectOfType<TombDoorClass>();
         fragments = new List<TombRiddleFragmentScript>();
         Transform fragmentsTrans = transform.FindChild("Panel").FindChild("Fragments");

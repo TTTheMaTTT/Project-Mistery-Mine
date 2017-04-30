@@ -66,7 +66,7 @@ public class SentryIndicator : MonoBehaviour
             spider.Turn((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(SpecialFunctions.player.transform.position.x - trans.position.x)));
         }
         yield return new WaitForSeconds(noticeTime - suspicionTime);
-        SpecialFunctions.SetText("Вас заметили", 6f);
+        SpecialFunctions.SetText(6f, new MultiLanguageText("Вас обнаружили","You were detected", "", "", ""));
         StartCoroutine("EndLevelProcess");
 
     }

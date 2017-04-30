@@ -15,9 +15,9 @@ public class GameMenuScript : InterfaceWindow
 
     #endregion //fields
 
-    protected override void Awake()
+    public override void Initialize()
     {
-        base.Awake();
+        base.Initialize();
         settings = SpecialFunctions.gameInterface.GetComponentInChildren<SettingsScript>();
     }
 

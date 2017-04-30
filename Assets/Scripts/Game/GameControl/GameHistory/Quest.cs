@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 
 /// <summary>
 /// Класс реализующий такое понятие, как квест
@@ -12,6 +13,7 @@ public class Quest : ScriptableObject
 
     public string questName;//Имя квеста
     public List<string> questLine = new List<string>();//Какие есть подзадачи у квеста?
+    public List<QuestLine> questLines = new List<QuestLine>();//Какие есть подзадачи у квеста?
 
     [HideInInspector]
     public int stage = 0;// На какой стадии находится квест?
@@ -41,4 +43,43 @@ public class Quest : ScriptableObject
         statisticCount = 0;
     }
 
+}
+
+[System.Serializable]
+public class QuestLine
+{
+    public string questLineName;
+    public MultiLanguageText mlText;
+
+    public QuestLine(string _questLineName, MultiLanguageText _mlText)
+    {
+        questLineName = _questLineName;
+        mlText = _mlText;
+    }
+
+    public QuestLine(QuestLine _qLine)
+    {
+        questLineName = _qLine.questLineName;
+        mlText = _qLine.mlText;
+    }
+
+}
+
+[CustomEditor(typeof(Quest), true)]
+public class QuestEditor : Editor
+{
+
+    #region fields
+
+    Quest quest;
+
+    #endregion //fields
+
+    public virtual void OnEnable()
+    {
+        quest = (Quest)target;
+        quest.questLines = new List<QuestLine>();
+        foreach (string line in quest.questLine)
+            quest.questLines.Add(new QuestLine(line, new MultiLanguageText(line, "", "", "", "")));
+    }
 }

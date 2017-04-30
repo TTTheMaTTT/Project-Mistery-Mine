@@ -59,8 +59,8 @@ public class GameHistory : MonoBehaviour, IHaveStory
                                             { "saveGame", new List<string>() },
                                             { "restartGame", new List<string>() },
                                             { "goToNextLevel",new List<string>()},
-                                            { "setText", new List<string>() },
-                                            { "setSecretText", new List<string>() },
+                                            { "setText", SpecialFunctions.gameController.LanguageChanges.ConvertAll<string>(x=>x.questLineName) },
+                                            { "setSecretText", SpecialFunctions.gameController.LanguageChanges.ConvertAll<string>(x=>x.questLineName) },
                                             { "setLight", new List<string>() },
                                             { "setHDR",new List<string>()},
                                             { "setDeathEvent", new List<string> {"levelEnd", "nothing" } },
@@ -525,7 +525,7 @@ public class History
                         {
                             Quest quest1 = activeQuests.Find(x => (x.questName == _quest.questName));
                             int questStage=quest1.stage++;
-                            if (questStage >= quest1.questLine.Count)
+                            if (questStage >= quest1.questLines.Count)
                             {
                                 activeQuests.Remove(quest1);
                             }
@@ -545,15 +545,16 @@ public class History
                         if (ContainsQuest(_quest))
                         {
                             Quest quest1 = activeQuests.Find(x => (x.questName == _quest.questName));
-                            if (quest1.questLine.Contains(_action.id1))
+                            QuestLine qLine = quest1.questLines.Find(x => x.questLineName == _action.id1);
+                            if (qLine!=null)
                             {
-                                quest1.stage = quest1.questLine.IndexOf(_action.id1);
+                                quest1.stage = quest1.questLines.IndexOf(qLine);
                             }
                         }
                         break;
                     }
             }
-            SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<string>(x => x.questLine[x.stage]));
+            SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<QuestLine>(x => x.questLines[x.stage]));
             HandleStatisticCountEvent(this, new StoryEventArgs("", 0));
         }
     }
@@ -608,7 +609,9 @@ public class History
     /// </summary>
     public void SetStoryText(StoryAction _action)
     {
-        SpecialFunctions.SetText(_action.id1, _action.argument);
+        QuestLine lChange = SpecialFunctions.gameController.LanguageChanges.Find(x => x.questLineName == _action.id1);
+        if (lChange!=null)
+            SpecialFunctions.SetText(_action.argument,lChange.mlText);
     }
 
     /// <summary>
@@ -616,7 +619,9 @@ public class History
     /// </summary>
     public void SetStorySecretText(StoryAction _action)
     {
-        SpecialFunctions.SetSecretText(_action.argument, _action.id1);
+        QuestLine lChange = SpecialFunctions.gameController.LanguageChanges.Find(x => x.questLineName == _action.id1);
+        if (lChange != null)
+            SpecialFunctions.SetSecretText(_action.argument, lChange.mlText);
     }
 
     /// <summary>
@@ -713,22 +718,31 @@ public class History
 
     protected void HandleStatisticCountEvent(object other, StoryEventArgs e)
     {
-        List<string> questLines = new List<string>();
+        ConsiderQuests();
+    }
+
+    /// <summary>
+    /// Обновить список активных квестов
+    /// </summary>
+    public void ConsiderQuests()
+    {
+        List<QuestLine> questLines = new List<QuestLine>();
         foreach (Quest _quest in activeQuests)
         {
-            string s = _quest.questLine[_quest.stage];
-            if (_quest.hasStatistic && s.Contains("/"))
+            QuestLine qLine = new QuestLine(_quest.questLines[_quest.stage]);
+            if (_quest.hasStatistic && qLine.questLineName.Contains("/"))
             {
-                string s1 = s.Substring(0, s.LastIndexOf("/"));
-                string s2 = s.Substring(s.LastIndexOf("/") + 1);
-                if (_quest.statisticName == e.ID && _quest.questLine[_quest.stage].Contains("/"))
+                for (int i = 0; i < 5; i++)
                 {
-                    _quest.statisticCount = e.Argument;
+                    string s = qLine.mlText.GetText((LanguageEnum)i);
+                    string s1 = s.Substring(0, s.LastIndexOf("/"));
+                    string s2 = s.Substring(s.LastIndexOf("/") + 1);
+                    qLine.mlText.SetText((LanguageEnum)i, s1 + _quest.statisticCount.ToString() + "/" + s2);
                 }
-                questLines.Add(s1 + _quest.statisticCount.ToString() + "/" + s2);
+                questLines.Add(qLine);
             }
             else
-                questLines.Add(s);
+                questLines.Add(qLine);
         }
         SpecialFunctions.gameUI.ConsiderQuests(questLines);
     }
@@ -765,7 +779,7 @@ public class History
                 Quest _quest = null;
                 if ((_quest = SpecialFunctions.statistics.GetQuest(questName)) != null)
                     activeQuests.Add(new Quest(_quest));
-                SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<string>(x => x.questLine[x.stage]));
+                SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<QuestLine>(x => x.questLines[x.stage]));
             }
         }
 

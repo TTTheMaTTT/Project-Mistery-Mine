@@ -8,14 +8,10 @@ using UnityEngine;
 public class SpiderWarriorController : SpiderController
 {
 
-    #region consts
-
-    protected const string takeDamageMessage = "Не стоит испытывать благосклонность Королевы на прочность";
-
-    #endregion //consts
-
     #region parametres
 
+    protected MultiLanguageText takeDamageMessage = new MultiLanguageText("Не стоит испытывать благосклонность Королевы на прочность",
+                                                                          "Don't try to betray Spider Queen", "", "","");
     protected int takeDamageTimes = 0;//Сколько раз уже паук получал урон
 
     public override LoyaltyEnum Loyalty
@@ -48,7 +44,7 @@ public class SpiderWarriorController : SpiderController
             if (takeDamageTimes >= 2)
                 base.TakeAttackerInformation(attackerInfo);
             else
-                SpecialFunctions.SetText(takeDamageMessage, 2.5f);
+                SpecialFunctions.SetText(2.5f, takeDamageMessage);
         }
         else
             base.TakeAttackerInformation(attackerInfo); 

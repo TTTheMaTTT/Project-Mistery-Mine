@@ -37,6 +37,7 @@ public class DialogWindowScript : MonoBehaviour
     protected Image portrait;
     protected GameObject speechPanel;
     protected GameObject answerPanel;
+    protected UIPanel answerUIPanel;
     protected DialogAnswerButton answerButton1, answerButton2;
     protected Text answerText;
 
@@ -95,6 +96,12 @@ public class DialogWindowScript : MonoBehaviour
                     !InputCollection.instance.GetButtonDown("Menu") && !noInput && InterfaceWindow.openedWindow == null : false)
                     NextSpeech();
             }
+
+            if (answerPanel.active)
+                if (UIElementScript.activePanel != answerUIPanel? InterfaceWindow.openedWindow==null:false)
+                    answerUIPanel.SetActive();
+            
+
         }
     }
 
@@ -452,7 +459,7 @@ public class DialogWindowScript : MonoBehaviour
             answerButton1.InitializeAnswerButton(_speech.answer1);
             answerButton2.InitializeAnswerButton(_speech.answer2);
             if (_speech.hasText)
-                answerText.text = _speech.text;
+                answerText.text = _speech.speechText.mlText.GetText(SettingsScript.language);
             else
                 answerText.text = "";
         }
@@ -501,8 +508,8 @@ public class DialogWindowScript : MonoBehaviour
 
         if (_speech.speechMod != SpeechModEnum.answer && _speech.hasText)
         {
-            portrait.sprite = _speech.portrait;
-            speechText.text = _speech.text;
+            portrait.sprite = _speech.speechText.portrait;
+            speechText.text = _speech.speechText.mlText.GetText(SettingsScript.language);
             speechPanel.SetActive(true);
         }
         else
@@ -580,6 +587,7 @@ public class DialogWindowScript : MonoBehaviour
         answerButton2 = answerPanel.transform.FindChild("Answer2").GetComponent<DialogAnswerButton>();
         answerText = answerPanel.transform.FindChild("AnswerText").GetComponent<Text>();
         answerPanel.SetActive(false);
+        answerUIPanel = answerPanel.GetComponent<UIPanel>();
         speechPanel.SetActive(false);
 
         dialogQueue = new List<DialogQueueElement>();

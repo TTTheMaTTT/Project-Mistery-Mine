@@ -49,6 +49,8 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     #region parametres
 
     protected bool spoken = false;
+    protected MultiLanguageText battleMessage = new MultiLanguageText("Вы не можете разговаривать, пока находитесь в бою",
+                                                                      "You can't talk when you are in battle", "", "", "");
 
     [SerializeField]protected DialogModEnum speechMod;
     [SerializeField]protected int dialogArgument1, dialogArgument2;
@@ -436,6 +438,12 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// </summary>
     public virtual void Interact()
     {
+        if (SpecialFunctions.battleField.enemiesCount > 0)
+        {
+            SpecialFunctions.SetText(2.5f, battleMessage);
+            return;
+        }
+
         if (canTalk)
         {
             Talk();
@@ -464,7 +472,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// </summary>
     public virtual bool IsInteractive()
     {
-        return SpecialFunctions.battleField.enemiesCount == 0 && possibleTalk && SpecialFunctions.dialogWindow.CurrentDialog == null;
+        return possibleTalk && SpecialFunctions.dialogWindow.CurrentDialog == null;
     }
 
     #endregion //IInteractive

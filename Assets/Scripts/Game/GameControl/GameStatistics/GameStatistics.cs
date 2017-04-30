@@ -92,8 +92,8 @@ public class GameStatistics : MonoBehaviour, IHaveStory
     [HideInInspector]
     public string statisticsPath = "Assets/Database/Stories/Statistics/";
 
-    [SerializeField] private string levelTextName;//Название уровня, что может отображаться в игре
-    public string LevelTextName { get { return levelTextName; } }
+    [SerializeField] private MultiLanguageText levelTextName;//Название уровня, что может отображаться в игре
+    public MultiLanguageText LevelTextName { get { return levelTextName; } }
 
     #endregion //parametres
 

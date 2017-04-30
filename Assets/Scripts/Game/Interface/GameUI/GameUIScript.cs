@@ -7,7 +7,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Скрипт, управляющий игровым интерфейсом
 /// </summary>
-public class GameUIScript : MonoBehaviour
+public class GameUIScript : MonoBehaviour, ILanguageChangeable
 {
 
     #region consts
@@ -84,6 +84,8 @@ public class GameUIScript : MonoBehaviour
     protected Color fadeColor = new Color(0f, 0f, 0f, 0f);
     protected Color dmgColor = new Color (0f,0f,0f,0f);
     protected  float dmgScreenFadeSpeed = 2f;//Скорость мигания экрана урона
+
+    [SerializeField]protected List<MultiLanguageTextInfo> languageChanges = new List<MultiLanguageTextInfo>();
 
     #endregion //parametres
 
@@ -175,6 +177,7 @@ public class GameUIScript : MonoBehaviour
         bossHealthPanel = transform.FindChild("BossHealthPanel").gameObject;
         bossHP = bossHealthPanel.transform.FindChild("BossHP").GetComponent<Image>();
         bossNameText = bossHealthPanel.GetComponentInChildren<Text>();
+        MultiLanguageText bossName;
         bossHealthPanel.SetActive(false);
 
         StartCoroutine(CantShowMessagesProcess());
@@ -323,7 +326,7 @@ public class GameUIScript : MonoBehaviour
     /// <summary>
     /// Учесть, какие квесты на данный момент активны
     /// </summary>
-    public void ConsiderQuests(List<string> activeQuests)
+    public void ConsiderQuests(List<QuestLine> activeQuests)
     {
         for (int i = 0; i < 3; i++)
         {
@@ -331,7 +334,7 @@ public class GameUIScript : MonoBehaviour
             if (i >= activeQuests.Count)
                 continue;
             else
-                questTexts[i].text = activeQuests[i];
+                questTexts[i].text = activeQuests[i].mlText.GetText(SettingsScript.language);
         }
     }
 
@@ -388,9 +391,9 @@ public class GameUIScript : MonoBehaviour
         Image _img = oneItemScreen.transform.FindChild("CollectionItemImage").GetComponent<Image>();
         _img.sprite = _item.itemImage;
         Text _text = oneItemScreen.transform.FindChild("ItemNameText").GetComponent<Text>();
-        _text.text = _item.itemTextName1;
+        _text.text = _item.itemMLTextName1.GetText(SettingsScript.language);
         Text descriptionText = oneItemScreen.transform.FindChild("ItemDescriptionText").GetComponent<Text>();
-        descriptionText.text = _item.itemDescription;
+        descriptionText.text = _item.itemMLDescription.GetText(SettingsScript.language);
         oneItemScreen.SetActive(true);
         yield return new WaitForSecondsRealtime(collectionItemTime);
 
@@ -466,7 +469,7 @@ public class GameUIScript : MonoBehaviour
         Text _text = oneItemScreen.transform.FindChild("ItemNameText").GetComponent<Text>();
         Text descriptionText = oneItemScreen.transform.FindChild("ItemDescriptionText").GetComponent<Text>();
         descriptionText.text = _description;
-        _text.text = _item.itemTextName1;
+        _text.text = _item.itemMLTextName1.GetText(SettingsScript.language);
         oneItemScreen.SetActive(true);
         yield return new WaitForSecondsRealtime(collectionItemTime);
         
@@ -509,7 +512,7 @@ public class GameUIScript : MonoBehaviour
     /// <summary>
     /// выставить текст на экран сообщений
     /// </summary>
-    public void SetMessage(string _info, float textTime)
+    public void SetMessage(float textTime, string _info)
     {
         if (cantShowMessages)
             return;
@@ -724,6 +727,17 @@ public class GameUIScript : MonoBehaviour
         bossHealthPanel.SetActive(false);
     }
 
+    /// <summary>
+    /// Применить языковые изменения
+    /// </summary>
+    /// <param name="_language">Язык, на который переходит окно</param>
+    public virtual void MakeLanguageChanges(LanguageEnum _language)
+    {
+        foreach (MultiLanguageTextInfo _languageChange in languageChanges)
+            _languageChange.text.text = _languageChange.mLanguageText.GetText(_language);
+        SpecialFunctions.history.ConsiderQuests();
+    }
+
     #region eventHandlers
 
     /// <summary>
@@ -834,7 +848,7 @@ public class GameUIScript : MonoBehaviour
         StopCoroutine("BossPanelInactiveProcess");
         Vector2 size = bossHP.GetComponent<RectTransform>().sizeDelta;
         bossHP.GetComponent<RectTransform>().sizeDelta = new Vector2(bossHPMaxWidth * e.HP / e.MaxHP,size.y);
-        bossNameText.text = e.BossName;
+        bossNameText.text = e.BossName.GetText(SettingsScript.language);
     }
 
     #endregion //eventHandlers

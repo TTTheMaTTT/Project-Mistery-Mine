@@ -34,7 +34,7 @@ public class CountdownScript : MonoBehaviour, IHaveID, IHaveStory
     private float countdownTime = 120f;
 
     [SerializeField]
-    private string endCountdownText = "";
+    private MultiLanguageText endCountdownText;
 
     [SerializeField]
     private int id;
@@ -54,8 +54,8 @@ public class CountdownScript : MonoBehaviour, IHaveID, IHaveStory
     IEnumerator CountdownProcess()
     {
         yield return new WaitForSeconds(countdownTime);
-        if (endCountdownText!="")
-            SpecialFunctions.SetText(endCountdownText, 6f);
+        if (endCountdownText.russian!="")
+            SpecialFunctions.SetText( 6f, endCountdownText);
         SpecialFunctions.StartStoryEvent(this, StoryCountdownFinished, new StoryEventArgs());
 
     }

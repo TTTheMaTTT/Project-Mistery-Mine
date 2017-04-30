@@ -62,9 +62,9 @@ public class UIImageButtonScript : UIElementScript
     /// </summary>
     public override void Activate()
     {
+        SetActive();
         base.Activate();
         button.onClick.Invoke();
-        SetActive();
     }
 
 }

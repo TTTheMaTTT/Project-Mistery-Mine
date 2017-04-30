@@ -96,13 +96,13 @@ public class BossHealthEventArgs : EventArgs
 {
     private float hp;
     private float maxHP;
-    private string bossName;
+    private MultiLanguageText bossName;
 
     public float HP { get { return hp; } }
     public float MaxHP { get { return maxHP; } }
-    public string BossName { get { return bossName; } }
+    public MultiLanguageText BossName { get { return bossName; } }
 
-    public BossHealthEventArgs(float _hp, float _maxHP, string _bossName)
+    public BossHealthEventArgs(float _hp, float _maxHP, MultiLanguageText _bossName)
     {
         hp = _hp;
         maxHP = _maxHP;

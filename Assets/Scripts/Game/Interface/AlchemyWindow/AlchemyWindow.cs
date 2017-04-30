@@ -66,9 +66,9 @@ public class AlchemyWindow : InterfaceWindow
 
     #endregion //parametres
 
-    protected override void Awake()
+    public override void Initialize()
     {
-        base.Awake();
+        base.Initialize();
         lab = FindObjectOfType<AlchemyLab>();
         potions = new List<PotionClass>();
 

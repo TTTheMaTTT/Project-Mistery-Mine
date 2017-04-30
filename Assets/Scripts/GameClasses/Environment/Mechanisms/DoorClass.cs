@@ -11,10 +11,10 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
     #region fields
 
     [SerializeField]protected string keyID;//Название ключа, что откроет эту дверь
-    [SerializeField][TextArea]protected string closedDoorMessage = 
-                                               "Для того чтобы открыть эту дверь тебе нужен ключ - найди его!",
-                                               openedDoorMessage =
-                                               "Дверь открыта";//Какое сообщение должно выводится при различных попытках открыть дверь
+    [SerializeField][TextArea]protected MultiLanguageText closedDoorMessage = new MultiLanguageText("Для того чтобы открыть эту дверь тебе нужен ключ - найди его!",
+                                                                                                    "You need a key to open this door - you should find it!", "", "", ""),
+                                                          openedDoorMessage = new MultiLanguageText("Дверь открыта",
+                                                                                                    "Door is opened","","","");//Какое сообщение должно выводится при различных попытках открыть дверь
 
     protected Collider2D col;
     protected Animator anim;
@@ -47,7 +47,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
     {
         if (col != null)
             col.enabled = false;
-        SpecialFunctions.SetText(openedDoorMessage, 1.5f);
+        SpecialFunctions.SetText(1.5f, openedDoorMessage);
         if (anim != null)
         {
             anim.Play("Opened");
@@ -76,7 +76,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism
         else if (player.Equipment.bag.Find(x => x.itemName == keyID))
             Open();
         else
-            SpecialFunctions.SetText(closedDoorMessage, 2.5f);
+            SpecialFunctions.SetText(2.5f, closedDoorMessage);
     }
 
     /// <summary>

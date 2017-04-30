@@ -40,7 +40,7 @@ public class BatHeroController : HeroController
 
         if (employment > 7)
         {
-            if (InputCollection.instance.GetButtonDown("Attack"))
+            if (InputCollection.instance.GetButtonDown("Interact"))
                 if (interactor.ReadyForInteraction())
                     interactor.Interact();
             if (InputCollection.instance.GetButtonDown("ChangeInteraction"))

@@ -237,16 +237,16 @@ public class HeroController : CharacterController
                         {
                             if (groundState != GroundStateEnum.crouching)
                             {
-                                if (interactor.ReadyForInteraction())
-                                    interactor.Interact();
+                                if (currentWeapon.chargeable)
+                                    StartCharge();
                                 else
-                                {
-                                    if (currentWeapon.chargeable)
-                                        StartCharge();
-                                    else
-                                        Attack();
-                                }
+                                    Attack();
                             }
+                        }
+                        else if (InputCollection.instance.GetButtonDown("Interact"))
+                        {
+                            if (interactor.ReadyForInteraction())
+                                interactor.Interact();
                         }
                         else if (InputCollection.instance.GetButtonDown("Flip"))
                             if ((rigid.velocity.x * (int)orientation > .1f) && (groundState == GroundStateEnum.grounded) && (employment > 8))
@@ -916,7 +916,7 @@ public class HeroController : CharacterController
             equipment.weapons.Add(_weapon);
             //SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName1);
             OnEquipmentChanged(new EquipmentEventArgs(null, _weapon));
-            SpecialFunctions.gameUI.ConsiderItem(_weapon, _weapon.itemDescription);
+            SpecialFunctions.gameUI.ConsiderItem(_weapon, _weapon.itemMLDescription.GetText(SettingsScript.language));
             additionalWeapon = _weapon;
         }
         else if (item is HeartClass)
@@ -941,13 +941,17 @@ public class HeroController : CharacterController
                 equipment.trinkets.Add(_trinket);
             }
             OnEquipmentChanged(new EquipmentEventArgs(null, _trinket));
-            SpecialFunctions.gameUI.ConsiderItem(_trinket, _trinket.itemDescription);
+            SpecialFunctions.gameUI.ConsiderItem(_trinket, _trinket.itemMLDescription.GetText(SettingsScript.language));
         }
         else
         {
             if (item.itemName == "GoldHeart")
             {
-                SpecialFunctions.gameUI.ConsiderItem(item, "Увеличивает максимальное количество здоровья",4.5f);
+                SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Увеличивает максимальное количество здровья",
+                                                                                 "Increases max number of hit points",
+                                                                                 "",
+                                                                                 "",
+                                                                                 "").GetText(SettingsScript.language), 4.5f);
                 MaxHealth += 4f;
             }
             else
@@ -967,9 +971,14 @@ public class HeroController : CharacterController
                 }
             }
             else if (item.itemName == "LifeBookPage")
-                SpecialFunctions.gameUI.ConsiderItem(item, "Увеличивает максимальное число активных особых предметов",4.5f);
+                SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Увеличивает максимальное число активных особых предметов",
+                                                                                 "Increases max number of active trinkets",
+                                                                                 "",
+                                                                                 "",
+                                                                                 "").GetText(SettingsScript.language),4.5f);
             else
-                SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName1);
+                SpecialFunctions.SetSecretText(2f, new MultiLanguageText("Вы нашли ",
+                                                                         "You have found","","","").GetText(SettingsScript.language) + item.itemMLTextName1.GetText(SettingsScript.language));
         }
     }
 

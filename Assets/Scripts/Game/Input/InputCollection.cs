@@ -41,12 +41,12 @@ public class InputCollection : MonoBehaviour
         if (InputManager.ActiveDevice != null)
             InitializeData();
         InputManager.OnDeviceAttached += inputDevice => InitializeData();
-        yield return new WaitForSeconds(initializeTime);
-        if (InputManager.ActiveDevice != null)
-            InitializeData();
-        yield return new WaitForSeconds(initializeTime);
-        if (InputManager.ActiveDevice != null)
-            InitializeData();
+        for (int i = 0; i < 10; i++)
+        {
+            yield return new WaitForSecondsRealtime(initializeTime);
+            if (InputManager.ActiveDevice != null)
+                InitializeData();
+        }
     }
 
 /*    public void Update()

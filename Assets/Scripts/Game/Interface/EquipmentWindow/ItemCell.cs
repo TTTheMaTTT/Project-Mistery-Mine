@@ -11,7 +11,7 @@ public class ItemCell : UIElementScript
 
     #region consts
 
-    protected const float inactiveIntensity = 1f, activeIntensity = .8f, clickedIntensity = .6f;//Как будет подкрашиваться кнопка при различных уровнях взаимодействия с ней
+    protected const float inactiveIntensity = 1f, activeIntensity = .5f, clickedIntensity = .3f;//Как будет подкрашиваться кнопка при различных уровнях взаимодействия с ней
 
     #endregion //consts
 
@@ -73,6 +73,12 @@ public class ItemCell : UIElementScript
 
     #endregion //parametres
 
+    public override void SetActive()
+    {
+        base.SetActive();
+        ShowItemText();
+    }
+
     public override void Initialize()
     {
         itemImage = GetComponent<Image>();
@@ -85,7 +91,7 @@ public class ItemCell : UIElementScript
     public void ShowItemText()
     {
         if (item != null)
-            itemNameText.text = item.itemTextName;
+            itemNameText.text = item.itemMLTextName.GetText(SettingsScript.language);
     }
 
 }

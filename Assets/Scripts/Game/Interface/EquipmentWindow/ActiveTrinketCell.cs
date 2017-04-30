@@ -12,7 +12,7 @@ public class ActiveTrinketCell : UIElementScript, IDropHandler
 
     #region consts
 
-    protected const float inactiveIntensity = 1f, activeIntensity = .8f, clickedIntensity = .6f;//Как будет подкрашиваться кнопка при различных уровнях взаимодействия с ней
+    protected const float inactiveIntensity = 1f, activeIntensity = .5f, clickedIntensity = .3f;//Как будет подкрашиваться кнопка при различных уровнях взаимодействия с ней
 
     #endregion //consts
 
@@ -121,7 +121,13 @@ public class ActiveTrinketCell : UIElementScript, IDropHandler
     public void SetActive(bool _activated)
     {
         activated = _activated;
-        buttonImage.color = _activated? new Color(1f, 1f, 0f, .4f) : new Color(0f, 0f, 0f, 0f);
+        buttonImage.color = _activated ? new Color(1f, 1f, 0f, .4f) : new Color(0f, 0f, 0f, 0f);
+    }
+
+    public override void SetActive()
+    {
+        base.SetActive();
+        ShowTrinketText();
     }
 
     /// <summary>
@@ -143,7 +149,7 @@ public class ActiveTrinketCell : UIElementScript, IDropHandler
     public void ShowTrinketText()
     {
         if (trinket != null)
-            trinketNameText.text = trinket.itemTextName;
+            trinketNameText.text = trinket.itemMLTextName.GetText(SettingsScript.language);
     }
 
     /// <summary>

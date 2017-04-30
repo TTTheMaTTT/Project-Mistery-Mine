@@ -35,13 +35,14 @@ public class GameController : MonoBehaviour
 
     //protected Dictionary<string, BuffFunction> buffFunctions = new Dictionary<string, BuffFunction>();
     protected Dictionary<string, StopBuffFunction> stopBuffFunctions = new Dictionary<string, StopBuffFunction>();
-    protected Dictionary<string, string> buffNamesDict = new Dictionary<string, string>() { {"AncestorsRevenge","Месть предков"},
-                                                                                            {"TribalLeader", "Вождь племени" },
-                                                                                            {"TreasureHunter", "Кладоскатель"},
-                                                                                            {"Collector", "Коллекционер"},
-                                                                                            {"AncientDarkness","Древняя тьма"},
-                                                                                            {"TotemAnimal", "Тотемное животное"},
-                                                                                            {"TribalRitual", "Ритуал племени"} };
+    protected Dictionary<string, MultiLanguageText> buffNamesDict = new Dictionary<string, MultiLanguageText>()
+    { {"AncestorsRevenge", new MultiLanguageText("Месть предков","Ancestors revenge","","","")},
+    {"TribalLeader", new MultiLanguageText("Вождь племени", "Tribal leader", "","","")},
+    {"TreasureHunter", new MultiLanguageText("Кладоскатель", "Treasure hunter", "", "","")},
+    {"Collector", new MultiLanguageText("Коллекционер", "Collector", "","","")},
+    {"AncientDarkness",new MultiLanguageText("Древняя тьма", "Ancient darkness","","","")},
+    { "TotemAnimal", new MultiLanguageText("Тотемное животное", "Totem animal", "","","")},
+    { "TribalRitual", new MultiLanguageText("Ритуал племени", "Tribal ritual", "", "", "")} };
 
     protected Dictionary<string, GameEffectDeathFunction> deathEffectsDictionary = new Dictionary<string, GameEffectDeathFunction>();//Словарь игровых эффектов, вызываемых при смерти персонажей (монстров)
     protected Dictionary<string, GameEffectUsualFunction> usualEffectsDictionary = new Dictionary<string, GameEffectUsualFunction>();//Словарь игровых эффектов, вызываемых при, например, 
@@ -85,6 +86,10 @@ public class GameController : MonoBehaviour
     [SerializeField]
     private List<AudioClip> ambientClips = new List<AudioClip>(), musicClips = new List<AudioClip>(), soundClips = new List<AudioClip>();
 
+    [SerializeField]
+    private List<QuestLine> languageChanges = new List<QuestLine>();
+    public List<QuestLine> LanguageChanges { get { return languageChanges; } }
+
     #region saveSystem
 
     /// <summary>
@@ -99,6 +104,9 @@ public class GameController : MonoBehaviour
     #endregion //fields
 
     #region parametres
+
+    protected MultiLanguageText underEffectMLText = new MultiLanguageText("Вы находитесь под действием эффекта \"",
+                                                                          "You are under effect \"", "", "", "");
 
     int profileNumber;
 
@@ -131,10 +139,26 @@ public class GameController : MonoBehaviour
     {
         if (InputCollection.instance.GetButtonDown("Menu"))
             gameMenu.ChangeGameMod();
-        if (Input.GetKeyDown(KeyCode.I))
+        /*if (Input.GetKeyDown(KeyCode.I))
             SpecialFunctions.gameUI.ChangeVisibility();
         if (Input.GetKeyDown(KeyCode.J))
-            SpecialFunctions.CamController.ChangeFreeMode();
+            SpecialFunctions.CamController.ChangeFreeMode();*/
+
+        if (UIElementScript.activePanel!=null)
+        {
+            if (InputCollection.instance.GetButtonDown("InterfaceMoveHorizontal"))
+                UIElementScript.activePanel.MoveHorizontal(Mathf.RoundToInt(Mathf.Sign(InputCollection.instance.GetAxis("InterfaceMoveHorizontal"))));
+            if (InputCollection.instance.GetButtonDown("InterfaceMoveVertical"))
+                UIElementScript.activePanel.MoveVertical(-Mathf.RoundToInt(Mathf.Sign(InputCollection.instance.GetAxis("InterfaceMoveVertical"))));
+            if (InputCollection.instance.GetButtonDown("Cancel"))
+                UIElementScript.activePanel.Cancel();
+        }
+
+        if (UIElementScript.activeElement != null)
+        {
+            if (InputCollection.instance.GetButtonDown("Submit"))
+                UIElementScript.activeElement.Activate();
+        }
     }
 
     protected void Awake()
@@ -303,6 +327,9 @@ public class GameController : MonoBehaviour
         return dialogWindow.BeginDialog(npc, dialog);
     }
 
+    /// <summary>
+    /// Начать диалог
+    /// </summary>
     public bool StartDialog(Dialog dialog)
     {
         return dialogWindow.BeginDialog(dialog);
@@ -1328,7 +1355,7 @@ public class GameController : MonoBehaviour
     public string GetBuffText(string _bName)
     {
         if (buffNamesDict.ContainsKey(_bName))
-            return "Вы находитесь под действием эффекта \"" + buffNamesDict[_bName]+"\"";
+            return underEffectMLText.GetText(SettingsScript.language) + buffNamesDict[_bName].GetText(SettingsScript.language)+"\"";
         return "";
     }
 

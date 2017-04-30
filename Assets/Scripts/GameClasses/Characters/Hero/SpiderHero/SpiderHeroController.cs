@@ -208,7 +208,7 @@ public class SpiderHeroController : HeroController
             Jump();
         }
 
-        if (InputCollection.instance.GetButtonDown("Attack"))
+        if (InputCollection.instance.GetButtonDown("Interact"))
             if (Vector2.SqrMagnitude((Vector2)transform.position - webConnectionPoint) < 1.5 * spiderOffset * spiderOffset)
                 WebOff();
 

@@ -31,7 +31,7 @@ public class BossController : AIController
     #region parametres
 
     [SerializeField]
-    protected string bossName;//Имя босса, что отображается в GUI
+    protected MultiLanguageText bossName;//Имя босса, что отображается в GUI
     protected int bossPhase = 0;//Фаза сражения с боссом
 
     public override float Health { get { return health; } set { health = value; OnBossHealthChanged(new BossHealthEventArgs(health, maxHealth, bossName)); } }

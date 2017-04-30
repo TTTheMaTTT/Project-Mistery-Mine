@@ -30,7 +30,7 @@ public class TombDoorClass : DoorClass
             if (equip.GetItem("FragmentOrdo") != null && equip.GetItem("FragmentPerditio") && equip.GetItem("FragmentAqua") && equip.GetItem("FragmentIgnus"))
                 riddleWindow.OpenWindow();
             else
-                SpecialFunctions.SetText(closedDoorMessage, 2.5f);
+                SpecialFunctions.SetText(2.5f, closedDoorMessage);
         }
     }
 
