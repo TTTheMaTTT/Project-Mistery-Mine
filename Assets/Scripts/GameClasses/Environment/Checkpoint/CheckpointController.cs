@@ -18,6 +18,9 @@ public class CheckpointController : MonoBehaviour, IInteractive
 
     #region parametres
 
+    protected MultiLanguageText battleMessage = new MultiLanguageText("Вы не можете воспользоваться тотемом, пока находитесь в бою",
+                                                                      "You can't use totem when you are in battle","","","");
+
     public int checkpointNumb = 0;//Номерной знак чекпоинта на уровне
     public bool activated = false;//Чекпоинт можно активировать лишь один раз
 
@@ -71,11 +74,17 @@ public class CheckpointController : MonoBehaviour, IInteractive
     /// </summary>
     public void Interact()
     {
+        if (SpecialFunctions.battleField.enemiesCount > 0)
+        {
+            SpecialFunctions.SetText(2.5f,battleMessage);
+            return;
+        }
         if (!activated)
         {
             activated = true;
-            SpecialFunctions.gameController.SaveGame(checkpointNumb, false, SceneManager.GetActiveScene().name);
             ChangeCheckpoint();
+            SpecialFunctions.gameController.SaveGame(checkpointNumb, false, SceneManager.GetActiveScene().name);
+            
         }
         else
         {
@@ -94,6 +103,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
             sRenderer.GetPropertyBlock(mpb);
             mpb.SetFloat("_Outline", _outline ? 1f : 0);
             mpb.SetColor("_OutlineColor", outlineColor);
+            mpb.SetFloat("_OutlineWidth", .08f / ((Vector2)transform.lossyScale).magnitude);
             sRenderer.SetPropertyBlock(mpb);
         }
     }
@@ -103,7 +113,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
     /// </summary>
     public virtual bool IsInteractive()
     {
-        return SpecialFunctions.battleField.enemiesCount == 0 && SpecialFunctions.dialogWindow.CurrentDialog == null;
+        return SpecialFunctions.dialogWindow.CurrentDialog == null;
     }
 
     #endregion //IInteractive

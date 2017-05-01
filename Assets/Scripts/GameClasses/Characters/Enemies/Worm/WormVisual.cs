@@ -49,7 +49,7 @@ public class WormVisual : GroundMoveVisual
             return;
         }
         anim.Play(id);
-        StartVisualRoutine(5, argument / 10f);
+        StartVisualRoutine(5, argument / 100f);
     }
 
     /// <summary>

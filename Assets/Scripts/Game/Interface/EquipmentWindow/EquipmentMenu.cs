@@ -19,12 +19,13 @@ public class EquipmentMenu : InterfaceWindow
 
     [HideInInspector]
     private static EquipmentCellScript activatedWeaponCell;
-    public EquipmentCellScript ActivatedWeaponCell { set { activatedWeaponCell = value; changeWeaponButton.SetActive(value != null); } }
+    public EquipmentCellScript ActivatedWeaponCell { set { activatedWeaponCell = value; ShowChangeWeaponButton(value != null); } }
     [HideInInspector]
     public EquipmentCellScript currentWeaponCell;
     List<string> weapons = new List<string>();
     List<EquipmentCellScript> weaponCells = new List<EquipmentCellScript>();
     GameObject changeWeaponButton;
+    UIElementScript changeWeaponUIElement, returnWeaponUIElement;
     private Text weaponNameText;
 
     #endregion //weapons
@@ -34,8 +35,10 @@ public class EquipmentMenu : InterfaceWindow
     private List<ActiveTrinketCell> activeTrinketCells = new List<ActiveTrinketCell>();//Список ячеек с надетыми тринкетами
     private List<TrinketCell> trinketCells = new List<TrinketCell>();//Список ячеек с тринкетами
     private GameObject removeTrinketButtonObj;//Кнопка снятия тринкета
+    private UIElementScript removeTrinketUIElement, returnTrinketUIElement;
     private List<string> trinkets = new List<string>();//Список названий имеющихся тринкетов (исключает повторения)
     private Text trinketNameText;
+    private ActiveTrinketsPanel activeTrinketsUIPanel;
 
     #endregion //trinkets
 
@@ -58,9 +61,9 @@ public class EquipmentMenu : InterfaceWindow
 
     #endregion //parametres
 
-    protected override void Awake()
+    public override void Initialize()
     {
-        base.Awake();
+        base.Initialize();
 
         Transform panel = transform.FindChild("Panel");
         weaponsPanel = panel.FindChild("WeaponsPanel").gameObject;
@@ -75,7 +78,9 @@ public class EquipmentMenu : InterfaceWindow
         activatedWeaponCell = null;
         currentWeaponCell = null;
         changeWeaponButton = weaponsPanel.transform.FindChild("ChangeWeaponButton").gameObject;
-        changeWeaponButton.SetActive(false);
+        changeWeaponUIElement = changeWeaponButton.GetComponent<UIElementScript>();
+        returnWeaponUIElement = weaponsPanel.transform.FindChild("ReturnButton").GetComponent<UIElementScript>();
+        ShowChangeWeaponButton(false);
         Transform cells = weaponsPanel.transform.FindChild("Cells");
         weaponCells = new List<EquipmentCellScript>();
         for (int i = 0; i < cells.childCount; i++)
@@ -97,9 +102,12 @@ public class EquipmentMenu : InterfaceWindow
         trinketCells = new List<TrinketCell>();
         activeTrinketCells = new List<ActiveTrinketCell>();
         removeTrinketButtonObj = trinketsPanel.transform.FindChild("RemoveTrinketButton").gameObject;
-        removeTrinketButtonObj.SetActive(false);
+        removeTrinketUIElement = removeTrinketButtonObj.GetComponent<UIElementScript>();
+        returnTrinketUIElement = trinketsPanel.transform.FindChild("ReturnButton").GetComponent<UIElementScript>();
+        ShowRemoveTrinketButton(false);
         trinketNameText = trinketsPanel.transform.FindChild("TrinketNameText").GetComponent<Text>();
         Transform activeTrinketsPanel = trinketsPanel.transform.FindChild("ActiveTrinketsPanel");
+        activeTrinketsUIPanel = activeTrinketsPanel.GetComponent<ActiveTrinketsPanel>();
         for (int i = 0; i < activeTrinketsPanel.childCount; i++)
         {
             ActiveTrinketCell tCell = activeTrinketsPanel.GetChild(i).GetComponentInChildren<ActiveTrinketCell>();
@@ -149,6 +157,8 @@ public class EquipmentMenu : InterfaceWindow
     /// </summary>
     public override void CloseWindow()
     {
+        if (!canClose)
+            return;
         base.CloseWindow();
         if (activatedWeaponCell != null)
         {
@@ -157,16 +167,20 @@ public class EquipmentMenu : InterfaceWindow
         }
         ResetActiveSlots();
         SpecialFunctions.gameController.ChangeInformationAboutEquipment(SpecialFunctions.levelEnd);
+        StartCoroutine(CantInteractProcess());
     }
 
     public override void OpenWindow()
     {
+        if (!canOpen)
+            return;
         base.OpenWindow();
         if (currentWeaponCell != null)
         {
             currentWeaponCell.IsCurrentWeapon = true;
         }
         OpenPanel("weapon");
+        StartCoroutine(CantInteractProcess());
     }
 
     /// <summary>
@@ -175,6 +189,25 @@ public class EquipmentMenu : InterfaceWindow
     public void OpenPanel(string panelType)
     {
         ResetActiveSlots();
+        UIElementScript nextPanel = null;
+        switch (panelType)
+        {
+            case "weapon":
+                nextPanel=weaponsPanel.GetComponent<UIPanel>();
+                break;
+            case "trinket":
+                nextPanel = trinketsPanel.GetComponent<UIPanel>();
+                break;
+            case "item":
+                nextPanel = itemsPanel.GetComponent<UIPanel>();
+                break;
+        }
+        if (!nextPanel)
+            return;
+        nextPanel.SetActive();
+        currentIndex = nextPanel.uiIndex;
+        UIElementScript prevPanel = FindElement(currentIndex);
+        childElements[childElements.IndexOf(prevPanel)] = nextPanel;
         weaponsPanel.SetActive(panelType == "weapon");
         trinketsPanel.SetActive(panelType == "trinket");
         itemsPanel.SetActive(panelType == "item");
@@ -241,8 +274,10 @@ public class EquipmentMenu : InterfaceWindow
             ActiveTrinketCell tCell = activeTrinketCells[i];
             tCell.SetTrinket(null);
             if (i >= magicSlotsCount)
-                tCell.gameObject.SetActive(false);
+                tCell.transform.parent.gameObject.SetActive(false);
         }
+
+        activeTrinketsUIPanel.SetActiveChildElements();
 
     }
 
@@ -274,13 +309,32 @@ public class EquipmentMenu : InterfaceWindow
     /// </summary>
     public void ChangeWeapon()
     {
-        changeWeaponButton.SetActive(false);
+        ShowChangeWeaponButton(false);
         if (activatedWeaponCell == null)
             return;
         dontChange = true;
         hero.CurrentWeapon = activatedWeaponCell.Weapon;
         dontChange = false;
         activatedWeaponCell.IsCurrentWeapon = true;
+    }
+
+    /// <summary>
+    /// Отобразить (или скрыть) кнопку смены оружия
+    /// </summary>
+    public void ShowChangeWeaponButton(bool _show)
+    {
+
+        changeWeaponButton.SetActive(_show);
+        if (_show)
+        {
+            changeWeaponUIElement.uiIndex = new UIElementIndex(1, 0);
+            returnWeaponUIElement.uiIndex = new UIElementIndex(1, 1);
+        }
+        else
+        {
+            changeWeaponUIElement.uiIndex = new UIElementIndex(-1, -1);
+            returnWeaponUIElement.uiIndex = new UIElementIndex(1, 0);
+        }
     }
 
     /// <summary>
@@ -292,7 +346,10 @@ public class EquipmentMenu : InterfaceWindow
             return;
         foreach (TrinketCell tCell in trinketCells)
             if (tCell.Trinket == null)
+            {
                 tCell.Trinket = _trinket;
+                break;
+            }
     }
 
     /// <summary>
@@ -362,7 +419,10 @@ public class EquipmentMenu : InterfaceWindow
     public void TakeOffActivatedTrinket()
     {
         if (ActiveTrinketCell.activatedTrinketCell)
+        {
             TakeOffTrinket(ActiveTrinketCell.activatedTrinketCell.Trinket);
+            ActiveTrinketCell.activatedTrinketCell.Trinket = null; 
+        }
     }
 
     /// <summary>
@@ -370,7 +430,18 @@ public class EquipmentMenu : InterfaceWindow
     /// </summary>
     public void ShowRemoveTrinketButton(bool _show)
     {
+        
         removeTrinketButtonObj.SetActive(_show);
+        if (_show)
+        {
+            removeTrinketUIElement.uiIndex = new UIElementIndex(1, 1);
+            returnTrinketUIElement.uiIndex = new UIElementIndex(1, 2);
+        }
+        else
+        {
+            removeTrinketUIElement.uiIndex = new UIElementIndex(-1, -1);
+            returnTrinketUIElement.uiIndex = new UIElementIndex(1, 1);
+        }
     }
 
     /// <summary>
@@ -429,6 +500,8 @@ public class EquipmentMenu : InterfaceWindow
         magicSlotsCount++;
         for (int i = 0; i < activeTrinketCells.Count; i++)
             activeTrinketCells[i].transform.parent.gameObject.SetActive(i < magicSlotsCount);
+
+        activeTrinketsUIPanel.SetActiveChildElements();
     }
 
     /// <summary>

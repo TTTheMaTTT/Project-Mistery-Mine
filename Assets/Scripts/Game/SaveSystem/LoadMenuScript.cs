@@ -8,12 +8,12 @@ using System.Collections.Generic;
 /// <summary>
 /// Скрипт экрана загрузки игры
 /// </summary>
-public class LoadMenuScript : MonoBehaviour
+public class LoadMenuScript : InterfaceWindow
 {
 
     #region consts
 
-    private const string firstLevelName = "cave_lvl1";
+    private const string firstLevelName = "BeginComics";
 
     #endregion //consts
 
@@ -30,22 +30,24 @@ public class LoadMenuScript : MonoBehaviour
 
     protected Transform savesPanel;
 
-    protected GameObject createNewFadePanel;
-    protected GameObject warningPanel;
+    protected GameObject createNewFadePanel, warningPanel;
+    protected UIPanel createNewUIPanel, warningUIPanel;
     protected InputField saveNameInputPanel;
 
     #endregion //fields
 
-    public void Awake()
-    {
-        Initialize();
-    }
+    #region parametres
+
+    protected MultiLanguageText defaultMLSaveName = new MultiLanguageText("Новое сохранение", "New Game", "", "", "");
+
+    #endregion //parametres
 
     /// <summary>
     /// Инициализация окна сохранения
     /// </summary>
-    public void Initialize()
+    public override void Initialize()
     {
+        base.Initialize();
         savePath = (Application.dataPath) + "/StreamingAssets/Saves/";
         savesInfoPath = (Application.dataPath) + "/StreamingAssets/SavesInfo.xml";
         savesInfo = Serializator.DeXmlSavesInfo(savesInfoPath);
@@ -79,6 +81,8 @@ public class LoadMenuScript : MonoBehaviour
 
         warningPanel = transform.FindChild("WarningPanel").gameObject;
         createNewFadePanel = transform.FindChild("CreateNewFadePanel").gameObject;
+        createNewUIPanel = createNewFadePanel.GetComponent<UIPanel>();
+        warningUIPanel = warningPanel.GetComponent<UIPanel>();
         saveNameInputPanel = createNewFadePanel.transform.FindChild("CreateNewPanel").GetComponentInChildren<InputField>();
     }
 
@@ -98,6 +102,8 @@ public class LoadMenuScript : MonoBehaviour
         {
             if (pButton.SInfo.hasData)
                 Load(savesInfo.saves.IndexOf(pButton.SInfo));
+            else
+                ChooseNewGameCreation();
         }
     }
 
@@ -109,8 +115,7 @@ public class LoadMenuScript : MonoBehaviour
         PlayerPrefs.SetInt("Profile Number", _profileNumber);
         PlayerPrefs.SetFloat("Hero Health", 12f);
 
-        SceneManager.LoadScene(savesInfo.saves[_profileNumber].loadSceneName);
-
+        LoadingScreenScript.instance.LoadScene(savesInfo.saves[_profileNumber].loadSceneName);
 
     }
 
@@ -143,6 +148,10 @@ public class LoadMenuScript : MonoBehaviour
     public void OpenWarningWindow(bool yes)
     {
         warningPanel.SetActive(yes);
+        if (yes)
+            warningUIPanel.SetActive();
+        else
+            SetActive();
     }
 
     /// <summary>
@@ -152,6 +161,10 @@ public class LoadMenuScript : MonoBehaviour
     {
         warningPanel.SetActive(false);
         createNewFadePanel.SetActive(yes);
+        if (yes)
+            createNewUIPanel.SetActive();
+        else
+            SetActive();
     }
 
     /// <summary>
@@ -177,7 +190,8 @@ public class LoadMenuScript : MonoBehaviour
                 createNewFadePanel.SetActive(false);
                 Serializator.SaveXmlSavesInfo(savesInfo, savesInfoPath);
                 Serializator.SaveXml(null, savePath + "Profile" + savesInfo.currentProfileNumb.ToString()+".xml");
-                SceneManager.LoadScene(firstLevelName);
+                LoadingScreenScript.instance.LoadScene(firstLevelName);
+                CloseWindow();
             }
             else
             {
@@ -189,17 +203,33 @@ public class LoadMenuScript : MonoBehaviour
     /// <summary>
     /// Открыть окно загрузки
     /// </summary>
-    public void OpenLoadMenu()
+    public override void OpenWindow()
     {
-        GetComponent<Canvas>().enabled = true;
+        if (openedWindow != null)
+            return;
+        openedWindow = this;
+        canvas.enabled = true;
+        activePanel = this;
+        currentIndex = new UIElementIndex(-1, -1);
+        SpecialFunctions.PauseGame();
     }
 
     /// <summary>
     /// Закрыть меню загрузки
     /// </summary>
-    public void CloseLoadMenu()
+    public override void CloseWindow()
     {
-        GetComponent<Canvas>().enabled = false;
+        openedWindow = null;
+        canvas.enabled = false;
+
+        if (activeElement)
+        {
+            activeElement.SetInactive();
+            activeElement = null;
+        }
+        activePanel = null;
+        SpecialFunctions.PlayGame();
+
         OpenWarningWindow(false);
         OpenCreateNewGameWindow(false);
         if (chosenButton != null)
@@ -207,6 +237,18 @@ public class LoadMenuScript : MonoBehaviour
             chosenButton.SetImage(false);
             chosenButton = null;
         }
+    }
+
+    /// <summary>
+    /// Применить настройки языка
+    /// </summary>
+    /// <param name="_language">текущий язык игры</param>
+    public override void MakeLanguageChanges(LanguageEnum _language)
+    {
+        base.MakeLanguageChanges(_language);
+        foreach (ProfileButton _profile in saveButtons)
+            if (!_profile.SInfo.hasData)
+                _profile.transform.FindChild("SaveName").GetComponent<Text>().text = defaultMLSaveName.GetText(_language);
     }
 
 }

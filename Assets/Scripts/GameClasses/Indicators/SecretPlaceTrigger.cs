@@ -9,7 +9,7 @@ using UnityEditor;
 /// <summary>
 /// Триггер, при входе в который выдаётся сообщение, что было найдено секретное место
 /// </summary>
-public class SecretPlaceTrigger : StoryTrigger, IHaveID
+public class SecretPlaceTrigger : StoryTrigger, IMechanism
 {
 
     #region fields
@@ -23,6 +23,9 @@ public class SecretPlaceTrigger : StoryTrigger, IHaveID
 
     [SerializeField][HideInInspector]public int id;
 
+    [SerializeField]protected bool considerByGameController = true;//Считает ли геймконтроллер этот компонент за секретное место и учитывает ли его при нахождении
+    public bool ConsiderByGameController { get { return considerByGameController; } }
+
     #endregion //parametres
 
     protected override void OnTriggerEnter2D(Collider2D other)
@@ -32,7 +35,8 @@ public class SecretPlaceTrigger : StoryTrigger, IHaveID
             SpecialFunctions.StartStoryEvent(this, TriggerEvent, new StoryEventArgs());
             if (!triggered)
             {
-                SpecialFunctions.FindSecretPlace(1.5f);
+                if (considerByGameController)
+                    SpecialFunctions.FindSecretPlace(1.5f);
                 RevealTruth();
                 triggered = true;
                 SpecialFunctions.statistics.ConsiderStatistics(this);
@@ -90,6 +94,15 @@ public class SecretPlaceTrigger : StoryTrigger, IHaveID
     }
 
     #endregion //IHaveID
+
+    #region IMechanism
+
+    public virtual void ActivateMechanism()
+    {
+        RevealTruth();
+    }
+
+    #endregion //IMechanism
 
 }
 

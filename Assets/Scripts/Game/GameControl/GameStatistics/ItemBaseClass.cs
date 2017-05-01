@@ -65,13 +65,14 @@ public class CollectorsItem
 [System.Serializable]
 public class ItemCollection
 {
-    public string collectionName;//Имя коллекции
+    public string collectionName;
+    public MultiLanguageText collectionTextName;//Имя коллекции
     public string settingName;//Название сеттинга, которому соответствует данная коллекция
     public List<CollectorsItem> collection = new List<CollectorsItem>();//Предметы, что содержит данная коллекция
 
     public ItemCollection(ItemCollection _collection)
     {
-        collectionName = _collection.collectionName;
+        collectionTextName = _collection.collectionTextName;
         settingName = _collection.settingName;
         collection = new List<CollectorsItem>();
         foreach (CollectorsItem _item in _collection.collection)

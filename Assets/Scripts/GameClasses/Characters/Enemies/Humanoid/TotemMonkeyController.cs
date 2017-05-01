@@ -76,7 +76,7 @@ public class TotemMonkeyController : HumanoidController
         if (behavior == BehaviorEnum.patrol)
         {
             float sqDistance = Vector2.SqrMagnitude(beginPosition - pos);
-            if (sqDistance > allyDistance * 1.2f && followAlly)
+            if (followAlly)
             {
                 if (prevTargetPosition.exists? Vector2.SqrMagnitude(beginPosition - (Vector2)prevTargetPosition) > minCellSqrMagnitude: true)
                 {

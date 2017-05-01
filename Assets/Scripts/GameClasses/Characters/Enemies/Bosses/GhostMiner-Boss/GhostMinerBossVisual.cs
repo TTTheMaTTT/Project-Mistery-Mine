@@ -16,7 +16,7 @@ public class GhostMinerBossVisual : GroundMoveVisual
     protected override void FormDictionaries()
     {
         base.FormDictionaries();
-        visualFunctions.Add("stopAttack", StopAttack);
+        visualFunctions.Add("horizontalAttack", HorizontalAttack);
     }
 
     /// <summary>
@@ -44,16 +44,18 @@ public class GhostMinerBossVisual : GroundMoveVisual
             anim.Play("Attack");
         else
             anim.Play(id);
-        StartVisualRoutine(5, 1f);
+        if (id == "FastAttack")
+            anim.ForceStateNormalizedTime(0f);
+        StartVisualRoutine(5, argument/100f);
     }
 
     /// <summary>
-    /// Остановить отображение атаки
+    /// Анимировать горизонтальную атаку
     /// </summary>
-    protected virtual void StopAttack(string id, int argument)
+    protected virtual void HorizontalAttack(string id, int argument)
     {
-        employment = maxEmployment;
-        GroundMove("", 0);
+        anim.Play("HorizontalAttack");
+        employment = Mathf.Clamp(employment - 5, 0, maxEmployment);
     }
 
     /// <summary>

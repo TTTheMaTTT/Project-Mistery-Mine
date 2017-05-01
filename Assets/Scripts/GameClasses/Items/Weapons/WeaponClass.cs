@@ -24,12 +24,26 @@ public abstract class WeaponClass : ItemClass
         return null;
     }
 
+    /// <summary>
+    /// Начать атаку этим оружиемё
+    /// </summary>
+    public virtual void StartAttack()
+    {
+    }
+
+    /// <summary>
+    /// Остановить атаку этим оружием
+    /// </summary>
+    public virtual void StopAttack()
+    {
+    }
+
     public WeaponClass(WeaponClass _weapon)
     {
         itemName = _weapon.itemName;
-        itemTextName = _weapon.itemTextName;
-        itemTextName1 = _weapon.itemTextName1;
-        itemDescription = _weapon.itemDescription;
+        itemMLTextName = _weapon.itemMLTextName;
+        itemMLTextName1 = _weapon.itemMLTextName1;
+        itemMLDescription = _weapon.itemMLDescription;
         itemImage = _weapon.itemImage;
         damage = _weapon.damage;
         attackTime = _weapon.attackTime;

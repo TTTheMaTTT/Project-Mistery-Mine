@@ -7,7 +7,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Скрипт, управляющий игровым интерфейсом
 /// </summary>
-public class GameUIScript : MonoBehaviour
+public class GameUIScript : MonoBehaviour, ILanguageChangeable
 {
 
     #region consts
@@ -61,7 +61,8 @@ public class GameUIScript : MonoBehaviour
     protected GameObject collectorScreen;//Панель, на которой отображается информация о собранных коллекциях
     protected GameObject oneItemScreen;//Экран, в котором показывается найденный коллекционный предмет
     protected GameObject collectionScreen;//Экран, в котором показывается, к каким коллекциям этот предмет принадлежит
-    protected bool itemProcess = false;//Включён ли CollectorScreen?
+    [SerializeField]protected GameObject collectionItemPanel;//Панелька, предназначаемая для одного коллекционного предмета
+    protected IEnumerator itemProcess = null, collectionProcess=null;//Включён ли отображения экрана колекции
     protected List<ItemClass> itemsOnProcess=new List<ItemClass>();//Какие ещё предметы должен отобразить itemScreen?
 
     protected Image fadeScreen;//Объект, ответственный за затемнение, происходящее в переходах между уровнями
@@ -70,6 +71,7 @@ public class GameUIScript : MonoBehaviour
     protected GameObject bossHealthPanel;
     protected Image bossHP;
     protected Text bossNameText;
+    protected MultiLanguageText bossName;
 
     #endregion //fields
 
@@ -84,6 +86,8 @@ public class GameUIScript : MonoBehaviour
     protected Color dmgColor = new Color (0f,0f,0f,0f);
     protected  float dmgScreenFadeSpeed = 2f;//Скорость мигания экрана урона
 
+    [SerializeField]protected List<MultiLanguageTextInfo> languageChanges = new List<MultiLanguageTextInfo>();
+
     #endregion //parametres
 
     void Awake()
@@ -95,6 +99,8 @@ public class GameUIScript : MonoBehaviour
     {
         fadeScreen.color=Color.Lerp(fadeScreen.color,fadeColor,Time.fixedDeltaTime*fadeSpeed);
         damageScreen.color = Color.Lerp(damageScreen.color, dmgColor, Time.fixedDeltaTime * dmgScreenFadeSpeed);
+        if (itemProcess != null ? InputCollection.instance.GetButtonDown("Attack") : false)
+            StopItemProcess();
     }
 
     void FixedUpdate()
@@ -158,7 +164,8 @@ public class GameUIScript : MonoBehaviour
         oneItemScreen.SetActive(false);
         collectionScreen.SetActive(false);
         collectorScreen.SetActive(false);
-        itemProcess = false;
+        itemProcess = null;
+        collectionProcess = null;
         itemsOnProcess = new List<ItemClass>();
 
         breathPanel = transform.FindChild("BreathPanel");
@@ -319,7 +326,7 @@ public class GameUIScript : MonoBehaviour
     /// <summary>
     /// Учесть, какие квесты на данный момент активны
     /// </summary>
-    public void ConsiderQuests(List<string> activeQuests)
+    public void ConsiderQuests(List<QuestLine> activeQuests)
     {
         for (int i = 0; i < 3; i++)
         {
@@ -327,7 +334,7 @@ public class GameUIScript : MonoBehaviour
             if (i >= activeQuests.Count)
                 continue;
             else
-                questTexts[i].text = activeQuests[i];
+                questTexts[i].text = activeQuests[i].mlText.GetText(SettingsScript.language);
         }
     }
 
@@ -344,8 +351,11 @@ public class GameUIScript : MonoBehaviour
     {
         if (cantShowMessages)
             return;
-        if (!itemProcess)
-            StartCoroutine(CollectionProcess(_item, _collections));
+        if (collectionProcess == null)
+        {
+            collectionProcess = CollectionProcess(_item, _collections);
+            StartCoroutine(collectionProcess);
+        }
         else
             itemsOnProcess.Add(_item);
     }
@@ -353,12 +363,15 @@ public class GameUIScript : MonoBehaviour
     /// <summary>
     /// Функция, что учитывает инфрмацию о новом полученном предмете
     /// </summary>
-    public void ConsiderItem(ItemClass _item, string _description)
+    public void ConsiderItem(ItemClass _item, string _description, float _time=collectionItemTime)
     {
         if (cantShowMessages)
             return;
-        if (!itemProcess)
-            StartCoroutine(ObtainItemProcess(_item,_description));
+        if (itemProcess == null)
+        {
+            itemProcess=ObtainItemProcess(_item, _description, _time);
+            StartCoroutine(itemProcess);
+        }
         else
             itemsOnProcess.Add(_item);
     }
@@ -368,7 +381,6 @@ public class GameUIScript : MonoBehaviour
     /// </summary>
     public IEnumerator CollectionProcess(ItemClass _item, List<ItemCollection> _collections)
     {
-        itemProcess = true;
         SpecialFunctions.PauseGame();
         SpecialFunctions.totalPaused = true;
         collectorScreen.SetActive(true);
@@ -379,7 +391,9 @@ public class GameUIScript : MonoBehaviour
         Image _img = oneItemScreen.transform.FindChild("CollectionItemImage").GetComponent<Image>();
         _img.sprite = _item.itemImage;
         Text _text = oneItemScreen.transform.FindChild("ItemNameText").GetComponent<Text>();
-        _text.text = _item.itemTextName1;
+        _text.text = _item.itemMLTextName1.GetText(SettingsScript.language);
+        Text descriptionText = oneItemScreen.transform.FindChild("ItemDescriptionText").GetComponent<Text>();
+        descriptionText.text = _item.itemMLDescription.GetText(SettingsScript.language);
         oneItemScreen.SetActive(true);
         yield return new WaitForSecondsRealtime(collectionItemTime);
 
@@ -403,18 +417,21 @@ public class GameUIScript : MonoBehaviour
             for (int i = 0; i < _collection.collection.Count; i++)
             {
                 xPosition += collectionImageWidth;
-                GameObject newObject = new GameObject("ItemImage" + i.ToString());
+                GameObject newObject = Instantiate(collectionItemPanel,transform.position,Quaternion.identity);
+                newObject.name = "ItemImage" + i.ToString();
                 newObject.layer = LayerMask.NameToLayer("UI");
                 newObject.transform.SetParent(collectionScreen.transform);
-                RectTransform rTrans = newObject.AddComponent<RectTransform>();
+                RectTransform rTrans = newObject.GetComponent<RectTransform>();
                 rTrans.localPosition = new Vector3(xPosition, 0f, 0f);
                 rTrans.localScale = new Vector3(1f, 1f, 1f);
-                _img=newObject.AddComponent<Image>();
+                _img = newObject.transform.FindChild("Item").GetComponent<Image>();
                 if (_collection.collection[i].itemFound)
                 {
                     secretsFoundCount++;
                     _img.sprite = _collection.collection[i].item.itemImage;
                 }
+                else
+                    _img.color = new Color(0f, 0f, 0f, 0f);
             }
             _text.text = secretsFoundCount.ToString() + "/" + _collection.collection.Count.ToString();
             yield return new WaitForSecondsRealtime(collectionItemTime);
@@ -425,21 +442,21 @@ public class GameUIScript : MonoBehaviour
 
         SpecialFunctions.totalPaused = false;
         SpecialFunctions.PlayGame();
-        itemProcess = false;
+        collectionProcess = null;
         if (itemsOnProcess.Count > 0)
         {
             ItemClass item1 = itemsOnProcess[0];
             itemsOnProcess.RemoveAt(0);
-            StartCoroutine(ObtainItemProcess(item1,""));
+            itemProcess = ObtainItemProcess(item1, "", collectionItemTime);
+            StartCoroutine(itemProcess);
         }
     }
 
     /// <summary>
     /// Процесс отображения информации о полученном предмете
     /// </summary>
-    public IEnumerator ObtainItemProcess(ItemClass _item, string _description)
+    public IEnumerator ObtainItemProcess(ItemClass _item, string _description, float _time)
     {
-        itemProcess = true;
         SpecialFunctions.PauseGame();
         SpecialFunctions.totalPaused = true;
         collectorScreen.SetActive(true);
@@ -452,7 +469,7 @@ public class GameUIScript : MonoBehaviour
         Text _text = oneItemScreen.transform.FindChild("ItemNameText").GetComponent<Text>();
         Text descriptionText = oneItemScreen.transform.FindChild("ItemDescriptionText").GetComponent<Text>();
         descriptionText.text = _description;
-        _text.text = _item.itemTextName1;
+        _text.text = _item.itemMLTextName1.GetText(SettingsScript.language);
         oneItemScreen.SetActive(true);
         yield return new WaitForSecondsRealtime(collectionItemTime);
         
@@ -461,19 +478,41 @@ public class GameUIScript : MonoBehaviour
 
         SpecialFunctions.totalPaused = false;
         SpecialFunctions.PlayGame();
-        itemProcess = false;
+        itemProcess = null;
         if (itemsOnProcess.Count > 0)
         {
             ItemClass item1 = itemsOnProcess[0];
             itemsOnProcess.RemoveAt(0);
-            StartCoroutine(ObtainItemProcess(item1,""));
+            itemProcess = ObtainItemProcess(item1, "", collectionItemTime);
+            StartCoroutine(itemProcess);
+        }
+    }
+
+    /// <summary>
+    /// Остановить процесс показа предмета
+    /// </summary>
+    void StopItemProcess()
+    {
+        StopCoroutine(itemProcess);
+        oneItemScreen.SetActive(false);
+        collectorScreen.SetActive(false);
+
+        SpecialFunctions.totalPaused = false;
+        SpecialFunctions.PlayGame();
+        itemProcess = null;
+        if (itemsOnProcess.Count > 0)
+        {
+            ItemClass item1 = itemsOnProcess[0];
+            itemsOnProcess.RemoveAt(0);
+            itemProcess = ObtainItemProcess(item1, "", collectionItemTime);
+            StartCoroutine(itemProcess);
         }
     }
 
     /// <summary>
     /// выставить текст на экран сообщений
     /// </summary>
-    public void SetMessage(string _info, float textTime)
+    public void SetMessage(float textTime, string _info)
     {
         if (cantShowMessages)
             return;
@@ -679,13 +718,24 @@ public class GameUIScript : MonoBehaviour
     /// </summary>
     public void SetInactiveBossPanel()
     {
-        StartCoroutine(BossPanelInactiveProcess());
+        StartCoroutine("BossPanelInactiveProcess");
     }
 
     protected IEnumerator BossPanelInactiveProcess()
     {
         yield return new WaitForSeconds(1f);
         bossHealthPanel.SetActive(false);
+    }
+
+    /// <summary>
+    /// Применить языковые изменения
+    /// </summary>
+    /// <param name="_language">Язык, на который переходит окно</param>
+    public virtual void MakeLanguageChanges(LanguageEnum _language)
+    {
+        foreach (MultiLanguageTextInfo _languageChange in languageChanges)
+            _languageChange.text.text = _languageChange.mLanguageText.GetText(_language);
+        SpecialFunctions.history.ConsiderQuests();
     }
 
     #region eventHandlers
@@ -795,9 +845,11 @@ public class GameUIScript : MonoBehaviour
     public virtual void HandleBossHealthChanges(object sender, BossHealthEventArgs e)
     {
         bossHealthPanel.SetActive(true);
+        StopCoroutine("BossPanelInactiveProcess");
         Vector2 size = bossHP.GetComponent<RectTransform>().sizeDelta;
         bossHP.GetComponent<RectTransform>().sizeDelta = new Vector2(bossHPMaxWidth * e.HP / e.MaxHP,size.y);
-        bossNameText.text = e.BossName;
+        bossNameText.text = e.BossName.GetText(SettingsScript.language);
+        bossName = e.BossName;
     }
 
     #endregion //eventHandlers

@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -36,6 +37,13 @@ public class SpiritController : CharacterController
         base.Initialize();
         hero = SpecialFunctions.Player.transform;
         hiddenObjects = new List<FindHiddenRoutine>();
+    }
+
+    protected virtual void Start()
+    {
+        //Если дух находится в аду, то он выглядит усиленным
+        if (SceneManager.GetActiveScene().name.Contains("underworld"))
+            Animate(new AnimationEventArgs("setEnhanced", "", 1));
     }
 
     protected virtual void FixedUpdate()

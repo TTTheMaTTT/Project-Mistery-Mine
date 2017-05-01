@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using InControl;
 
 /// <summary>
 /// Контроллер, управляющий ГГ
@@ -21,7 +22,9 @@ public class HeroController : CharacterController
     protected const float invulTime = 1f;
     protected const float minChargeTime = .3f;//Какое минимальное время нужно дердать кнопку атаки, чтобы начать зарядку оружия (используется, чтобы отличить обычную атаку от заряженной атаки)
 
-    protected const float ladderCheckOffset = .05f, ladderStep = .01f;
+    protected const float ladderCheckOffset = .05f, ladderStep = .01f, noGrabSameLadderTime=.5f;
+    protected const float ladderOffsetY = 0.03f, ladderOffsetX = .05f;//Максимальное относительное положение лестницы, чтобы на неё ещё можно было взобраться
+    protected const string ladderLayerName = "ladder";
 
     protected const float minDamageFallSpeed = 4.2f;//Минимальная скорость по оси y, которая должна быть при падении, чтобы засчитался урон
     protected const float damagePerFallSpeed = 2f;
@@ -35,6 +38,8 @@ public class HeroController : CharacterController
     protected const float totemAnimalTime = 20f;//Время действия эффекта "Тотемное животное"
     protected const float tribalRitualTime = 15f;//Время действия эффекта "Ритуал племени"
     protected const float tribalRitualCoof = 1.3f;//Во сколько раз увеличивается скорость при эффекте "Ритуал племени"
+
+    protected const float waterSpeedReduce = 20f;//Насколько скорость падения уменьшится при соприкосновении с водой
 
     #endregion //consts
 
@@ -70,6 +75,7 @@ public class HeroController : CharacterController
             hitBox.AttackerInfo = new AttackerClass(gameObject, fightingMode);
         }
     }
+    [SerializeField]protected WeaponClass additionalWeapon;//Дополнительное оружие
 
     protected EquipmentClass equipment;//Инвентарь игрока.
     public EquipmentClass Equipment { get { return equipment; } set { equipment = value; } }
@@ -84,7 +90,7 @@ public class HeroController : CharacterController
 
     public override float Health { get { return base.Health; } set { float prevHealth = health; base.Health = value; OnHealthChanged(new HealthEventArgs(value, health-prevHealth, maxHealth)); } }
     public override float MaxHealth { get { return base.MaxHealth; } set { maxHealth = value; OnHealthChanged(new HealthEventArgs(value, 0f, maxHealth)); } }
-    public int Balance { get { return balance;} set { balance = value; } }
+    public override int Balance { get { return balance;} set { balance = value; } }
     public float Speed { get { return speed; } set { speed = value; } }
     public float JumpForce { get { return jumpForce; } set { jumpForce = value; } }
     public float JumpAdd { get { return jumpAdd;} set { jumpAdd = value; } }
@@ -112,6 +118,7 @@ public class HeroController : CharacterController
                 }
                 speedCoof *= waterCoof;
                 rigid.gravityScale = .6f;
+                rigid.velocity = new Vector2(rigid.velocity.x, Mathf.Clamp(rigid.velocity.y + 20f, Mathf.NegativeInfinity, 0f));
                 waterIndicator.StartCoroutine(SuffocateProcess());
             }
             else
@@ -132,7 +139,7 @@ public class HeroController : CharacterController
 
     [SerializeField] protected float jumpForce = 200f,
                                      jumpAdd = 20f,//Добавление к силе прыжка при зажимании
-                                     flipForce = 150f,
+                                     flipForce = 200f,
                                      ladderSpeed = .8f,
                                      waterCoof = .7f;
 
@@ -142,14 +149,19 @@ public class HeroController : CharacterController
     protected int jumpInput = 0;
     protected GroundStateEnum groundState;
     protected float fallSpeed = 0f;
+
     protected bool onLadder;
     public override bool OnLadder { get { return onLadder; } }
+    protected float ladderPrevX = 0f;//Предыдущая x-координата лестницы
+    protected bool canGrabSameLadder = true;//Может ли герой цепляться за лестницу с ladderPrevX
+
     protected bool dontShoot = false;
 
     protected AttackerClass attacker;
     protected TrinketEffectClass mutagenEffect;//Эффект, который связан с мутагеном
     protected bool mutagenActive = false;//Действует ли мутаген
-    protected bool invul;//Если true, то персонаж невосприимчив к урону
+    protected bool invul;//Если true, то персонаж обычно невосприимчив к урону
+    protected bool noDamage;//Если true, то персонаж не может получить урон
 
     protected AttackTypeEnum fightingMode;
     public bool attacking = false;
@@ -181,6 +193,7 @@ public class HeroController : CharacterController
 
     protected virtual void Update()
     {
+
         if (!immobile)
         {
             #region usualMovement
@@ -189,13 +202,12 @@ public class HeroController : CharacterController
             {
                 if (employment > 6)
                 {
-
-                    if (Input.GetButton("Horizontal"))
+                    if (InputCollection.instance.GetButton("Horizontal"))
                     {
-                        Move(Input.GetAxis("Horizontal") > 0f ? OrientationEnum.right : OrientationEnum.left);
+                        Move(InputCollection.instance.GetAxis("Horizontal") > 0f ? OrientationEnum.right : OrientationEnum.left);
                     }
 
-                    if (Input.GetButtonDown("Jump"))
+                    if (InputCollection.instance.GetButtonDown("Jump"))
                     {
                         jumpInput = 0;
                         if (groundState == GroundStateEnum.grounded && !jumping)
@@ -204,50 +216,49 @@ public class HeroController : CharacterController
                         }
                     }
 
-                    if (Input.GetButton("Jump"))
-                    {
-                        //if (jumpInput)
-                        //rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
-                    }
+                    //if (Input.GetButton("Jump"))
+                    //{
+                    //if (jumpInput)
+                    //rigid.AddForce(new Vector2(0f, jumpAdd * (underWater ? waterCoof : 1f)));
+                    //}
 
-                    if (Input.GetButtonUp("Jump"))
-                    {
+                    if (InputCollection.instance.GetButtonUp("Jump"))
                         jumpInput = 0;
-                    }
+                    
 
-                    if (Input.GetButtonDown("Up"))
+                    if (InputCollection.instance.GetAxis("Vertical") > .3f)
                     {
                         LadderOn();
                     }
 
                     if (employment > 7)
                     {
-                        if (Input.GetButtonDown("Attack"))
+                        if (InputCollection.instance.GetButtonDown("Attack"))
                         {
                             if (groundState != GroundStateEnum.crouching)
                             {
-                                if (interactor.ReadyForInteraction())
-                                    interactor.Interact();
+                                if (currentWeapon.chargeable)
+                                    StartCharge();
                                 else
-                                {
-                                    if (currentWeapon.chargeable)
-                                        StartCharge();
-                                    else
-                                        Attack();
-                                }
+                                    Attack();
                             }
                         }
-                        else if (Input.GetButtonDown("Flip"))
+                        else if (InputCollection.instance.GetButtonDown("Interact"))
+                        {
+                            if (interactor.ReadyForInteraction())
+                                interactor.Interact();
+                        }
+                        else if (InputCollection.instance.GetButtonDown("Flip"))
                             if ((rigid.velocity.x * (int)orientation > .1f) && (groundState == GroundStateEnum.grounded) && (employment > 8))
                                 Flip();
-                        if (Input.GetButtonDown("ChangeInteraction"))
+                        if (InputCollection.instance.GetButtonDown("ChangeInteraction"))
                             interactor.ChangeInteraction();
                     }
                 }
 
                 if (currentWeapon.chargeable)
                 {
-                    if (Input.GetButtonUp("Attack") && chargeBeginTime>0f)
+                    if ((InputCollection.instance.GetButtonUp("Attack")) && chargeBeginTime>0f)
                     {
                         StopCharge();
                     }
@@ -260,11 +271,12 @@ public class HeroController : CharacterController
 
             else
             {
-                if (Input.GetButton("Vertical"))
-                    LadderMove(Input.GetAxis("Vertical"));
+
+                if (Mathf.Abs(InputCollection.instance.GetAxis("Vertical"))>.3f)
+                    LadderMove(InputCollection.instance.GetAxis("Vertical"));
                 else
                     StopLadderMoving();
-                if (Input.GetButtonDown("Jump"))
+                if (InputCollection.instance.GetButtonDown("Jump"))
                 {
                     LadderOff();
                     rigid.AddForce(new Vector2(0f, jumpForce / 2));
@@ -273,6 +285,14 @@ public class HeroController : CharacterController
             }
 
             #endregion //ladderMovement
+
+            if (InputCollection.instance.GetButtonDown("ChangeWeapon")? additionalWeapon != null : false)
+            {
+                StopAttack();
+                WeaponClass _weapon = currentWeapon;
+                CurrentWeapon = additionalWeapon;
+                additionalWeapon = _weapon;
+            }
 
         }
 
@@ -391,7 +411,8 @@ public class HeroController : CharacterController
 
         if (onLadder)
         {
-            if (!Physics2D.OverlapCircle(transform.position - transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")))
+            if (InputCollection.instance.GetAxis("Vertical") < -.2f ? 
+                !Physics2D.OverlapCircle(transform.position - transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")):false)
             {
                 LadderOff();
                 rigid.AddForce(new Vector2(0f, jumpForce / 2));
@@ -454,7 +475,7 @@ public class HeroController : CharacterController
     protected override void Move(OrientationEnum _orientation)
     {
         bool crouching = (groundState == GroundStateEnum.crouching);
-        rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : Input.GetAxis("Horizontal") * speed*speedCoof, rigid.velocity.y);
+        rigid.velocity = new Vector3((wallCheck.WallInFront) ? 0f : InputCollection.instance.GetAxis("Horizontal") * speed*speedCoof, rigid.velocity.y);
         if (orientation != _orientation)
         {
             Turn(_orientation);
@@ -475,13 +496,21 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void LadderOn()
     {
-        if (interactor.Ladder != null)
+        Vector2 pos = transform.position;
+        Collider2D _ladder = Physics2D.OverlapArea(pos + new Vector2(ladderOffsetX, ladderOffsetY), pos - new Vector2(ladderOffsetX, ladderOffsetY), LayerMask.GetMask(ladderLayerName));
+        if (_ladder != null)
         {
-            base.LadderOn();
-            onLadder = true;
-            Animate(new AnimationEventArgs("setLadderMove", "", 1));
-            Vector3 vect = transform.position;
-            transform.position = new Vector3(interactor.Ladder.transform.position.x, vect.y, vect.z);
+            float ladderX = _ladder.transform.position.x;
+            if (canGrabSameLadder || Mathf.Abs(ladderX - ladderPrevX) > ladderStep)
+            {
+                base.LadderOn();
+                onLadder = true;
+                Animate(new AnimationEventArgs("setLadderMove", "", 1));
+                Vector3 vect = transform.position;
+                transform.position = new Vector3(ladderX, vect.y, vect.z);
+                StopCoroutine("NoGrabSameLadderProcess");
+                canGrabSameLadder = true;
+            }
         }
     }
 
@@ -493,6 +522,7 @@ public class HeroController : CharacterController
         onLadder = false;
         rigid.gravityScale = underWater? .6f: 1f;
         Animate(new AnimationEventArgs("setLadderMove", "", 0));
+        StartCoroutine("NoGrabSameLadderProcess");
         //if (Input.GetAxis("Vertical")>0f)
         //{
         //  rigid.AddForce(new Vector2(0f, jumpForce / 2));
@@ -508,6 +538,17 @@ public class HeroController : CharacterController
         rigid.velocity = new Vector3(0f,
                          Physics2D.OverlapCircle(transform.position + Mathf.Sign(direction) * transform.up * ladderCheckOffset, ladderStep, LayerMask.GetMask("ladder")) ? 
                          direction * ladderSpeed * speedCoof : 0f);
+    }
+
+    /// <summary>
+    /// Процесс, в течение которого герой не может цепляться за предыдущую лестницу (или за лестницу с такой же абсциссой)
+    /// </summary>
+    protected IEnumerator NoGrabSameLadderProcess()
+    {
+        ladderPrevX = transform.position.x;
+        canGrabSameLadder = false;
+        yield return new WaitForSeconds(noGrabSameLadderTime);
+        canGrabSameLadder = true;
     }
 
     /// <summary>
@@ -574,6 +615,7 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Attack()
     {
+        currentWeapon.StartAttack();
         if (fightingMode == AttackTypeEnum.melee)
         {
             if (chargeBeginTime > 0f)
@@ -583,7 +625,7 @@ public class HeroController : CharacterController
                 Animate(new AnimationEventArgs("releaseAttack", "",0));
                 Animate(new AnimationEventArgs("attack", currentWeapon.itemName, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime + currentWeapon.endAttackTime))));
             }
-            StartCoroutine(AttackProcess());
+            StartCoroutine("AttackProcess");
         }
         else if (fightingMode == AttackTypeEnum.range)
         {
@@ -597,7 +639,7 @@ public class HeroController : CharacterController
                     Animate(new AnimationEventArgs("releaseAttack", "", 0));
                     Animate(new AnimationEventArgs("shoot", currentWeapon.itemName, Mathf.RoundToInt(10 * (currentWeapon.preAttackTime + currentWeapon.attackTime))));
                 }
-                StartCoroutine(ShootProcess());
+                StartCoroutine("ShootProcess");
             }
         }
     }
@@ -617,9 +659,11 @@ public class HeroController : CharacterController
 
         attacking = true;
         sword.Attack(hitBox, transform.position);
+        hitBox.AttackDirection = Vector2.right * (int)orientation;
         yield return new WaitForSeconds(sword.attackTime);
         attacking = false;
         yield return new WaitForSeconds(sword.endAttackTime);
+        currentWeapon.StopAttack();
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
@@ -639,7 +683,20 @@ public class HeroController : CharacterController
         bow.Shoot(hitBox, transform.position + Vector3.right*(int)orientation*.05f, (int)orientation, whatIsAim, enemies);
         yield return new WaitForSeconds(currentWeapon.attackTime);
 
+        currentWeapon.StopAttack();
         employment = Mathf.Clamp(employment + 5, 0, maxEmployment);
+    }
+
+    /// <summary>
+    /// Остановить атаку
+    /// </summary>
+    protected override void StopAttack()
+    {
+        base.StopAttack();
+        Animate(new AnimationEventArgs("stop"));
+        currentWeapon.StopAttack();
+        StopCoroutine("ShootProcess");
+        employment = maxEmployment;
     }
 
     /// <summary>
@@ -647,7 +704,8 @@ public class HeroController : CharacterController
     /// </summary>
     protected virtual void Flip()
     {
-        rigid.AddForce(new Vector2((int)orientation*flipForce, 0f));
+        rigid.velocity = new Vector2(0f, 0f);
+        rigid.AddForce(new Vector2((int)orientation*flipForce*(underWater ? waterCoof : 1f), 0f));
         StartCoroutine(InvulProcess(flipTime, false));
         StartCoroutine(FlipProcess());
         Animate(new AnimationEventArgs("flip"));
@@ -677,7 +735,7 @@ public class HeroController : CharacterController
     /// </summary>
     public override void TakeDamage(HitParametres hitData)
     {
-        if (!invul)
+        if (!invul && (!noDamage || hitData.attackPower!=-1))
         {
             if (mutagenEffect != null)
             {
@@ -707,14 +765,16 @@ public class HeroController : CharacterController
             if ((hitData.damageType != DamageType.Physical) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
                 TakeDamageEffect(hitData.damageType);
             bool stunned = GetBuff("StunnedProcess") != null;
-            if (hitData.attackPower>balance || stunned)
+            if (hitData.attackPower>balance/2 || stunned)
             {
                 //StopCoroutine("AttackProcess");
                 //dontShoot = false;
                 if (onLadder)
                     LadderOff();
+                if (hitData.attackPower>balance)
+                    StopAttack();
             }
-            if (hitData.attackPower>0)
+            if (hitData.attackPower>=0)
                 StartCoroutine(InvulProcess(invulTime, true));
             anim.Blink();
         }
@@ -727,7 +787,7 @@ public class HeroController : CharacterController
     /// </summary>
     public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
     {
-        if (ignoreInvul || !invul)
+        if (ignoreInvul || !invul && (!noDamage || hitData.attackPower != -1))
         {
             if (mutagenEffect != null && attacker!=null? attacker.attackType==AttackTypeEnum.melee:false)
             {
@@ -758,12 +818,14 @@ public class HeroController : CharacterController
             SpriteRenderer sprite = GetComponentInChildren<SpriteRenderer>();
             if (sprite != null) sprite.enabled = true;
             bool stunned = GetBuff("StunnedProcess") != null;
-            if (hitData.attackPower > balance || stunned)
+            if (hitData.attackPower > balance / 2 || stunned)
             {
                 //StopCoroutine("AttackProcess");
                 //dontShoot = false;
                 if (onLadder)
                     LadderOff();
+                if (hitData.attackPower > balance)
+                    StopAttack();
             }
             if (hitData.attackPower>0)
                 StartCoroutine(InvulProcess(invulTime, true));
@@ -778,6 +840,9 @@ public class HeroController : CharacterController
     /// </summary>
     protected override void Death()
     {
+        if (dead)
+            return;
+        dead = true;
         StopCoroutine("AttackProcess");
         if (indicators != null)
         {
@@ -790,6 +855,7 @@ public class HeroController : CharacterController
             BuffClass buff = buffs[i];
             StopCustomBuff(new BuffData(buff));
         }
+        rigid.mass = 10f;
         Animate(new AnimationEventArgs("death"));
         immobile = true;
         SpecialFunctions.StartStoryEvent(this, CharacterDeathEvent, new StoryEventArgs());
@@ -801,7 +867,11 @@ public class HeroController : CharacterController
     protected virtual void Resurect()
     {
         Health = maxHealth;
+        dead = false;
         immobile = false;
+        StopAttack();
+        employment = maxEmployment;
+        rigid.mass = 1f;
         Animate(new AnimationEventArgs("stop"));
     }
 
@@ -849,7 +919,8 @@ public class HeroController : CharacterController
             equipment.weapons.Add(_weapon);
             //SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName1);
             OnEquipmentChanged(new EquipmentEventArgs(null, _weapon));
-            SpecialFunctions.gameUI.ConsiderItem(_weapon, _weapon.itemDescription);
+            SpecialFunctions.gameUI.ConsiderItem(_weapon, _weapon.itemMLDescription.GetText(SettingsScript.language));
+            additionalWeapon = _weapon;
         }
         else if (item is HeartClass)
         {
@@ -873,13 +944,17 @@ public class HeroController : CharacterController
                 equipment.trinkets.Add(_trinket);
             }
             OnEquipmentChanged(new EquipmentEventArgs(null, _trinket));
-            SpecialFunctions.gameUI.ConsiderItem(_trinket, _trinket.itemDescription);
+            SpecialFunctions.gameUI.ConsiderItem(_trinket, _trinket.itemMLDescription.GetText(SettingsScript.language));
         }
         else
         {
             if (item.itemName == "GoldHeart")
             {
-                SpecialFunctions.gameUI.ConsiderItem(item, "Увеличивает максимальное количество здоровья");
+                SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Увеличивает максимальное количество здровья",
+                                                                                 "Increases max number of hit points",
+                                                                                 "",
+                                                                                 "",
+                                                                                 "").GetText(SettingsScript.language), 4.5f);
                 MaxHealth += 4f;
             }
             else
@@ -899,9 +974,14 @@ public class HeroController : CharacterController
                 }
             }
             else if (item.itemName == "LifeBookPage")
-                SpecialFunctions.gameUI.ConsiderItem(item, "Увеличивает максимальное число активных особых предметов");
+                SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Увеличивает максимальное число активных особых предметов",
+                                                                                 "Increases max number of active trinkets",
+                                                                                 "",
+                                                                                 "",
+                                                                                 "").GetText(SettingsScript.language),4.5f);
             else
-                SpecialFunctions.SetSecretText(2f, "Вы нашли " + item.itemTextName1);
+                SpecialFunctions.SetSecretText(2f, new MultiLanguageText("Вы нашли ",
+                                                                         "You have found","","","").GetText(SettingsScript.language) + item.itemMLTextName1.GetText(SettingsScript.language));
         }
     }
 
@@ -926,6 +1006,14 @@ public class HeroController : CharacterController
         if (mutagen == null)
             return;
         mutagenEffect = mutagen.trinketEffects[0];
+    }
+
+    /// <summary>
+    /// Сбросить доп оружие
+    /// </summary>
+    public void ResetAdditionalWeapon()
+    {
+        additionalWeapon = null;
     }
 
     /*
@@ -982,7 +1070,11 @@ public class HeroController : CharacterController
         if (hAnim != null && hitted)
             hAnim.InvulBlink();
         invul = true;
+        if (hitted)
+            noDamage = true;
         yield return new WaitForSeconds(_invulTime);
+        if (hitted)
+            noDamage = false;
         invul = false;
         //yield return new WaitForSeconds(0f);
     }

@@ -1,10 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Компонент, ответственный за обратный отсчёт. Если отсчёт кончится - игра заканчивается
+/// Компонент, ответственный за обратный отсчёт.
 /// </summary>
 public class CountdownScript : MonoBehaviour, IHaveID, IHaveStory
 {
@@ -21,11 +22,11 @@ public class CountdownScript : MonoBehaviour, IHaveID, IHaveStory
 
     #endregion //dictionaries
 
-    #region consts
+    #region eventHandlers
 
-    private const float endLevelTime = 5f;
+    public EventHandler<StoryEventArgs> StoryCountdownFinished;//Сюжетное событие "Обратный отсчёт закончился"
 
-    #endregion //consts
+    #endregion //eventHandlers
 
     #region parametres
 
@@ -33,7 +34,7 @@ public class CountdownScript : MonoBehaviour, IHaveID, IHaveStory
     private float countdownTime = 120f;
 
     [SerializeField]
-    private string endGameText = "";
+    private MultiLanguageText endCountdownText;
 
     [SerializeField]
     private int id;
@@ -53,19 +54,10 @@ public class CountdownScript : MonoBehaviour, IHaveID, IHaveStory
     IEnumerator CountdownProcess()
     {
         yield return new WaitForSeconds(countdownTime);
-        StartCoroutine("EndLevelProcess");
-    }
+        if (endCountdownText.russian!="")
+            SpecialFunctions.SetText( 6f, endCountdownText);
+        SpecialFunctions.StartStoryEvent(this, StoryCountdownFinished, new StoryEventArgs());
 
-    /// <summary>
-    /// Процесс завершения игры
-    /// </summary>
-    IEnumerator EndLevelProcess()
-    {
-        SpecialFunctions.SetText(endGameText,6f);
-        SpecialFunctions.SetFade(true);
-        SpecialFunctions.Player.GetComponent<HeroController>().SetImmobile(true);
-        yield return new WaitForSeconds(endLevelTime);
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     /// <summary>

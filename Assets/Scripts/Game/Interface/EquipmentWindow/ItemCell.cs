@@ -6,12 +6,20 @@ using UnityEngine.UI;
 /// <summary>
 /// Скрипт, реализующий ячейку с предметом (обычным предметом, который исопользуется для квестов, либо это ключ от двери)
 /// </summary>
-public class ItemCell : MonoBehaviour
+public class ItemCell : UIElementScript
 {
+
+    #region consts
+
+    protected const float inactiveIntensity = 1f, activeIntensity = .5f, clickedIntensity = .3f;//Как будет подкрашиваться кнопка при различных уровнях взаимодействия с ней
+
+    #endregion //consts
 
     #region fields
 
     public Image itemImage;
+
+    private Image cellImage;
 
     private ItemClass item;
     public ItemClass Item
@@ -33,9 +41,48 @@ public class ItemCell : MonoBehaviour
 
     #endregion //fields
 
-    public void Initialize()
+    #region parametres
+
+    public override UIElementStateEnum ElementState
+    {
+        get
+        {
+            return base.ElementState;
+        }
+
+        set
+        {
+            base.ElementState = value;
+            switch (value)
+            {
+                case UIElementStateEnum.inactive:
+                    cellImage.color = new Color(inactiveIntensity, inactiveIntensity, inactiveIntensity, 1f);
+                    break;
+                case UIElementStateEnum.active:
+                    cellImage.color = new Color(activeIntensity, activeIntensity, activeIntensity, 1f);
+                    break;
+                case UIElementStateEnum.clicked:
+                    cellImage.color = new Color(clickedIntensity, clickedIntensity, clickedIntensity, 1f);
+                    break;
+                default:
+                    cellImage.color = new Color(inactiveIntensity, inactiveIntensity, inactiveIntensity, 1f);
+                    break;
+            }
+        }
+    }
+
+    #endregion //parametres
+
+    public override void SetActive()
+    {
+        base.SetActive();
+        ShowItemText();
+    }
+
+    public override void Initialize()
     {
         itemImage = GetComponent<Image>();
+        cellImage = transform.parent.GetComponent<Image>();
     }
 
     /// <summary>
@@ -44,7 +91,7 @@ public class ItemCell : MonoBehaviour
     public void ShowItemText()
     {
         if (item != null)
-            itemNameText.text = item.itemTextName;
+            itemNameText.text = item.itemMLTextName.GetText(SettingsScript.language);
     }
 
 }

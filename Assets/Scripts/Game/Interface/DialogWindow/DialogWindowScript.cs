@@ -37,6 +37,7 @@ public class DialogWindowScript : MonoBehaviour
     protected Image portrait;
     protected GameObject speechPanel;
     protected GameObject answerPanel;
+    protected UIPanel answerUIPanel;
     protected DialogAnswerButton answerButton1, answerButton2;
     protected Text answerText;
 
@@ -89,10 +90,18 @@ public class DialogWindowScript : MonoBehaviour
             if (waitingForInput)
             {
                 Event e = Event.current;
-                if (Input.anyKeyDown && !Input.GetButtonDown("Horizontal") && !Input.GetButtonDown("Vertical") &&
-                    !Input.GetButtonDown("Cancel") && !noInput && InterfaceWindow.openedWindow == null)
+                if ((Input.anyKeyDown || InputCollection.instance.GetButtonDown("Submit"))?
+                    !InputCollection.instance.GetButtonDown("Horizontal") &&
+                    !InputCollection.instance.GetButtonDown("Vertical") &&
+                    !InputCollection.instance.GetButtonDown("Menu") && !noInput && InterfaceWindow.openedWindow == null : false)
                     NextSpeech();
             }
+
+            if (answerPanel.active)
+                if (UIElementScript.activePanel != answerUIPanel? InterfaceWindow.openedWindow==null:false)
+                    answerUIPanel.SetActive();
+            
+
         }
     }
 
@@ -193,7 +202,7 @@ public class DialogWindowScript : MonoBehaviour
             npc = _npc;
             //Повернуть НПС к герою
             prevScale = npc.transform.localScale.x;
-            if (npc.transform.lossyScale.x * (hero.position - npc.transform.position).x < 0f)
+            if (npc.CanTurn? npc.transform.lossyScale.x * (hero.position - npc.transform.position).x < 0f: false)
                 npc.transform.localScale += new Vector3(-2f * prevScale, 0f);
             npc.waitingForDialog = NPCHasDialogFromQueue(npc);
         }
@@ -261,7 +270,8 @@ public class DialogWindowScript : MonoBehaviour
         {
             //Повернуть НПС в изначальную ориентацию(если это он инициализировал диалог)
             Vector3 vect = npc.transform.localScale;
-            npc.transform.localScale = new Vector3(prevScale, vect.y, vect.z);
+            if (npc.CanTurn)
+                npc.transform.localScale = new Vector3(prevScale, vect.y, vect.z);
             npc.StopTalking();
         }
 
@@ -449,7 +459,7 @@ public class DialogWindowScript : MonoBehaviour
             answerButton1.InitializeAnswerButton(_speech.answer1);
             answerButton2.InitializeAnswerButton(_speech.answer2);
             if (_speech.hasText)
-                answerText.text = _speech.text;
+                answerText.text = _speech.speechText.mlText.GetText(SettingsScript.language);
             else
                 answerText.text = "";
         }
@@ -498,8 +508,8 @@ public class DialogWindowScript : MonoBehaviour
 
         if (_speech.speechMod != SpeechModEnum.answer && _speech.hasText)
         {
-            portrait.sprite = _speech.portrait;
-            speechText.text = _speech.text;
+            portrait.sprite = _speech.speechText.portrait;
+            speechText.text = _speech.speechText.mlText.GetText(SettingsScript.language);
             speechPanel.SetActive(true);
         }
         else
@@ -577,6 +587,7 @@ public class DialogWindowScript : MonoBehaviour
         answerButton2 = answerPanel.transform.FindChild("Answer2").GetComponent<DialogAnswerButton>();
         answerText = answerPanel.transform.FindChild("AnswerText").GetComponent<Text>();
         answerPanel.SetActive(false);
+        answerUIPanel = answerPanel.GetComponent<UIPanel>();
         speechPanel.SetActive(false);
 
         dialogQueue = new List<DialogQueueElement>();

@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -36,9 +37,9 @@ public class GameHistory : MonoBehaviour, IHaveStory
         Summoner summoner = GetComponent<Summoner>();
         if (summoner==null)
             return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress",
-                                        "saveGame", "setText","setSecretText", "setLight", "setHDR", "setDeathEvent"};
+                                        "saveGame", "restartGame", "goToNextLevel", "setText","setSecretText", "setLight", "setHDR", "setDeathEvent"};
         else
-            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame",
+            return new List<string>() { "changeQuestData", "removeObject", "startInvestigationEffect", "getAchievement", "changeStoryProgress", "saveGame","restartGame", "goToNextLevel",
                                         "setText","setSecretText", "setLight", "setHDR", "setDeathEvent", "summon","destroy","move" };
     }
 
@@ -56,8 +57,10 @@ public class GameHistory : MonoBehaviour, IHaveStory
                                             { "getAchievement", new List<string>() { } },
                                             { "changeStoryProgress", SpecialFunctions.statistics!=null? SpecialFunctions.statistics.HistoryBase.stories.ConvertAll<string>(x=>x.storyName):new List<string>(){ } },
                                             { "saveGame", new List<string>() },
-                                            { "setText", new List<string>() },
-                                            { "setSecretText", new List<string>() },
+                                            { "restartGame", new List<string>() },
+                                            { "goToNextLevel",new List<string>()},
+                                            { "setText", SpecialFunctions.gameController.LanguageChanges.ConvertAll<string>(x=>x.questLineName) },
+                                            { "setSecretText", SpecialFunctions.gameController.LanguageChanges.ConvertAll<string>(x=>x.questLineName) },
                                             { "setLight", new List<string>() },
                                             { "setHDR",new List<string>()},
                                             { "setDeathEvent", new List<string> {"levelEnd", "nothing" } },
@@ -82,6 +85,8 @@ public class GameHistory : MonoBehaviour, IHaveStory
                                                     { "getAchievement",new List<string>() { } },
                                                     { "changeStoryProgress", SpecialFunctions.statistics!=null? SpecialFunctions.statistics.GetStoryProgressNames(): new List<string>() { } },
                                                     { "saveGame", new List<string>()},
+                                                    { "restartGame", new List<string>()},
+                                                    { "goToNextLevel", new List<string>(){"completeLevelScreen", "noScreen" } },
                                                     { "setText", new List<string>() },
                                                     { "setSecretText", new List<string>() },
                                                     { "setLight", new List<string>() },
@@ -132,7 +137,7 @@ public class History
     {
         get
         {
-            return new List<string>() { "GameController", "GameStatistics", "CharacterController", "StoryTrigger", "NPCController", "DropClass" };
+            return new List<string>() { "GameController", "GameStatistics", "CharacterController", "StoryTrigger", "NPCController", "DropClass", "CountdownScript" };
         }
     }
 
@@ -143,7 +148,8 @@ public class History
                                                                                     { typeof(CharacterController),new List<string> { "characterDeath"} },
                                                                                     { typeof(StoryTrigger),new List<string> {"triggerEvent"} },
                                                                                     { typeof(NPCController),new List<string> {"speech" } },
-                                                                                    { typeof(DropClass), new List<string> { "drop"} } }; } }
+                                                                                    { typeof(DropClass), new List<string> { "drop"} },
+                                                                                    {typeof (CountdownScript), new List<string> {"countdown" } } }; } }
     //Возвращает имена сравнивающих функций для настройки причины сюжетного события
     public virtual Dictionary<Type, List<string>> compareNames
     {
@@ -155,7 +161,8 @@ public class History
                                                                                     { typeof(CharacterController),new List<string> { "", "compare", "compareHistoryProgress" } },
                                                                                     { typeof(StoryTrigger),new List<string> { "", "compare", "compareHistoryProgress" } },
                                                                                     { typeof(NPCController),new List<string> { "", "compare", "compareSpeech", "compareHistoryProgress" } },
-                                                                                    { typeof(DropClass),new List<string> { "", "compareHistoryProgress"} } };
+                                                                                    { typeof(DropClass),new List<string> { "", "compareHistoryProgress"} } ,
+                                                                                    { typeof (CountdownScript), new List<string>() } };
         }
     }
 
@@ -226,6 +233,8 @@ public class History
         storyActionBase.Add("startInvestigationEffect", StartInvestigationEffect);
         storyActionBase.Add("getAchievement", GetAchievement);
         storyActionBase.Add("saveGame", SaveGameStory);
+        storyActionBase.Add("restartGame", StoryRestartGame);
+        storyActionBase.Add("goToNextLevel", StoryGoToNextLevel);
         storyActionBase.Add("setText", SetStoryText);
         storyActionBase.Add("setSecretText", SetStorySecretText);
         storyActionBase.Add("setLight", SetStoryLight);
@@ -248,6 +257,7 @@ public class History
         storyInitBase.Add("triggerEvent", (x, y) => { if (y.GetComponent<StoryTrigger>() != null) y.GetComponent<StoryTrigger>().TriggerEvent += x.HandleStoryEvent; });
         storyInitBase.Add("speech", (x, y) => { if (SpecialFunctions.dialogWindow != null) SpecialFunctions.dialogWindow.SpeechSaidEvent += x.HandleStoryEvent; });
         storyInitBase.Add("drop", (x, y) => { y.GetComponent<DropClass>().StoryDropIsGot += x.HandleStoryEvent; });
+        storyInitBase.Add("countdown", (x, y) => { y.GetComponent<CountdownScript>().StoryCountdownFinished += x.HandleStoryEvent; });
 
         storyDeInitBase.Add("startGame", (x, y) => { if (y.GetComponent<GameStatistics>() != null) y.GetComponent<GameController>().StartGameEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("endGame", (x, y) => { if (y.GetComponent<GameController>() != null) y.GetComponent<GameController>().EndGameEvent -= x.HandleStoryEvent; });
@@ -256,6 +266,7 @@ public class History
         storyDeInitBase.Add("triggerEvent", (x, y) => { if (y.GetComponent<StoryTrigger>() != null) y.GetComponent<StoryTrigger>().TriggerEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("speech", (x, y) => { if (SpecialFunctions.dialogWindow != null) SpecialFunctions.dialogWindow.SpeechSaidEvent -= x.HandleStoryEvent; });
         storyDeInitBase.Add("drop", (x, y) => { y.GetComponent<DropClass>().StoryDropIsGot -= x.HandleStoryEvent; });
+        storyDeInitBase.Add("countdown", (x, y) => { y.GetComponent<CountdownScript>().StoryCountdownFinished -= x.HandleStoryEvent; });
 
     }
 
@@ -514,7 +525,7 @@ public class History
                         {
                             Quest quest1 = activeQuests.Find(x => (x.questName == _quest.questName));
                             int questStage=quest1.stage++;
-                            if (questStage >= quest1.questLine.Count)
+                            if (questStage >= quest1.questLines.Count)
                             {
                                 activeQuests.Remove(quest1);
                             }
@@ -534,15 +545,16 @@ public class History
                         if (ContainsQuest(_quest))
                         {
                             Quest quest1 = activeQuests.Find(x => (x.questName == _quest.questName));
-                            if (quest1.questLine.Contains(_action.id1))
+                            QuestLine qLine = quest1.questLines.Find(x => x.questLineName == _action.id1);
+                            if (qLine!=null)
                             {
-                                quest1.stage = quest1.questLine.IndexOf(_action.id1);
+                                quest1.stage = quest1.questLines.IndexOf(qLine);
                             }
                         }
                         break;
                     }
             }
-            SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<string>(x => x.questLine[x.stage]));
+            SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<QuestLine>(x => x.questLines[x.stage]));
             HandleStatisticCountEvent(this, new StoryEventArgs("", 0));
         }
     }
@@ -577,11 +589,29 @@ public class History
     }
 
     /// <summary>
+    /// Перезапустить игру
+    /// </summary>
+    public void StoryRestartGame(StoryAction _action)
+    {
+        SpecialFunctions.gameController.EndLevel();
+    }
+
+    /// <summary>
+    /// Переход на следующий уровень
+    /// </summary>
+    public void StoryGoToNextLevel(StoryAction _action)
+    {
+        SpecialFunctions.gameController.CompleteLevel(_action.id1, _action.id2 == "completeLevelScreen", _action.argument);
+    }
+
+    /// <summary>
     /// Выставить текст в окошечке игровых сообщений
     /// </summary>
     public void SetStoryText(StoryAction _action)
     {
-        SpecialFunctions.SetText(_action.id1, _action.argument);
+        QuestLine lChange = SpecialFunctions.gameController.LanguageChanges.Find(x => x.questLineName == _action.id1);
+        if (lChange!=null)
+            SpecialFunctions.SetText(_action.argument,lChange.mlText);
     }
 
     /// <summary>
@@ -589,7 +619,9 @@ public class History
     /// </summary>
     public void SetStorySecretText(StoryAction _action)
     {
-        SpecialFunctions.SetSecretText(_action.argument, _action.id1);
+        QuestLine lChange = SpecialFunctions.gameController.LanguageChanges.Find(x => x.questLineName == _action.id1);
+        if (lChange != null)
+            SpecialFunctions.SetSecretText(_action.argument, lChange.mlText);
     }
 
     /// <summary>
@@ -686,22 +718,31 @@ public class History
 
     protected void HandleStatisticCountEvent(object other, StoryEventArgs e)
     {
-        List<string> questLines = new List<string>();
+        ConsiderQuests();
+    }
+
+    /// <summary>
+    /// Обновить список активных квестов
+    /// </summary>
+    public void ConsiderQuests()
+    {
+        List<QuestLine> questLines = new List<QuestLine>();
         foreach (Quest _quest in activeQuests)
         {
-            string s = _quest.questLine[_quest.stage];
-            if (_quest.hasStatistic && s.Contains("/"))
+            QuestLine qLine = new QuestLine(_quest.questLines[_quest.stage]);
+            if (_quest.hasStatistic && qLine.questLineName.Contains("/"))
             {
-                string s1 = s.Substring(0, s.LastIndexOf("/"));
-                string s2 = s.Substring(s.LastIndexOf("/") + 1);
-                if (_quest.statisticName == e.ID && _quest.questLine[_quest.stage].Contains("/"))
+                for (int i = 0; i < 5; i++)
                 {
-                    _quest.statisticCount = e.Argument;
+                    string s = qLine.mlText.GetText((LanguageEnum)i);
+                    string s1 = s.Substring(0, s.LastIndexOf("/"));
+                    string s2 = s.Substring(s.LastIndexOf("/") + 1);
+                    qLine.mlText.SetText((LanguageEnum)i, s1 + _quest.statisticCount.ToString() + "/" + s2);
                 }
-                questLines.Add(s1 + _quest.statisticCount.ToString() + "/" + s2);
+                questLines.Add(qLine);
             }
             else
-                questLines.Add(s);
+                questLines.Add(qLine);
         }
         SpecialFunctions.gameUI.ConsiderQuests(questLines);
     }
@@ -738,7 +779,7 @@ public class History
                 Quest _quest = null;
                 if ((_quest = SpecialFunctions.statistics.GetQuest(questName)) != null)
                     activeQuests.Add(new Quest(_quest));
-                SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<string>(x => x.questLine[x.stage]));
+                SpecialFunctions.gameUI.ConsiderQuests(activeQuests.ConvertAll<QuestLine>(x => x.questLines[x.stage]));
             }
         }
 

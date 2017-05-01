@@ -52,7 +52,9 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     [SerializeField] protected float health = 100f;
     public virtual float Health { get { return health; } set { health = value; } }
     public virtual float MaxHealth { get { return maxHealth; } set { maxHealth = value; } }
+
     [SerializeField]protected int balance = 0;//Баланс персонажа. Если при получаемый урон имеет параметр силы атаки больше баланса, то персонаж сбивается, вводится в микростан
+    public virtual int Balance { get { return balance; } set { balance = value; } }
 
     [SerializeField] protected float speed = 1f;
     protected float speedCoof = 1f;//Коэффициент скорости
@@ -65,8 +67,8 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     protected bool dead = false;//Мёртв ли персонаж
     public bool Dead { get { return dead; } }
 
-    [SerializeField]
-    protected bool immobile;//Можно ли управлять персонажем
+    [SerializeField]protected bool immobile;//Можно ли управлять персонажем
+    public bool Immobile { get { return immobile; } }
 
     protected bool underWater;//Находится ли персонаж под водой?
     protected virtual bool Underwater//Свойство, которое описывает погружение и выход из воды
@@ -121,6 +123,10 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     [SerializeField]
     protected bool questCharacter = false;//Является и персонаж квестовым (его смерть не вызывает игровых эффектов)
 
+    protected List<Timer> timers = new List<Timer>();
+    protected virtual List<Timer> Timers { get { return new List<Timer>(); } }
+    protected List<TimerInfo> timersInfo = new List<TimerInfo>();
+
     #endregion //parametres
 
     #region eventHandlers
@@ -164,6 +170,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         speedCoof = 1f;
 
         FormDictionaries();
+        SetTimers();
 
         buffs = new List<BuffClass>();
     }
@@ -426,6 +433,75 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         return false;
     }
 
+    /// <summary>
+    /// Установить таймеры
+    /// </summary>
+    protected void SetTimers()
+    {
+        timers = Timers;
+    }
+
+    /// <summary>
+    /// Сбросить все таймеры
+    /// </summary>
+    protected void ResetTimers()
+    {
+        for (int i = timersInfo.Count - 1; i > -0; i--)
+            StopTimer(timersInfo[i].timerName, true);
+    }
+
+    /// <summary>
+    /// Запустить таймер с данным именем
+    /// </summary>
+    /// <param name="_timerName">Название таймера</param>
+    protected void StartTimer(string _timerName)
+    {
+        Timer _timer = timers.Find(x => x.timerName == _timerName);
+        TimerInfo _info = timersInfo.Find(x => x.timerName == _timerName);
+        if (_timer != null && _info == null)
+        {
+            IEnumerator _timerProcess = _timer.TimerProcess(this);
+            StartCoroutine(_timerProcess);
+            _timer.active = true;
+            timersInfo.Add(new TimerInfo(_timerName, _timerProcess));            
+        }
+    }
+
+    /// <summary>
+    /// Остановить таймер с данным названием
+    /// </summary>
+    /// <param name="_timerName">название таймера</param>
+    /// <param name="resetProcess"></param>
+    public void StopTimer(string _timerName, bool resetProcess)
+    {
+        TimerInfo _info = timersInfo.Find(x => x.timerName == _timerName);
+        if (resetProcess)
+        {
+            Timer _timer = timers.Find(x => x.timerName == _timerName);
+            if (_timer != null)
+                _timer.active = false;
+        }
+        if (_info != null)
+        {
+            if (resetProcess)
+                StopCoroutine(_info.process);
+            timersInfo.Remove(_info);
+        }
+    }
+
+    /// <summary>
+    /// Узнать, активен ли таймер с заданным именем
+    /// </summary>
+    /// <param name="_timerName">Название таймера</param>
+    protected bool IsTimerActive(string _timerName)
+    {
+        Timer _timer = timers.Find(x => x.timerName == _timerName);
+        if (_timer == null)
+            return false;
+        else
+            return _timer.active;
+    }
+
     #region buffs
 
     /// <summary>
@@ -460,7 +536,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// Добавить бафф в соответствии с данными этого баффа
     /// </summary>
     /// <param name="_bData">данные баффа</param>
-    protected virtual void AddCustomBuff(BuffData _bData)
+    public virtual void AddCustomBuff(BuffData _bData)
     {
         switch (_bData.buffName)
         {
@@ -563,7 +639,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         {
             if (GetBuff("BurningProcess") != null)
             {
-                AddBuff(new BuffClass("StunnedProcess", Time.fixedTime, _time));
+                AddBuff(new BuffClass("StunnedProcess", Time.time, _time));
                 Death();//Если персонаж находится в подожённом состоянии, то при стане он должен осыпаться пеплом
                 return;
             }
@@ -577,7 +653,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <param name="_time">Время действия стана</param>
     protected virtual IEnumerator StunnedProcess(float _time)
     {
-        AddBuff(new BuffClass("StunnedProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("StunnedProcess", Time.time, _time));
         immobile = true;//Запретить двигаться во время стана
         Animate(new AnimationEventArgs("startStun"));
         yield return new WaitForSeconds(_time);
@@ -612,7 +688,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         {
             if (GetBuff("StunnedProcess") != null)
             {
-                AddBuff(new BuffClass("BurningProcess", Time.fixedTime, _time));
+                AddBuff(new BuffClass("BurningProcess", Time.time, _time));
                 Death();//Если персонажа подожгли, когда он находился в стане, то он осыпется пеплом
             }
         }
@@ -631,7 +707,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <param name="_time">Время горения</param>
     protected virtual IEnumerator BurningProcess(float _time)
     {
-        AddBuff(new BuffClass("BurningProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("BurningProcess", Time.time, _time));
         Animate(new AnimationEventArgs("startBurning"));
         StartCoroutine("BurningDamageProcess");
         yield return new WaitForSeconds(_time);
@@ -648,7 +724,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         while (true)
         {
             yield return new WaitForSeconds(burnFrequency);
-            TakeDamage(new HitParametres(burnDamage, DamageType.Fire), true);
+            TakeDamage(new HitParametres(burnDamage, DamageType.Fire,-1), true);
         }
     }
 
@@ -686,7 +762,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <param name="_time">Продолжительность процесса</param>
     protected virtual IEnumerator WetProcess(float _time)
     {
-        AddBuff(new BuffClass("WetProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("WetProcess", Time.time, _time));
         Animate(new AnimationEventArgs("startWet"));
         yield return new WaitForSeconds(_time);
         RemoveBuff("WetProcess");
@@ -712,7 +788,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// </summary>
     protected virtual void BecomeCold(float _time)
     {
-        if (GetBuff("ColdProcess") != null)
+        if (GetBuff("ColdProcess") != null || GetBuff("FrozenProcess") != null)
             return;//Нельзя во второй раз замёрзнуть
         if (GetBuff("BurningProcess") != null)
             return;//Нельзя замёрзнуть, когда горишь
@@ -728,7 +804,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <returns></returns>
     protected virtual IEnumerator ColdProcess(float _time)
     {
-        AddBuff(new BuffClass("ColdProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("ColdProcess", Time.time, _time));
         speedCoof *= coldSpeedCoof;
         Animate(new AnimationEventArgs("startCold"));
         yield return new WaitForSeconds(_time);
@@ -766,7 +842,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <param name="_time">Длительность процесса</param>
     protected virtual IEnumerator PoisonProcess(float _time)
     {
-        AddBuff(new BuffClass("PoisonProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("PoisonProcess", Time.time, _time));
         StartCoroutine("PoisonDamageProcess");
         Animate(new AnimationEventArgs("startPoison"));
         yield return new WaitForSeconds(_time);
@@ -783,7 +859,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         while (true)
         {
             yield return new WaitForSeconds(poisonFrequency);
-            TakeDamage(new HitParametres(poisonDamage, DamageType.Poison, 0),true);
+            TakeDamage(new HitParametres(poisonDamage, DamageType.Poison, -1),true);
         }
     }
 
@@ -817,9 +893,10 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     /// <param name="_time">Длительность процесса</param>
     protected virtual IEnumerator FrozenProcess(float _time)
     {
-        AddBuff(new BuffClass("FrozenProcess", Time.fixedTime, _time));
+        AddBuff(new BuffClass("FrozenProcess", Time.time, _time));
         immobile = true;//Потерять способность двигаться
         Animate(new AnimationEventArgs("startFrozen"));
+        if (underWater)
         Underwater = false;//Считаем, что в замороженном состоянии персонажу не требуется энергия, поэтому он не будет задыхаться
         yield return new WaitForSeconds(_time);
         RemoveBuff("FrozenProcess");
@@ -842,7 +919,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
 
     #endregion //buffs
 
-    #region events
+    #region animation
 
     /// <summary>
     /// Событие, вызываемое при запросе новой анимации у аниматора персонажа
@@ -856,8 +933,16 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
         }
     }
 
-    #endregion //events
+    /// <summary>
+    /// Создать эффект
+    /// </summary>
+    /// <param name="effectName">Название эффекта</param>
+    public void SpawnEffect(string effectName)
+    {
+        Animate(new AnimationEventArgs("spawnEffect", effectName, 0));   
+    }
 
+    #endregion //animation
     #region IHaveID
 
     /// <summary>
@@ -920,6 +1005,7 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     protected virtual IEnumerator StoryDeathProcess(float deathTime)
     {
         yield return new WaitForSeconds(deathTime);
+        Health = 0f;
         Death();
     }
 
@@ -979,5 +1065,49 @@ public class CharacterController : MonoBehaviour, IDamageable, IHaveStory
     }
 
     #endregion //IHaveStory
+
+}
+
+/// <summary>
+/// Структура, представляющий собой таймер
+/// </summary>
+public class Timer
+{
+
+    public string timerName = "timer";
+    public bool active = false;
+    public float duration = 0f;
+
+    public Timer(string _timerName, float _duration)
+    {
+        timerName = _timerName;
+        active = false;
+        duration = _duration;
+    }
+
+    public IEnumerator TimerProcess(CharacterController _char)
+    {
+        active = true;
+        yield return new WaitForSeconds(duration);
+        active = false;
+        _char.StopTimer(timerName, false);
+    }
+
+}
+
+/// <summary>
+/// Информация об активном таймере
+/// </summary>
+public class TimerInfo
+{
+
+    public string timerName = "timer";
+    public IEnumerator process;
+
+    public TimerInfo(string _timerName, IEnumerator _process)
+    {
+        timerName = _timerName;
+        process = _process;
+    }
 
 }

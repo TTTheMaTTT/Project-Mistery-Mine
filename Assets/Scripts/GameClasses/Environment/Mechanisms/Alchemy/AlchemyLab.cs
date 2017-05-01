@@ -9,12 +9,6 @@ using UnityEngine;
 public class AlchemyLab : MonoBehaviour, IInteractive
 {
 
-    #region consts
-
-    private const string usedPotionText = "Это зелье больше на вас никак не действует";
-
-    #endregion //consts
-
     #region fields
 
     private AlchemyWindow aWindow;//Окно интерфейса, на котором происходит вся алхимия
@@ -25,6 +19,9 @@ public class AlchemyLab : MonoBehaviour, IInteractive
     #endregion //fields
 
     #region parametres
+
+    private MultiLanguageText usedPotionText = new MultiLanguageText("Это зелье больше на вас никак не действует", 
+                                                                     "This potion doesn't affect you anymore", "", "","");
 
     [SerializeField][HideInInspector]private int id;
     private Color outlineColor = Color.yellow;
@@ -64,7 +61,14 @@ public class AlchemyLab : MonoBehaviour, IInteractive
 
     public void SetID(int _id)
     {
+#if UNITY_EDITOR
+        UnityEditor.SerializedObject serLab = new UnityEditor.SerializedObject(this);
+        UnityEditor.SerializedProperty serID = serLab.FindProperty("id");
+        serID.intValue = _id;
+        serLab.ApplyModifiedProperties();
+#else
         id = _id;
+#endif //UNITY_EDITOR
     }
 
     /// <summary>
@@ -122,6 +126,7 @@ public class AlchemyLab : MonoBehaviour, IInteractive
             sRenderer.GetPropertyBlock(mpb);
             mpb.SetFloat("_Outline", _outline ? 1f : 0);
             mpb.SetColor("_OutlineColor", outlineColor);
+            mpb.SetFloat("_OutlineWidth", .08f / ((Vector2)transform.lossyScale).magnitude);
             sRenderer.SetPropertyBlock(mpb);
         }
     }
@@ -153,7 +158,7 @@ public class AlchemyLab : MonoBehaviour, IInteractive
 public class PotionClass
 {
     public string potionName;//Название зелья
-    public string potionTextName;//Название зелья в текстах игры
+    public MultiLanguageText potionTextName;//Название зелья в текстах игры
     public string ingredient1, ingredient2;//Ингредиенты
     public Sprite potionImage;//Изображение зелья
     public bool haveUsed = false;//Было ли зелье уже использовано
@@ -161,7 +166,7 @@ public class PotionClass
     public PotionClass()
     {
         potionName = "potion";
-        potionTextName = "potion";
+        potionTextName = new MultiLanguageText("Зелье", "Potion", "", "","");
         ingredient1 = "ingredient1";
         ingredient2 = "ingredient2";
         haveUsed = false;

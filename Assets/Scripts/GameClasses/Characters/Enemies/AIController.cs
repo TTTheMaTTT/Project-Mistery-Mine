@@ -47,7 +47,7 @@ public class AIController : CharacterController
     #region fields
 
     [SerializeField]protected int id;//ID монстра, по которому его можно отличить
-    public int ID
+    public virtual int ID
     {
         get
         {
@@ -118,6 +118,8 @@ public class AIController : CharacterController
 
     [SerializeField]protected HitParametres attackParametres;//Какие параметры атаки, производимой персонажем
     public HitParametres AttackParametres { get { return attackParametres; } set { attackParametres = value; } }
+    protected string attackName = "";//Название атаки, совершаемой в данный момент. 
+                                    //Используется, чтобы поставить кулдаун на прерванную атаку, если что-то сбило персонажа с процесса атаки
     protected int usualBalance;
 
     protected virtual float attackDistance { get { return .2f; } }//На каком расстоянии должен стоять ИИ, чтобы решить атаковать
@@ -129,7 +131,7 @@ public class AIController : CharacterController
                                                                       //(этот путь используется в тех случаях, когда невозможно настичь героя прямым путём)
 
     protected virtual float allyDistance { get { return .25f; } }//На каком расстоянии держится от своего союзника персонаж (возвращается квадрат расстояния
-    protected virtual float allyTime { get { return 1.5f; } }
+    protected virtual float allyTime { get { return .9f; } }
     protected bool followAlly = true;
 
     protected BehaviorEnum behavior = BehaviorEnum.calm;
@@ -231,7 +233,8 @@ public class AIController : CharacterController
 
     protected virtual void FixedUpdate()
     {
-        behaviorActions.Invoke();
+        if (!immobile)
+            behaviorActions.Invoke();
     }
 
     protected virtual void Update()
@@ -306,7 +309,6 @@ public class AIController : CharacterController
     /// </summary>
     protected override void Attack()
     {
-        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(10 * (attackParametres.preAttackTime + attackParametres.actTime + attackParametres.endAttackTime))));
         StartCoroutine("AttackProcess");
     }
 
@@ -315,9 +317,11 @@ public class AIController : CharacterController
     /// </summary>
     protected override IEnumerator AttackProcess()
     {
+        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(100f * attackParametres.wholeAttackTime)));
         employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
         hitBox.SetHitBox(new HitParametres(attackParametres));
+        hitBox.AttackDirection = Vector2.right * (int)orientation;
         yield return new WaitForSeconds(attackParametres.actTime + attackParametres.endAttackTime);
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
@@ -392,7 +396,8 @@ public class AIController : CharacterController
         currentTarget.Exists = false;
         StopFollowOptPath();
         Waiting = false;
-        StopAttack();
+        if (!immobile)
+            StopAttack();
     }
 
     /// <summary>
@@ -480,7 +485,7 @@ public class AIController : CharacterController
     /// </summary>
     public virtual void GoHome()
     {
-        StopMoving();
+        //StopMoving();
         MainTarget = ETarget.zero;
         GoToThePoint(beginPosition);
         if (behavior == BehaviorEnum.agressive)
@@ -760,7 +765,8 @@ public class AIController : CharacterController
         for (int i = 0; i < _path.Count - 2; i++)
         {
             ComplexNavigationCell checkPoint1 = (ComplexNavigationCell)_path[i], checkPoint2 = (ComplexNavigationCell)_path[i + 1];
-            if (checkPoint1.cellType == NavCellTypeEnum.jump || checkPoint1.cellType == NavCellTypeEnum.movPlatform)
+            NeighborCellStruct neighbConnection = checkPoint1.GetNeighbor(checkPoint2.groupNumb, checkPoint2.cellNumb),prevNeighbConnection;
+            if (neighbConnection.connectionType == NavCellTypeEnum.jump || checkPoint1.cellType == NavCellTypeEnum.movPlatform)
                 continue;
             if (checkPoint1.cellType != checkPoint2.cellType)
                 continue;
@@ -768,8 +774,10 @@ public class AIController : CharacterController
             Vector2 movDirection2 = Vector2.zero;
             int index = i + 2;
             ComplexNavigationCell checkPoint3 = (ComplexNavigationCell)_path[index];
+            prevNeighbConnection = neighbConnection;
+            neighbConnection = checkPoint2.GetNeighbor(checkPoint3.groupNumb, checkPoint3.cellNumb);
             while (Vector2.SqrMagnitude(movDirection1 - (checkPoint3.cellPosition - checkPoint2.cellPosition).normalized) < .01f &&
-                   checkPoint1.cellType == checkPoint3.cellType &&
+                   (checkPoint1.cellType == checkPoint3.cellType? true : prevNeighbConnection.connectionType==neighbConnection.connectionType) &&
                    index < _path.Count)
             {
                 index++;
@@ -777,13 +785,46 @@ public class AIController : CharacterController
                 {
                     checkPoint2 = checkPoint3;
                     checkPoint3 = (ComplexNavigationCell)_path[index];
+                    prevNeighbConnection = neighbConnection;
+                    neighbConnection = checkPoint2.GetNeighbor(checkPoint3.groupNumb, checkPoint3.cellNumb);
+                }
+            }
+            if (i == 0 && index > 1 && (OnLadder || checkPoint1.cellType==NavCellTypeEnum.ladder))//Уберём самую первую точку, если она не имеет большого значения в маршруте
+            {
+                _path.RemoveAt(0);
+                index--;
+                if (i == 0 && index > 1)//Уберём и вторую точку тогда
+                {
+                    _path.RemoveAt(0);
+                    index--;
+                    if (i == 0 && index > 1)//А что... третья тоже мешает
+                    {
+                        _path.RemoveAt(0);
+                        index--;
+                    }
                 }
             }
             for (int j = i + 1; j < index - 1; j++)
-            {
                 _path.RemoveAt(i + 1);
-            }
         }
+
+        /*
+        //Рассмотрим первые 2 точки. Чтобы персонаж не возвращался назад к первой точке, когда вторая точка в другой стороне движения - удалим первую точку (если она не имеет значения)
+        if (_path.Count >= 2)
+        {
+            ComplexNavigationCell checkPoint1 = (ComplexNavigationCell)_path[0], checkPoint2 = (ComplexNavigationCell)_path[1];
+            NeighborCellStruct neighbInfo = checkPoint1.GetNeighbor(checkPoint2.groupNumb, checkPoint2.cellNumb);
+            if (neighbInfo.groupNumb == -1)
+            {
+                if (OnLadder || checkPoint1.cellType != NavCellTypeEnum.ladder)
+                    _path.RemoveAt(0);
+            }
+            else
+            {
+                if (neighbInfo.connectionType == NavCellTypeEnum.usual || (neighbInfo.connectionType == NavCellTypeEnum.ladder && !OnLadder))
+                    _path.RemoveAt(0);
+            }
+        }*/
 
         #endregion //optimize
 
@@ -795,9 +836,10 @@ public class AIController : CharacterController
     /// </summary>
     protected virtual void ChangeMainTarget()
     {
+        GameObject prevObj = mainTarget.transform != null ? mainTarget.transform.gameObject : null;
         MainTarget = ETarget.zero;
         Transform obj = SpecialFunctions.battleField.GetNearestCharacter(transform.position, loyalty == LoyaltyEnum.ally);
-        if (obj != null)
+        if (obj != null && obj!=prevObj)
         {
             MainTarget = new ETarget(obj);
             GoToThePoint(mainTarget);
@@ -1419,7 +1461,7 @@ public class AIControllerEditor : Editor
 
     #endregion //parametres
 
-    public void OnEnable()
+    public virtual void OnEnable()
     {
         AIController ai = (AIController)target;
         hitData = ai.AttackParametres;

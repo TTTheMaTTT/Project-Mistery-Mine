@@ -35,16 +35,7 @@ public class IfritController : BatController
     protected override void Start()
     {
         base.Start();
-        Animate(new AnimationEventArgs("startBurning", "", 0));
-    }
-
-    /// <summary>
-    /// Совершить атаку
-    /// </summary>
-    protected override void Attack()
-    {
-        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(10 * (attackParametres.preAttackTime))));
-        StartCoroutine("AttackProcess");
+        StartCoroutine("StartBurningProcess");
     }
 
     /// <summary>
@@ -52,6 +43,7 @@ public class IfritController : BatController
     /// </summary>
     protected override IEnumerator AttackProcess()
     {
+        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(100f * (attackParametres.preAttackTime))));
         employment = Mathf.Clamp(employment - 8, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
 
@@ -75,6 +67,28 @@ public class IfritController : BatController
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    /// <param name="hitData">Данные урона</param>
+    public override void TakeDamage(HitParametres hitData)
+    {
+        if (hitData.attackPower == 0 && hitData.damageType == DamageType.Fire)//Ифрит не подвергается действия лавы или огня
+            return;
+        base.TakeDamage(hitData);
+    }
+
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    /// <param name="hitData">Данные урона</param>
+    /// <param name="ignoreInvul">Игнорирует ли прошедшая атака инвул персонажа</param>
+    public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
+    {
+        if (hitData.attackPower == 0 && hitData.damageType == DamageType.Fire)//Ифрит не подвергается действия лавы или огня
+            return;
+        base.TakeDamage(hitData, ignoreInvul);
+    }
 
     #region damageEffects
 
@@ -87,9 +101,11 @@ public class IfritController : BatController
         {
             //Если персонажа подожгли, когда он был заморожен, то он отмараживается и не получает никакого урона от огня, так как считаем, что всё тепло ушло на разморозку
             StopFrozen();
+            Animate(new AnimationEventArgs("stopBurning"));
+            Animate(new AnimationEventArgs("startBurning"));
             return;
         }
-        if (GetBuff("FrozenWet") != null)
+        if (GetBuff("WetProcess") != null)
         {
             //Если персонажа подожгли, когда он был промокшим, то он высыхает
             StopWet();
@@ -112,6 +128,7 @@ public class IfritController : BatController
         yield return new WaitForSeconds(_time);
         attackParametres.damage /= wetDamageCoof;
         Animate(new AnimationEventArgs("stopWet"));
+        Animate(new AnimationEventArgs("stopBurning"));
         Animate(new AnimationEventArgs("startBurning"));
         RemoveBuff("WetProcess");
     }
@@ -127,7 +144,22 @@ public class IfritController : BatController
         attackParametres.damage /= wetDamageCoof;
         RemoveBuff("WetProcess");
         Animate(new AnimationEventArgs("stopWet"));
+        Animate(new AnimationEventArgs("stopBurning"));
         Animate(new AnimationEventArgs("startBurning"));
+    }
+
+    /// <summary>
+    /// Процесс, инициирющий поджог ифрита в начале игры
+    /// </summary>
+    /// <returns></returns>
+    IEnumerator StartBurningProcess()
+    {
+        yield return new WaitForSeconds(.5f);
+        if (GetBuff("wetProcess") == null && GetBuff("WetProcess") == null)
+        {
+            Animate(new AnimationEventArgs("stopBurning"));
+            Animate(new AnimationEventArgs("startBurning"));
+        }
     }
 
     #endregion //damageEffects
@@ -141,7 +173,7 @@ public class IfritController : BatController
             {
                 Vector2 targetPosition = currentTarget;
                 Vector2 pos = transform.position;
-                if (currentTarget == mainTarget)
+                if (waypoints == null)
                 {
                     float sqDistance = Vector2.SqrMagnitude(targetPosition - pos);
                     if (sqDistance < waitingNearDistance * waitingNearDistance)
@@ -172,15 +204,58 @@ public class IfritController : BatController
                 }
                 else
                 {
+                    if (!currentTarget.exists)
+                        currentTarget = new ETarget(waypoints[0].cellPosition);
+
+                    targetPosition = currentTarget;
+                    pos = transform.position;
                     Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetPosition.x - pos.x)));
-                    if (currentTarget != mainTarget && Vector2.SqrMagnitude(targetPosition - pos) < batSize * batSize)
+                    if (currentTarget != mainTarget && Vector2.SqrMagnitude(currentTarget - pos) < batSize * batSize)
                     {
-                        currentTarget = FindPath();
+                        waypoints.RemoveAt(0);
+                        if (waypoints.Count == 0)
+                        {
+                            waypoints = null;
+                            currentTarget.Exists = false;
+                            //Достигли конца маршрута
+                            if (Vector3.Distance(beginPosition, transform.position) < batSize)
+                            {
+                                transform.position = beginPosition;
+                                Animate(new AnimationEventArgs("idle"));
+                                BecomeCalm();
+                            }
+                            else
+                                GoHome();//Никого в конце маршрута не оказалось, значит, возвращаемся домой
+                        }
+                        else
+                        {
+                            //Продолжаем следование
+                            currentTarget = new ETarget(waypoints[0].cellPosition);
+                        }
                     }
                 }
             }
         }
         Animate(new AnimationEventArgs("fly"));
+    }
+
+    /// <summary>
+    /// Перейти в оптимизированный режим работы
+    /// </summary>
+    protected override void ChangeBehaviorToOptimized()
+    {
+        base.ChangeBehaviorToOptimized();
+        Animate(new AnimationEventArgs("stopBurning"));
+    }
+
+    /// <summary>
+    /// Перейти в активный режим работы
+    /// </summary>
+    protected override void ChangeBehaviorToActive()
+    {
+        base.ChangeBehaviorToActive();
+        Animate(new AnimationEventArgs("stopBurning"));
+        Animate(new AnimationEventArgs("startBurning"));
     }
 
 }

@@ -7,14 +7,20 @@ using UnityEngine.UI;
 /// <summary>
 /// Класс, реализующий ячейку, в которую можно положить тринкет тем самым добавив этот тринкет герою
 /// </summary>
-public class ActiveTrinketCell : MonoBehaviour, IDropHandler
+public class ActiveTrinketCell : UIElementScript, IDropHandler
 {
+
+    #region consts
+
+    protected const float inactiveIntensity = 1f, activeIntensity = .5f, clickedIntensity = .3f;//Как будет подкрашиваться кнопка при различных уровнях взаимодействия с ней
+
+    #endregion //consts
 
     #region fields
 
     public static ActiveTrinketCell activatedTrinketCell;
 
-    private Image trinketImage, buttonImage;
+    private Image trinketImage, buttonImage, cellImage;
 
     private TrinketClass trinket;
     public TrinketClass Trinket
@@ -33,8 +39,7 @@ public class ActiveTrinketCell : MonoBehaviour, IDropHandler
             if (value != null)
                 eMenu.PutOnTrinket(trinket);
             bool haveTrinket = trinket != null;
-            trinketImage.enabled = haveTrinket;
-            trinketImage.color = Color.white;
+            trinketImage.color = haveTrinket?Color.white:new Color(1f,1f,1f,0f);
             trinketImage.sprite = haveTrinket ? trinket.itemImage : null;
             eMenu.ResetActiveSlots();
         }
@@ -57,16 +62,46 @@ public class ActiveTrinketCell : MonoBehaviour, IDropHandler
             activated = value;
             eMenu.ShowRemoveTrinketButton(trinket != null && activated);
             activatedTrinketCell = value ? this : null;
-            buttonImage.color = value ? new Color(1f, 1f, 0f, .4f) : new Color(0f, 0f, 0f, 0f);
+            buttonImage.color = value ? new Color(0f, .66f, .72f, .4f) : new Color(0f, 0f, 0f, 0f);
+        }
+    }
+
+    public override UIElementStateEnum ElementState
+    {
+        get
+        {
+            return base.ElementState;
+        }
+
+        set
+        {
+            base.ElementState = value;
+            switch (value)
+            {
+                case UIElementStateEnum.inactive:
+                    cellImage.color = new Color(inactiveIntensity, inactiveIntensity, inactiveIntensity, 1f);
+                    break;
+                case UIElementStateEnum.active:
+                    cellImage.color = new Color(activeIntensity, activeIntensity, activeIntensity, 1f);
+                    break;
+                case UIElementStateEnum.clicked:
+                    cellImage.color = new Color(clickedIntensity, clickedIntensity, clickedIntensity, 1f);
+                    break;
+                default:
+                    cellImage.color = new Color(inactiveIntensity, inactiveIntensity, inactiveIntensity, 1f);
+                    break;
+            }
         }
     }
 
     #endregion //parametres
 
-    public void Initialize()
+    public override void Initialize()
     {
+        base.Initialize();
         trinketImage = GetComponent<Image>();
         buttonImage = transform.parent.FindChild("Button").GetComponent<Image>();
+        cellImage = transform.parent.GetComponent<Image>();
     }
 
     /// <summary>
@@ -76,9 +111,8 @@ public class ActiveTrinketCell : MonoBehaviour, IDropHandler
     {
         trinket = _trinket;
         bool haveTrinket = trinket != null;
-        trinketImage.enabled = haveTrinket;
         trinketImage.sprite = haveTrinket ? trinket.itemImage : null;
-        trinketImage.color = Color.white;
+        trinketImage.color = haveTrinket?Color.white: new Color(1f,1f,1f,0f);
     }
 
     /// <summary>
@@ -87,19 +121,26 @@ public class ActiveTrinketCell : MonoBehaviour, IDropHandler
     public void SetActive(bool _activated)
     {
         activated = _activated;
-        buttonImage.color = _activated? new Color(1f, 1f, 0f, .4f) : new Color(0f, 0f, 0f, 0f);
+        buttonImage.color = _activated ? new Color(1f, 1f, 0f, .4f) : new Color(0f, 0f, 0f, 0f);
+    }
+
+    public override void SetActive()
+    {
+        base.SetActive();
+        ShowTrinketText();
     }
 
     /// <summary>
     /// Выбрать ячейку
     /// </summary>
-    public void Activate()
+    public override void Activate()
     {
         if (trinket != null ? trinket is MutagenClass : false)
             return;
         Activated = !activated;
         if (activated && TrinketCell.activeTrinketCell)
             Trinket = TrinketCell.activeTrinketCell.Trinket;
+        ElementState = UIElementStateEnum.active;
     }
 
     /// <summary>
@@ -108,7 +149,7 @@ public class ActiveTrinketCell : MonoBehaviour, IDropHandler
     public void ShowTrinketText()
     {
         if (trinket != null)
-            trinketNameText.text = trinket.itemTextName;
+            trinketNameText.text = trinket.itemMLTextName.GetText(SettingsScript.language);
     }
 
     /// <summary>

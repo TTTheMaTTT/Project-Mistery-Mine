@@ -148,8 +148,8 @@ public class MovingPlatform : MonoBehaviour, IMechanism
         if (changeableDirection)
         {
             orientation *= -1;
-            bool a1 = Vector2.SqrMagnitude(platformPositions[0]-(Vector2)transform.position)< movEps*movEps;
-            bool a2 = Vector2.SqrMagnitude(platformPositions[platformPositions.Count - 1]- (Vector2)transform.position)< movEps*movEps;
+            bool a1 = Vector2.SqrMagnitude(platformPositions[0] - (Vector2)transform.position) < movEps * movEps;
+            bool a2 = Vector2.SqrMagnitude(platformPositions[platformPositions.Count - 1] - (Vector2)transform.position) < movEps * movEps;
             if (a1 && orientation == -1)
             {
                 orientation = 1;
@@ -165,6 +165,11 @@ public class MovingPlatform : MonoBehaviour, IMechanism
                 currentPosition -= orientation;
             }
         }
+        else if (currentPosition + orientation >= platformPositions.Count)
+        {
+            moving = false;
+            return;
+        }
         Vector2 nextPoint = platformPositions[currentPosition + orientation];
         direction = (nextPoint - platformPositions[currentPosition]).normalized;
 
@@ -172,7 +177,7 @@ public class MovingPlatform : MonoBehaviour, IMechanism
 
     public void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.GetComponent<Rigidbody2D>() != null && (other.gameObject.tag != "boss"))
+        if (other.GetComponent<Rigidbody2D>() != null && other.GetComponent<IHaveID>()!=null && other.gameObject.tag != "boss")
         {
             other.transform.SetParent(transform);
         }

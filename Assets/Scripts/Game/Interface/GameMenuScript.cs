@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Скрипт, управляющий окошком игрового меню
@@ -14,9 +15,9 @@ public class GameMenuScript : InterfaceWindow
 
     #endregion //fields
 
-    protected override void Awake()
+    public override void Initialize()
     {
-        base.Awake();
+        base.Initialize();
         settings = SpecialFunctions.gameInterface.GetComponentInChildren<SettingsScript>();
     }
 
@@ -69,6 +70,28 @@ public class GameMenuScript : InterfaceWindow
             {
                 SpecialFunctions.Player.GetComponent<HeroController>().Health = 100f;
             }
+
+            #region weaponSet
+
+            if (Input.GetKeyDown(KeyCode.F1))
+                ChangeWeapon("Knife");
+            if (Input.GetKeyDown(KeyCode.F2))
+                ChangeWeapon("Club");
+            if (Input.GetKeyDown(KeyCode.F3))
+                ChangeWeapon("SpikedClub");
+            if (Input.GetKeyDown(KeyCode.F4))
+                ChangeWeapon("Spear");
+            if (Input.GetKeyDown(KeyCode.F5))
+                ChangeWeapon("ShortBow");
+            if (Input.GetKeyDown(KeyCode.F6))
+                ChangeWeapon("VoodoDoll");
+            if (Input.GetKeyDown(KeyCode.F7))
+                ChangeWeapon("Boomerang");
+            if (Input.GetKeyDown(KeyCode.F8))
+                ChangeWeapon("Blowguns");
+
+            #endregion //weaponSet
+
         }
     }
 
@@ -112,7 +135,8 @@ public class GameMenuScript : InterfaceWindow
     /// </summary>
     public void RestartGame()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        CloseWindow();
+        SpecialFunctions.gameController.EndLevel();
     }
 
     /// <summary>
@@ -142,6 +166,17 @@ public class GameMenuScript : InterfaceWindow
     public void ResetAchievements()
     {
         SpecialFunctions.ResetAchievements();
+    }
+
+    void ChangeWeapon(string weaponName)
+    {
+        Dictionary<string, WeaponClass> weaponDict = SpecialFunctions.statistics.WeaponDict;
+        if (weaponDict.ContainsKey(weaponName))
+        {
+            HeroController hero = SpecialFunctions.Player.GetComponent<HeroController>();
+            hero.AddItem(weaponName);
+            hero.CurrentWeapon = weaponDict[weaponName];
+        }
     }
 
 }

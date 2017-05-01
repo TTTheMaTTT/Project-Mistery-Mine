@@ -7,11 +7,9 @@ using System.Collections;
 public class ItemClass : ScriptableObject
 {
     public string itemName;
-    [TextArea]
-    public string itemTextName;//Название, которое используется при отображении в интерфейсе
-    public string itemTextName1;//Название, которое используется при отображении в игре
-    [TextArea]
-    public string itemDescription;//Краткое описание предмета
+    public MultiLanguageText itemMLTextName;//Название, которое используется при отображении в интерфейсе
+    public MultiLanguageText itemMLTextName1;//Название, которое используется при отображении в игре
+    public MultiLanguageText itemMLDescription;//Краткое описание предмета
 
     public Sprite itemImage;
 

@@ -49,7 +49,8 @@ public class HitBox : HitBoxController
             }
         }
     }
-
+    public override List<string> EnemyLayers { get { return new List<string>(); } set {} }
+    
     #endregion //parametres
 
     //Инициализация
@@ -90,10 +91,9 @@ public class HitBox : HitBoxController
         if (!immobile)
             transform.localPosition = hitData.hitPosition;
         col.size = hitData.hitSize;
-        if (hitData.actTime != -1f)
-        {
-            StartCoroutine(HitProcess(hitData.actTime));
-        }
+        StopCoroutine("HitProcess");
+        if (hitData.actTime != -1f) 
+            StartCoroutine("HitProcess",hitData.actTime);
     }
 
     /// <summary>
@@ -145,31 +145,47 @@ public class HitBox : HitBoxController
                     {
                         
                         Rigidbody2D rigid;
-                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null && !target.InInvul())
+                        if (!ignoreInvul && target.InInvul())
+                            return;
+                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null)
                         {
-                            rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
+                            if (attackDirection == Vector2.zero)
+                                rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
+                            else
+                                rigid.AddForce(attackDirection * hitData.hitForce);
                         }
                         AIController ai = null;
                         if ((ai = other.GetComponent<AIController>()) != null)
                             ai.TakeAttackerInformation(attackerInfo);
-                        target.TakeDamage(hitData);
-                        OnAttack(new HitEventArgs(target.GetHealth()-prevHP));
+                        if (ignoreInvul)
+                            target.TakeDamage(hitData, true);
+                        else
+                            target.TakeDamage(hitData);
+                        OnAttack(new HitEventArgs(target.GetHealth()-prevHP, other.gameObject));
                         return;
                     }
                     if (!list.Contains(other.gameObject))
                     {
                         list.Add(other.gameObject);
                         Rigidbody2D rigid;
-                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null && !target.InInvul())
+                        if (!ignoreInvul && target.InInvul())
+                            return;
+                        if ((rigid = other.GetComponent<Rigidbody2D>()) != null)
                         {
-                            rigid.velocity = Vector2.zero;
-                            rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
+                            //rigid.velocity = Vector2.zero;
+                            if (attackDirection == Vector2.zero)
+                                rigid.AddForce((new Vector2(Mathf.Sign(transform.lossyScale.x), 0f)) * hitData.hitForce);//Атака всегда толкает вперёд
+                            else
+                                rigid.AddForce(attackDirection * hitData.hitForce);
                         }
                         AIController ai = null;
                         if ((ai = other.GetComponent<AIController>()) != null)
                             ai.TakeAttackerInformation(attackerInfo);
-                        target.TakeDamage(hitData);
-                        OnAttack(new HitEventArgs(target.GetHealth() - prevHP));
+                        if (ignoreInvul)
+                            target.TakeDamage(hitData, true);
+                        else
+                            target.TakeDamage(hitData);
+                        OnAttack(new HitEventArgs(target.GetHealth() - prevHP, other.gameObject));
                     }
                 }
             }
@@ -299,6 +315,21 @@ public struct HitParametres
     /// Возвращает всё время, необходимое для совершения атаки
     /// </summary>
     public float wholeAttackTime { get { return preAttackTime + actTime + endAttackTime; } }
+
+    /// <summary>
+    /// Возвращает сумму подготовки к атаке и выхода из атакующего состояния
+    /// </summary>
+    public float prepareAttackTime { get { return preAttackTime + endAttackTime; } }
+
+    /// <summary>
+    /// Возвращает время атаки без времени подготовки
+    /// </summary>
+    public float withoutPrepareAttackTime { get { return actTime + endAttackTime; } }
+
+    /// <summary>
+    /// Возвращает время атаки без времени конца атаки
+    /// </summary>
+    public float withoutEndAttackTime { get { return actTime + preAttackTime; } }
 
 }
 

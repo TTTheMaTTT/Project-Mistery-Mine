@@ -28,6 +28,8 @@ public class PushPlateScript : LeverScript
                     anim.Play("Active");
                 foreach (GameObject obj in mechanisms)
                 {
+                    if (obj == null)
+                        continue;
                     IMechanism mech = obj.GetComponent<IMechanism>();
                     if (mech != null)
                         mech.ActivateMechanism();

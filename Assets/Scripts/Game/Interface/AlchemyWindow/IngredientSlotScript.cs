@@ -6,14 +6,20 @@ using UnityEngine.UI;
 /// <summary>
 /// Скрипт слота с ингридиентами
 /// </summary>
-public class IngredientSlotScript : MonoBehaviour
+public class IngredientSlotScript : UIElementScript
 {
+
+    #region const
+
+    protected const float inactiveIntensity = 1f, activeIntensity = .5f, clickedIntensity = .3f;//Как будет подкрашиваться кнопка при различных уровнях взаимодействия с ней
+
+    #endregion const
 
     #region fields
 
     public static IngredientSlotScript activeIngredientSlot;
 
-    private Image ingredientImage, buttonImage;
+    private Image ingredientImage, buttonImage, cellImage;
     private IngredientDragHandler dragHandler;
     private Button button;
     private AlchemyWindow aWindow;
@@ -62,12 +68,40 @@ public class IngredientSlotScript : MonoBehaviour
             if (value)
             {
                 activeIngredientSlot = this;
-                buttonImage.color = new Color(1f, 1f, 0f, .4f);
+                buttonImage.color = new Color(0f, .67f, .72f, .4f);
             }
             else
             {
                 activeIngredientSlot = null;
                 buttonImage.color = new Color(0f, 0f, 0f, 0f);
+            }
+        }
+    }
+
+    public override UIElementStateEnum ElementState
+    {
+        get
+        {
+            return base.ElementState;
+        }
+
+        set
+        {
+            base.ElementState = value;
+            switch (value)
+            {
+                case UIElementStateEnum.inactive:
+                    cellImage.color = new Color(inactiveIntensity, inactiveIntensity, inactiveIntensity, 1f);
+                    break;
+                case UIElementStateEnum.active:
+                    cellImage.color = new Color(activeIntensity, activeIntensity, activeIntensity, 1f);
+                    break;
+                case UIElementStateEnum.clicked:
+                    cellImage.color = new Color(clickedIntensity, clickedIntensity, clickedIntensity, 1f);
+                    break;
+                default:
+                    cellImage.color = new Color(inactiveIntensity, inactiveIntensity, inactiveIntensity, 1f);
+                    break;
             }
         }
     }
@@ -82,8 +116,20 @@ public class IngredientSlotScript : MonoBehaviour
         dragHandler = imageTrans.GetComponent<IngredientDragHandler>();
         dragHandler.Ingredient = ingredient;
         button = GetComponent<Button>();
-        buttonImage = GetComponent<Image>();
+        buttonImage = transform.parent.FindChild("Image").GetComponent<Image>();
+        GetComponent<Button>().enabled = false;
+        cellImage = transform.parent.GetComponent<Image>();
         SetActive(false);
+    }
+
+    /// <summary>
+    /// Активировать данную кнопку
+    /// </summary>
+    public override void Activate()
+    {
+        base.Activate();
+        ChooseIngredient();
+        SetActive();
     }
 
     /// <summary>

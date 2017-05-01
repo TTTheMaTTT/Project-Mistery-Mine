@@ -6,7 +6,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Коробка с содержимым
 /// </summary>
-public class BoxController : MonoBehaviour, IDamageable
+public class BoxController : MonoBehaviour, IDamageable, IMechanism
 {
 
     #region consts
@@ -136,11 +136,25 @@ public class BoxController : MonoBehaviour, IDamageable
         Destroy(anim);
         Destroy(GetComponent<SpriteRenderer>());
         Destroy(GetComponent<Collider2D>());
-        yield return new WaitForSeconds(10f);
+        content = new List<GameObject>();
+        yield return new WaitForSeconds(.6f);
         Destroy(gameObject);
+        Destroy(this);
     }
 
     #endregion //IDamageable
+
+    #region IMechanism
+
+    /// <summary>
+    /// Активировать механизм коробки, что разрушит её
+    /// </summary>
+    public virtual void ActivateMechanism()
+    {
+        Destroy();
+    }
+
+    #endregion //IMechanism
 
     #region events
 

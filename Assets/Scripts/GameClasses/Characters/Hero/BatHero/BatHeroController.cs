@@ -31,17 +31,19 @@ public class BatHeroController : HeroController
         if (immobile || employment <= 6)
             goto analyseSection;
 
-        if (Input.GetButton("Horizontal") || Input.GetButton("Vertical"))
-            Move(Input.GetAxis("Horizontal") > 0f ? OrientationEnum.right : OrientationEnum.left);
+        if (InputCollection.instance.GetButton("Horizontal") || InputCollection.instance.GetButton("Vertical"))
+        {
+            Move(InputCollection.instance.GetAxis("Horizontal") > 0f ? OrientationEnum.right : OrientationEnum.left);
+        }
         else
             StopMoving();
 
         if (employment > 7)
         {
-            if (Input.GetButtonDown("Attack"))
+            if (InputCollection.instance.GetButtonDown("Interact"))
                 if (interactor.ReadyForInteraction())
                     interactor.Interact();
-            if (Input.GetButtonDown("ChangeInteraction"))
+            if (InputCollection.instance.GetButtonDown("ChangeInteraction"))
                 interactor.ChangeInteraction();
         }
 
@@ -101,7 +103,8 @@ public class BatHeroController : HeroController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = new Vector2(Input.GetAxis("Horizontal"),Input.GetAxis("Vertical")).normalized * speed * speedCoof;
+
+        Vector2 targetVelocity = new Vector2(InputCollection.instance.GetAxis("Horizontal"), InputCollection.instance.GetAxis("Vertical")).normalized * speed * speedCoof;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)

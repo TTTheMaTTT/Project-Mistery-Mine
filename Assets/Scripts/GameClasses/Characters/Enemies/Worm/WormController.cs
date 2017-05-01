@@ -301,14 +301,6 @@ public class WormController : AIController
     #region attack
 
     /// <summary>
-    /// Совершить атаку
-    /// </summary>
-    protected override void Attack()
-    {
-        StartCoroutine("AttackProcess");
-    }
-
-    /// <summary>
     /// Процесс атаки
     /// </summary>
     protected override IEnumerator AttackProcess()
@@ -317,20 +309,22 @@ public class WormController : AIController
         if (wormState == WormStateEnum.undergroundState)
         {
             anim.gameObject.SetActive(true);
-            Animate(new AnimationEventArgs("attack", "UpAttackPreparation", Mathf.RoundToInt(10 * upAttackParametres.preAttackTime)));
+            Animate(new AnimationEventArgs("attack", "UpAttackPreparation", Mathf.RoundToInt(100f * upAttackParametres.preAttackTime)));
             yield return new WaitForSeconds(upAttackParametres.preAttackTime);
             WormState = WormStateEnum.upState;
-            Animate(new AnimationEventArgs("attack", "UpAttack", Mathf.RoundToInt(10 * (upAttackParametres.preAttackTime / 2f + upAttackParametres.actTime + upAttackParametres.endAttackTime))));
+            Animate(new AnimationEventArgs("attack", "UpAttack", Mathf.RoundToInt(100f * (upAttackParametres.preAttackTime / 2f + upAttackParametres.actTime + upAttackParametres.endAttackTime))));
             undergroundAttackTimes++;
             yield return new WaitForSeconds(upAttackParametres.preAttackTime / 2f);
             hitBox.SetHitBox(new HitParametres(upAttackParametres));
+            hitBox.AttackDirection = Vector2.up;
             yield return new WaitForSeconds(upAttackParametres.actTime + upAttackParametres.endAttackTime);
         }
         else
         {
-            Animate(new AnimationEventArgs("attack", "Attack", Mathf.RoundToInt(10 * (attackParametres.preAttackTime + attackParametres.actTime))));
+            Animate(new AnimationEventArgs("attack", "Attack", Mathf.RoundToInt(100f * (attackParametres.preAttackTime + attackParametres.actTime))));
             yield return new WaitForSeconds(attackParametres.preAttackTime);
             hitBox.SetHitBox(new HitParametres(attackParametres));
+            hitBox.AttackDirection = Vector2.right * (int)orientation;
             yield return new WaitForSeconds(attackParametres.actTime + attackParametres.endAttackTime);
         }
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);

@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 #if UNITY_EDITOR
@@ -25,9 +26,7 @@ public class Speech
     public float fadeSpeed=0;//Какова скорость затухания или проявления экрана (используется только при режимах waitFadeInOut, waitFadeIn и waitFadeOut)
     public float waitTime = 0f;//Сколько времени должно пройти, чтобы произошёл переход к следующей реплике? (используется только при режимах типа wait)
 
-    [TextArea(3, 10)]
-    public string text="";//Текст реплики
-    public Sprite portrait=null;//Иконка, произносящего реплику... Используется при hasText==true
+    public SpeechTextClass speechText;//Текст реплики
 
     public SpeechAnswerClass answer1 = null, answer2 = null;//Ответы на реплику (используется только при режиме answer)
 
@@ -52,8 +51,7 @@ public class Speech
         hasAnimation = _speech.hasAnimation;
         fadeSpeed = _speech.fadeSpeed;
         waitTime = _speech.waitTime;
-        text = _speech.text;
-        portrait = _speech.portrait;
+        speechText = _speech.speechText;
         answer1 = _speech.answer1;
         answer2 = _speech.answer2;
         changePositionData = _speech.changePositionData;
@@ -65,6 +63,25 @@ public class Speech
     }
 
 
+}
+
+/// <summary>
+/// Класс, представляющий собой отображение реплики
+/// </summary>
+[System.Serializable]
+public class SpeechTextClass
+{
+
+    public LanguageEnum language;
+    public MultiLanguageText mlText;
+    public Sprite portrait;
+
+    public SpeechTextClass()
+    {
+        language = LanguageEnum.russian;
+        mlText = new MultiLanguageText();
+        portrait = null;
+    }
 }
 
 /// <summary>

@@ -23,7 +23,7 @@ public class BatBossController: BossController
 
     protected Hearing hearing;//Слух персонажа
 
-    public GameObject drop;//Что выпадает из летучей мыши, если её 2 раза ударить
+    public GameObject heartDrop;//Что выпадает из летучей мыши, если её 2 раза ударить
 
     protected UsualTrigger batTrigger1, batTrigger2, batTrigger3;
     protected bool inBatTrigger1 { get { if (batTrigger1 == null) return false; else return batTrigger1.playerInside; } }
@@ -37,6 +37,7 @@ public class BatBossController: BossController
 
     [SerializeField]
     protected float phase2Health=150f;//С какого здоровья начинается вторая фаза босса?
+    protected AttackerClass attacker;
 
     protected override float attackDistance { get { return 1.2f; } }
 
@@ -105,22 +106,18 @@ public class BatBossController: BossController
 
     #endregion //parametres
 
-    protected override void Update()
-    {
-        base.Update();
-    }
-
     /// <summary>
     /// Инициализация
     /// </summary>
     protected override void Initialize()
     {
-        base.Initialize();
-
-        hitBox.AttackEventHandler += HandleAttackProcess;
+        indicators = transform.FindChild("Indicators");
         hearing = indicators.GetComponentInChildren<Hearing>();
         hearing.hearingEventHandler += HandleHearingEvent;
         hearing.AllyHearing = false;
+        base.Initialize();
+
+        hitBox.AttackEventHandler += HandleAttackProcess;
 
         if (areaTrigger != null)
         {
@@ -200,22 +197,14 @@ public class BatBossController: BossController
     #region attack
 
     /// <summary>
-    /// Совершить обычную атаку
-    /// </summary>
-    protected override void Attack()
-    {
-        Animate(new AnimationEventArgs("stop"));
-        hitBox.ResetHitBox();
-        Animate(new AnimationEventArgs("attack", "Attack", Mathf.RoundToInt(10*attackParametres.wholeAttackTime)));
-        StartCoroutine("AttackProcess");
-    }
-
-    /// <summary>
     /// Процесс атаки
     /// </summary>
     /// <returns></returns>
     protected override IEnumerator AttackProcess()
     {
+        Animate(new AnimationEventArgs("stop"));
+        hitBox.ResetHitBox();
+        Animate(new AnimationEventArgs("attack", "Attack", Mathf.RoundToInt(100 * attackParametres.wholeAttackTime)));
         RestartCooldown();
         employment = Mathf.Clamp(employment - 4, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
@@ -236,6 +225,7 @@ public class BatBossController: BossController
         }
         inAttack = true;
         hitBox.SetHitBox(new HitParametres(attackParametres));
+        hitBox.AttackDirection = currentDirection;
         employment = Mathf.Clamp(employment + 1, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.actTime);
         StopMoving();
@@ -298,6 +288,7 @@ public class BatBossController: BossController
         StartCoroutine("AttackShockProcess");
         balance = usualBalance;
         inAttack = false;
+        hitBox.IgnoreInvul = false;
     }
 
     /// <summary>
@@ -314,7 +305,7 @@ public class BatBossController: BossController
         CurrentCurve = new BezierSimpleCurve(_attackParametres.curve, pos, Mathf.Sign(transform.lossyScale.x), false);
         specialAttackTimes++;
         StartCoroutine("SpecialAttackProcess",_attackParametres.hitParametres);
-        Animate(new AnimationEventArgs("attack", "Dive", Mathf.RoundToInt(10 * _attackParametres.hitParametres.wholeAttackTime)));
+        Animate(new AnimationEventArgs("attack", "Dive", Mathf.RoundToInt(100 * _attackParametres.hitParametres.wholeAttackTime)));
         behaviorActions = SpecialAttackBehavior;
     }
 
@@ -328,7 +319,9 @@ public class BatBossController: BossController
         employment = Mathf.Clamp(employment - 4, 0, maxEmployment);
         yield return new WaitForSeconds(_attackParametres.preAttackTime);
         hitBox.SetHitBox(new HitParametres(_attackParametres));
+        hitBox.IgnoreInvul = true;
         yield return new WaitForSeconds(_attackParametres.actTime + _attackParametres.endAttackTime);
+        hitBox.IgnoreInvul = false;
         employment = Mathf.Clamp(employment + 4, 0, maxEmployment);
         balance = usualBalance;
     }
@@ -422,13 +415,14 @@ public class BatBossController: BossController
     /// <summary>
     /// Функция, вызываемая при получении урона, оповещающая о субъекте нападения
     /// </summary>
-    /// <param name="attacker">Кто атаковал персонажа</param>
-    public override void TakeAttackerInformation(AttackerClass attacker)
+    /// <param name="attackerInfo">Кто атаковал персонажа</param>
+    public override void TakeAttackerInformation(AttackerClass attackerInfo)
     {
-        if (attacker != null)
+        if (attackerInfo != null)
         {
-            if (mainTarget.transform != attacker.attacker.transform)
-                MainTarget = new ETarget(attacker.attacker.transform);
+            attacker = attackerInfo;
+            if (mainTarget.transform != attackerInfo.attacker.transform)
+                MainTarget = new ETarget(attackerInfo.attacker.transform);
             if (behavior == BehaviorEnum.calm)
                 BecomeAgressive();
         }
@@ -446,6 +440,9 @@ public class BatBossController: BossController
             else if (hitData.damageType == attackParametres.damageType)
                 hitData.damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
         }
+        if ( attacker.attackType == AttackTypeEnum.range)
+            hitData.damage /= 2f;
+
         Health = Mathf.Clamp(Health - hitData.damage, 0f, maxHealth);
         if (health <= 0f)
         {
@@ -470,9 +467,9 @@ public class BatBossController: BossController
             StopSpecialAttack();
             employment = maxEmployment;
             damageCount++;
-            if (damageCount >= 5)
+            if (damageCount >= 4)
             {
-                Instantiate(drop, transform.position, transform.rotation);
+                Instantiate(heartDrop, transform.position, transform.rotation);
                 damageCount = 0;
             }
             if (behavior == BehaviorEnum.patrol)
@@ -760,6 +757,7 @@ public class BatBossController: BossController
         currentCurveParameter = Mathf.Clamp(currentCurveParameter + Time.fixedDeltaTime * specialAttackSpeed, 0f, 1f);
         Vector2 nextPosition = currentCurve.GetBezierPoint(currentCurveParameter);
         CurrentDirection = (nextPosition - pos).normalized;
+        hitBox.AttackDirection = currentDirection;
         transform.position = nextPosition;
 
         if (Vector2.SqrMagnitude(pos - curveEndPoint) < minCellSqrMagnitude)//Закончили перемещение по кривой
@@ -886,6 +884,7 @@ public class BatBossControllerEditor : AIControllerEditor
         BatBossController batBoss = (BatBossController)target;
 
         SerializedObject serBatBoss = new SerializedObject(batBoss);
+        SerializedProperty bossName = serBatBoss.FindProperty("bossName");
         SerializedProperty maxHP = serBatBoss.FindProperty("maxHealth");
         SerializedProperty health = serBatBoss.FindProperty("health");
         SerializedProperty phase2Health = serBatBoss.FindProperty("phase2Health");
@@ -893,6 +892,7 @@ public class BatBossControllerEditor : AIControllerEditor
         SerializedProperty speed = serBatBoss.FindProperty("speed");
         SerializedProperty loyalty = serBatBoss.FindProperty("loyalty");
         SerializedProperty acceleration = serBatBoss.FindProperty("acceleration");
+        SerializedProperty heartDrop = serBatBoss.FindProperty("heartDrop");
         SerializedProperty drop = serBatBoss.FindProperty("drop");
         SerializedProperty healthDrain = serBatBoss.FindProperty("healthDrain");
         SerializedProperty attackForce = serBatBoss.FindProperty("attackForce");
@@ -908,6 +908,7 @@ public class BatBossControllerEditor : AIControllerEditor
         SerializedProperty serHighDiveAttack = serBatBoss.FindProperty("highDiveAttack");
         SerializedProperty serAttackParametres = serBatBoss.FindProperty("attackParametres");
 
+        bossName.stringValue = EditorGUILayout.TextField("Boss Name", bossName.stringValue);
         maxHP.floatValue = EditorGUILayout.FloatField("Max HP", maxHP.floatValue);
         EditorGUILayout.PropertyField(health);
         EditorGUILayout.PropertyField(phase2Health);
@@ -915,7 +916,8 @@ public class BatBossControllerEditor : AIControllerEditor
         speed.floatValue = EditorGUILayout.FloatField("Speed", speed.floatValue);
         EditorGUILayout.PropertyField(loyalty);
         acceleration.floatValue = EditorGUILayout.FloatField("Acceleration", acceleration.floatValue);
-        drop.objectReferenceValue = EditorGUILayout.ObjectField("Drop", drop.objectReferenceValue,typeof(GameObject));
+        EditorGUILayout.PropertyField(heartDrop);
+        EditorGUILayout.PropertyField(drop);
         healthDrain.floatValue = EditorGUILayout.FloatField("Health Drain", healthDrain.floatValue);
         EditorGUILayout.PropertyField(serAttackParametres,true);
         attackForce.floatValue = EditorGUILayout.FloatField("Attack Force", attackForce.floatValue);

@@ -131,7 +131,7 @@ public class LevelEditor : EditorWindow
     private static float damageBoxOffset = 0f;//Насколько сдвинут хитбокс по оси Y
     private static float obstacleOffset;//Смещение по вертикальной оси при расположении препятствий
 
-    private static int obstacleLayer = LayerMask.NameToLayer("obstacle");
+    private static int obstacleLayer;
     private static GameObject nextObstacle;
     private static ObstacleEnum obstacleType;//Тип создаваемого препятствия
 
@@ -337,6 +337,7 @@ public class LevelEditor : EditorWindow
             AssetDatabase.SaveAssets();
             _obstacleBase.obstacles = new List<GameObject>();
         }
+        obstacleLayer = LayerMask.NameToLayer("obstacle");
         obstacleBase = AssetDatabase.LoadAssetAtPath<ObstacleBase>(databasePath + "ObstacleBase.asset");
 
         if (!File.Exists(databasePath + "SpriteBase.asset"))
@@ -3719,6 +3720,7 @@ public class LevelEditor : EditorWindow
         cellColumnSize = Mathf.FloorToInt(navMapSize.y / navCellSize.y);
         cellRowSize = Mathf.FloorToInt(navMapSize.x / navCellSize.x);
         string groundName = LayerMask.LayerToName(groundLayer);
+        string obstacleName = LayerMask.LayerToName(obstacleLayer);
         string ladderName = LayerMask.LayerToName(ladderLayer);
 
         #region flyMap
@@ -3888,8 +3890,7 @@ public class LevelEditor : EditorWindow
         foreach (NavigationGroup navGroup in flyMap.cellGroups)
             navGroup.SetSize(navCellSize);*/
 
-        //Создаём карту для летающих существ (пока что неоптимизированная версия, для проверки производительности)
-
+        //Создаём карту для летающих существ
         NavigationMatrixMap flyMap = (NavigationMatrixMap)navSystem.GetMap(NavMapTypeEnum.fly);
         flyMap.mapSize = navMapSize;
         flyMap.mapDownLeft = navMapDownLeft;
@@ -3916,7 +3917,8 @@ public class LevelEditor : EditorWindow
                 bool a4 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, -navCellSize.y / 20f * 9f),
                                                 currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 40f * 19f),
                                                 LayerMask.GetMask(groundName));
-                if (a1 || a2 || a3 || a4)
+                bool damageZone = Physics2D.OverlapCircle(currentCell.cellPosition, navCellSize.x, LayerMask.GetMask(obstacleName));
+                if ((a1 || a2 || a3 || a4 ) && !damageZone)
                     currentCell.canMove = true;
             }
 
@@ -3929,7 +3931,7 @@ public class LevelEditor : EditorWindow
 
         #region crawlMap
 
-        //Создаём карту для ползающих существ (пока что неоптимизированная версия, для проверки производительности)
+        //Создаём карту для ползающих существ
 
         NavigationBunchedMap crawlMap = (NavigationBunchedMap)navSystem.GetMap(NavMapTypeEnum.crawl);
         crawlMap.CreateGroups(navMapDownLeft, navMapSize, navGroupSize);
@@ -4018,7 +4020,9 @@ public class LevelEditor : EditorWindow
                     }
                 }
 
-                if (connectionCount > 1 && connectionCount < 4)
+                bool damageZone = Physics2D.OverlapCircle(currentCell.cellPosition, navCellSize.x, LayerMask.GetMask(obstacleName));
+
+                if (connectionCount > 1 && connectionCount < 4 && !damageZone)
                 {
                     NavigationGroup currentGroup = crawlMap.GetCurrentGroupInEditor(currentCell.cellPosition);
                     currentGroup.cells.Add(currentCell);
@@ -4243,7 +4247,7 @@ public class LevelEditor : EditorWindow
 
         #region usualMap
 
-        //Создаём карту для гуманоидов (пока что неоптимизированная версия, для проверки производительности)
+        //Создаём карту для гуманоидов
 
         NavigationBunchedMap usualMap = (NavigationBunchedMap)navSystem.GetMap(NavMapTypeEnum.usual);
         usualMap.CreateGroups(navMapDownLeft, navMapSize, navGroupSize);
@@ -4314,7 +4318,9 @@ public class LevelEditor : EditorWindow
                                                 currentCell.cellPosition + new Vector2(navCellSize.x / 20f * 9f, navCellSize.y / 20f * 7f),
                                                 LayerMask.GetMask(groundName)))
                     connectionCount = 0;
-                if (connectionCount > 1 && !nearGhostPlatform)
+
+                bool damageZone = Physics2D.OverlapCircle(currentCell.cellPosition, navCellSize.x, LayerMask.GetMask(obstacleName));
+                if (connectionCount > 1 && !nearGhostPlatform && !damageZone)
                 {
                     NavigationGroup currentGroup = usualMap.GetCurrentGroupInEditor(currentCell.cellPosition);
                     currentGroup.cells.Add(currentCell);
@@ -4935,7 +4941,8 @@ public class LevelEditor : EditorWindow
                 if (cellIndexX >= cellRowSize || cellIndexY >= cellColumnSize || cellIndexY < 0 || cellIndexX < 0)
                     return;
                 currentCell = _cells[cellIndexY][cellIndexX];
-                if (!currentCell.visited)
+                bool damageZone = Physics2D.OverlapCircle(currentCell.cellPosition, navCellSize.x, LayerMask.GetMask(obstacleName));
+                if (!currentCell.visited && !damageZone)
                 {
                     //PlatformNavigationCell pCell = new PlatformNavigationCell(currentCell.cellPosition, NavCellTypeEnum.movPlatform, _platform.GetID());
                     currentCell.visited = true;

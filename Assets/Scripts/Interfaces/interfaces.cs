@@ -67,3 +67,11 @@ public interface IHaveStory
     Dictionary<string, List<string>> conditionIDs();//id-шники, настраивающие функцию проверки
     StoryAction.StoryActionDelegate GetStoryAction(string actionName);//Вернуть ссылку на функцию, соответствующую данному имени
 }
+
+/// <summary>
+/// Интерфес объектов, которые каким-то образом меняются при смене языка
+/// </summary>
+public interface ILanguageChangeable
+{
+    void MakeLanguageChanges(LanguageEnum _language);//Произвести изменения, связанные с переменой языка игры
+}

@@ -7,15 +7,21 @@ using UnityEngine.EventSystems;
 /// <summary>
 /// Скрипт, реализующий поведение кнопки с тринкетом
 /// </summary>
-public class TrinketCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class TrinketCell : UIElementScript, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
+
+    #region consts
+
+    protected const float inactiveIntensity = 1f, activeIntensity = .5f, clickedIntensity = .3f;//Как будет подкрашиваться кнопка при различных уровнях взаимодействия с ней
+
+    #endregion //consts
 
     #region fields
 
     public static TrinketCell activeTrinketCell;//Клетка тринкета, что выделена в данный момент
     public static TrinketClass draggedTrinket;//Подхваченный тринкет
 
-    private Image trinketImage, buttonImage;
+    private Image trinketImage, buttonImage,cellImage;
 
     private TrinketClass trinket;//Какому предмету соответсвует данная ячейка
     public TrinketClass Trinket
@@ -60,7 +66,7 @@ public class TrinketCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
             if (value)
             {
                 activeTrinketCell = this;
-                buttonImage.color = new Color(1f, 1f, 0f, .4f);
+                buttonImage.color = new Color(0f, 0.67f, 0.72f, .4f);
             }
             else
             {
@@ -70,14 +76,44 @@ public class TrinketCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
         }
     }
 
+    public override UIElementStateEnum ElementState
+    {
+        get
+        {
+            return base.ElementState;
+        }
+
+        set
+        {
+            base.ElementState = value;
+            switch (value)
+            {
+                case UIElementStateEnum.inactive:
+                    cellImage.color = new Color(inactiveIntensity, inactiveIntensity, inactiveIntensity, 1f);
+                    break;
+                case UIElementStateEnum.active:
+                    cellImage.color = new Color(activeIntensity, activeIntensity, activeIntensity, 1f);
+                    break;
+                case UIElementStateEnum.clicked:
+                    cellImage.color = new Color(clickedIntensity, clickedIntensity, clickedIntensity, 1f);
+                    break;
+                default:
+                    cellImage.color = new Color(inactiveIntensity, inactiveIntensity, inactiveIntensity, 1f);
+                    break;
+            }
+        }
+    }
+
     private Vector3 startPosition;//Начальное положение ещё неподхваченного предмета
+    private Transform startParentObject;
 
     #endregion //parametres
 
-    public void Initialize()
+    public override void Initialize()
     {
         trinketImage = GetComponent<Image>();
         buttonImage = transform.parent.FindChild("Button").GetComponent<Image>();
+        cellImage = transform.parent.GetComponent<Image>();
         SetActive(false);
     }
 
@@ -85,6 +121,21 @@ public class TrinketCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
     {
         activated = _activated;
         buttonImage.color = _activated ? new Color(1f, 1f, 0f, .4f) : new Color(0f, 0f, 0f, 0f);
+    }
+
+    public override void SetActive()
+    {
+        base.SetActive();
+        ShowTrinketText();
+    }
+
+    /// <summary>
+    /// Провзаимодействовать с ячейкой, как с элементом UI
+    /// </summary>
+    public override void Activate()
+    {
+        ChooseTrinket();
+        SetActive();
     }
 
     /// <summary>
@@ -105,7 +156,7 @@ public class TrinketCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
     public void ShowTrinketText()
     {
         if (trinket != null)
-            trinketNameText.text = trinket.itemTextName;
+            trinketNameText.text = trinket.itemMLTextName.GetText(SettingsScript.language);
     }
 
     /// <summary>
@@ -117,6 +168,10 @@ public class TrinketCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
             return;
         draggedTrinket = trinket;
         startPosition = transform.position;
+        startParentObject = transform.parent;
+        transform.SetParent(transform.parent.parent.parent);
+        transform.SetAsLastSibling();
+        trinketImage.raycastTarget = false;
         cam = SpecialFunctions.CamController.GetComponent<Camera>();
     }
 
@@ -140,7 +195,10 @@ public class TrinketCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndD
     public void OnEndDrag(PointerEventData eventData)
     {
         draggedTrinket = null;
+        trinketImage.raycastTarget = true;
         transform.position = startPosition;
+        transform.SetParent(startParentObject);
+        transform.SetAsFirstSibling();
     }
 
 }

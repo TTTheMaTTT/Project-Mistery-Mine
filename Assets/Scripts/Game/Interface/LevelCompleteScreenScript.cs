@@ -2,11 +2,12 @@
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Экран, который показывается при успешном завершении уровня. Он показывает статистику уровня.
 /// </summary>
-public class LevelCompleteScreenScript : MonoBehaviour
+public class LevelCompleteScreenScript : UIPanel, ILanguageChangeable
 {
 
     #region consts
@@ -24,20 +25,27 @@ public class LevelCompleteScreenScript : MonoBehaviour
     protected Text collectionNameText;
     protected Text collectionNumbText;
 
+    [SerializeField]protected GameObject collectionItemPanel;
+    [SerializeField]protected List<MultiLanguageTextInfo> languageChanges = new List<MultiLanguageTextInfo>();
+
     #endregion //fields
 
     #region parametres
 
+    protected MultiLanguageText levelMLText = new MultiLanguageText("Уровень ", "Level ", "", "", ""), 
+                                completeMLText = new MultiLanguageText(" пройден!", " complete!", "", "",""),
+                                secretPlacesFoundMLText=new MultiLanguageText("Найдено секретных мест ", "Secret places were found: ","","","");
     protected string nextLevelName;
 
     #endregion //parametres
 
-    public void Awake()
+    public virtual void Update()
     {
-        Initialize();
+        if (canvas.enabled ? InterfaceWindow.openedWindow == null ? activePanel != this : false : false)
+            SetActive();
     }
 
-    public void Initialize()
+    public override void Initialize()
     {
         canvas = GetComponent<Canvas>();
         canvas.enabled = false;
@@ -63,31 +71,35 @@ public class LevelCompleteScreenScript : MonoBehaviour
         SpecialFunctions.PauseGame();
         Cursor.visible = true;
         nextLevelName = _nextLevelName;
-        levelCompleteText.text = "Уровень " + SceneManager.GetActiveScene().name + " пройден!";
+        LanguageEnum _language = SettingsScript.language;
+        levelCompleteText.text = levelMLText.GetText(_language) + SpecialFunctions.GetLevelName().GetText(SettingsScript.language) + completeMLText.GetText(_language);
 
-        secretsFoundText.text = "Найдено секретных мест " + currentSecretsCount.ToString() + "/" + totalSecretsCount.ToString();
+        secretsFoundText.text = secretPlacesFoundMLText.GetText(_language) + currentSecretsCount.ToString() + "/" + totalSecretsCount.ToString();
 
         if (collection != null)
         {
-            collectionNameText.text = collection.collectionName;
+            collectionNameText.text = collection.collectionTextName.GetText(_language);
             float xPosition = -collectionWidth / 2f * collection.collection.Count;
             int secretsFoundCount = 0;
             collectionNumbText.GetComponent<RectTransform>().localPosition = new Vector3(xPosition, -30f, 0f);
+
             for (int i = 0; i < collection.collection.Count; i++)
             {
                 xPosition += collectionWidth;
-                GameObject newObject = new GameObject("ItemImage" + i.ToString());
+                GameObject newObject = Instantiate(collectionItemPanel, transform.position, Quaternion.identity);
                 newObject.transform.SetParent(panel);
-                RectTransform rTrans = newObject.AddComponent<RectTransform>();
+                RectTransform rTrans = newObject.GetComponent<RectTransform>();
                 rTrans.localPosition = new Vector3(xPosition, -30f, 0f);
                 rTrans.localScale = new Vector3(1f, 1f, 1f);
                 rTrans.sizeDelta = new Vector2(collectionWidth, collectionWidth);
-                Image _img = newObject.AddComponent<Image>();
+                Image _img = newObject.transform.FindChild("Item").GetComponent<Image>();
                 if (collection.collection[i].itemFound)
                 {
                     secretsFoundCount++;
                     _img.sprite = collection.collection[i].item.itemImage;
                 }
+                else
+                    _img.color = new Color(0f, 0f, 0f, 0f);
             }
             collectionNumbText.text = secretsFoundCount.ToString() + "/" + collection.collection.Count.ToString();
             Animator anim=panel.FindChild("Image").GetComponent<Animator>();
@@ -97,6 +109,7 @@ public class LevelCompleteScreenScript : MonoBehaviour
 
         canvas.enabled = true;
         SpecialFunctions.totalPaused = true;
+        SetActive();
     }
 
     /// <summary>
@@ -104,7 +117,8 @@ public class LevelCompleteScreenScript : MonoBehaviour
     /// </summary>
     public void GoToTheNextLevel()
     {
-        SceneManager.LoadScene(nextLevelName);
+        LoadingScreenScript.instance.LoadScene(nextLevelName);
+        //SceneManager.LoadScene(nextLevelName);
     }
 
     /// <summary>
@@ -112,7 +126,82 @@ public class LevelCompleteScreenScript : MonoBehaviour
     /// </summary>
     public void GoToTheMainMenu()
     {
-        SceneManager.LoadScene(mainMenuName);
+        SpecialFunctions.PlayGame();
+        LoadingScreenScript.instance.LoadScene(mainMenuName);
+        //SceneManager.LoadScene(mainMenuName);
+    }
+
+    /// <summary>
+    /// Активировать элемент интерфейса
+    /// </summary>
+    public override void SetActive()
+    {
+        activePanel = this;
+        currentIndex = new UIElementIndex(-1, -1);
+    }
+
+    /// <summary>
+    /// Отмена
+    /// </summary>
+    public override void Cancel()
+    {
+    }
+
+    /// <summary>
+    /// Выдвинуться в горизонтальном направлении
+    /// </summary>
+    /// <param name="direction">Знак направления</param>
+    public override void MoveHorizontal(int direction)
+    {
+        if (currentIndex.indexX == -1 && currentIndex.indexY == -1)
+        {
+            base.Activate();
+        }
+        else
+            base.MoveHorizontal(direction);
+    }
+
+    /// <summary>
+    /// Выдвинуться в горизонтальном направлении
+    /// </summary>
+    /// <param name="direction">Знак направления</param>
+    /// <param name="_index">Индекс, с которого происходит перемещение</param>
+    public override void MoveHorizontal(int direction, UIElementIndex _index)
+    {
+        if (currentIndex.indexX == -1 && currentIndex.indexY == -1)
+        {
+            base.Activate();
+        }
+        else
+            base.MoveHorizontal(direction, _index);
+    }
+
+    /// <summary>
+    /// Двинуться в вертикальном направлении
+    /// </summary>
+    /// <param name="direction">Знак направления</param>
+    public override void MoveVertical(int direction)
+    {
+        if (currentIndex.indexX == -1 && currentIndex.indexY == -1)
+        {
+            base.SetActive();
+        }
+        else
+            base.MoveVertical(direction);
+    }
+
+    /// <summary>
+    /// Двинуться в вертикальном направлении
+    /// </summary>
+    /// <param name="direction">Знак направления</param>
+    public override void MoveVertical(int direction, UIElementIndex _index)
+    {
+        if (currentIndex.indexX == -1 && currentIndex.indexY == -1)
+        {
+            base.SetActive();
+        }
+        else
+            base.MoveVertical(direction, _index);
     }
 
     /// <summary>
@@ -121,6 +210,16 @@ public class LevelCompleteScreenScript : MonoBehaviour
     public void OpenEquipmentWindow()
     {
         SpecialFunctions.equipWindow.OpenWindow();
+    }
+
+    /// <summary>
+    /// Применить языковые изменения
+    /// </summary>
+    /// <param name="_language">Язык, на который переходит окно</param>
+    public virtual void MakeLanguageChanges(LanguageEnum _language)
+    {
+        foreach (MultiLanguageTextInfo _languageChange in languageChanges)
+            _languageChange.text.text = _languageChange.mLanguageText.GetText(_language);
     }
 
 }

@@ -98,6 +98,10 @@ public struct ETarget
 
     public static ETarget zero { get { return new ETarget(0f, 0f, false, null); } }
 
+    public float X { get { return transform != null ? transform.position.x : x; } }
+
+    public float Y { get { return transform != null ? transform.position.y : y; } }
+
     public bool Exists { get { return exists; } set { exists = value; if (!exists) transform = null; } }
 
     public static implicit operator Vector2(ETarget e1)

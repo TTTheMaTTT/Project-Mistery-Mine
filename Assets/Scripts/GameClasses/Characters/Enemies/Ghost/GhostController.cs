@@ -10,7 +10,7 @@ public class GhostController : AIController
 
     #region fields
 
-    protected HitBoxController selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с пауком. Этот хитбокс всегда активен и не перемещается
+    protected HitBoxController selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с призраком. Этот хитбокс всегда активен и не перемещается
     [SerializeField]protected GameObject missile;//Снаряды стрелка
 
     protected Hearing hearing;//Слух персонажа
@@ -58,7 +58,8 @@ public class GhostController : AIController
 
     protected override void FixedUpdate()
     {
-        base.FixedUpdate();
+        if (!immobile)
+            base.FixedUpdate();
 
         Animate(new AnimationEventArgs("fly"));
 
@@ -150,20 +151,12 @@ public class GhostController : AIController
     }
 
     /// <summary>
-    /// Совершить атаку
-    /// </summary>
-    protected override void Attack()
-    {
-        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(10 * (attackParametres.preAttackTime ))));
-        StopMoving();
-        StartCoroutine("AttackProcess");
-    }
-
-    /// <summary>
     /// Процесс атаки
     /// </summary>
     protected override IEnumerator AttackProcess()
     {
+        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(100 * (attackParametres.preAttackTime))));
+        StopMoving();
         employment = Mathf.Clamp(employment - 8, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
 
@@ -187,15 +180,28 @@ public class GhostController : AIController
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
     }
 
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    /// <param name="hitData">Данные урона</param>
     public override void TakeDamage(HitParametres hitData)
     {
+        if (hitData.attackPower == 0)//На призрака не действуют препятствия
+            return;
         base.TakeDamage(hitData);
         if (hitData.attackPower>balance)
             Animate(new AnimationEventArgs("stop"));
     }
 
+    /// <summary>
+    /// Функция получения урона
+    /// </summary>
+    /// <param name="hitData">Данные урона</param>
+    /// <param name="ignoreInvul">Игрорирует ли урон инвул персонажа</param>
     public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
     {
+        if (hitData.attackPower == 0)//На призрака не действуют препятствия
+            return;
         base.TakeDamage(hitData, ignoreInvul);
         if (hitData.attackPower>balance)
             Animate(new AnimationEventArgs("stop"));
@@ -241,7 +247,7 @@ public class GhostController : AIController
                     if (loyalty == LoyaltyEnum.ally && !mainTarget.exists) //Если нет основной цели и призрак - союзник героя, то он следует к нему
                     {
                         float sqDistance = Vector2.SqrMagnitude(beginPosition - pos);
-                        if (sqDistance > allyDistance * 1.2f && followAlly)
+                        if (followAlly)
                         {
                             if (Vector2.SqrMagnitude(beginPosition - (Vector2)prevTargetPosition) > minCellSqrMagnitude)
                             {
@@ -422,6 +428,8 @@ public class GhostController : AIController
             }
             else
             {
+                transform.position = beginPosition;
+                Turn(beginOrientation);
                 BecomeCalm();
             }
 

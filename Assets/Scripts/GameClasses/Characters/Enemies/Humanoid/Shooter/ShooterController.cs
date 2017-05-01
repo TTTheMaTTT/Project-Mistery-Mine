@@ -25,19 +25,11 @@ public class ShooterController : HumanoidController
     #endregion //parametres
 
     /// <summary>
-    /// Совершить атаку
-    /// </summary>
-    protected override void Attack()
-    {
-        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(10 * (attackParametres.preAttackTime))));
-        StartCoroutine("AttackProcess");
-    }
-
-    /// <summary>
     /// Процесс совершения атаки
     /// </summary>
     protected override IEnumerator AttackProcess()
     {
+        Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(100f * (attackParametres.preAttackTime))));
         employment = Mathf.Clamp(employment - 8, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
 
@@ -143,7 +135,7 @@ public class ShooterController : HumanoidController
 
                 if (sqDistance < waitingNearDistance)
                 {
-                    if (!wallCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
+                    if (!wallCheck.WallInFront && !obstacleCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
                         Move((OrientationEnum)Mathf.RoundToInt(-Mathf.Sign(targetDistance.x)));
                     else if (targetDistance.x * (int)orientation > 0)
                         Turn();
@@ -170,7 +162,7 @@ public class ShooterController : HumanoidController
                 }
                 else
                 {
-                    if (!wallCheck.WallInFront && (precipiceCheck.WallInFront || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !targetCharacter.OnLadder))
+                    if (!wallCheck.WallInFront && !obstacleCheck.WallInFront && (precipiceCheck.WallInFront || !grounded) && (Mathf.Abs((pos - mainPos).y) < navCellSize * 5f ? true : !targetCharacter.OnLadder))
                         Move((OrientationEnum)Mathf.RoundToInt(Mathf.Sign(targetDistance.x)));
                     else if (targetDistance.x * (int)orientation < 0f)
                         Turn();
@@ -181,9 +173,13 @@ public class ShooterController : HumanoidController
                             (Vector2.SqrMagnitude(mainPos - prevTargetPosition) > minCellSqrMagnitude || !prevTargetPosition.exists))
                         {
                             Waypoints = FindPath(targetPosition, maxAgressivePathDepth);
-                            if (waypoints == null)
-                                StopMoving();
+                            if (waypoints != null)
+                                return;
                         }
+                        if (obstacleCheck.WallInFront)
+                            Move(orientation);//Если перед персонажем стоит препятствие, но он никак не может его обойти, то он просто идёт напролом
+                        else
+                            StopMoving();
                     }
                 }
 

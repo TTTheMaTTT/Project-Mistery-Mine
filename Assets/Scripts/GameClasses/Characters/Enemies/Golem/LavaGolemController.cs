@@ -13,7 +13,7 @@ public class LavaGolemController : GolemController
     protected override void Start()
     {
         base.Start();
-        Animate(new AnimationEventArgs("startBurning"));
+        StartCoroutine("StartBurningProcess");
     }
 
     #region damageEffects
@@ -27,9 +27,11 @@ public class LavaGolemController : GolemController
         {
             //Если персонажа подожгли, когда он был заморожен, то он отмараживается и не получает никакого урона от огня, так как считаем, что всё тепло ушло на разморозку
             StopFrozen();
+            Animate(new AnimationEventArgs("stopBurning"));
+            Animate(new AnimationEventArgs("startBurning"));
             return;
         }
-        if (GetBuff("FrozenWet") != null)
+        if (GetBuff("WetProcess") != null)
         {
             //Если персонажа подожгли, когда он был промокшим, то он высыхает
             StopWet();
@@ -52,6 +54,7 @@ public class LavaGolemController : GolemController
         yield return new WaitForSeconds(_time);
         attackParametres.damage /= wetDamageCoof;
         Animate(new AnimationEventArgs("stopWet"));
+        Animate(new AnimationEventArgs("stopBurning"));
         Animate(new AnimationEventArgs("startBurning"));
         RemoveBuff("WetProcess");
     }
@@ -67,9 +70,43 @@ public class LavaGolemController : GolemController
         attackParametres.damage /= wetDamageCoof;
         RemoveBuff("WetProcess");
         Animate(new AnimationEventArgs("stopWet"));
+        Animate(new AnimationEventArgs("stopBurning"));
         Animate(new AnimationEventArgs("startBurning"));
     }
 
+    /// <summary>
+    /// Процесс, инициирющий поджог ифрита в начале игры
+    /// </summary>
+    /// <returns></returns>
+    IEnumerator StartBurningProcess()
+    {
+        yield return new WaitForSeconds(.5f);
+        if (GetBuff("wetProcess") == null && GetBuff("WetProcess") == null)
+        {
+            Animate(new AnimationEventArgs("stopBurning"));
+            Animate(new AnimationEventArgs("startBurning"));
+        }
+    }
+
     #endregion //damageEffects
+
+    /// <summary>
+    /// Перейти в оптимизированный режим работы
+    /// </summary>
+    protected override void ChangeBehaviorToOptimized()
+    {
+        base.ChangeBehaviorToOptimized();
+        Animate(new AnimationEventArgs("stopBurning"));
+    }
+
+    /// <summary>
+    /// Перейти в активный режим работы
+    /// </summary>
+    protected override void ChangeBehaviorToActive()
+    {
+        base.ChangeBehaviorToActive();
+        Animate(new AnimationEventArgs("stopBurning"));
+        Animate(new AnimationEventArgs("startBurning"));
+    }
 
 }

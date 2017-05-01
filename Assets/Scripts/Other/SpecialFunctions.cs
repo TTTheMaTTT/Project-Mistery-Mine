@@ -27,7 +27,14 @@ public static class SpecialFunctions
     public static CameraController camControl;
     public static CameraController CamController { get { camControl = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); return camControl; } }
 
-    public static GameController gameController { get { return GameObject.FindGameObjectWithTag("gameController").GetComponent<GameController>(); } }
+    public static GameController gameController
+    {
+        get
+        {
+            GameObject gControl = GameObject.FindGameObjectWithTag("gameController");
+            if (gControl) return GameObject.FindGameObjectWithTag("gameController").GetComponent<GameController>(); else return null;
+        }
+    }
 
     public static History history { get { return gameController.GetComponent<GameHistory>().history; } }
 
@@ -49,6 +56,14 @@ public static class SpecialFunctions
     public static string nextLevelName = "";//Название следующего уровня
 
     public static float soundVolume;//Громкость звуков
+
+    /// <summary>
+    /// Получиьб название уровня
+    /// </summary>
+    public static MultiLanguageText GetLevelName()
+    {
+        return statistics.LevelTextName;
+    }
 
     /// <summary>
     /// Проинициализировать важные игровые объекты перед началом игры
@@ -108,6 +123,7 @@ public static class SpecialFunctions
         _hero.Equipment = prevHero.Equipment;
         _hero.CurrentWeapon = prevHero.CurrentWeapon;
         _hero.Health = prevHero.Health;
+        _hero.MaxHealth = prevHero.MaxHealth;
         player = _hero.gameObject;
         battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
         if (CamController != null)
@@ -118,6 +134,7 @@ public static class SpecialFunctions
             _hero.SetImmobile(true);
         if (equipWindow != null)
             equipWindow.ConsiderPlayer(_hero);
+        gameController.ConsiderHero(_hero);
     }
 
     /// <summary>
@@ -143,17 +160,33 @@ public static class SpecialFunctions
     /// <summary>
     /// Функция, выводящая заданный текст на экран на заданное время
     /// </summary>
-    public static void SetText(string _info, float textTime)
+    public static void SetText(float textTime, MultiLanguageText _mlText)
     {
-        gameUI.SetMessage(_info, textTime);
+        gameUI.SetMessage( textTime, _mlText.GetText(SettingsScript.language));
+    }
+
+    /// <summary>
+    /// Функция, выводящая заданный текст на экран на заданное время
+    /// </summary>
+    public static void SetText(float textTime, string _text)
+    {
+        gameUI.SetMessage(textTime, _text);
     }
 
     /// <summary>
     /// Функция, выводящая заданный тект в поле сообщений о секретах и эффектах
     /// </summary>
-    public static void SetSecretText(float textTime, string _text = "Вы нашли секретное место!")
+    public static void SetSecretText(float textTime, MultiLanguageText _mlText)
     {
-        gameUI.SetSecretMessage(textTime,_text);
+        gameUI.SetSecretMessage(textTime,_mlText.GetText(SettingsScript.language));
+    }
+
+    /// <summary>
+    /// Функция, выводящая заданный тект в поле сообщений о секретах и эффектах
+    /// </summary>
+    public static void SetSecretText(float textTime, string _text)
+    {
+        gameUI.SetSecretMessage(textTime, _text);
     }
 
     /// <summary>
@@ -161,7 +194,7 @@ public static class SpecialFunctions
     /// </summary>
     public static void FindSecretPlace(float textTime)
     {
-        gameUI.SetSecretMessage(textTime);
+        gameUI.SetSecretMessage(textTime, new MultiLanguageText("Вы нашли секретное место!", "You've found secret place", "", "", "").GetText(SettingsScript.language));
         gameController.FindSecretPlace();
     }
 

@@ -55,8 +55,7 @@ public class SpeechDrawer : PropertyDrawer
         answer2 = property.FindPropertyRelative("answer2"),
 
         hasText = property.FindPropertyRelative("hasText"),
-        text = property.FindPropertyRelative("text"),
-        portrait = property.FindPropertyRelative("portrait"),
+        speechText = property.FindPropertyRelative("speechText"),
 
         hasPositionChange = property.FindPropertyRelative("hasPositionChange"),
         changePositionData = property.FindPropertyRelative("changePositionData"),
@@ -70,7 +69,6 @@ public class SpeechDrawer : PropertyDrawer
         camMod = property.FindPropertyRelative("camMod"),
         camPosition = property.FindPropertyRelative("camPosition"),
         camObjectID = property.FindPropertyRelative("camObjectID");
-
 
         speechName.stringValue = EditorGUILayout.TextField("Speech Name", speechName.stringValue, GUILayout.Width(width));
 
@@ -120,18 +118,8 @@ public class SpeechDrawer : PropertyDrawer
 
         bool _hasText = hasText.boolValue;
         hasText.boolValue = EditorGUILayout.Toggle("Has Text", hasText.boolValue, GUILayout.Width(width));
-        if (_hasText && !hasText.boolValue)
-        {
-            portrait.objectReferenceValue = null;
-            text.stringValue = "";
-        }
         if (_hasText)
-        {
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(text, GUILayout.Width(.75f * width));
-            portrait.objectReferenceValue=(Sprite)EditorGUILayout.ObjectField(portrait.objectReferenceValue, typeof(Sprite), GUILayout.Width(.25f * width),GUILayout.Height(height));
-            EditorGUILayout.EndHorizontal();
-        }
+            EditorGUILayout.PropertyField(speechText, true);
 
         EditorGUILayout.Space();
 
@@ -198,6 +186,55 @@ public class SpeechDrawer : PropertyDrawer
         EditorGUILayout.Space();
     }
 
+}
+
+[CustomPropertyDrawer(typeof(SpeechTextClass))]
+public class SpeechTextDrawer : PropertyDrawer
+{
+
+    #region consts
+
+    const float width = 300f;
+    const float height = 75f;
+
+    #endregion //consts
+
+    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+    {
+        SerializedProperty mlText = property.FindPropertyRelative("mlText");
+        SerializedProperty russian = mlText.FindPropertyRelative("russian"),
+        english = mlText.FindPropertyRelative("english"),
+        ukranian = mlText.FindPropertyRelative("ukranian"),
+        polish = mlText.FindPropertyRelative("polish"),
+        french = mlText.FindPropertyRelative("french"),
+        language = property.FindPropertyRelative("language"),
+        portrait = property.FindPropertyRelative("portrait");
+
+        EditorGUILayout.PropertyField(language);
+
+        EditorGUILayout.BeginHorizontal();
+        switch ((LanguageEnum)language.enumValueIndex)
+        {
+            case LanguageEnum.russian:
+                EditorGUILayout.PropertyField(russian, GUILayout.Width(.75f * width));
+                break;
+            case LanguageEnum.english:
+                EditorGUILayout.PropertyField(english, GUILayout.Width(.75f * width));
+                break;
+            case LanguageEnum.ukrainian:
+                EditorGUILayout.PropertyField(ukranian, GUILayout.Width(.75f * width));
+                break;
+            case LanguageEnum.polish:
+                EditorGUILayout.PropertyField(polish, GUILayout.Width(.75f * width));
+                break;
+            case LanguageEnum.french:
+                EditorGUILayout.PropertyField(french, GUILayout.Width(.75f * width));
+                break;
+        }
+        portrait.objectReferenceValue = (Sprite)EditorGUILayout.ObjectField(portrait.objectReferenceValue, typeof(Sprite), GUILayout.Width(.25f * width), GUILayout.Height(height));
+        EditorGUILayout.EndHorizontal();
+
+    }
 }
 
 [CustomPropertyDrawer(typeof(SpeechAnswerClass))]
@@ -353,3 +390,45 @@ public class SpeechAnimationDrawer : PropertyDrawer
 
     }
 }
+
+/*
+[CustomPropertyDrawer(typeof(MultiLanguageText))]
+public class MultiLanguageTextDrawer : PropertyDrawer
+{
+
+    LanguageEnum language= LanguageEnum.russian;
+
+    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+    {
+        SerializedProperty
+        russian = property.FindPropertyRelative("russian"),
+        english = property.FindPropertyRelative("english"),
+        ukrainian = property.FindPropertyRelative("ukrainian"),
+        polish = property.FindPropertyRelative("polish"),
+        french = property.FindPropertyRelative("french");
+
+        russian.stringValue = EditorGUILayout.TextArea(russian.stringValue);
+        language = (LanguageEnum)EditorGUILayout.EnumPopup("Language", language);
+        switch (language)
+        {
+            case LanguageEnum.russian:
+                russian.stringValue = EditorGUILayout.TextArea(russian.stringValue);
+                break;
+            case LanguageEnum.english:
+                english.stringValue = EditorGUILayout.TextArea(english.stringValue);
+                break;
+            case LanguageEnum.ukrainian:
+                ukrainian.stringValue = EditorGUILayout.TextArea(ukrainian.stringValue);
+                break;
+            case LanguageEnum.polish:
+                polish.stringValue = EditorGUILayout.TextArea(polish.stringValue);
+                break;
+            case LanguageEnum.french:
+                french.stringValue = EditorGUILayout.TextArea(french.stringValue);
+                break;
+            default:
+                russian.stringValue = EditorGUILayout.TextArea(russian.stringValue);
+                break;
+        }
+    }
+}*/

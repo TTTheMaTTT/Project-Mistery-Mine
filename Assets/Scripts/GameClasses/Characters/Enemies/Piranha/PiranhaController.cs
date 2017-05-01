@@ -611,7 +611,7 @@ public class PiranhaController : AIController
             if (!immobile)
             {
                 StartCoroutine("PrepareToNextAttackProcess");
-                Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(10 * (attackParametres.preAttackTime + attackParametres.endAttackTime))));
+                Animate(new AnimationEventArgs("attack", "", Mathf.RoundToInt(100f * (attackParametres.preAttackTime + attackParametres.endAttackTime))));
                 StartCoroutine("PushBackProcess");
             }
         }
@@ -630,6 +630,8 @@ public class PiranhaController : AIController
         yield return new WaitForSeconds(attackParametres.preAttackTime);
         rigid.velocity = Vector2.zero;
         rigid.AddForce(forceVector);//При столкновении с врагом пиранья отталкивается назад
+        yield return new WaitForSeconds(.3f);
+        rigid.velocity = Vector2.zero;
     }
 
     #endregion //eventHandlers

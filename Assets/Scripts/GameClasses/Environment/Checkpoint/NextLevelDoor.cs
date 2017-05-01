@@ -16,6 +16,9 @@ public class NextLevelDoor : DoorClass
 
     #region parametres
 
+    protected MultiLanguageText battleMessage = new MultiLanguageText("Вы не можете воспользоваться дверью, пока находитесь в бою",
+                                                                      "You can't use the door when you are in battle", "", "", "");
+
     [SerializeField]
     protected string nextLevelName;//Следующий уровень, на который произойдёт переход
 
@@ -31,6 +34,11 @@ public class NextLevelDoor : DoorClass
     /// </summary>
     public override void Interact()
     {
+        if (SpecialFunctions.battleField.enemiesCount > 0)
+        {
+            SpecialFunctions.SetText(2.5f, battleMessage);
+            return;
+        }
         HeroController player = SpecialFunctions.Player.GetComponent<HeroController>();
         if (!closedByMechanism || opened)
         {
@@ -41,10 +49,18 @@ public class NextLevelDoor : DoorClass
             else if (player.Equipment.bag.Find(x => x.itemName == keyID))
                 Open();
             else
-                SpecialFunctions.SetText(closedDoorMessage, 2.5f);
+                SpecialFunctions.SetText(2.5f, closedDoorMessage);
         }
         else
-            SpecialFunctions.SetText(closedDoorMessage, 2.5f);
+            SpecialFunctions.SetText(2.5f, closedDoorMessage);
+    }
+
+    /// <summary>
+    /// Можно ли провзаимодействовать с объектом в данный момент?
+    /// </summary>
+    public override bool IsInteractive()
+    {
+        return SpecialFunctions.dialogWindow.CurrentDialog == null;
     }
 
     /// <summary>
@@ -53,23 +69,9 @@ public class NextLevelDoor : DoorClass
     public override void Open()
     {
         base.Open();
-        StartCoroutine(NextLevelProcess());
+        SpecialFunctions.gameController.CompleteLevel(nextLevelName, true, checkpointNumber);
     }
 
-    /// <summary>
-    /// Процесс перехода на следующий уровень
-    /// </summary>
-    protected IEnumerator NextLevelProcess()
-    {
-        SpecialFunctions.gameController.RemoveHeroDeathLevelEnd();
-        PlayerPrefs.SetInt("Checkpoint Number", checkpointNumber);
-        SpecialFunctions.gameController.SaveGame(checkpointNumber,true, nextLevelName);
-        PlayerPrefs.SetFloat("Hero Health", SpecialFunctions.Player.GetComponent<HeroController>().MaxHealth);
-        SpecialFunctions.SetFade(true);
-        yield return new WaitForSeconds(nextLevelTime);
-        if (nextLevelName != string.Empty)
-            SpecialFunctions.gameController.CompleteLevel(nextLevelName);
-    }
 
     /// <summary>
     /// Активировать механизм

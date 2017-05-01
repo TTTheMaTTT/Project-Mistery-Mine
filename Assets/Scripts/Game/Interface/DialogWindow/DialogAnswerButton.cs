@@ -51,9 +51,9 @@ public class DialogAnswerButton : MonoBehaviour
     /// </summary>
     public void BeginNextDialog()
     {
+        dialogWindow.StopDialog();
         if (nextDialog == null)
             return;
-        dialogWindow.StopDialog();
         dialogWindow.BeginDialog(nextDialog);
     }
 
