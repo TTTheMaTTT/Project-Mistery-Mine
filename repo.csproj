@@ -108,11 +108,19 @@
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\Statistics\NPCTalkStatistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\Statistics\Statistics.cs" />
     <Compile Include="Assets\Scripts\Game\GameControl\GameStatistics\Statistics\StoryTriggerStatistics.cs" />
+    <Compile Include="Assets\Scripts\Game\GameStory\DreamWorldScript.cs" />
     <Compile Include="Assets\Scripts\Game\GameStory\SpiderThiefScript.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\AlchemyWindow\AlchemyWindow.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\AlchemyWindow\IngredientDragHandler.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\AlchemyWindow\IngredientSlotScript.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\AlchemyWindow\MixtureSlotScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\DialogWindow\DialogAnswerButton.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\DialogWindow\DialogWindowScript.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\EquipmentWindow\ActiveTrinketCell.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\EquipmentWindow\EquipmentCellScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\EquipmentWindow\EquipmentMenu.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\EquipmentWindow\ItemCell.cs" />
+    <Compile Include="Assets\Scripts\Game\Interface\EquipmentWindow\TrinketCell.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\GameMenuScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\GameUI\FadeFluctuationScript.cs" />
     <Compile Include="Assets\Scripts\Game\Interface\GameUI\GameUIScript.cs" />
@@ -134,6 +142,7 @@
     <Compile Include="Assets\Scripts\Game\SaveSystem\SavesInfo.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\BuffListData.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\CollectionInfo.cs" />
+    <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\DialogData.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\DropData.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\EnemyData.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\EquipmentInfo.cs" />
@@ -178,6 +187,7 @@
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Spider\SpiderVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Worm\WormController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Enemies\Worm\WormVisual.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\BatHero\BatHeroController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroController.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\HeroVisual.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\Hero\SpiderHero\SpiderHeroController.cs" />
@@ -196,8 +206,10 @@
     <Compile Include="Assets\Scripts\GameClasses\Environment\Drop\CollectionDropClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Drop\DropClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Drop\HeartDropClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Drop\MessageDropClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\ExplosionScript.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\LeverRiddle.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\Alchemy\AlchemyLab.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\DoorClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\GhostPlatform.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Environment\Mechanisms\LeverScript.cs" />
@@ -231,6 +243,8 @@
     <Compile Include="Assets\Scripts\GameClasses\Items\HeartClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\ItemClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\KeyClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Items\Trinkets\MutagenClass.cs" />
+    <Compile Include="Assets\Scripts\GameClasses\Items\Trinkets\TrinketClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\Weapons\Melee\SwordClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\Weapons\Range\Boomerang\BoomerangClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Items\Weapons\Range\Boomerang\BoomerangScript.cs" />
@@ -257,6 +271,8 @@
     <None Include="Assets\Scripts\Shaders\Experiments\Blue.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\CharacterUnderWater.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Glass.shader" />
+    <None Include="Assets\Scripts\Shaders\Experiments\GrabPassDistortion.cginc" />
+    <None Include="Assets\Scripts\Shaders\Experiments\GrabPassDistortion.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\Green.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\LightKitDisableShader.shader" />
     <None Include="Assets\Scripts\Shaders\Experiments\LightKitObstaclesShader.shader" />
@@ -271,6 +287,7 @@
     <None Include="Assets\Scripts\Shaders\SpriteLight.shader" />
     <None Include="Assets\Scripts\Shaders\SpriteLightKit-BlendImageEffect.shader" />
     <None Include="Assets\Scripts\Shaders\SpriteShadowLight.shader" />
+    <None Include="Assets\Scripts\Shaders\WallOnFire.shader" />
     <None Include="Assets\Scripts\Shaders\WaterShader.shader" />
     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
     <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />
