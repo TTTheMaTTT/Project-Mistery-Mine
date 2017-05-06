@@ -8,6 +8,12 @@ using System.Collections;
 public class GhostController : AIController
 {
 
+    #region consts
+
+    protected const float groundLevelOffset = .5f;//Если рядом с призраком находится с землей, и он видит игрока, то призрак должен подняться над землёй
+
+    #endregion //consts
+
     #region fields
 
     protected HitBoxController selfHitBox;//Хитбокс, который атакует персонажа при соприкосновении с призраком. Этот хитбокс всегда активен и не перемещается
@@ -53,6 +59,9 @@ public class GhostController : AIController
 
     [SerializeField]
     protected float missileSpeed = 3f;//Скорость снаряда после выстрела
+
+    protected float groundLevel = 0f;//Уровень земли, от которого движется призрак
+    bool groundLevelSetted = false;//Был ли установлен уровень земли, от которого собирается отталкиваться призрак
 
     #endregion //parametres
 
@@ -143,6 +152,15 @@ public class GhostController : AIController
     }
 
     /// <summary>
+    /// Двигаться наверх
+    /// </summary>
+    protected virtual void MoveUp()
+    {
+        Vector2 targetVelocity = Vector2.up * speed * speedCoof;
+        rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
+    }
+
+    /// <summary>
     /// Прекратить перемещение
     /// </summary>
     protected override void StopMoving()
@@ -178,6 +196,16 @@ public class GhostController : AIController
 
         yield return new WaitForSeconds(attackRate);
         employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
+        groundLevelSetted = false;
+    }
+
+    /// <summary>
+    /// Остановить атаку
+    /// </summary>
+    protected override void StopAttack()
+    {
+        base.StopAttack();
+        groundLevelSetted = false;
     }
 
     /// <summary>
@@ -366,10 +394,21 @@ public class GhostController : AIController
     /// </summary>
     protected override void AgressiveBehavior()
     {
+        Vector2 pos = transform.position;
+        if (groundLevelSetted)
+        {
+            if (pos.y - groundLevel < groundLevelOffset)
+                MoveUp();
+            else
+            {
+                groundLevelSetted = false;
+                StopMoving();
+            }
+            return;
+        }
         if (mainTarget.exists && employment > 2)
         {
             Vector2 targetPosition = mainTarget;
-            Vector2 pos = transform.position;
             Vector2 direction = targetPosition - pos;
             float sqDistance = direction.sqrMagnitude;
 
@@ -384,8 +423,14 @@ public class GhostController : AIController
                     StopMoving();
                     if ((targetPosition - pos).x * (int)orientation < 0f)
                         Turn();
+                    if (Physics2D.Raycast(pos, Vector2.right * (int)orientation, minDistance, LayerMask.GetMask(gLName)))
+                    {
+                        groundLevel = pos.y;
+                        groundLevelSetted = true;
+                    }
                     Attack();
                 }
+
             }
             else if (sqDistance < waitingFarDistance * waitingFarDistance && !insideWall)
             {
@@ -397,6 +442,11 @@ public class GhostController : AIController
                 if (!waiting && employment > 8)
                 {
                     StopMoving();
+                    if (Physics2D.Raycast(pos, Vector2.right * (int)orientation, minDistance, LayerMask.GetMask(gLName)))
+                    {
+                        groundLevel = pos.y;
+                        groundLevelSetted = true;
+                    }
                     Attack();
                 }
             }

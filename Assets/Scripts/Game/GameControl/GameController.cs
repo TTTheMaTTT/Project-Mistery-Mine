@@ -137,8 +137,6 @@ public class GameController : MonoBehaviour
 
     protected void Update()
     {
-        if (InputCollection.instance.GetButtonDown("Menu"))
-            gameMenu.ChangeGameMod();
         /*if (Input.GetKeyDown(KeyCode.I))
             SpecialFunctions.gameUI.ChangeVisibility();
         if (Input.GetKeyDown(KeyCode.J))
@@ -159,6 +157,8 @@ public class GameController : MonoBehaviour
             if (InputCollection.instance.GetButtonDown("Submit"))
                 UIElementScript.activeElement.Activate();
         }
+        if (InputCollection.instance.GetButtonDown("Menu"))
+            gameMenu.ChangeGameMod();
     }
 
     protected void Awake()
@@ -438,7 +438,6 @@ public class GameController : MonoBehaviour
                         if (gStats.TrinketDict.ContainsKey(itemName))
                         {
                             TrinketClass _trinket = gStats.TrinketDict[itemName];
-                            Hero.SetTrinket(_trinket);
                             SpecialFunctions.equipWindow.SetActiveTrinket(_trinket);
                         }
 
@@ -523,7 +522,6 @@ public class GameController : MonoBehaviour
                     if (gStats.TrinketDict.ContainsKey(itemName))
                     {
                         TrinketClass _trinket = gStats.TrinketDict[itemName];
-                        Hero.SetTrinket(_trinket);
                         SpecialFunctions.equipWindow.SetActiveTrinket(_trinket);
                     }
 
@@ -877,6 +875,8 @@ public class GameController : MonoBehaviour
             #endregion //dialogs
 
         }
+
+        hero.ResetAdditionalWeapon();
 
         #endregion //LevelLoad
 

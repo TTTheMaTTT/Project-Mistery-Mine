@@ -52,8 +52,8 @@ public class GolemController : AIController
         if (!immobile)
         {
             base.FixedUpdate();
-            Animate(new AnimationEventArgs("groundMove"));
         }
+        Animate(new AnimationEventArgs("groundMove"));
     }
 
     /// <summary>

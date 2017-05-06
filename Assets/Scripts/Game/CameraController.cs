@@ -19,6 +19,7 @@ public class CameraController : MonoBehaviour
 
     protected const float lightFadeSpeed = 3f;//Скорость изменения освещения уровня
     protected const float lightTransitionTime=1.3f;//Сколько времени будет происходить изменение уровня освещённости
+    protected const float sizeTransitionSpeed= 1.5f;//Скорость изменения размера камеры
 
     #endregion //consts
 
@@ -28,6 +29,7 @@ public class CameraController : MonoBehaviour
     protected Transform currentObject = null;//Текущий объект, за которым следит камера
     protected AreaTriggerIndicator aTriggerIndicator;//Индикатор, который закрепляется за камерой и следит за оптимизацией монстров
     protected SpriteLightKitImageEffect lightManager;//Компонент, ответственный за освещение игры
+    protected Camera cam;
 
     #endregion //fields
 
@@ -61,6 +63,9 @@ public class CameraController : MonoBehaviour
     protected float targetHDRRatio;//Целевой уровень освещения от источников
     protected bool lightTransition;//Происходит ли постепенное изменения уровня освещённости в данный момент?
 
+    protected float targetSize=1f;//Целевой размер камеры
+    protected bool sizeTransition = false;//Происходит ли постепенное изменение размера камеры?
+
     #endregion //parametres
 
     protected void Awake()
@@ -92,6 +97,17 @@ public class CameraController : MonoBehaviour
             lightManager.intensity = Mathf.Lerp(lightManager.intensity, targetIntensity, Time.fixedDeltaTime * lightFadeSpeed);
             lightManager.HDRRatio = Mathf.Lerp(lightManager.HDRRatio, targetHDRRatio, Time.fixedDeltaTime * lightFadeSpeed);
         }
+
+        if (sizeTransition)
+        {
+            cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, targetSize, Time.fixedDeltaTime * sizeTransitionSpeed);
+            if (Mathf.Abs(cam.orthographicSize - targetSize)<.01f)
+            {
+                cam.orthographicSize = targetSize;
+                sizeTransition = false;
+            }
+        }
+
     }
 
     /*protected void Update()
@@ -114,6 +130,7 @@ public class CameraController : MonoBehaviour
         lightManager = GetComponent<SpriteLightKitImageEffect>();
         //aTriggerIndicator = GetComponentInChildren<AreaTriggerIndicator>();
         //aTriggerIndicator.Activate(false);
+        cam = GetComponent<Camera>();
     }
 
     /// <summary>
@@ -261,6 +278,15 @@ public class CameraController : MonoBehaviour
         lightTransition = true;
         yield return new WaitForSeconds(lightTransitionTime);
         lightTransition = false;
+    }
+
+    /// <summary>
+    /// Начать изменение размера камеры
+    /// </summary>
+    public void StartSizeTransition(float _targetSize=1f)
+    {
+        targetSize = _targetSize;
+        sizeTransition = true;
     }
 
     public void SetPlayer(Transform _player)

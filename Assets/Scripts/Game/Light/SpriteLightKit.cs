@@ -49,6 +49,7 @@ public class SpriteLightKit : MonoBehaviour
 	[HideInInspector]
 	[SerializeField]
 	Camera _spriteLightCamera;
+    Camera uiCamera;
 	Transform _quadTransform;
 
 	RenderTexture _texture;
@@ -63,9 +64,11 @@ public class SpriteLightKit : MonoBehaviour
 	{
 		if( mainCamera == null )
 			mainCamera = Camera.main;
-			
-		// ensure the SpriteLightKitPostProcessor is on the Camera
-		_slkImageEffect = mainCamera.GetComponent<SpriteLightKitImageEffect>();
+        if (uiCamera == null)
+            uiCamera = transform.parent.FindChild("UICam").GetComponent<Camera>();
+
+        // ensure the SpriteLightKitPostProcessor is on the Camera
+        _slkImageEffect = mainCamera.GetComponent<SpriteLightKitImageEffect>();
 		if( _slkImageEffect == null )
 			_slkImageEffect = mainCamera.gameObject.AddComponent<SpriteLightKitImageEffect>();
 		
@@ -96,7 +99,9 @@ public class SpriteLightKit : MonoBehaviour
 		if( mainCamera.orthographicSize != _previousCameraOrthoSize || _lastScreenWidth != Screen.width || _lastScreenHeight != Screen.height )
 		{
 			_spriteLightCamera.orthographicSize = mainCamera.orthographicSize;
-			_previousCameraOrthoSize = mainCamera.orthographicSize;
+            if (uiCamera!=null)
+                uiCamera.orthographicSize = mainCamera.orthographicSize;
+            _previousCameraOrthoSize = mainCamera.orthographicSize;
 
 			updateTexture();
 		}
@@ -106,6 +111,8 @@ public class SpriteLightKit : MonoBehaviour
     {
         if (mainCamera == null)
             mainCamera = Camera.main;
+        if (uiCamera == null)
+            uiCamera = transform.parent.FindChild("UICam").GetComponent<Camera>();
 
         // ensure the SpriteLightKitPostProcessor is on the Camera
         _slkImageEffect = mainCamera.GetComponent<SpriteLightKitImageEffect>();

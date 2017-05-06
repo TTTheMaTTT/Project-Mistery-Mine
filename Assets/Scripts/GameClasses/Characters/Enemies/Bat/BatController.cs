@@ -89,9 +89,11 @@ public class BatController : AIController
     /// </summary>
     protected override void Move(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = (currentTarget - transform.position).normalized * speed*speedCoof;
+        Vector2 pos = transform.position;
+        Vector2 targetVelocity = (currentTarget - pos).normalized * speed*speedCoof;
+        if (Physics2D.Raycast(pos+targetVelocity.normalized*batSize/4f,targetVelocity.normalized,batSize/4f,LayerMask.GetMask(wLName)))
+            targetVelocity = Vector2.zero;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity,Time.fixedDeltaTime*acceleration);
-
         if (orientation != _orientation)
         {
             Turn(_orientation);
@@ -112,13 +114,25 @@ public class BatController : AIController
     /// <param name="_orientation">Ориентация персонажа при перемещении</param>
     protected override void MoveAway(OrientationEnum _orientation)
     {
-        Vector2 targetVelocity = (transform.position - currentTarget).normalized * speed*speedCoof;
+        Vector2 pos = transform.position;
+        Vector2 targetVelocity = (pos - currentTarget).normalized * speed*speedCoof;
+        if (Physics2D.Raycast(pos + targetVelocity.normalized*batSize/4f, targetVelocity.normalized, batSize/4f, LayerMask.GetMask(wLName)))
+            targetVelocity = Vector2.zero;
         rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
 
         if (orientation != _orientation)
         {
             Turn(_orientation);
         }
+    }
+
+    /// <summary>
+    /// Выйти из водоёма
+    /// </summary>
+    protected virtual void MoveFromWater()
+    {
+        Vector2 targetVelocity = Vector2.up * speed * speedCoof;
+        rigid.velocity = Vector2.Lerp(rigid.velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
     }
 
     /// <summary>
@@ -175,6 +189,7 @@ public class BatController : AIController
     {
         base.StopAttack();
         employment = maxEmployment;
+        StopMoving();
         StopCoroutine("AttackShockProcess");
         StartCoroutine("AttackShockProcess");
     }
@@ -220,6 +235,23 @@ public class BatController : AIController
                         }
                     }
 
+                    //if (Physics2D.OverlapCircle(pos, batSize / 5f, LayerMask.GetMask(wLName)))
+                    //{
+                    if (underWater)
+                        if (employment <= 7)
+                        {
+                            StopAttack();
+                            StopCoroutine("AttackShockProcess");
+                            employment = maxEmployment;
+                        }
+                        /*if (!underWater)
+                            Underwater = true;
+                    }
+                    else if (!Physics2D.OverlapCircle(pos, batSize / 3f, LayerMask.GetMask(wLName)))
+                    {
+                        if (underWater)
+                            Underwater = false;
+                    }*/
                     //Если текущая цель убежала достаточно далеко, то мышь просто возвращается домой
                     if (Vector2.SqrMagnitude(mainTarget - transform.position) > r2 * r2)
                         GoHome();
@@ -343,6 +375,14 @@ public class BatController : AIController
 
         Vector2 targetPosition = currentTarget;
         Vector2 pos = transform.position;
+
+        if (underWater)
+        {
+            MoveFromWater();
+            Animate(new AnimationEventArgs("fly"));
+            return;
+        }
+
         if (waypoints == null)
         {
             if (!waiting)

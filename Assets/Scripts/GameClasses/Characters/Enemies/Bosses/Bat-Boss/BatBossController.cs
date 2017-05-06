@@ -16,6 +16,8 @@ public class BatBossController: BossController
     private const float batSize = .5f;
 
     private const float maxAvoidDistance = 30f, avoidOffset = 1.5f;
+    private const float specialAttackCameraSize = 1.4f;
+    private const float groundRadius = .005f;
 
     #endregion //consts
 
@@ -30,6 +32,10 @@ public class BatBossController: BossController
     protected bool inBatTrigger2 { get { if (batTrigger2 == null) return false; else return batTrigger2.playerInside; } }
     protected bool inBatTrigger3 { get { if (batTrigger3 == null) return false; else return batTrigger3.playerInside; } }
     protected GameObject batPosition1, batPosition2;
+
+    protected GameObject stalactite;//Сталактит, который упадёт со смертью летучей мыши
+    protected Transform groundCheck;
+    protected Collider2D col;
 
     #endregion //fields
 
@@ -103,6 +109,7 @@ public class BatBossController: BossController
     private Vector2 curveEndPoint = Vector2.zero;
     private BezierSimpleCurve CurrentCurve { set { currentCurve = value;  currentCurveParameter = 0f; curveEndPoint = currentCurve.GetBezierPoint(1f); } }
     bool stillAgressive = false;//Переменная, используемая при переходе в патрулирующее состояние. Указывает на то что персонаж ещё не забыл о своём враге, просто временно меняет позицию для нанесения удара
+    bool inDeath = false;
 
     #endregion //parametres
 
@@ -111,10 +118,12 @@ public class BatBossController: BossController
     /// </summary>
     protected override void Initialize()
     {
+        usualBalance = balance;
         indicators = transform.FindChild("Indicators");
         hearing = indicators.GetComponentInChildren<Hearing>();
         hearing.hearingEventHandler += HandleHearingEvent;
         hearing.AllyHearing = false;
+        col = GetComponent<CircleCollider2D>();
         base.Initialize();
 
         hitBox.AttackEventHandler += HandleAttackProcess;
@@ -123,7 +132,7 @@ public class BatBossController: BossController
         {
             areaTrigger.triggerFunctionIn = NullAreaFunction;
             areaTrigger.triggerFunctionOut = NullAreaFunction;
-            areaTrigger.triggerFunctionOut += AreaTriggerExitChangeBehavior;
+            //areaTrigger.triggerFunctionOut += AreaTriggerExitChangeBehavior;
             areaTrigger.InitializeAreaTrigger();
         }
 
@@ -136,6 +145,8 @@ public class BatBossController: BossController
         batTrigger3 = GameObject.Find("BatTrigger3").GetComponent<UsualTrigger>();
         batPosition1 = GameObject.Find("BatPosition1");
         batPosition2 = GameObject.Find("BatPosition2");
+        stalactite = GameObject.Find("GiantStalactite");
+        groundCheck = indicators.FindChild("GroundCheck");
 
         BecomeCalm();
 
@@ -209,14 +220,17 @@ public class BatBossController: BossController
         employment = Mathf.Clamp(employment - 4, 0, maxEmployment);
         yield return new WaitForSeconds(attackParametres.preAttackTime);
         StopMoving();
+        rigid.velocity = Vector2.zero;
         if (predictTargetNextPosition && mainTarget.transform != null)
         {
-            Rigidbody2D targetRigid = mainTarget.transform.GetComponent<Rigidbody2D>();
+            /*Rigidbody2D targetRigid = mainTarget.transform.GetComponent<Rigidbody2D>();
             Vector2 targetDistance = mainTarget - transform.position;
             float flightTime = targetDistance.magnitude / speed / speedCoof;
             Vector2 nextPoint = mainTarget + new Vector2(targetRigid.velocity.x,0f) * flightTime;
             CurrentDirection = (nextPoint - (Vector2)transform.position).normalized;
-            rigid.AddForce(currentDirection * attackForce *1.3f* speedCoof);
+            rigid.AddForce(currentDirection * attackForce *1.3f* speedCoof);*/
+            CurrentDirection = (mainTarget - transform.position).normalized;
+            rigid.AddForce(currentDirection * attackForce * speedCoof);
         }
         else
         {
@@ -288,7 +302,10 @@ public class BatBossController: BossController
         StartCoroutine("AttackShockProcess");
         balance = usualBalance;
         inAttack = false;
+        SpecialFunctions.camControl.StartSizeTransition();
+        col.isTrigger = false;
         hitBox.IgnoreInvul = false;
+        CurrentDirection = Vector2.right*(int)orientation;
     }
 
     /// <summary>
@@ -307,6 +324,8 @@ public class BatBossController: BossController
         StartCoroutine("SpecialAttackProcess",_attackParametres.hitParametres);
         Animate(new AnimationEventArgs("attack", "Dive", Mathf.RoundToInt(100 * _attackParametres.hitParametres.wholeAttackTime)));
         behaviorActions = SpecialAttackBehavior;
+        SpecialFunctions.camControl.StartSizeTransition(specialAttackCameraSize);
+        col.isTrigger = true;
     }
 
     /// <summary>
@@ -375,6 +394,7 @@ public class BatBossController: BossController
         }
         else
             BecomeAgressive();
+        SpecialFunctions.camControl.StartSizeTransition(specialAttackCameraSize);
         stillAgressive = false;
     }
 
@@ -440,9 +460,17 @@ public class BatBossController: BossController
             else if (hitData.damageType == attackParametres.damageType)
                 hitData.damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
         }
-        if ( attacker.attackType == AttackTypeEnum.range)
-            hitData.damage /= 2f;
-
+        if (attacker.attackType == AttackTypeEnum.range)
+            hitData.damage /= 1.5f;
+        else
+        {
+            damageCount++;
+            if (damageCount >= 4)
+            {
+                Instantiate(heartDrop, transform.position, Quaternion.identity);
+                damageCount = 0;
+            }
+        }
         Health = Mathf.Clamp(Health - hitData.damage, 0f, maxHealth);
         if (health <= 0f)
         {
@@ -466,16 +494,34 @@ public class BatBossController: BossController
             StopAttack();
             StopSpecialAttack();
             employment = maxEmployment;
-            damageCount++;
-            if (damageCount >= 4)
-            {
-                Instantiate(heartDrop, transform.position, transform.rotation);
-                damageCount = 0;
-            }
             if (behavior == BehaviorEnum.patrol)
                 BecomeAgressive();
         }
         Animate(new AnimationEventArgs("hitted", "", hitData.attackPower > balance ? 0 : 1));
+    }
+
+    //Функция смерти
+    protected override void Death()
+    {
+        DisconnectFromUI();
+        foreach (GameObject drop1 in drop)
+        {
+            GameObject _drop = Instantiate(drop1, transform.position, transform.rotation) as GameObject;
+        }
+        SpecialFunctions.StartStoryEvent(this, CharacterDeathEvent, new StoryEventArgs());
+        for (int i = buffs.Count - 1; i >= 0; i--)
+        {
+            BuffClass buff = buffs[i];
+            StopCustomBuff(new BuffData(buff));
+        }
+        immobile = true;
+        StopAttack();
+        SpecialFunctions.statistics.ConsiderStatistics(this);
+        Animate(new AnimationEventArgs("death", "animation", 0));
+        if (targetCharacter != null)
+            targetCharacter.CharacterDeathEvent -= HandleTargetDeathEvent;
+        rigid.gravityScale = 1f;
+        inDeath = true;
     }
 
     #region damageEffects
@@ -522,6 +568,23 @@ public class BatBossController: BossController
     protected override void Analyse()
     {
         Vector2 pos = transform.position;
+
+        if (inDeath)
+        {
+            if (Physics2D.OverlapCircle(groundCheck.position, groundRadius, LayerMask.GetMask(gLName)))
+            {
+                rigid.velocity = Vector2.zero;
+                if (stalactite)
+                    stalactite.GetComponent<StalactiteScript>().ActivateMechanism();
+                SpecialFunctions.camControl.ShakeCamera(2f);
+                Destroy(rigid);
+                Destroy(col);
+                Destroy(this);
+                Destroy(indicators.gameObject);
+            }
+            return;
+        }
+
         if (currentCurve != BezierSimpleCurve.zero)
             return;
         if (rigid.velocity.magnitude < minSpeed && employment>7)
@@ -908,7 +971,7 @@ public class BatBossControllerEditor : AIControllerEditor
         SerializedProperty serHighDiveAttack = serBatBoss.FindProperty("highDiveAttack");
         SerializedProperty serAttackParametres = serBatBoss.FindProperty("attackParametres");
 
-        bossName.stringValue = EditorGUILayout.TextField("Boss Name", bossName.stringValue);
+        EditorGUILayout.PropertyField(bossName, true);
         maxHP.floatValue = EditorGUILayout.FloatField("Max HP", maxHP.floatValue);
         EditorGUILayout.PropertyField(health);
         EditorGUILayout.PropertyField(phase2Health);
@@ -917,7 +980,7 @@ public class BatBossControllerEditor : AIControllerEditor
         EditorGUILayout.PropertyField(loyalty);
         acceleration.floatValue = EditorGUILayout.FloatField("Acceleration", acceleration.floatValue);
         EditorGUILayout.PropertyField(heartDrop);
-        EditorGUILayout.PropertyField(drop);
+        EditorGUILayout.PropertyField(drop, true);
         healthDrain.floatValue = EditorGUILayout.FloatField("Health Drain", healthDrain.floatValue);
         EditorGUILayout.PropertyField(serAttackParametres,true);
         attackForce.floatValue = EditorGUILayout.FloatField("Attack Force", attackForce.floatValue);

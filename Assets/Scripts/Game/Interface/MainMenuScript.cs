@@ -10,12 +10,20 @@ using System.Collections.Generic;
 public class MainMenuScript : UIPanel, ILanguageChangeable
 {
 
+    #region consts
+
+    private const float fadeSpeed = 3f;
+
+    #endregion //consts
+
     #region fields
 
     private GameObject buttons;
     private GameObject creditsPanel;
     private UIPanel creditsUIWindow;
     private Text creditsText;
+
+    private Image fadeScreen;
 
     [SerializeField]private List<MultiLanguageTextInfo> languageChanges=new List<MultiLanguageTextInfo>();
 
@@ -25,6 +33,8 @@ public class MainMenuScript : UIPanel, ILanguageChangeable
 
     private bool activated = false;
 
+    private float currentFadeSpeed=fadeSpeed;
+
     #endregion //parametres
 
     public override void Initialize()
@@ -33,6 +43,10 @@ public class MainMenuScript : UIPanel, ILanguageChangeable
         creditsPanel = transform.FindChild("CreditsPanel").gameObject;
         creditsUIWindow = creditsPanel.GetComponent<UIPanel>();
         creditsText = creditsPanel.transform.FindChild("CreditsText").GetComponent<Text>();
+
+        fadeScreen = transform.FindChild("FadeScreen").GetComponent<Image>();
+        fadeScreen.color = Color.black;
+        StartCoroutine(FadeProcess());
 
         SpecialFunctions.PlayGame();
         activated = false;
@@ -62,6 +76,9 @@ public class MainMenuScript : UIPanel, ILanguageChangeable
             activated = true;
             SetActive();
         }
+
+        fadeScreen.color = Color.Lerp(fadeScreen.color, new Color(0f, 0f, 0f, 0f), Time.fixedDeltaTime * currentFadeSpeed);
+
     }
 
     /// <summary>
@@ -190,6 +207,16 @@ public class MainMenuScript : UIPanel, ILanguageChangeable
     {
         foreach (MultiLanguageTextInfo _languageChange in languageChanges)
             _languageChange.text.text = _languageChange.mLanguageText.GetText(_language);
+    }
+
+    /// <summary>
+    /// Процесс затухания экрана
+    /// </summary>
+    IEnumerator FadeProcess()
+    {
+        currentFadeSpeed = 0f;
+        yield return new WaitForSecondsRealtime(1f);
+        currentFadeSpeed = fadeSpeed/2f;
     }
 
 }

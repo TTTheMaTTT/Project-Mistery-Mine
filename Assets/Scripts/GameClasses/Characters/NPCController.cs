@@ -120,7 +120,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// <summary>
     /// Начать диалог (в отличие от функции talk, эта функция не может вызваться при взаимодействии, а только при использовании сюжетного действия)
     /// </summary>
-    protected virtual void StartDialog(Dialog _dialog)
+    public virtual void StartDialog(Dialog _dialog)
     {
         if (!SpecialFunctions.gameController.StartDialog(_dialog))
         {
@@ -299,9 +299,9 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
             }
             else if (_action.id1 == "startDialog")
                 StartCoroutine(StartDialogProcess(_dialog, _action.argument / 10f));
-            else if (_action.id1 == "setTalkPossibility")
-                possibleTalk = _action.argument > 0;
         }
+        if (_action.id1 == "setTalkPossibility")
+            possibleTalk = _action.argument > 0;
     }
 
     /// <summary>
@@ -403,6 +403,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
                 if (dialog != null)
                     dialogs.Add(dialog);
             }
+            possibleTalk = npcData.possibleTalk;
             waitingForDialog = npcData.waiting;
             foreach (string dialogName in npcData.waitDialogs)
             {
@@ -426,7 +427,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
     /// </summary>
     public InterObjData GetData()
     {
-        return new NPCData(id, dialogs,gameObject.name, transform.position, waitingForDialog, waitDialogs);
+        return new NPCData(id, dialogs,gameObject.name, transform.position,possibleTalk, waitingForDialog, waitDialogs);
     }
 
     #endregion //IHaveID

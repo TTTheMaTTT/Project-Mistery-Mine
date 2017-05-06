@@ -89,7 +89,7 @@ public enum AttackTypeEnum { melee=0,range=1, other=2 }
 /// <summary>
 /// Тип эффекта от тринкета, а точнее способ, которым эффект инициализируется
 /// </summary>
-public enum TrinketEffectTypeEnum { monsterDeath=0, investigation=1, getDamage=2}
+public enum TrinketEffectTypeEnum { monsterDeath=0, investigation=1, getDamage=2, attack=3}
 
 /// <summary>
 /// Панель, которая отображается на экране инвентаря

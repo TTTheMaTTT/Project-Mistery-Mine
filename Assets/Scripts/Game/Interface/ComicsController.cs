@@ -11,14 +11,14 @@ public class ComicsController : MonoBehaviour
 
     private const float fadeTime = 2f;//Время затухания
     private const float fadeSpeed = 5f;
-    private const float pageTime = 10f;//Время показа одной страницы
+    private const float pageTime = 15f;//Время показа одной страницы
 
     #endregion //consts
 
     #region fields
 
     private Image comicsPageImage;
-    [SerializeField]private List<Sprite> comicsPages=new List<Sprite>();
+    [SerializeField]private List<MultiLanguageSprite> comicsPages=new List<MultiLanguageSprite>();
 
     #endregion //fields
 
@@ -63,7 +63,7 @@ public class ComicsController : MonoBehaviour
     /// <returns></returns>
     IEnumerator PageProcess()
     {
-        comicsPageImage.sprite = comicsPages[currentPageNumber];
+        comicsPageImage.sprite = comicsPages[currentPageNumber].GetSprite((LanguageEnum)PlayerPrefs.GetInt("Language")) ;
         targetColor = Color.white;
         yield return new WaitForSeconds(fadeTime);
         comicsPageImage.color = Color.white;

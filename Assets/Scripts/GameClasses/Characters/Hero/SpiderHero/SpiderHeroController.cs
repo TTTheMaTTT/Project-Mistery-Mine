@@ -177,7 +177,7 @@ public class SpiderHeroController : HeroController
             jumpInput = 0;
         }
 
-        if (InputCollection.instance.GetButtonDown("Attack"))
+        if (InputCollection.instance.GetButtonDown("Interact"))
         {
             if (spiderOrientation.y < -Mathf.Abs(spiderOrientation.x) - .1f && currentSurface.exists)
             {

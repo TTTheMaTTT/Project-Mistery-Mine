@@ -136,7 +136,9 @@ public class CharacterVisual : MonoBehaviour
     /// </summary>
     protected virtual void Death(string id, int argument)
     {
-        if (effectSystem != null)
+        if (id == "animation")
+            anim.Play("Death");
+        else if (effectSystem != null)
         {
             switch (id)
             {

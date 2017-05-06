@@ -86,11 +86,12 @@ public class BowClass : WeaponClass
             if (hitIndex == -1 && hits[0])
             {
                 hitIndex = 1;
+                endPoint=hits[0].point;
                 GameObject _bullet = GameObject.Instantiate(arrow, new Vector3(hits[0].point.x, hits[0].point.y, position.z), Quaternion.identity) as GameObject;
                 Vector3 vect = _bullet.transform.localScale;
                 _bullet.transform.localScale = new Vector3(orientation * vect.x, vect.y, vect.z);
             }
-            if (hitIndex != -1)
+            else if (hitIndex != -1)
                 endPoint = hits[hitIndex].point;
         }
         chargeValue = 0f;

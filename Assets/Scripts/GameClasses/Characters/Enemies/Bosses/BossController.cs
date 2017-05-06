@@ -24,7 +24,6 @@ public class BossController : AIController
     #region fields
 
     protected BossAction bossAction;//Действия совершаемые боссом (в агрессивном состоянии)
-    [SerializeField]protected  List<GameObject> drop=new List<GameObject>();//что скидывается с босса после смерти
 
     #endregion //fields
 

@@ -13,6 +13,9 @@ public class NPCData: InterObjData
     [XmlArrayItem("Dialog")]
     public List<string> dialogs = new List<string>();
 
+    [XmlAttribute("PossibleTalk")]
+    public bool possibleTalk = true;
+
     [XmlAttribute("Waiting")]
     public bool waiting = false;
 
@@ -24,7 +27,7 @@ public class NPCData: InterObjData
     {
     }
 
-    public NPCData(int _id, List<Dialog> _dialogs, string _name, Vector3 _position, bool _waiting, List<Dialog> _waitDialogs)
+    public NPCData(int _id, List<Dialog> _dialogs, string _name, Vector3 _position,bool _possibleTalk, bool _waiting, List<Dialog> _waitDialogs)
     {
         objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
         objId = _id;
@@ -32,6 +35,7 @@ public class NPCData: InterObjData
         for (int i = 0; i < _dialogs.Count; i++)
             dialogs.Add(_dialogs[i].dialogName);
         position = _position;
+        possibleTalk = _possibleTalk;
         waiting = _waiting;
         foreach (Dialog _dialog in _waitDialogs)
             waitDialogs.Add(_dialog.dialogName);

@@ -38,7 +38,7 @@ public class DialogWindowScript : MonoBehaviour
     protected GameObject speechPanel;
     protected GameObject answerPanel;
     protected UIPanel answerUIPanel;
-    protected DialogAnswerButton answerButton1, answerButton2;
+    protected DialogAnswerButton answerButton1, answerButton2, answerButton3;
     protected Text answerText;
 
     protected Transform hero;
@@ -98,8 +98,15 @@ public class DialogWindowScript : MonoBehaviour
             }
 
             if (answerPanel.active)
-                if (UIElementScript.activePanel != answerUIPanel? InterfaceWindow.openedWindow==null:false)
+                if (UIElementScript.activePanel != answerUIPanel ? InterfaceWindow.openedWindow == null : false)
+                {
                     answerUIPanel.SetActive();
+                    if (UIElementScript.activeElement)
+                    {
+                        UIElementScript.activeElement.SetInactive();
+                        UIElementScript.activeElement = null;
+                    }
+                }
             
 
         }
@@ -397,7 +404,10 @@ public class DialogWindowScript : MonoBehaviour
     IEnumerator NoInputProcess()
     {
         noInput = true;
-        yield return new WaitForSecondsRealtime(noInputTime);
+        if (SpecialFunctions.totalPaused)
+            yield return new WaitForSecondsRealtime(noInputTime);
+        else
+            yield return new WaitForSeconds(noInputTime);
         noInput = false;
     }
 
@@ -407,7 +417,10 @@ public class DialogWindowScript : MonoBehaviour
     /// <returns></returns>
     IEnumerator WaitingProcess()
     {
-        yield return new WaitForSecondsRealtime(waitingTime);
+        if (SpecialFunctions.totalPaused)
+            yield return new WaitForSecondsRealtime(waitingTime);
+        else
+            yield return new WaitForSeconds(waitingTime);
         NextSpeech();
     }
 
@@ -417,7 +430,10 @@ public class DialogWindowScript : MonoBehaviour
     IEnumerator FadeInOutProcess()
     {
         SpecialFunctions.SetFade(true);
-        yield return new WaitForSecondsRealtime(waitingTime / 2f);
+        if (SpecialFunctions.totalPaused)
+            yield return new WaitForSecondsRealtime(waitingTime/2f);
+        else
+            yield return new WaitForSeconds(waitingTime/2f);
         SpecialFunctions.SetFade(false);
     }
 
@@ -457,7 +473,21 @@ public class DialogWindowScript : MonoBehaviour
             speechPanel.SetActive(false);
             answerPanel.SetActive(true);
             answerButton1.InitializeAnswerButton(_speech.answer1);
-            answerButton2.InitializeAnswerButton(_speech.answer2);
+            if (_speech.answer3!=null?_speech.answer3.nextDialog != null:false)
+            {
+                answerButton2.gameObject.SetActive(true);
+                answerButton2.InitializeAnswerButton(_speech.answer2);
+                answerButton3.InitializeAnswerButton(_speech.answer3);
+                answerButton2.GetComponent<UIElementScript>().uiIndex = new UIElementIndex(1, 0);
+                answerButton3.GetComponent<UIElementScript>().uiIndex = new UIElementIndex(2, 0);
+            }
+            else
+            {
+                answerButton2.gameObject.SetActive(false);
+                answerButton3.InitializeAnswerButton(_speech.answer2);
+                answerButton3.GetComponent<UIElementScript>().uiIndex = new UIElementIndex(1, 0);
+                answerButton2.GetComponent<UIElementScript>().uiIndex = new UIElementIndex(-10, -10);
+            }
             if (_speech.hasText)
                 answerText.text = _speech.speechText.mlText.GetText(SettingsScript.language);
             else
@@ -585,6 +615,7 @@ public class DialogWindowScript : MonoBehaviour
         answerPanel = transform.FindChild("AnswerPanel").gameObject;
         answerButton1 = answerPanel.transform.FindChild("Answer1").GetComponent<DialogAnswerButton>();
         answerButton2 = answerPanel.transform.FindChild("Answer2").GetComponent<DialogAnswerButton>();
+        answerButton3 = answerPanel.transform.FindChild("Answer3").GetComponent<DialogAnswerButton>();
         answerText = answerPanel.transform.FindChild("AnswerText").GetComponent<Text>();
         answerPanel.SetActive(false);
         answerUIPanel = answerPanel.GetComponent<UIPanel>();

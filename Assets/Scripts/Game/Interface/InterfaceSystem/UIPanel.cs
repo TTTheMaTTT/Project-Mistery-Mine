@@ -64,7 +64,16 @@ public class UIPanel : UIElementScript
             element.SetActive();
         }
         else if (parentElement != null)
-            parentElement.MoveHorizontal(direction, uiIndex);            
+            parentElement.MoveHorizontal(direction, uiIndex);
+        else
+        {
+            element = FindElement(new UIElementIndex(currentIndex.indexX, currentIndex.indexY));
+            if (element != null)
+            {
+                currentIndex = new UIElementIndex(currentIndex.indexX, currentIndex.indexY);
+                element.SetActive();
+            }
+        }
     }
 
     /// <summary>
@@ -83,6 +92,15 @@ public class UIPanel : UIElementScript
         }
         else if (parentElement != null)
             parentElement.MoveHorizontal(direction, uiIndex);
+        else
+        {
+            element = FindElement(new UIElementIndex(currentIndex.indexX, currentIndex.indexY));
+            if (element != null)
+            {
+                currentIndex = new UIElementIndex(currentIndex.indexX, currentIndex.indexY);
+                element.SetActive();
+            }
+        }
     }
 
     /// <summary>
@@ -99,6 +117,15 @@ public class UIPanel : UIElementScript
         }
         else if (parentElement != null)
             parentElement.MoveVertical(direction, uiIndex);
+        else
+        {
+            element = FindElement(new UIElementIndex(currentIndex.indexX, currentIndex.indexY));
+            if (element != null)
+            {
+                currentIndex = new UIElementIndex(currentIndex.indexX, currentIndex.indexY);
+                element.SetActive();
+            }
+        }
     }
 
     /// <summary>
@@ -117,6 +144,15 @@ public class UIPanel : UIElementScript
         }
         else if (parentElement != null)
             parentElement.MoveVertical(direction, uiIndex);
+        else
+        {
+            element = FindElement(new UIElementIndex(currentIndex.indexX, currentIndex.indexY));
+            if (element != null)
+            {
+                currentIndex = new UIElementIndex(currentIndex.indexX, currentIndex.indexY);
+                element.SetActive();
+            }
+        }
     }
 
     /// <summary>

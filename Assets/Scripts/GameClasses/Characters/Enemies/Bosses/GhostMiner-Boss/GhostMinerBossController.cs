@@ -117,6 +117,13 @@ public class GhostMinerBossController : BossController
 
         base.Initialize();
 
+        if (areaTrigger != null)
+        {
+            areaTrigger.triggerFunctionIn = NullAreaFunction;
+            areaTrigger.triggerFunctionOut = NullAreaFunction;
+            areaTrigger.InitializeAreaTrigger();
+        }
+
         rigid.gravityScale = 0f;
     }
 
@@ -910,7 +917,7 @@ public class GhostMinerBossControllerEditor : AIControllerEditor
 
         EditorGUILayout.LabelField("General Parametres");
 
-        EditorGUILayout.PropertyField(bossName);
+        EditorGUILayout.PropertyField(bossName,true);
         maxHP.floatValue = EditorGUILayout.FloatField("Max Health", maxHP.floatValue);
         EditorGUILayout.PropertyField(health);
         balance.intValue = EditorGUILayout.IntField("Balance", balance.intValue);

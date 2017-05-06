@@ -42,7 +42,7 @@ public class DialogAnswerButton : MonoBehaviour
     /// </summary>
     public void InitializeAnswerButton(SpeechAnswerClass _answer)
     {
-        SetText(_answer.answerText);
+        SetText(_answer.answerText.GetText(SettingsScript.language));
         SetAnswer(_answer.nextDialog);
     }
 
@@ -55,6 +55,11 @@ public class DialogAnswerButton : MonoBehaviour
         if (nextDialog == null)
             return;
         dialogWindow.BeginDialog(nextDialog);
+        if (UIElementScript.activeElement == GetComponent<UIElementScript>())
+        {
+            UIElementScript.activeElement = null;
+            UIElementScript.activePanel = null;
+        }
     }
 
 }

@@ -3721,6 +3721,7 @@ public class LevelEditor : EditorWindow
         cellRowSize = Mathf.FloorToInt(navMapSize.x / navCellSize.x);
         string groundName = LayerMask.LayerToName(groundLayer);
         string obstacleName = LayerMask.LayerToName(obstacleLayer);
+        string waterName = LayerMask.LayerToName(waterLayer);
         string ladderName = LayerMask.LayerToName(ladderLayer);
 
         #region flyMap
@@ -3917,7 +3918,7 @@ public class LevelEditor : EditorWindow
                 bool a4 = !Physics2D.OverlapArea(currentCell.cellPosition + new Vector2(-navCellSize.x / 40f * 19f, -navCellSize.y / 20f * 9f),
                                                 currentCell.cellPosition + new Vector2(-navCellSize.x / 20f * 9f, -navCellSize.y / 40f * 19f),
                                                 LayerMask.GetMask(groundName));
-                bool damageZone = Physics2D.OverlapCircle(currentCell.cellPosition, navCellSize.x, LayerMask.GetMask(obstacleName));
+                bool damageZone = Physics2D.OverlapCircle(currentCell.cellPosition, navCellSize.x, LayerMask.GetMask(obstacleName,waterName));
                 if ((a1 || a2 || a3 || a4 ) && !damageZone)
                     currentCell.canMove = true;
             }
@@ -4020,7 +4021,7 @@ public class LevelEditor : EditorWindow
                     }
                 }
 
-                bool damageZone = Physics2D.OverlapCircle(currentCell.cellPosition, navCellSize.x, LayerMask.GetMask(obstacleName));
+                bool damageZone = Physics2D.OverlapCircle(currentCell.cellPosition, navCellSize.x, LayerMask.GetMask(obstacleName,waterName));
 
                 if (connectionCount > 1 && connectionCount < 4 && !damageZone)
                 {

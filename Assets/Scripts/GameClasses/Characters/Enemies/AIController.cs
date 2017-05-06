@@ -112,6 +112,10 @@ public class AIController : CharacterController
 
     protected NavigationMap navMap;
 
+    [SerializeField]
+    protected List<GameObject> drop = new List<GameObject>();//что скидывается с персонажа после смерти
+    [SerializeField][Range(0f,1)]protected float dropProbability = 0f;//Вероятность, что с персонажа выпадет дроп
+
     #endregion //fields
 
     #region parametres
@@ -342,10 +346,16 @@ public class AIController : CharacterController
     /// </summary>
     protected override void Analyse()
     {
-        bool _underWater = Physics2D.OverlapCircle((Vector2)transform.position + Vector2.up * underwaterCheckOffset, waterRadius, LayerMask.GetMask(wLName));
-        if (underWater != _underWater)
+        Vector2 pos = transform.position;
+        if (Physics2D.OverlapCircle(pos + Vector2.up * underwaterCheckOffset, minDistance / 2f, LayerMask.GetMask(wLName)))
         {
-            Underwater = _underWater;
+            if (!underWater)
+                Underwater = true;
+        }
+        else if (!Physics2D.OverlapCircle(pos + Vector2.up * underwaterCheckOffset, minDistance*4f, LayerMask.GetMask(wLName)))
+        {
+            if (underWater)
+                Underwater = false;
         }
     }
 
@@ -609,6 +619,13 @@ public class AIController : CharacterController
             base.Death();
             if (!dead)
                 return;
+
+            if (UnityEngine.Random.Range(0f,1f)<dropProbability)
+                foreach (GameObject drop1 in drop)
+                {
+                    GameObject _drop = Instantiate(drop1, transform.position, Quaternion.identity) as GameObject;
+                }
+
             SpecialFunctions.statistics.ConsiderStatistics(this);
             string _id = "";
             if (GetBuff("FrozenProcess") != null)

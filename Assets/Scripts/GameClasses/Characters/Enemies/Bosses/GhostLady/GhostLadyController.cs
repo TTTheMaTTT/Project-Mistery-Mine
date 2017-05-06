@@ -27,6 +27,9 @@ public class GhostLadyController : BossController
 
     [SerializeField]protected GameObject missile;//Снаряд призрака
     [SerializeField]protected GameObject stalactite;//Сталактит, который падает после крика призрака
+    
+    [SerializeField]protected GameObject platform;//Платформа, которую надо отключить
+    [SerializeField]protected List<GameObject> fires;//Огни, что появляются в третьей фазе боя
 
     //Список кулдаунов
     protected override List<Timer> Timers
@@ -179,7 +182,8 @@ public class GhostLadyController : BossController
 
         if (areaTrigger != null)
         {
-            areaTrigger.triggerFunctionOut += AreaTriggerExitChangeBehavior;
+            areaTrigger.triggerFunctionIn = NullAreaFunction;
+            areaTrigger.triggerFunctionOut = NullAreaFunction;
             areaTrigger.InitializeAreaTrigger();
         }
 
@@ -800,6 +804,8 @@ public class GhostLadyController : BossController
         bossPhase++;
         yield return new WaitForSeconds(phase2Time);
         bossPhase++;
+        foreach (GameObject fire in fires)
+            fire.SetActive(true);
         attackRate = phase2AttackRate;
     }
 
@@ -826,6 +832,9 @@ public class GhostLadyController : BossController
         StartCoroutine("BossLifeProcess");
         currentTarget = mainTarget;
         bossAction = UsualBossAction;
+        Collider2D[] platformCols=platform.GetComponents<Collider2D>();
+        for (int i = 0; i < platformCols.Length; i++)
+            platformCols[i].enabled = false;
     }
 
     /// <summary>
@@ -957,6 +966,8 @@ public class GhostLadyControllerEditor : AIControllerEditor
     phase2AttackRate,
     loyalty,
     drop,
+    fires,
+    platform,
     vulnerability;
 
     bool usualAttackParametresShow = false;
@@ -1026,6 +1037,8 @@ public class GhostLadyControllerEditor : AIControllerEditor
         phase2AttackRate = serGhostLady.FindProperty("phase2AttackRate");
         loyalty = serGhostLady.FindProperty("loyalty");
         drop = serGhostLady.FindProperty("drop");
+        platform = serGhostLady.FindProperty("platform");
+        fires = serGhostLady.FindProperty("fires");
         vulnerability = serGhostLady.FindProperty("vulnerability");
 
         missile = serGhostLady.FindProperty("missile");
@@ -1082,7 +1095,7 @@ public class GhostLadyControllerEditor : AIControllerEditor
 
         EditorGUILayout.LabelField("General Parametres");
 
-        EditorGUILayout.PropertyField(bossName);
+        EditorGUILayout.PropertyField(bossName,true);
         maxHP.floatValue = EditorGUILayout.FloatField("Max Health", maxHP.floatValue);
         EditorGUILayout.PropertyField(health);
         balance.intValue = EditorGUILayout.IntField("Balance", balance.intValue);
@@ -1092,6 +1105,8 @@ public class GhostLadyControllerEditor : AIControllerEditor
         EditorGUILayout.PropertyField(phase2AttackRate);
         EditorGUILayout.PropertyField(loyalty);
         EditorGUILayout.PropertyField(drop, true);
+        EditorGUILayout.PropertyField(platform);
+        EditorGUILayout.PropertyField(fires, true);
         ghostLady.Vulnerability = (byte)(DamageType)EditorGUILayout.EnumMaskPopup(new GUIContent("vulnerability"), (DamageType)ghostLady.Vulnerability);
 
         EditorGUILayout.Space();

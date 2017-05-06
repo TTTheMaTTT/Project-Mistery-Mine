@@ -19,6 +19,9 @@ public class SpiderController : AIController
 
     protected const float noChangeOrientationTime = .2f;
 
+    protected const int maxAirSupply = 10;
+    protected const float suffocateTime = .3f;//Сколько времени должно пройти, чтобы запас воздуха уменьшился на 1 или здоровье паука на 13
+
     #endregion //consts
 
     #region fields
@@ -100,7 +103,7 @@ public class SpiderController : AIController
     protected Vector2 movementDirection = Vector2.right;//В какую сторону движется паук, если он повёрнут вправо
     protected bool canChangeOrientation = true;
 
-    protected override float attackDistance { get { return .12f; } }//На каком расстоянии должен стоять ИИ, чтобы решить атаковать
+    protected override float attackDistance { get { return .13f; } }//На каком расстоянии должен стоять ИИ, чтобы решить атаковать
     [SerializeField]protected Vector2 jumpAttackForce;//Сила отталкивания при прыжковой атаке
     [SerializeField]protected HitParametres jumpAttackParametres;//Параметры атаки в прыжке
     [SerializeField]protected float jumpAttackCooldown = 10f;//Кулдаун атаки в прыжке
@@ -136,6 +139,24 @@ public class SpiderController : AIController
     public SpiderStartPositionEnum spiderStartPosition = SpiderStartPositionEnum.usual;//Изначальное положение паука
     protected bool inGround = false;//Прячтся ли паук под землёй в данный момент?
     public bool InGround { get { return inGround; } }
+
+    protected override bool Underwater
+    {
+        get
+        {
+            return base.Underwater;
+        }
+
+        set
+        {
+            base.Underwater = value;
+            if (value)
+                StartCoroutine("SuffocateProcess");
+            else
+                StopCoroutine("SuffocateProcess");
+        }
+    }
+    protected int airSupply = 2;//Запас воздуха
 
     //protected bool calmDown = false;//Успокаивается ли персонаж
     //[SerializeField]protected bool neutral = true;//Является ли паук изначально нейтральным
@@ -324,6 +345,11 @@ public class SpiderController : AIController
     /// </summary>
     public virtual void Patrol()
     {
+        if (patrolDistance < .1f)
+        {
+            currentTarget.exists = false;
+            return;
+        }
         Vector2 waypoint = new Vector3((int)orientation * patrolDistance, 0f, 0f) + transform.position;
         currentTarget = new ETarget(waypoint);
     }
@@ -437,7 +463,7 @@ public class SpiderController : AIController
     /// </summary>
     protected override void Analyse()
     {
-
+        base.Analyse();
         Vector2 pos = transform.position;
         switch (behavior)
         {
@@ -488,6 +514,10 @@ public class SpiderController : AIController
                                 StartCoroutine("WrongOrientationProcess");
                         }
                     }
+
+                    if (underWater)
+                        goto endAnalyse;
+
                     Vector2 direction = spiderOrientation.y < -1 * Mathf.Abs(spiderOrientation.x) ? Vector2.down : movementDirection * (int)orientation;
                     RaycastHit2D hit = Physics2D.Raycast(pos + sightOffset * direction, direction, sightRadius, LayerMask.GetMask(gLName, cLName));
                     if (hit)
@@ -559,10 +589,29 @@ public class SpiderController : AIController
                 }
         }
 
+        endAnalyse:
+
         //Проверка на то, что паук находится на поверхности
         if (spiderOrientation.y < Mathf.Abs(spiderOrientation.x))
             if (!groundCheck.CheckWall())
                 JumpDown();
+
+        //Проверим, находится ли паук под водой
+        //if (Physics2D.OverlapCircle(pos, minDistance / 2f, LayerMask.GetMask(wLName)))
+        //{
+            //if (!underWater)
+                //Underwater = true;
+        if (underWater)
+            if (behavior != BehaviorEnum.patrol)
+                BecomePatrolling();
+        /*}
+        else
+        {
+            if (underWater)
+            {
+                Underwater = false;
+            }
+        }*/
 
         prevPosition = new EVector3(pos, true);
     }
@@ -586,6 +635,26 @@ public class SpiderController : AIController
         if (hitData.attackPower > balance || stunned)
         {
             JumpDown();//Сбросить паука со стены ударом
+        }
+    }
+
+    /// <summary>
+    /// Процесс задыхания под вод
+    /// </summary>
+    protected IEnumerator SuffocateProcess()
+    {
+        //Сначала заканчивается запас воздуха
+        int _airSupply = airSupply;
+        for (int i = 0; i < _airSupply; i++)
+        {
+            yield return new WaitForSeconds(suffocateTime);
+            airSupply--;
+        }
+        //А потом и жизнь персонажа
+        while (true)
+        {
+            yield return new WaitForSeconds(suffocateTime);
+            TakeDamage(new HitParametres(10f, DamageType.Physical, 0), true);
         }
     }
 
@@ -654,6 +723,8 @@ public class SpiderController : AIController
         base.BecomeCalm();
         if (!optimized && loyalty!=LoyaltyEnum.ally && !immobile && patrolDistance>.1f)
             Patrol();
+        else
+            FindFrontPatrolTarget();
         gameObject.layer = LayerMask.NameToLayer(loyalty==LoyaltyEnum.ally?"hero":"character");
         //if (sight != null ? sight.enabled : false)
         //sight.RotateLocal(0f);
@@ -885,7 +956,9 @@ public class SpiderController : AIController
 
                         if (jumpAttackIsPossible? 
                             Mathf.Approximately(spiderOrientation.y,1f)? 
-                                                sqDistance<jumpAttackMaxDistance*jumpAttackMaxDistance && sqDistance>jumpAttackMinDistance*jumpAttackMinDistance :false : false)
+                                                sqDistance<jumpAttackMaxDistance*jumpAttackMaxDistance && 
+                                                sqDistance>jumpAttackMinDistance*jumpAttackMinDistance && 
+                                                Mathf.Abs(targetDistance.y)<jumpAttackMinDistance/2f :false : false)
                         {
                             if (Vector2.Dot(targetPosition - pos, movementDirection) * (int)orientation < 0f)
                                 Turn();
@@ -896,10 +969,14 @@ public class SpiderController : AIController
                         {
                             float projection = Vector2.Dot(targetDistance, movementDirection);
                             if (Mathf.Abs(projection) <= attackDistance / 2f)
+                            {
                                 StopMoving();
+                                if (spiderOrientation.y < -0.1f)
+                                    JumpDown();
+                            }
                             else if (!wallCheck.WallInFront && precipiceCheck.WallInFront && !obstacleCheck.WallInFront && Mathf.Abs(projection) > attackDistance / 2f)
                                 Move(nextOrientation);
-                            else if (orientation!=nextOrientation)
+                            else if (orientation != nextOrientation)
                                 Turn();
                             else
                             {
@@ -1065,6 +1142,39 @@ public class SpiderController : AIController
     /// </summary>
     protected override void PatrolBehavior()
     {
+
+        #region underwaterBehavior
+
+        if (underWater)
+        {
+
+            Vector2 pos = transform.position;
+            Move(orientation);
+            if (canChangeOrientation)
+            {
+                //Учёт земных поверхностей, к которым может прикрепиться паук
+                if (wallCheck.CheckWall())
+                {
+                    RaycastHit2D hit = Physics2D.Raycast(pos, (int)orientation * movementDirection, navCellSize, LayerMask.GetMask(gLName));
+                    if (hit)
+                    {
+                        ChangeOrientation(hit.collider);
+                    }
+                }
+                else if (!precipiceCheck.CheckWall())
+                {
+                    RaycastHit2D hit = Physics2D.Raycast(pos - (int)orientation * movementDirection * navCellSize / 2f, -spiderOrientation, navCellSize, LayerMask.GetMask(gLName));
+                    if (hit)
+                    {
+                        ChangeOrientation(hit.collider);
+                    }
+                }
+            }
+            return;
+        }
+
+        #endregion //underwaterBehavior
+
         if (waypoints != null ? waypoints.Count > 0 : false)
         {
             if (!currentTarget.exists)
@@ -1386,8 +1496,9 @@ public class SpiderController : AIController
     /// </summary>
     protected void FindFrontPatrolTarget()
     {
+        currentTarget = new ETarget(transform.position);
         Vector2 pos = transform.position;
-        if (navMap == null || !(navMap is NavigationBunchedMap))
+        if (patrolDistance < .1f || navMap == null || !(navMap is NavigationBunchedMap))
             return;
         NavigationBunchedMap _map = (NavigationBunchedMap)navMap;
         ComplexNavigationCell currentCell = (ComplexNavigationCell)_map.GetCurrentCell(transform.position);
@@ -1425,7 +1536,7 @@ public class SpiderController : AIController
     {
         if (immobile)
             return;
-            if (behavior != BehaviorEnum.calm)
+        if (behavior != BehaviorEnum.calm)
         {
             if (!followOptPath)
                 StartCoroutine("PathPassOptProcess");
@@ -1658,10 +1769,13 @@ public class SpiderController : AIController
             }
             else
             {
-                rigid.isKinematic = false;
+                if (!optimized)
+                {
+                    rigid.isKinematic = false;
+                    EnableColliders();
+                }
                 immobile = false;
                 inGround = false;
-                EnableColliders();
             }
 
             if (transform.localScale.x * eData.orientation < 0f)
@@ -1759,10 +1873,15 @@ public class SpiderController : AIController
         yield return new WaitForSeconds(appearTime);
         Animate(new AnimationEventArgs("moveOut"));
         yield return new WaitForSeconds(1f);
-        rigid.isKinematic = false;
+        if (!optimized)
+        {
+            rigid.isKinematic = false;
+            EnableColliders();
+        }
+        anim.transform.localPosition = new Vector3(0f, anim.transform.localPosition.y, 0f);
         immobile = false;
         inGround = false;
-        EnableColliders();
+        BecomeCalm();
         Loyalty = LoyaltyEnum.enemy;
     }
 

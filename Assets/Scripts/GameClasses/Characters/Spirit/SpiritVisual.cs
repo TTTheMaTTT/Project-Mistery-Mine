@@ -67,6 +67,7 @@ public class SpiritVisual: CharacterVisual
     {
         anim.Play(id + "Flash");
         StartCoroutine("FlashProcess", id == "Small" ? smallFlashTime : bigFlashTime);
+        StartVisualRoutine(5, id == "Small" ? smallFlashTime : bigFlashTime);
     }
 
 
@@ -81,7 +82,9 @@ public class SpiritVisual: CharacterVisual
     /// </summary>
     protected virtual void Idle(string id, int argument)
     {
-        anim.Play(enhanced ? "Enhanced" : "Idle");
+        if (employment < 9)
+            return;
+        anim.Play(enhanced ? "Enhance" : "Idle");
     }
 
     /// <summary>

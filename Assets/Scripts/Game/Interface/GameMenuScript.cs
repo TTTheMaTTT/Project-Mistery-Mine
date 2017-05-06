@@ -129,6 +129,21 @@ public class GameMenuScript : InterfaceWindow
             OpenWindow();
     }
 
+    public override void OpenWindow()
+    {
+        if (!canOpen)
+            return;
+        base.OpenWindow();
+        StartCoroutine(CantInteractProcess());
+    }
+
+    public override void CloseWindow()
+    {
+        if (!canClose)
+            return;
+        base.CloseWindow();
+        StartCoroutine(CantInteractProcess());
+    }
 
     /// <summary>
     /// Перезапустить игру с последнего сохранения

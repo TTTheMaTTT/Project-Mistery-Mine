@@ -41,6 +41,9 @@ public class CheckpointController : MonoBehaviour, IInteractive
             checkpointLight = transform.FindChild("Light").gameObject;
             checkpointLight.SetActive(false);
         }
+        if (gameObject.name.Contains("Startpoint"))
+            ChangeCheckpoint();
+        
     }
 
     public void Update()
@@ -56,6 +59,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
     {
         SetOutline(false);
         changed = true;
+        activated = true;
         if (anim != null)
         {
             anim.Play("Active");
@@ -64,7 +68,6 @@ public class CheckpointController : MonoBehaviour, IInteractive
         {
             checkpointLight.SetActive(true);
         }
-        SetID(-1);//Чекпоинт не учтётся при сохранении, следовательно, чекпоинт будет считаться неактивным при следующей загрузке
     }
 
     #region IInteractive
@@ -81,7 +84,6 @@ public class CheckpointController : MonoBehaviour, IInteractive
         }
         if (!activated)
         {
-            activated = true;
             ChangeCheckpoint();
             SpecialFunctions.gameController.SaveGame(checkpointNumb, false, SceneManager.GetActiveScene().name);
             
@@ -147,7 +149,8 @@ public class CheckpointController : MonoBehaviour, IInteractive
         MechData chData = (MechData)_intObjData;
         if (chData != null)
         {
-            activated = chData.activated;
+            if (chData.activated)
+                ChangeCheckpoint();
         }
     }
 

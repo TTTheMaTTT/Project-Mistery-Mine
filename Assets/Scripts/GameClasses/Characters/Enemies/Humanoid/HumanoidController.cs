@@ -106,6 +106,8 @@ public class HumanoidController : AIController
 
     protected override float attackDistance { get { return .12f; } }
 
+    [SerializeField]protected float ladderDamage = 1f;//Какой урон наносит персонаж цели, когда они оба стоят на лестнице. ИИ делает это, чтобы сбросить героя с лестницы.
+
     #endregion //parametres
 
     protected override void FixedUpdate()
@@ -847,7 +849,7 @@ public class HumanoidController : AIController
                         if (onLadder)
                         {
                             LadderMove(Mathf.Sign(targetDistance.y));
-                            waypointIsAchieved = Mathf.Abs(currentTarget.y - pos.y) < navCellSize / 2f;
+                            waypointIsAchieved = Mathf.Abs(currentTarget.y - pos.y) < navCellSize / 10f;
                         }
                         else if (currentPlatform != null ? !grounded : true)
                         {
@@ -920,12 +922,23 @@ public class HumanoidController : AIController
                             if (!targetCharacter.OnLadder)
                             {
                                 Waypoints = null;
+                                LadderOff();
                                 return;
                             }
                             else
                             {
                                 if (onLadder)
+                                {
                                     StopLadderMoving();
+                                    if (Mathf.Abs(targetCharacter.transform.position.y - pos.y) < navCellSize / 4f)
+                                        targetCharacter.TakeDamage(new HitParametres(ladderDamage, DamageType.Physical, 6));//Сбросить персонажа с лестницы
+                                    else
+                                    {
+                                        waypoints.Add(new ComplexNavigationCell(targetCharacter.transform.position));
+                                        currentTarget=new ETarget(waypoints[0].cellPosition);
+                                        return;
+                                    }
+                                }
                             }
                         }
                         else
@@ -1017,7 +1030,7 @@ public class HumanoidController : AIController
             else
             {
                 StopMoving();
-                if (!waitingForPlatform)
+                if (!waitingForPlatform && currentPlatform!=null)
                 {
                     Vector2 platformDirection = currentPlatform.Direction;
                     float projection = Vector2.Dot(targetDistance, platformDirection);

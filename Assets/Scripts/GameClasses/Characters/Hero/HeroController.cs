@@ -158,8 +158,12 @@ public class HeroController : CharacterController
     protected bool dontShoot = false;
 
     protected AttackerClass attacker;
+
     protected TrinketEffectClass mutagenEffect;//Эффект, который связан с мутагеном
-    protected bool mutagenActive = false;//Действует ли мутаген
+    protected bool mutagenActive = false;//Действует ли мутагенчё
+    protected TrinketEffectClass healthDrainEffect;//Эффект, который завязан на выпивании жизни при нанесении урона
+    protected bool healthDrainActive;//активирован ли эффект выпивания жизни
+
     protected bool invul;//Если true, то персонаж обычно невосприимчив к урону
     protected bool noDamage;//Если true, то персонаж не может получить урон
 
@@ -364,6 +368,8 @@ public class HeroController : CharacterController
         if (!PlayerPrefs.HasKey("Hero Health"))//Здоровье не восполняется при переходе на следующий уровень. Поэтому, его удобно сохранять в PlayerPrefs
             PlayerPrefs.SetFloat("Hero Health", maxHealth);
         Health = PlayerPrefs.GetFloat("Hero Health");
+
+        hitBox.AttackEventHandler += HandleAttackProcess;
     }
 
     /// <summary>
@@ -844,6 +850,8 @@ public class HeroController : CharacterController
             return;
         dead = true;
         StopCoroutine("AttackProcess");
+        if (onLadder)
+            LadderOff();
         if (indicators != null)
         {
             BattleField bField = indicators.GetComponentInChildren<BattleField>();
@@ -876,6 +884,18 @@ public class HeroController : CharacterController
     }
 
     /// <summary>
+    ///  Обработка события "произошла атака"
+    /// </summary>
+    protected virtual void HandleAttackProcess(object sender, HitEventArgs e)
+    {
+        if (e.HPDif < 0f && healthDrainActive)
+        {
+            if (UnityEngine.Random.Range(0f,1f)<healthDrainEffect.effectProbability)
+                HealthDrain(e);
+        }
+    }
+
+    /// <summary>
     /// Эффект духовного щита
     /// </summary>
     protected virtual void SpiritShieldEffect(ref float _damage, DamageType _dType, AttackerClass _attacker)
@@ -889,6 +909,18 @@ public class HeroController : CharacterController
         ai.TakeDamageEffect(_dType);
         ai.TakeDamage(new HitParametres(ai.MaxHealth*.2f, _dType,0), true);
         attacker = null;
+    }
+
+    /// <summary>
+    /// Эффект выпивания жизни
+    /// </summary>
+    protected virtual void HealthDrain(HitEventArgs e)
+    {
+        if (!e.Target.name.Contains("Ghost") && !e.Target.name.Contains("Lich"))
+        {
+            Health = Mathf.Clamp(health + 2f, 0f, maxHealth);
+            Animate(new AnimationEventArgs("spawnEffect", "HealthDrain", 0));
+        }
     }
 
     /// <summary>
@@ -978,10 +1010,20 @@ public class HeroController : CharacterController
                                                                                  "Increases max number of active trinkets",
                                                                                  "",
                                                                                  "",
-                                                                                 "").GetText(SettingsScript.language),4.5f);
+                                                                                 "").GetText(SettingsScript.language), 4.5f);
+            else if (item.itemName == "LifeBookPage2")
+            {
+                SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Добавляет в инвентарь красную и зелёную субстанции",
+                                                                 "Add to equipment red and green substances",
+                                                                 "",
+                                                                 "",
+                                                                 "").GetText(SettingsScript.language), 4.5f);
+                AddItem("RedSubstance");
+                AddItem("GreenSubstance");
+            }
             else
                 SpecialFunctions.SetSecretText(2f, new MultiLanguageText("Вы нашли ",
-                                                                         "You have found","","","").GetText(SettingsScript.language) + item.itemMLTextName1.GetText(SettingsScript.language));
+                                                                         "You have found", "", "", "").GetText(SettingsScript.language) + item.itemMLTextName1.GetText(SettingsScript.language));
         }
     }
 
@@ -996,6 +1038,28 @@ public class HeroController : CharacterController
             if (trinket.itemName == _trinket.itemName)
                 return;
         equipment.activeTrinkets.Add(_trinket);
+        if (_trinket.itemName == "BatFang")
+        {
+            healthDrainActive = true;
+            healthDrainEffect = _trinket.trinketEffects.Find(x => x.effectName == "HealthDrain");
+        }
+    }
+
+    /// <summary>
+    /// Снять тринкет
+    /// </summary>
+    public void RemoveTrinket(TrinketClass _trinket)
+    {
+        if (_trinket == null)
+            return;
+        TrinketClass trinket1 = null;
+        foreach (TrinketClass trinket in equipment.activeTrinkets)
+            if (trinket.itemName == _trinket.itemName)
+                trinket1=trinket;
+        if (trinket1!=null)
+            equipment.activeTrinkets.Remove(trinket1);
+        if (_trinket.itemName == "BatFang")
+            healthDrainActive = false;
     }
 
     /// <summary>
@@ -1213,6 +1277,7 @@ public class HeroController : CharacterController
         if (GetBuff("TribalRitual") != null)
             return;
         StartCoroutine("TribalRitualProcess", shortTime? tribalRitualTime: 10000f);
+        Animate(new AnimationEventArgs("spawnEffect", "TribalRitual", 0));
     }
 
     /// <summary>

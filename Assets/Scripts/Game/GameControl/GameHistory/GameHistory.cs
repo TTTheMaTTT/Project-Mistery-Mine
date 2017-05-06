@@ -732,12 +732,19 @@ public class History
             QuestLine qLine = new QuestLine(_quest.questLines[_quest.stage]);
             if (_quest.hasStatistic && qLine.questLineName.Contains("/"))
             {
+                int _value = SpecialFunctions.statistics.GetStatistics(_quest.statisticName);
+                _quest.statisticCount = _value;
                 for (int i = 0; i < 5; i++)
                 {
                     string s = qLine.mlText.GetText((LanguageEnum)i);
-                    string s1 = s.Substring(0, s.LastIndexOf("/"));
-                    string s2 = s.Substring(s.LastIndexOf("/") + 1);
-                    qLine.mlText.SetText((LanguageEnum)i, s1 + _quest.statisticCount.ToString() + "/" + s2);
+                    if (!s.Contains("/"))
+                        qLine.mlText.SetText((LanguageEnum)i, s);
+                    else
+                    {
+                        string s1 = s.Substring(0, s.LastIndexOf("/"));
+                        string s2 = s.Substring(s.LastIndexOf("/") + 1);
+                        qLine.mlText.SetText((LanguageEnum)i, s1 + _quest.statisticCount.ToString() + "/" + s2);
+                    }
                 }
                 questLines.Add(qLine);
             }

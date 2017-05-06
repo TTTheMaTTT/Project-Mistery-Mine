@@ -53,6 +53,7 @@ public class SpeechDrawer : PropertyDrawer
         waitTime = property.FindPropertyRelative("waitTime"),
         answer1 = property.FindPropertyRelative("answer1"),
         answer2 = property.FindPropertyRelative("answer2"),
+        answer3=property.FindPropertyRelative("answer3"),
 
         hasText = property.FindPropertyRelative("hasText"),
         speechText = property.FindPropertyRelative("speechText"),
@@ -88,6 +89,7 @@ public class SpeechDrawer : PropertyDrawer
         {
             EditorGUILayout.PropertyField(answer1, true);
             EditorGUILayout.PropertyField(answer2,true);
+            EditorGUILayout.PropertyField(answer3, true);
         }
 
         EditorGUILayout.PropertyField(camMod, GUILayout.Width(width));
@@ -250,11 +252,38 @@ public class SpeechAnswerDrawer : PropertyDrawer
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {
         SerializedProperty
+        language=property.FindPropertyRelative("language"),
         answerText = property.FindPropertyRelative("answerText"),
         nextDialog = property.FindPropertyRelative("nextDialog");
 
+        SerializedProperty
+        russian = answerText.FindPropertyRelative("russian"),
+        english = answerText.FindPropertyRelative("english"),
+        ukranian = answerText.FindPropertyRelative("ukranian"),
+        polish = answerText.FindPropertyRelative("polish"),
+        french = answerText.FindPropertyRelative("french");
+
+        EditorGUILayout.PropertyField(language);
         EditorGUILayout.BeginHorizontal();
-        answerText.stringValue = EditorGUILayout.TextField("Answer Text", answerText.stringValue, GUILayout.Width(width * .7f));
+        switch ((LanguageEnum)language.enumValueIndex)
+        {
+            case LanguageEnum.russian:
+                EditorGUILayout.PropertyField(russian, GUILayout.Width(.7f * width));
+                break;
+            case LanguageEnum.english:
+                EditorGUILayout.PropertyField(english, GUILayout.Width(.7f * width));
+                break;
+            case LanguageEnum.ukrainian:
+                EditorGUILayout.PropertyField(ukranian, GUILayout.Width(.7f * width));
+                break;
+            case LanguageEnum.polish:
+                EditorGUILayout.PropertyField(polish, GUILayout.Width(.7f * width));
+                break;
+            case LanguageEnum.french:
+                EditorGUILayout.PropertyField(french, GUILayout.Width(.7f * width));
+                break;
+        }
+        //answerText.stringValue = EditorGUILayout.TextField("Answer Text", answerText.stringValue, GUILayout.Width(width * .7f));
         nextDialog.objectReferenceValue=(Dialog)EditorGUILayout.ObjectField(nextDialog.objectReferenceValue,typeof(Dialog),GUILayout.Width(width*.3f));
         EditorGUILayout.EndHorizontal();
 

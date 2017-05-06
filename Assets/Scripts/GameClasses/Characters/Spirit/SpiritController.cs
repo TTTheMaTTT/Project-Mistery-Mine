@@ -11,7 +11,7 @@ public class SpiritController : CharacterController
 
     #region consts
 
-    protected const float findHiddenTime = 20f;//Время через которое дух скажет, что нашёл что-то необычное, когда это необычное окажется рядом с ним
+    protected const float findHiddenTime = 3f;//Время через которое дух скажет, что нашёл что-то необычное, когда это необычное окажется рядом с ним
 
     #endregion //consts
 
@@ -52,6 +52,7 @@ public class SpiritController : CharacterController
             return;
         Vector2 pivot = hero.position + new Vector3(xOffset * Mathf.Sign(hero.lossyScale.x), yOffset);
         transform.position = Vector2.Lerp(transform.position, pivot, Time.fixedDeltaTime * speed);
+        Animate(new AnimationEventArgs("idle"));
     }
 
     protected void OnTriggerEnter2D(Collider2D other)

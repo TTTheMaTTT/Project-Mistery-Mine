@@ -23,6 +23,8 @@ public static class SpecialFunctions
             return player;
         }
     }
+    public static HeroController hero = null;
+    public static HeroController Hero { get { if (hero == null) hero = Player.GetComponent<HeroController>(); return hero; } }
 
     public static CameraController camControl;
     public static CameraController CamController { get { camControl = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); return camControl; } }

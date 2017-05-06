@@ -919,7 +919,7 @@ public class StrangerControllerEditor : AIControllerEditor
 
         EditorGUILayout.LabelField("General Parametres");
 
-        EditorGUILayout.PropertyField(bossName);
+        EditorGUILayout.PropertyField(bossName,true);
         maxHP.floatValue = EditorGUILayout.FloatField("Max Health", maxHP.floatValue);
         EditorGUILayout.PropertyField(health);
         EditorGUILayout.PropertyField(phase2Health);

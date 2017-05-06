@@ -369,7 +369,10 @@ public class EquipmentMenu : InterfaceWindow
                 return;
         foreach (ActiveTrinketCell tCell in activeTrinketCells)
             if (!tCell.Trinket)
+            {
                 tCell.Trinket = _trinket;
+                break;
+            }
     }
 
     /// <summary>
@@ -500,6 +503,8 @@ public class EquipmentMenu : InterfaceWindow
         magicSlotsCount++;
         for (int i = 0; i < activeTrinketCells.Count; i++)
             activeTrinketCells[i].transform.parent.gameObject.SetActive(i < magicSlotsCount);
+
+        AddItem(SpecialFunctions.statistics.ItemDict["LifeBookPage1"]);
 
         activeTrinketsUIPanel.SetActiveChildElements();
     }

@@ -119,6 +119,7 @@ public class GroundMoveVisual : CharacterVisual
             return;
         }
         //anim.Play("Idle");
+        anim.ForceStateNormalizedTime(0f);
         if (id == "")
             anim.Play("Attack");
         else

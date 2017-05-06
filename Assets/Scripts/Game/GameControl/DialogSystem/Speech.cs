@@ -28,7 +28,7 @@ public class Speech
 
     public SpeechTextClass speechText;//Текст реплики
 
-    public SpeechAnswerClass answer1 = null, answer2 = null;//Ответы на реплику (используется только при режиме answer)
+    public SpeechAnswerClass answer1 = null, answer2 = null, answer3=null;//Ответы на реплику (используется только при режиме answer)
 
     public List<SpeechChangePositionClass> changePositionData = new List<SpeechChangePositionClass>();//Как должны измениться позиции персонажей при использовании реплики 
                                                                                                       //(Используется при hasPositionChange==true)
@@ -54,6 +54,7 @@ public class Speech
         speechText = _speech.speechText;
         answer1 = _speech.answer1;
         answer2 = _speech.answer2;
+        answer3 = _speech.answer3;
         changePositionData = _speech.changePositionData;
         changeOrientationData = _speech.changeOrientationData;
         animationData = _speech.animationData;
@@ -90,12 +91,13 @@ public class SpeechTextClass
 [System.Serializable]
 public class SpeechAnswerClass
 {
-    public string answerText="";//Содержание ответа
+    public LanguageEnum language;
+    public MultiLanguageText answerText=new MultiLanguageText();//Содержание ответа
     public Dialog nextDialog;//Какой диалог следует за данным ответом?
 
     public SpeechAnswerClass()
     {
-        answerText = "";
+        answerText = new MultiLanguageText();
         nextDialog = null;
     }
 

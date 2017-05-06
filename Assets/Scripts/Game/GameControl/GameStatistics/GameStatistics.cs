@@ -170,6 +170,18 @@ public class GameStatistics : MonoBehaviour, IHaveStory
 
     }
 
+    /// <summary>
+    /// Вернуть значение статистики по её названию
+    /// </summary>
+    public int GetStatistics(string _statisticsName)
+    {
+        Statistics _stat = statistics.Find(x => x.statisticName == _statisticsName);
+        if (_stat == null)
+            return 0;
+        else
+            return _stat.value;
+    }
+
     public void ResetStatistics()
     {
         foreach (Statistics stat in statistics)

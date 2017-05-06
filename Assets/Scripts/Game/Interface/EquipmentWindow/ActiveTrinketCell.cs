@@ -34,10 +34,16 @@ public class ActiveTrinketCell : UIElementScript, IDropHandler
             if (value == trinket)
                 return;
             if (trinket != null)
+            {
                 eMenu.TakeOffTrinket(trinket);
+                SpecialFunctions.Hero.RemoveTrinket(trinket);
+            }
             trinket = value;
             if (value != null)
+            {
                 eMenu.PutOnTrinket(trinket);
+                SpecialFunctions.Hero.SetTrinket(trinket);
+            }
             bool haveTrinket = trinket != null;
             trinketImage.color = haveTrinket?Color.white:new Color(1f,1f,1f,0f);
             trinketImage.sprite = haveTrinket ? trinket.itemImage : null;
