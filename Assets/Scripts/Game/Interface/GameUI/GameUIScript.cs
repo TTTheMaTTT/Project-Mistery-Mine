@@ -24,6 +24,8 @@ public class GameUIScript : MonoBehaviour, ILanguageChangeable
     protected const float collectionItemTime = 2f;//Как долго висят экраны с коллекционными предметами?
     protected const float collectionImageWidth = 100f;//Какова длина изображения предмета коллекции?
 
+    protected const float maxFullCollectionCount = 4;//Максимальное число заполненных коллекций
+
     #endregion //consts
 
     #region fields
@@ -413,11 +415,11 @@ public class GameUIScript : MonoBehaviour, ILanguageChangeable
             _text = collectionScreen.transform.FindChild("ItemsCountText").GetComponent<Text>();
             float xPosition = -collectionImageWidth / 2f * _collection.collection.Count;
             int secretsFoundCount = 0;
-            _text.GetComponent<RectTransform>().localPosition = new Vector3(xPosition,0f,0f);
+            _text.GetComponent<RectTransform>().localPosition = new Vector3(xPosition, 0f, 0f);
             for (int i = 0; i < _collection.collection.Count; i++)
             {
                 xPosition += collectionImageWidth;
-                GameObject newObject = Instantiate(collectionItemPanel,transform.position,Quaternion.identity);
+                GameObject newObject = Instantiate(collectionItemPanel, transform.position, Quaternion.identity);
                 newObject.name = "ItemImage" + i.ToString();
                 newObject.layer = LayerMask.NameToLayer("UI");
                 newObject.transform.SetParent(collectionScreen.transform);
@@ -434,6 +436,28 @@ public class GameUIScript : MonoBehaviour, ILanguageChangeable
                     _img.color = new Color(0f, 0f, 0f, 0f);
             }
             _text.text = secretsFoundCount.ToString() + "/" + _collection.collection.Count.ToString();
+            if (secretsFoundCount >= _collection.collection.Count)
+            {
+                string achievementID = "";
+                switch (_collection.collectionName)
+                {
+                    case "CaveCollection":
+                        achievementID = "CAVEMAN";
+                        break;
+                    case "MineCollection":
+                        achievementID = "CAREFUL_MINER";
+                        break;
+                    case "DeepMineCollection":
+                        achievementID = "FROSTY_SECRETS";
+                        break;
+                    case "UnderworldCollection":
+                        achievementID = "HOT_DIGGETY";
+                        break;
+                    default:
+                        break;
+                }
+                SpecialFunctions.gameController.GetAchievement(achievementID);
+            }
             yield return new WaitForSecondsRealtime(collectionItemTime);
         }
         oneItemScreen.SetActive(false);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using Steamworks;
 
 public class ComicsController : MonoBehaviour
 {
@@ -19,7 +20,7 @@ public class ComicsController : MonoBehaviour
 
     private Image comicsPageImage;
     [SerializeField]private List<MultiLanguageSprite> comicsPages=new List<MultiLanguageSprite>();
-
+    
     #endregion //fields
 
     #region parametres
@@ -36,7 +37,7 @@ public class ComicsController : MonoBehaviour
         comicsPageImage = transform.FindChild("ComicsPanel").FindChild("ComicsPage").GetComponent<Image>();
         ShowPage();
         SpecialFunctions.PlayGame();
-	}
+    }
 	
 	void Update ()
     {
@@ -51,7 +52,14 @@ public class ComicsController : MonoBehaviour
     void ShowPage()
     {
         if (currentPageNumber >= comicsPages.Count)
+        {
+            string sceneName = SceneManager.GetActiveScene().name;
+            if (sceneName == "GoodEnding")
+                GetAchievement("THE_SAVIOUR");
+            else if (sceneName.Contains("Ending"))
+                GetAchievement("EXTERMINATION");
             LoadingScreenScript.instance.LoadScene(nextLevelName);
+        }
         //SceneManager.LoadScene(nextLevelName);
         else
             StartCoroutine("PageProcess");
@@ -84,6 +92,22 @@ public class ComicsController : MonoBehaviour
         currentPageNumber++;
         ShowPage();
         comicsPageImage.color = Color.white;
+    }
+
+    /// <summary>
+    /// Добавить достижение
+    /// </summary>
+    public void GetAchievement(string _achievementID)
+    {
+        if (SteamManager.Initialized)
+        {
+            bool isAchivementAlreadyGet;
+            if (SteamUserStats.GetAchievement(_achievementID, out isAchivementAlreadyGet) && !isAchivementAlreadyGet)
+            {
+                SteamUserStats.SetAchievement(_achievementID);
+                SteamUserStats.StoreStats();
+            }
+        }
     }
 
 }

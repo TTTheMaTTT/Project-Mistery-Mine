@@ -26,6 +26,8 @@ public class RockScript : MonoBehaviour, IInteractive
 
     #region parametres
 
+    [SerializeField][HideInInspector]int id;
+
     [SerializeField]private float fallTime = 4f;//Сколько времени "Работает камень"
     private bool fall = false;//падает ли камень
     [SerializeField]private float minDamageableFallSpeed = 5f;//Минимальная скорость камня, при которой он наносит урон
@@ -71,20 +73,26 @@ public class RockScript : MonoBehaviour, IInteractive
 
     public void SetID(int _id)
     {
+        id = _id;
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(this);
+#endif //UNITY_EDITOR
     }
 
     public int GetID()
     {
-        return -1;
+        return id;
     }
 
     public InterObjData GetData()
     {
-        return null;
+        return new InterObjData(id,gameObject.name,transform.position);
     }
 
     public void SetData(InterObjData _intObjData)
-    { }
+    {
+        transform.position = _intObjData.position;
+    }
 
     #endregion //IHaveID
 

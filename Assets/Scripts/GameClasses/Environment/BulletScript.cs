@@ -9,7 +9,7 @@ public class BulletScript : MonoBehaviour
 
     #region consts
 
-    protected const string groundName = "ground";
+    protected const string groundName = "ground", platformName = "platform";
 
     #endregion //consts
 
@@ -18,7 +18,7 @@ public class BulletScript : MonoBehaviour
     protected HitBoxController hitBox;
     protected HitParametres attackParametres;
     public HitParametres AttackParametres { get { return AttackParametres; } set { attackParametres = value; } }
-    protected bool groundDetect=true;
+    protected bool groundDetect = true;
     public bool GroundDetect { get { return groundDetect; } set { groundDetect = value; if (value) hitBox.SetHitBox(attackParametres); else hitBox.ResetHitBox(); } }
     Rigidbody2D rigid;
 
@@ -55,7 +55,8 @@ public class BulletScript : MonoBehaviour
     {
         if (!groundDetect)
             return;
-        if (LayerMask.LayerToName(other.gameObject.layer) == groundName)
+        string _layer = LayerMask.LayerToName(other.gameObject.layer);
+        if (_layer == groundName || _layer==platformName)
             DestroyBullet();
     }
 

@@ -778,6 +778,12 @@ public class GhostLadyController : BossController
     {
     }
 
+    protected override void Death()
+    {
+        SpecialFunctions.gameController.GetAchievement("THE_PHANTOM");
+        base.Death();
+    }
+
     /// <summary>
     /// Процесс нанесения холодного урона определённой цели 
     /// </summary>

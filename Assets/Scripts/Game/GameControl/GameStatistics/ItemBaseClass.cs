@@ -69,12 +69,15 @@ public class ItemCollection
     public MultiLanguageText collectionTextName;//Имя коллекции
     public string settingName;//Название сеттинга, которому соответствует данная коллекция
     public List<CollectorsItem> collection = new List<CollectorsItem>();//Предметы, что содержит данная коллекция
+    public int itemsFoundCount = 0;//Сколько предметов было найдено
 
     public ItemCollection(ItemCollection _collection)
     {
+        collectionName = _collection.collectionName;
         collectionTextName = _collection.collectionTextName;
         settingName = _collection.settingName;
         collection = new List<CollectorsItem>();
+        itemsFoundCount = _collection.itemsFoundCount;
         foreach (CollectorsItem _item in _collection.collection)
             collection.Add(new CollectorsItem(_item));
     }

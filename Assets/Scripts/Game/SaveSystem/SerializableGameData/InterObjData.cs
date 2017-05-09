@@ -168,9 +168,10 @@ public class BoxData : InterObjData
     {
     }
 
-    public BoxData(int _id, float _hp, string _name)
+    public BoxData(int _id,Vector3 _position, float _hp, string _name)
     {
         objId = _id;
+        position = _position;
         health = _hp;
         objName = _name.Substring(0, _name.Contains("(") ? _name.IndexOf("(") : _name.Length);
     }

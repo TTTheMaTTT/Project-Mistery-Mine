@@ -40,27 +40,22 @@ public class TreasureHuntArrow : MonoBehaviour
     {
         float minDistance = Mathf.Infinity;
         ChestController[] chests = FindObjectsOfType<ChestController>();
-        BoxController[] boxes = FindObjectsOfType<BoxController>();
         target = null;
         Vector3 pos = transform.position;
         foreach (ChestController chest in chests)
         {
+            bool hasCollection = false;
+            foreach (DropClass drop1 in chest.content)
+                if (drop1 is CollectionDropClass)
+                {
+                    hasCollection = true;
+                    break;
+                }
             float sqDistance = Vector2.SqrMagnitude(chest.transform.position - pos);
-            if (sqDistance < minDistance)
+            if (sqDistance < minDistance && !hasCollection)
             {
                 minDistance = sqDistance;
                 target = chest.transform;
-            }
-        }
-        foreach (BoxController box in boxes)
-        {
-            if (box.gameObject.name.Contains("Exploding"))
-                continue;
-            float sqDistance = Vector2.SqrMagnitude(box.transform.position - pos);
-            if (sqDistance < minDistance)
-            {
-                minDistance = sqDistance;
-                target = box.transform;
             }
         }
         if (target == null)

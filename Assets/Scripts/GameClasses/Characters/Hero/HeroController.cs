@@ -89,7 +89,7 @@ public class HeroController : CharacterController
     #region parametres
 
     public override float Health { get { return base.Health; } set { float prevHealth = health; base.Health = value; OnHealthChanged(new HealthEventArgs(value, health-prevHealth, maxHealth)); } }
-    public override float MaxHealth { get { return base.MaxHealth; } set { maxHealth = value; OnHealthChanged(new HealthEventArgs(value, 0f, maxHealth)); } }
+    public override float MaxHealth { get { return base.MaxHealth; } set { maxHealth = value; OnHealthChanged(new HealthEventArgs(health, 0f, maxHealth)); } }
     public override int Balance { get { return balance;} set { balance = value; } }
     public float Speed { get { return speed; } set { speed = value; } }
     public float JumpForce { get { return jumpForce; } set { jumpForce = value; } }
@@ -429,6 +429,15 @@ public class HeroController : CharacterController
     }
 
     /// <summary>
+    /// Сбросить список возможных взаимодействий
+    /// </summary>
+    public void ResetInteractions()
+    {
+        if (interactor != null)
+            interactor.ResetInteractions();
+    }
+
+    /// <summary>
     /// Процесс самого прыжка
     /// </summary>
     protected virtual IEnumerator JumpProcess()
@@ -471,7 +480,7 @@ public class HeroController : CharacterController
         while (true)
         {
             yield return new WaitForSeconds(suffocateTime*4f);
-            TakeDamage(new HitParametres(1f, DamageType.Physical, 0), true);
+            TakeDamage(new HitParametres(1f, DamageType.Physical, -1), true);
         }
     }
 
@@ -833,7 +842,7 @@ public class HeroController : CharacterController
                 if (hitData.attackPower > balance)
                     StopAttack();
             }
-            if (hitData.attackPower>0)
+            if (hitData.attackPower>=0)
                 StartCoroutine(InvulProcess(invulTime, true));
             anim.Blink();
         }
@@ -902,6 +911,7 @@ public class HeroController : CharacterController
     {
         if (_attacker == null || _attacker.attackType != AttackTypeEnum.melee)
             return;
+        SpecialFunctions.gameController.AddGameEffectName("SpiritShield");
         _damage = 0f;
         AIController ai = attacker.attacker.GetComponent<AIController>();
         if (ai is BossController)
@@ -918,6 +928,7 @@ public class HeroController : CharacterController
     {
         if (!e.Target.name.Contains("Ghost") && !e.Target.name.Contains("Lich"))
         {
+            SpecialFunctions.gameController.AddGameEffectName("HealthDrain");
             Health = Mathf.Clamp(health + 2f, 0f, maxHealth);
             Animate(new AnimationEventArgs("spawnEffect", "HealthDrain", 0));
         }
@@ -983,7 +994,7 @@ public class HeroController : CharacterController
             if (item.itemName == "GoldHeart")
             {
                 SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Увеличивает максимальное количество здровья",
-                                                                                 "Increases max number of hit points",
+                                                                                 "Gains max health level",
                                                                                  "",
                                                                                  "",
                                                                                  "").GetText(SettingsScript.language), 4.5f);
@@ -1007,7 +1018,7 @@ public class HeroController : CharacterController
             }
             else if (item.itemName == "LifeBookPage")
                 SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Увеличивает максимальное число активных особых предметов",
-                                                                                 "Increases max number of active trinkets",
+                                                                                 "Gains max number of active trinkets",
                                                                                  "",
                                                                                  "",
                                                                                  "").GetText(SettingsScript.language), 4.5f);
@@ -1023,7 +1034,7 @@ public class HeroController : CharacterController
             }
             else
                 SpecialFunctions.SetSecretText(2f, new MultiLanguageText("Вы нашли ",
-                                                                         "You have found", "", "", "").GetText(SettingsScript.language) + item.itemMLTextName1.GetText(SettingsScript.language));
+                                                                         "You have found", "", "Znalazłeś", "").GetText(SettingsScript.language) + item.itemMLTextName1.GetText(SettingsScript.language));
         }
     }
 
@@ -1140,6 +1151,8 @@ public class HeroController : CharacterController
         if (hitted)
             noDamage = false;
         invul = false;
+        if (buffs.Count == 0)
+            Animate(new AnimationEventArgs("setDefaultColor"));
         //yield return new WaitForSeconds(0f);
     }
 

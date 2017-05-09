@@ -19,7 +19,7 @@ public class CheckpointController : MonoBehaviour, IInteractive
     #region parametres
 
     protected MultiLanguageText battleMessage = new MultiLanguageText("Вы не можете воспользоваться тотемом, пока находитесь в бою",
-                                                                      "You can't use totem when you are in battle","","","");
+                                                                      "You could not use the totem while you are in a battle", "","","");
 
     public int checkpointNumb = 0;//Номерной знак чекпоинта на уровне
     public bool activated = false;//Чекпоинт можно активировать лишь один раз

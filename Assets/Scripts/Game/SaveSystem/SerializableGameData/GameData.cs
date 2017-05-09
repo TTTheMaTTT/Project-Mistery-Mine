@@ -44,9 +44,19 @@ public class GameData
     /// <summary>
     /// Задать общие данные по игре
     /// </summary>
-    public void SetGeneralGameData(int cNumber, HeroController player, List<ItemCollection> _collection)
+    public void SetGeneralGameData(int cNumber, HeroController player, List<ItemCollection> _collection, float _gameAddTime, List<string> _vEnemies, List<string> _gECreated)
     {
-        gGData = new GameGeneralData(cNumber,player,_collection);
+        gGData = new GameGeneralData(cNumber,player,_collection,_gameAddTime,_vEnemies,_gECreated);
+    }
+
+    /// <summary>
+    /// Установить данные игры
+    /// </summary>
+    public void SetGameStatistics(float _gameAddTime, List<string> _vEnemies, List<string> _gECreated)
+    {
+        gGData.gameAddTime = _gameAddTime;
+        gGData.vulnerableEnemies = _vEnemies;
+        gGData.gameEffectsCreated = _gECreated;
     }
 
 }

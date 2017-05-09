@@ -62,6 +62,8 @@ public class AIController : CharacterController
         }
     }
 
+    [SerializeField]protected string monsterName;//Как называется монстр
+
     protected ETarget mainTarget = ETarget.zero;//Что является целью ИИ
     protected CharacterController targetCharacter = null;//Какой персонаж является главной целью ИИ
     protected virtual CharacterController TargetCharacter
@@ -232,6 +234,8 @@ public class AIController : CharacterController
     protected bool optimized = false;//Находится ли персонаж в своей оптимизированной версии?
     protected bool Optimized { get { return optimized; } set { optimized = value; if (optimized) analyseActions = AnalyseOpt; else analyseActions = Analyse; } }
     protected bool followOptPath = false;//Следует ли персонаж в оптимизированной версии маршруту?
+
+    protected override bool Underwater{get{return base.Underwater;}set{base.Underwater = value;Animate(new AnimationEventArgs("waterSplash"));}}
 
     #endregion //parametres
 
@@ -555,7 +559,11 @@ public class AIController : CharacterController
         if (hitData.damageType != DamageType.Physical)
         {
             if (((DamageType)vulnerability & hitData.damageType) == hitData.damageType)
+            {
                 hitData.damage *= 1.25f;
+                if (health - hitData.damage <= 0f && attackParametres.damageType != DamageType.Physical)
+                    SpecialFunctions.gameController.AddVulnerableKilledEnemy(monsterName);
+            }
             else if (hitData.damageType == attackParametres.damageType)
                 hitData.damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
         }
@@ -588,7 +596,11 @@ public class AIController : CharacterController
         if (hitData.damageType != DamageType.Physical)
         {
             if (((DamageType)vulnerability & hitData.damageType) == hitData.damageType)
+            {
                 hitData.damage *= 1.25f;
+                if (health - hitData.damage <= 0f && attackParametres.damageType != DamageType.Physical)
+                    SpecialFunctions.gameController.AddVulnerableKilledEnemy(monsterName);
+            }
             else if (hitData.damageType == attackParametres.damageType)
                 hitData.damage *= .9f;//Если урон совпадает с типом атаки персонажа, то он ослабевается (бить огонь огнём - не самая гениальная затея)
         }

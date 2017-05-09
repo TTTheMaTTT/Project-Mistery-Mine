@@ -50,7 +50,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
 
     protected bool spoken = false;
     protected MultiLanguageText battleMessage = new MultiLanguageText("Вы не можете разговаривать, пока находитесь в бою",
-                                                                      "You can't talk when you are in battle", "", "", "");
+                                                                      "You could not have a conversation while you are in a battle", "", "", "");
 
     [SerializeField]protected DialogModEnum speechMod;
     [SerializeField]protected int dialogArgument1, dialogArgument2;
@@ -411,7 +411,7 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
                 if (_dialog != null)
                     waitDialogs.Add(_dialog);
             }
-            if (transform.parent != null ? transform.parent.GetComponent<DialogObject>() : false)
+            if (transform.parent != null ? transform.parent.GetComponent<DialogObject>()!=null : false)
                 transform.parent.position = npcData.position;//Частые случаи, когда НПС находится внутри другого объекта, 
                                                             //и он должен быть в координатном нуле относительно него
             else

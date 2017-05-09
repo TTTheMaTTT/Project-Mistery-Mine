@@ -33,22 +33,41 @@ public class HitBox : HitBoxController
 
     public override bool allyHitBox
     {
+        get
+        {
+            return false;
+        }
         set
         {
             if (value)
             {
-                enemies.Remove("player");
-                enemies.Add("enemy");
+                enemies = new List<string>() { "enemy", "boss" };
                 gameObject.layer = LayerMask.NameToLayer("heroHitBox");
             }
             else
             {
-                enemies.Remove("enemy");
-                enemies.Add("player");
+                enemies = new List<string>() { "player","ally" };
                 gameObject.layer = LayerMask.NameToLayer("hitBox");
             }
         }
     }
+
+    public override bool heroHitBox
+    {
+        get
+        {
+            return false;
+        }
+        set
+        {
+            if (value)
+            {
+                enemies = new List<string>() { "enemy", "boss", "box", "destroyable" };
+                gameObject.layer = LayerMask.NameToLayer("heroHitBox");
+            }
+        }
+    }
+
     public override List<string> EnemyLayers { get { return new List<string>(); } set {} }
     
     #endregion //parametres

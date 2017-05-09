@@ -199,6 +199,7 @@ public class BoxController : MonoBehaviour, IDamageable, IMechanism
     public void SetData(InterObjData _intObjData)
     {
         BoxData bData = (BoxData)_intObjData;
+        transform.position = bData.position;
         if (bData != null)
         {
             health = bData.health;
@@ -210,7 +211,7 @@ public class BoxController : MonoBehaviour, IDamageable, IMechanism
     /// </summary>
     public InterObjData GetData()
     {
-        BoxData bData = new BoxData(id, health,gameObject.name);
+        BoxData bData = new BoxData(id,transform.position, health,gameObject.name);
         return bData;
     }
 

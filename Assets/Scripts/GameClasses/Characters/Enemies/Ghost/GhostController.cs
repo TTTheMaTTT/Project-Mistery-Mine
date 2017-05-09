@@ -101,7 +101,7 @@ public class GhostController : AIController
         if (selfHitBox != null)
         {
             selfHitBox.SetEnemies(enemies);
-            selfHitBox.SetHitBox(attackParametres.damage, -1f, 0f,DamageType.Cold,15f,attackParametres.attackPower);
+            selfHitBox.SetHitBox(attackParametres.damage/1.5f, -1f, 0f,DamageType.Cold,15f,attackParametres.attackPower);
             //selfHitBox.Immobile = true;//На всякий случай
             selfHitBox.AttackEventHandler += HandleAttackProcess;
         }

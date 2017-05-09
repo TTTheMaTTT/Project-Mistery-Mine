@@ -2,12 +2,25 @@
 using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// Контроллер, управляющий собаками
+/// </summary>
 public class DogController : HumanoidController
 {
+
+    #region consts
+
+    protected const float jumpAttackMaxDistance = .85f, jumpAttackMinDistance = .3f;//Расстояние до цели, для совершения атаки в прыжке 
+
+    #endregion //consts
 
     #region parametres
 
     protected override float attackDistance { get { return .16f; } }
+    [SerializeField]protected Vector2 jumpAttackForce;//Сила отталкивания при прыжковой атаке
+    [SerializeField]protected HitParametres jumpAttackParametres;//Параметры атаки в прыжке
+    [SerializeField]protected float jumpAttackCooldown = 10f;//Кулдаун атаки в прыжке
+    protected bool jumpAttackIsPossible = true;//может ли пёс совершить атаку в прыжке?
 
     #endregion //parametres
 
@@ -59,6 +72,48 @@ public class DogController : HumanoidController
         rigid.velocity = new Vector3(rigid.velocity.x, 0f, 0f);
         rigid.AddForce(new Vector2(jumpForce * 0.5f, jumpForce));
         StartCoroutine(JumpProcess());
+    }
+
+    /// <summary>
+    /// Совершить атаку в прыжке
+    /// </summary>
+    protected virtual void JumpAttack()
+    {
+        balance = attackBalance;
+        rigid.AddForce(new Vector2(jumpAttackForce.x * (int)orientation, jumpAttackForce.y * .85f));
+        StartCoroutine("JumpAttackProcess");
+        StartCoroutine(JumpAttackCooldownProcess());
+    }
+
+    /// <summary>
+    /// Процесс кулдауна атаки в прыжке
+    /// </summary>
+    /// <returns></returns>
+    protected virtual IEnumerator JumpAttackCooldownProcess()
+    {
+        jumpAttackIsPossible = false;
+        yield return new WaitForSeconds(jumpAttackCooldown);
+        jumpAttackIsPossible = true;
+    }
+
+    /// <summary>
+    /// Процесс атаки в прыжке
+    /// </summary>
+    protected virtual IEnumerator JumpAttackProcess()
+    {
+        Animate(new AnimationEventArgs("attack", "JumpAttack", Mathf.RoundToInt(100f * jumpAttackParametres.wholeAttackTime)));
+        employment = Mathf.Clamp(employment - 3, 0, maxEmployment);
+        yield return new WaitForSeconds(jumpAttackParametres.preAttackTime);
+        hitBox.SetHitBox(new HitParametres(jumpAttackParametres));
+        hitBox.AttackDirection = Vector2.right * (int)orientation;
+        yield return new WaitForSeconds(jumpAttackParametres.actTime + jumpAttackParametres.endAttackTime);
+        employment = Mathf.Clamp(employment + 3, 0, maxEmployment);
+    }
+
+    protected override void StopAttack()
+    {
+        base.StopAttack();
+        StopCoroutine("JumpAttackProcess");
     }
 
     /// <summary>
@@ -359,7 +414,18 @@ public class DogController : HumanoidController
                     if (employment > 8)
                     {
 
-                        if (Vector2.SqrMagnitude(targetDistance) > attackDistance * attackDistance)
+                        if (jumpAttackIsPossible ?
+                                sqDistance < jumpAttackMaxDistance * jumpAttackMaxDistance &&
+                                sqDistance > jumpAttackMinDistance * jumpAttackMinDistance &&
+                                Mathf.Abs(targetDistance.y) < jumpAttackMinDistance / 2f : false)
+                        {
+                            if ((targetPosition - pos).x * (int)orientation < 0f)
+                                Turn();
+                            StopMoving();
+                            JumpAttack();
+                        }
+
+                        else if (Vector2.SqrMagnitude(targetDistance) > attackDistance * attackDistance)
                         {
                             if (!wallCheck.WallInFront && !obstacleCheck.WallInFront && (precipiceCheck.WallInFront || !grounded))
                             {

@@ -124,6 +124,14 @@ public class Interactor : MonoBehaviour
     }
 
     /// <summary>
+    /// Сбросить список взаимодействий
+    /// </summary>
+    public void ResetInteractions()
+    {
+        interactions = new List<GameObject>();
+    }
+
+    /// <summary>
     /// Функция, возвращающая степень готовности персонажа к взаимодействию
     /// </summary>
     public bool ReadyForInteraction()

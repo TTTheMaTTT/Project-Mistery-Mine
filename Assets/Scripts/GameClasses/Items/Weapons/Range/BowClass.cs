@@ -56,7 +56,7 @@ public class BowClass : WeaponClass
     {
         Vector2 shootPosition = (Vector2)position + Vector2.up * shootOffset;
         hitBox.StartCoroutine(DontShootProcess());
-                RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(shootPosition, orientation * Vector3.right, shootDistance, whatIsAim),
+        RaycastHit2D[] hits = new RaycastHit2D[] { Physics2D.Raycast(shootPosition, orientation * Vector3.right, shootDistance, whatIsAim),
                                                    Physics2D.Raycast(shootPosition + shootDelta* Vector2.up, orientation * Vector3.right, shootDistance, whatIsAim),
                                                    Physics2D.Raycast(shootPosition + Vector2.up*shootDelta/2f, orientation * Vector3.right, shootDistance, whatIsAim),
                                                    Physics2D.Raycast(shootPosition + Vector2.up*(-shootDelta/2f),orientation * Vector3.right, shootDistance, whatIsAim),

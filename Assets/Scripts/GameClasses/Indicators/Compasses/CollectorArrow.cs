@@ -56,6 +56,7 @@ public class CollectorArrow : MonoBehaviour
             beginTime = Time.fixedTime;
         float minDistance = Mathf.Infinity;
         CollectionDropClass[] drops = FindObjectsOfType<CollectionDropClass>();
+        ChestController[] chests = FindObjectsOfType<ChestController>();
         target = null;
         Vector3 pos = transform.position;
         foreach (CollectionDropClass drop in drops)
@@ -67,6 +68,27 @@ public class CollectorArrow : MonoBehaviour
                 target = drop.transform;
             }
         }
+
+        if (target == null)
+        {
+            foreach (ChestController chest in chests)
+            {
+                bool hasCollection = false;
+                foreach (DropClass drop1 in chest.content)
+                    if (drop1 is CollectionDropClass)
+                    {
+                        hasCollection = true;
+                        break;
+                    }
+                float sqDistance = Vector2.SqrMagnitude(chest.transform.position - pos);
+                if (sqDistance < minDistance && hasCollection)
+                {
+                    minDistance = sqDistance;
+                    target = chest.transform;
+                }
+            }
+        }
+
         if (target == null)
         {
             SpecialFunctions.SetSecretText(2f, "Рядом с Вами нет ничего ценного");

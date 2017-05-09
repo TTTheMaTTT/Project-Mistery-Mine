@@ -868,11 +868,11 @@ public class SpiderController : AIController
         Vector2 pos = transform.position;
         if (Loyalty != LoyaltyEnum.ally)
         {
-            if (currentTarget.exists)
+            if (currentTarget.exists && patrolDistance >= .1f)
             {
                 Vector2 targetPos = currentTarget;
                 //Если перед пауком препятствие, стена, пропасть, то он разворачивается
-                if (patrolDistance > .1f ? (Vector2.Distance(targetPos, pos) < attackDistance) || (wallCheck.WallInFront || obstacleCheck.WallInFront || !(precipiceCheck.WallInFront)):false)
+                if (Vector2.Distance(targetPos, pos) < attackDistance || wallCheck.WallInFront || obstacleCheck.WallInFront || !precipiceCheck.WallInFront)
                 {
                     Turn();
                     Patrol();

@@ -35,9 +35,30 @@ public class ItemCreator : EditorWindow
             AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
             Selection.activeObject = asset;
         }
+        else if (itemType == "silverSword")
+        {
+            SilverSwordClass asset = ScriptableObject.CreateInstance<SilverSwordClass>();
+            asset.itemName = itemName;
+            AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
+            Selection.activeObject = asset;
+        }
+        else if (itemType == "staff")
+        {
+            StaffClass asset = ScriptableObject.CreateInstance<StaffClass>();
+            asset.itemName = itemName;
+            AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
+            Selection.activeObject = asset;
+        }
         else if (itemType == "bow")
         {
             BowClass asset = ScriptableObject.CreateInstance<BowClass>();
+            asset.itemName = itemName;
+            AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
+            Selection.activeObject = asset;
+        }
+        else if (itemType == "gun")
+        {
+            GunClass asset = ScriptableObject.CreateInstance<GunClass>();
             asset.itemName = itemName;
             AssetDatabase.CreateAsset(asset, itemPath + itemName + ".asset");
             Selection.activeObject = asset;

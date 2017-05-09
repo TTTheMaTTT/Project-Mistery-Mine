@@ -92,6 +92,7 @@ public class SpiritVisual: CharacterVisual
     /// </summary>
     protected virtual void Charge(string id, int argument)
     {
+        employment = Mathf.Clamp(employment - 4, 0, maxEmployment);
         StartCoroutine("ChargeProcess");
     }
 

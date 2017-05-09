@@ -30,13 +30,27 @@ public class HitBoxCollider : MonoBehaviour
     {
         get
         {
-            return enemyLayers == new List<string> { "character", "characterWithoutPlatform" };
+            return enemyLayers.Contains("character");
         }
         set
         {
             enemyLayers = value ? new List<string> { "character", "characterWithoutPlatform" } : new List<string> { "hero" };
         }
     }
+
+    public bool heroHitBox
+    {
+        get
+        {
+            return enemyLayers.Contains("destructable");
+        }
+        set
+        {
+            if (value)
+                enemyLayers=new List<string> { "character", "characterWithoutPlatform", "neutralCharacter", "destructable" };
+        }
+    }
+
     public List<string> EnemyLayers { get { return enemyLayers; } set { enemyLayers = value; } }
 
     protected bool alwaysAttack = false;//Если true, то хитбокс будет пытаться нанести атаку вне зависимости от того было ли переключение или нет (постоянна ли атака хитбокса, или это хитбокс одного удара?)

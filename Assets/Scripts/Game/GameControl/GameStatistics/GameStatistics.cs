@@ -227,9 +227,22 @@ public class GameStatistics : MonoBehaviour, IHaveStory
             if (cItem != null)
             {
                 cItem.itemFound = true;
+                _collection.itemsFoundCount++;
                 considerList.Add(_collection);
             }
         }
+
+        bool allCollectionItems = true;
+
+        foreach (ItemCollection _collection in itemCollections)
+            if (_collection.itemsFoundCount < _collection.collection.Count)
+            {
+                allCollectionItems = false;
+                break;
+            }
+
+        if (allCollectionItems)
+            SpecialFunctions.gameController.GetAchievement("COLLECTIONER");
 
         SpecialFunctions.gameUI.ConsiderCollections(_item, considerList);//отоборазить изменения на экране
     }

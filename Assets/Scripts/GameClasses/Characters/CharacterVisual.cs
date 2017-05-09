@@ -97,6 +97,7 @@ public class CharacterVisual : MonoBehaviour
         visualFunctions.Add("hitted", Hitted);
         visualFunctions.Add("stop", StopVisualRoutine);
         visualFunctions.Add("spawnEffect", SpawnEffect);
+        visualFunctions.Add("setDefaultColor", SetDefaultColor);
         visualFunctions.Add("startBurning", StartBurning);
         visualFunctions.Add("startStun", StartStun);
         visualFunctions.Add("startPoison", StartPoison);
@@ -368,6 +369,11 @@ public class CharacterVisual : MonoBehaviour
         color2 = Color.white;
         colorCoof2 = .5f;
         SetColor(color1 * colorCoof1 + color2 * colorCoof2);
+    }
+
+    protected virtual void SetDefaultColor(string id, int argument)
+    {
+        SetDefaultColor();
     }
 
     /// <summary>

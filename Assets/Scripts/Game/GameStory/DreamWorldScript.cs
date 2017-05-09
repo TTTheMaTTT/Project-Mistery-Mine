@@ -139,7 +139,7 @@ public class DreamWorldScript : MonoBehaviour, IHaveStory
             newMonster = Instantiate(_monster, spawnObject.transform.position, Quaternion.identity) as GameObject;
             SpiderController spider = newMonster.GetComponent<SpiderController>();
             spider.Turn(spawnObject == spiderSpawn1 ? OrientationEnum.right : OrientationEnum.left);
-            spider.MoveOutAction(new StoryAction("moveOut", "", "", 0));
+            //spider.MoveOutAction(new StoryAction("moveOut", "", "", 0));
             spider.StoryGoToThePoint(new StoryAction("goToThePoint", "hero", "", 0));
             spider.CharacterDeathEvent += HandleDeathEvent;
             spawnedMonsters.Add(spider);

@@ -126,6 +126,7 @@ public static class SpecialFunctions
         _hero.CurrentWeapon = prevHero.CurrentWeapon;
         _hero.Health = prevHero.Health;
         _hero.MaxHealth = prevHero.MaxHealth;
+        _hero.ResetInteractions();
         player = _hero.gameObject;
         battleField = player.transform.FindChild("Indicators").GetComponentInChildren<BattleField>();
         if (CamController != null)
@@ -196,7 +197,7 @@ public static class SpecialFunctions
     /// </summary>
     public static void FindSecretPlace(float textTime)
     {
-        gameUI.SetSecretMessage(textTime, new MultiLanguageText("Вы нашли секретное место!", "You've found secret place", "", "", "").GetText(SettingsScript.language));
+        gameUI.SetSecretMessage(textTime, new MultiLanguageText("Вы нашли секретное место!", "You've found secret place", "", "Znalazłeś sekretne miejsce!", "").GetText(SettingsScript.language));
         gameController.FindSecretPlace();
     }
 

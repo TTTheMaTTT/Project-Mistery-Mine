@@ -577,6 +577,7 @@ public class BatBossController: BossController
                 if (stalactite)
                     stalactite.GetComponent<StalactiteScript>().ActivateMechanism();
                 SpecialFunctions.camControl.ShakeCamera(2f);
+                SpecialFunctions.gameController.GetAchievement("BAT_BEATER");
                 Destroy(rigid);
                 Destroy(col);
                 Destroy(this);

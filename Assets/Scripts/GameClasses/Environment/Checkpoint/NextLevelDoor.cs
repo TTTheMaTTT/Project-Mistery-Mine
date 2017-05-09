@@ -17,7 +17,7 @@ public class NextLevelDoor : DoorClass
     #region parametres
 
     protected MultiLanguageText battleMessage = new MultiLanguageText("Вы не можете воспользоваться дверью, пока находитесь в бою",
-                                                                      "You can't use the door when you are in battle", "", "", "");
+                                                                      "You could not use a door while you are in a battle", "", "", "");
 
     [SerializeField]
     protected string nextLevelName;//Следующий уровень, на который произойдёт переход

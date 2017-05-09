@@ -691,6 +691,12 @@ public class GhostMinerBossController : BossController
             bAnim.Blink();
     }
 
+    protected override void Death()
+    {
+        SpecialFunctions.gameController.GetAchievement("GHOSTBUSTER");
+        base.Death();
+    }
+
     #region behaviourActions
 
     protected override void RefreshTargets()

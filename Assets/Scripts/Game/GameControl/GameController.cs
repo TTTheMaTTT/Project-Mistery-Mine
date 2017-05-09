@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using InControl;
+using Steamworks;
 
 /// <summary>
 /// Объект, ответственный за управление игрой
@@ -28,6 +29,10 @@ public class GameController : MonoBehaviour
     #endregion //gameEffectConsts
 
     protected const float nextLevelTime = 2.1f;//Время, за которое происходит переход на следующий уровень
+
+    protected const int maxLevelWithSecretsCount = 18;//число уровней, в которых можно найти секретные места
+    protected const int gameEffectsCount = 10;//Кол-во игровых эффектов
+    protected const int achievementVulnerableEnemiesCount = 5;//Сколько врагов должно быть убито с использованием из уязвимостей, чтобы засчиталось достижение
 
     #endregion //consts
 
@@ -90,6 +95,9 @@ public class GameController : MonoBehaviour
     private List<QuestLine> languageChanges = new List<QuestLine>();
     public List<QuestLine> LanguageChanges { get { return languageChanges; } }
 
+    private List<string> gameEffectsNames = new List<string>();
+    private List<string> vulnerableEnemiesNames = new List<string>();
+    
     #region saveSystem
 
     /// <summary>
@@ -198,7 +206,7 @@ public class GameController : MonoBehaviour
         SpecialFunctions.StartStoryEvent(this, StartGameEvent, new StoryEventArgs());
         Resources.UnloadUnusedAssets();
 
-        Debug.LogWarning(GetComponent<GameStatistics>().gameHistoryProgress.GetStoryProgress("alchemyQuest"));
+        Debug.LogWarning(GetComponent<GameStatistics>().gameHistoryProgress.GetStoryProgress("hornlessImpStory"));
 
     }
 
@@ -403,6 +411,14 @@ public class GameController : MonoBehaviour
         GameStatistics gStats = GetComponent<GameStatistics>();
         Summoner summoner = GetComponent<Summoner>();
 
+        if (gGData != null)
+        {
+            if (Time.fixedTime < gGData.gameAddTime - 1f)
+                RefreshGameTime();
+            vulnerableEnemiesNames = gGData.vulnerableEnemies;
+            gameEffectsNames = gGData.gameEffectsCreated;
+        }
+
         #region GeneralLoad
 
         if (lData == null? true: !lData.active)//Произошёл переход на новый уровень и нужно учесть только данные, необходимые на протяжении всей игры
@@ -548,8 +564,11 @@ public class GameController : MonoBehaviour
                 {
                     ItemCollection iCollection = _collection.Find(x => x.collectionName == cData.collectionName);
                     if (iCollection != null)
+                    {
+                        iCollection.itemsFoundCount = cData.foundItemsCount;
                         for (int i = 0; i < cData.itemsFound.Count && i < iCollection.collection.Count; i++)
                             iCollection.collection[i].itemFound = cData.itemsFound[i];
+                    }
                 }
             }
 
@@ -914,7 +933,7 @@ public class GameController : MonoBehaviour
         if (general)
         {
             _gData.ResetLevelData();
-            _gData.SetGeneralGameData(cNumber, Hero, SpecialFunctions.statistics.ItemCollections);
+            _gData.SetGeneralGameData(cNumber, Hero, SpecialFunctions.statistics.ItemCollections,Time.fixedTime,vulnerableEnemiesNames,gameEffectsNames);
         }
         else
         {
@@ -965,6 +984,7 @@ public class GameController : MonoBehaviour
         if (gData != null)
         {
             gData.ResetLevelData();
+            gData.SetGameStatistics(Time.fixedTime, vulnerableEnemiesNames, gameEffectsNames);
         }
         Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");
     }
@@ -1001,6 +1021,19 @@ public class GameController : MonoBehaviour
                 gData.gGData.eInfo= new EquipmentInfo(hero.CurrentWeapon,hero.Equipment);
             else
                 gData.lData.eInfo = new EquipmentInfo(hero.CurrentWeapon, hero.Equipment);
+            Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");
+        }
+    }
+
+    /// <summary>
+    /// Сделать переучёт игрового времени (доп время добавляется к основному времени, счётчик доп времени работает заново)
+    /// </summary>
+    public void RefreshGameTime()
+    {
+        GameData gData = Serializator.DeXml(datapath + profileNumber.ToString() + ".xml");
+        if (gData != null)
+        {
+            gData.gGData.RefreshGameTime();
             Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");
         }
     }
@@ -1224,6 +1257,48 @@ public class GameController : MonoBehaviour
                 SpecialFunctions.dialogWindow.AddDialogObjectInDictionary(dObj);
     }
 
+    /// <summary>
+    /// Добавить достижение
+    /// </summary>
+    public void GetAchievement(string _achievementID)
+    {
+        if (SteamManager.Initialized)
+        {
+            bool isAchivementAlreadyGet;
+            if (SteamUserStats.GetAchievement(_achievementID, out isAchivementAlreadyGet) && !isAchivementAlreadyGet)
+            {
+                SteamUserStats.SetAchievement(_achievementID);
+                SteamUserStats.StoreStats();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Добавить произошедший игровой эффект в список игровых эффектов
+    /// </summary>
+    public void AddGameEffectName(string _gEName)
+    {
+        if (!gameEffectsNames.Contains(_gEName))
+        {
+            gameEffectsNames.Add(_gEName);
+            if (gameEffectsNames.Count >= gameEffectsCount)
+                GetAchievement("LUCKY_ONE");
+        }
+    }
+
+    /// <summary>
+    /// Добавить убитого своей уязвимостью врага в список уязвимых врагов
+    /// </summary>
+    public void AddVulnerableKilledEnemy(string _eName)
+    {
+        if (!vulnerableEnemiesNames.Contains(_eName))
+        {
+            vulnerableEnemiesNames.Add(_eName);
+            if (vulnerableEnemiesNames.Count >= achievementVulnerableEnemiesCount)
+                GetAchievement("WISE_WARRIOR");
+        }
+    }
+
     #region gameEffects
 
     /*
@@ -1366,6 +1441,7 @@ public class GameController : MonoBehaviour
     /// <param name="_time">Как долго он будет длит</param>
     void StartAncestorsRevenge(CharacterController _char)
     {
+        AddGameEffectName("AncestorsRevenge");
         if (activeGameEffects.Contains("AncestorsRevenge"))
             return;
         WeaponClass _weapon = Hero.CurrentWeapon;
@@ -1455,6 +1531,7 @@ public class GameController : MonoBehaviour
     /// <param name="_char">На какого персонажа действует эффект</param>
     void StartTribalLeader(CharacterController _char)
     {
+        AddGameEffectName("TribalLeader");
         if (!(_char is AIController) || activeGameEffects.Contains("TribalLeader"))
             return;
         ((AIController)_char).Loyalty = LoyaltyEnum.ally;
@@ -1494,6 +1571,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     void StartBattleCry(CharacterController _char)
     {
+        AddGameEffectName("BattleCry");
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("enemy");
         Vector2 cryPosition = Hero.transform.position;
         foreach (GameObject enemy in enemies)
@@ -1512,6 +1590,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     void StartTreasureHunt()
     {
+        AddGameEffectName("TreasureHunter");
         if (activeGameEffects.Contains("TreasureHunter"))
             return;
         else if (activeGameEffects.Contains("Collector"))
@@ -1543,6 +1622,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     void StartСollectorProcess()
     {
+        AddGameEffectName("Collector");
         if (activeGameEffects.Contains("Collector"))
             return;
         else if (activeGameEffects.Contains("TreasureHunter"))
@@ -1574,6 +1654,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     void StartAncientDarkness(CharacterController _char)
     {
+        AddGameEffectName("AncientDarkness");
         if (activeGameEffects.Contains("AncientDarkness"))
             return;
         StartCoroutine("AncientDarknessProcess");
@@ -1616,6 +1697,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     void StartTotemAnimal(CharacterController _char)
     {
+        AddGameEffectName("TotemAnimal");
         if (activeGameEffects.Contains("TotemAnimal"))
             return;
         Hero.SummonTotemAnimal();
@@ -1638,6 +1720,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     void StartTribalRitual(CharacterController _char)
     {
+        AddGameEffectName("TribalRitual");
         Hero.StartTribalRitual();
     }
 
@@ -1651,12 +1734,12 @@ public class GameController : MonoBehaviour
     /// <param name="checkpointNumber">Номер чекпоинта, с которого начнётся следующий уровень</param>
     public void CompleteLevel(string nextLevelName, bool withCompleteLevelScreen, int checkpointNumber=0)
     {
-        SpecialFunctions.gameController.RemoveHeroDeathLevelEnd();
+        RemoveHeroDeathLevelEnd();
         PlayerPrefs.SetInt("Checkpoint Number", checkpointNumber);
-        SpecialFunctions.gameController.SaveGame(checkpointNumber, true, nextLevelName);
         PlayerPrefs.SetFloat("Hero Health", SpecialFunctions.Player.GetComponent<HeroController>().MaxHealth);
         SpecialFunctions.SetFade(true);
         StartCoroutine(CompleteLevelProcess(nextLevelName, withCompleteLevelScreen));
+        SaveGame(checkpointNumber, true, nextLevelName);
     }
 
     /// <summary>
@@ -1666,15 +1749,32 @@ public class GameController : MonoBehaviour
     /// <param name="withCompleteLevelScreen">Отображать ли экран конца уровня</param>
     IEnumerator CompleteLevelProcess(string nextLevelName, bool withCompleteLevelScreen)
     {
+        SpecialFunctions.StartStoryEvent(this, EndGameEvent, new StoryEventArgs());
         yield return new WaitForSeconds(nextLevelTime);
         if (nextLevelName != string.Empty)
         {
-            SpecialFunctions.StartStoryEvent(this, EndGameEvent, new StoryEventArgs());
+            if (nextLevelName == "cave_lvl2")
+                GetAchievement("ACH_COMPLETE_1LEVEL");
             SpecialFunctions.levelEnd = true;
             GameStatistics statistics = SpecialFunctions.statistics;
             List<ItemCollection> itemCollections = statistics != null ? statistics.ItemCollections : null;
             string sceneName = SceneManager.GetActiveScene().name;
             ItemCollection _collection = itemCollections != null ? itemCollections.Find(x => sceneName.Contains(x.settingName)) : null;
+
+            //Если были найдены все секреты уровня, то счётчик зачищенных уровней пополняется
+            if (secretsFoundNumber >= secretsTotalNumber && secretsTotalNumber > 0)
+            {
+                GameData gData = Serializator.DeXml(datapath + profileNumber.ToString() + ".xml");
+                if (gData != null)
+                {
+                    gData.gGData.AddLevelWithRevealedSecrets();
+                    if (gData.gGData.maxSecretsFoundLevelCount >= maxLevelWithSecretsCount)
+                        GetAchievement("HAWK_EYE");
+                    Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");
+                }
+            }
+
+
             if (withCompleteLevelScreen)
                 levelCompleteScreen.SetLevelCompleteScreen(nextLevelName, secretsFoundNumber, secretsTotalNumber, _collection);
             else
@@ -1811,10 +1911,20 @@ public class GameController : MonoBehaviour
         StartCoroutine(DeathProcess());
     }
 
-
-
+    /// <summary>
+    /// Процесс обработки смерти героя
+    /// </summary>
     IEnumerator DeathProcess()
     {
+        //Пополним счётчик смертей
+        GameData gData = Serializator.DeXml(datapath + profileNumber.ToString() + ".xml");
+        if (gData != null)
+        {
+            gData.gGData.AddDeath();
+            gData.SetGameStatistics(Time.fixedTime, vulnerableEnemiesNames, gameEffectsNames);
+            Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");
+        }
+
         SpecialFunctions.SetFade(true);
         PlayerPrefs.SetFloat("Hero Health", hero.MaxHealth);
         yield return new WaitForSeconds(deathTime);

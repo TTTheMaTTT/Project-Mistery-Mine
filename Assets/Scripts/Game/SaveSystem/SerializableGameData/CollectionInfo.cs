@@ -12,6 +12,9 @@ public class CollectionInfo
     [XmlElement("Collection Name")]
     public string collectionName="";
 
+    [XmlElement("Found Items Count")]
+    public int foundItemsCount=0;
+
     [XmlArray("Which Items Were Found?")]
     [XmlArrayItem("Was Item With This Index Found?")]
     public List<bool> itemsFound = new List<bool>();
@@ -26,6 +29,7 @@ public class CollectionInfo
         itemsFound = new List<bool>();
         for (int i = 0; i < _collection.collection.Count; i++)
             itemsFound.Add(_collection.collection[i].itemFound);
+        foundItemsCount = _collection.itemsFoundCount;
     }
 
 }
