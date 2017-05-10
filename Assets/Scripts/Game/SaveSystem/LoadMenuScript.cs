@@ -48,11 +48,11 @@ public class LoadMenuScript : InterfaceWindow
     public override void Initialize()
     {
         base.Initialize();
-        savePath = (Application.dataPath) + "/StreamingAssets/Saves/";
-        savesInfoPath = (Application.dataPath) + "/StreamingAssets/SavesInfo.xml";
+        savePath = Application.streamingAssetsPath + "/Saves/";
+        savesInfoPath = Application.streamingAssetsPath+"/SavesInfo.xml";
         savesInfo = Serializator.DeXmlSavesInfo(savesInfoPath);
 
-        FileInfo[] fInfos = new DirectoryInfo((Application.dataPath) + "/StreamingAssets/").GetFiles();
+        FileInfo[] fInfos = new DirectoryInfo(Application.streamingAssetsPath).GetFiles();
         bool hasFile = false;
         for (int i = 0; i < fInfos.Length; i++)
             if (fInfos[i].Name == "SavesInfo.xml")

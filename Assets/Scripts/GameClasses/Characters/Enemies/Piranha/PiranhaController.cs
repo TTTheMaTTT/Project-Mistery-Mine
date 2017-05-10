@@ -90,6 +90,7 @@ public class PiranhaController : AIController
 
     protected override void Initialize()
     {
+        underwaterCheckOffset = .1f;
         indicators = transform.FindChild("Indicators");
         if (indicators != null)
         {
@@ -182,6 +183,11 @@ public class PiranhaController : AIController
             default:
                 break;
         }
+
+        if (!underWater)
+            rigid.gravityScale = 1f;
+        else
+            rigid.gravityScale = 0f;
 
     }
 
@@ -481,7 +487,8 @@ public class PiranhaController : AIController
         GetOptimizedPosition();
         StopMoving();
         Optimized = true;
-        switch (behavior)
+        StopSwimProcess();
+        /*switch (behavior)
         {
             case BehaviorEnum.calm:
                 {
@@ -502,7 +509,7 @@ public class PiranhaController : AIController
                 }
             default:
                 break;
-        }
+        }*/
     }
 
     /// <summary>
@@ -510,14 +517,14 @@ public class PiranhaController : AIController
     /// </summary>
     protected override void AnalyseOpt()
     {
-        if (behavior != BehaviorEnum.calm)
+        /*if (behavior != BehaviorEnum.calm)
         {
             if (!followOptPath)
                 StartCoroutine("PathPassOptProcess");
         }
         else
         {
-            /*
+          
             if (!currentTarget.exists)
             {
                 StopCoroutine("PathPassOptProcess");//На всякий случай
@@ -527,8 +534,8 @@ public class PiranhaController : AIController
             }
             else if (!followOptPath)
                 StartCoroutine("PathPassOptProcess");
-            */
         }
+        */
     }
 
     /// <summary>
@@ -546,7 +553,8 @@ public class PiranhaController : AIController
     /// </summary>
     protected override void GetOptimizedPosition()
     {
-        CurrentDirection = Vector2.right;
+        StopMoving();
+        /*CurrentDirection = Vector2.right;
         if (!underWater)
         {
             //Если персонаж оказался не под водой во время оптимизации, то он должен переместиться под воду. Если же в данный момент под пираньей находится только земля, то она умирает
@@ -561,7 +569,7 @@ public class PiranhaController : AIController
                 transform.position = hit1.point + Vector2.down * minDistance;
                 Underwater = true;
             }
-        }
+        }*/
     }
 
     /// <summary>

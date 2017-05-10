@@ -99,7 +99,7 @@ public class ComicsController : MonoBehaviour
     /// </summary>
     public void GetAchievement(string _achievementID)
     {
-        if (SteamManager.Initialized)
+        /*if (SteamManager.Initialized)
         {
             bool isAchivementAlreadyGet;
             if (SteamUserStats.GetAchievement(_achievementID, out isAchivementAlreadyGet) && !isAchivementAlreadyGet)
@@ -107,7 +107,7 @@ public class ComicsController : MonoBehaviour
                 SteamUserStats.SetAchievement(_achievementID);
                 SteamUserStats.StoreStats();
             }
-        }
+        }*/
     }
 
 }

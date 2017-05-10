@@ -202,6 +202,7 @@ public class EquipmentEventArgs : EventArgs
     {
         currentWeapon = _weapon;
         item = _item;
+        removedItem = _removeItem;
     }
 
 }

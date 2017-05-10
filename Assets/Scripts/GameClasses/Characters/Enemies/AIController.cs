@@ -356,7 +356,7 @@ public class AIController : CharacterController
             if (!underWater)
                 Underwater = true;
         }
-        else if (!Physics2D.OverlapCircle(pos + Vector2.up * underwaterCheckOffset, minDistance*4f, LayerMask.GetMask(wLName)))
+        else if (!Physics2D.OverlapCircle(pos + Vector2.up * underwaterCheckOffset, minDistance*2f, LayerMask.GetMask(wLName)))
         {
             if (underWater)
                 Underwater = false;

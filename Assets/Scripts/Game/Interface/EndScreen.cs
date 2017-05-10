@@ -12,7 +12,7 @@ public class EndScreen : MonoBehaviour
     #region consts
 
     private const string mainMenuName = "MainMenu", firstLevelName = "cave_lvl1";
-    private const float endScreenTime = 3f;//Сколько времени висит этот экран перед тем, как перейти в главное меню
+    private const float endScreenTime = 200f;//Сколько времени висит этот экран перед тем, как перейти в главное меню
 
     #endregion //consts
 

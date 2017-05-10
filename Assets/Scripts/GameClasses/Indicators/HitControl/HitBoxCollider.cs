@@ -120,7 +120,11 @@ public class HitBoxCollider : MonoBehaviour
         if (alwaysAttack || !attacked)
         {
             Vector2 pos = transform.position;
-            Collider2D[] cols = Physics2D.OverlapBoxAll(pos,size,transform.eulerAngles.z, LayerMask.GetMask(enemyLayers.ToArray()));
+            float angle = transform.eulerAngles.z / 180f * Mathf.PI;
+            Vector2 vectX = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            Vector2 vectY = new Vector2(-Mathf.Sin(angle), Mathf.Cos(angle));
+            Vector2 _pos = pos + (immobile ? Vector2.zero : (position.x * vectX* Mathf.Sign(transform.lossyScale.x) + position.y* vectY));
+            Collider2D[] cols = Physics2D.OverlapBoxAll(_pos,size,transform.eulerAngles.z, LayerMask.GetMask(enemyLayers.ToArray()));
             bool damaged = false;
             for (int i=0;i< cols.Length;i++)
             {

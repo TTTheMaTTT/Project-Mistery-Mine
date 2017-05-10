@@ -437,6 +437,14 @@ public class HumanoidController : AIController
                 }
         }
 
+        if (platformTarget.exists ? transform.parent==platformTarget.transform && Vector2.SqrMagnitude(pos - platformTarget) > navCellSize*navCellSize*4: false)
+        {
+            platformTarget.exists = false;
+            currentTarget.exists = false;
+            rigid.gravityScale = 1f;
+            transform.SetParent(null);
+        }
+
         prevPosition = new EVector3(transform.position, true);
 
     }
@@ -874,8 +882,13 @@ public class HumanoidController : AIController
                             waypointIsAchieved = Mathf.Abs(projection) < navCellSize / 2f;
                             if (currentTarget == platformTarget && transform.parent == platformTarget.transform)
                             {
-                                transform.position = platformTarget + Vector3.up * 0.08f;
-                                waypointIsAchieved = true;
+                                if (Vector2.SqrMagnitude(pos - platformTarget) > navCellSize * navCellSize * 4)
+                                {
+                                    transform.position = platformTarget + Vector3.up * 0.08f;
+                                    waypointIsAchieved = true;
+                                }
+                                else
+                                    transform.SetParent(null);
                             }
                         }
                     }
@@ -886,9 +899,9 @@ public class HumanoidController : AIController
                         ComplexNavigationCell currentWaypoint = (ComplexNavigationCell)waypoints[0];
                         if (currentTarget == platformTarget)
                         {
-                            if (waypoints.Count > 1 ? (waypoints[1].cellPosition - (Vector2)transform.position).x * (int)orientation < 0f : false)
-                                Turn();
-                            transform.position = platformTarget + Vector3.up * .09f;
+                                if (waypoints.Count > 1 ? (waypoints[1].cellPosition - (Vector2)transform.position).x * (int)orientation < 0f : false)
+                                    Turn();
+                                //transform.position = platformTarget + Vector3.up * .09f;
                         }
                         else
                             currentTarget.Exists = false;
@@ -1038,8 +1051,13 @@ public class HumanoidController : AIController
                     waypointIsAchieved = Mathf.Abs(projection) < navCellSize / 2f;
                     if (currentTarget == platformTarget && transform.parent == platformTarget.transform)
                     {
-                        transform.position = platformTarget + Vector3.up * 0.08f;
-                        waypointIsAchieved = true;
+                        if (Vector2.SqrMagnitude(pos - platformTarget) > navCellSize * navCellSize * 4)
+                        {
+                            transform.position = platformTarget + Vector3.up * 0.08f;
+                            waypointIsAchieved = true;
+                        }
+                        else
+                            transform.SetParent(null);
                     }
                 }
             }

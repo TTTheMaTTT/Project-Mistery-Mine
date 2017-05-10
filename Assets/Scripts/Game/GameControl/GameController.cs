@@ -113,6 +113,8 @@ public class GameController : MonoBehaviour
 
     #region parametres
 
+    public bool haveActiveDevice;
+
     protected MultiLanguageText underEffectMLText = new MultiLanguageText("Вы находитесь под действием эффекта \"",
                                                                           "You are under effect \"", "", "", "");
 
@@ -152,10 +154,19 @@ public class GameController : MonoBehaviour
 
         if (UIElementScript.activePanel!=null)
         {
+            bool up = Input.GetButtonDown("Up"), down = Input.GetButtonDown("Down"), left = Input.GetButtonDown("Left"), right = Input.GetButtonDown("Right");
             if (InputCollection.instance.GetButtonDown("InterfaceMoveHorizontal"))
                 UIElementScript.activePanel.MoveHorizontal(Mathf.RoundToInt(Mathf.Sign(InputCollection.instance.GetAxis("InterfaceMoveHorizontal"))));
             if (InputCollection.instance.GetButtonDown("InterfaceMoveVertical"))
                 UIElementScript.activePanel.MoveVertical(-Mathf.RoundToInt(Mathf.Sign(InputCollection.instance.GetAxis("InterfaceMoveVertical"))));
+            if (up)
+                UIElementScript.activePanel.MoveVertical(-1);
+            if (down)
+                UIElementScript.activePanel.MoveVertical(1);
+            if (left)
+                UIElementScript.activePanel.MoveHorizontal(-1);
+            if (right)
+                UIElementScript.activePanel.MoveHorizontal(1);
             if (InputCollection.instance.GetButtonDown("Cancel"))
                 UIElementScript.activePanel.Cancel();
         }
@@ -167,6 +178,16 @@ public class GameController : MonoBehaviour
         }
         if (InputCollection.instance.GetButtonDown("Menu"))
             gameMenu.ChangeGameMod();
+
+        //haveActiveDevice = InputManager.ActiveDevice.IsAttached;
+
+        /*if (InputManager.ActiveDevice.GetControl(InputControlType.Action1).IsPressed)
+        {
+            InputControl inp = InputManager.ActiveDevice.GetControl(InputControlType.Action1);
+            InputControl inp1 = InputCollection.instance.GetInputControl("Jump");
+            bool k = (inp == inp1);
+            bool h = false;
+        }*/
     }
 
     protected void Awake()
@@ -206,7 +227,7 @@ public class GameController : MonoBehaviour
         SpecialFunctions.StartStoryEvent(this, StartGameEvent, new StoryEventArgs());
         Resources.UnloadUnusedAssets();
 
-        Debug.LogWarning(GetComponent<GameStatistics>().gameHistoryProgress.GetStoryProgress("hornlessImpStory"));
+        Debug.LogWarning(GetComponent<GameStatistics>().gameHistoryProgress.GetStoryProgress("strangerStory"));
 
     }
 
@@ -220,8 +241,8 @@ public class GameController : MonoBehaviour
         npcsIdCount = 0;
         SpecialFunctions.InitializeObjects();
         InitializeDictionaries();
-        datapath = (Application.dataPath) + "/StreamingAssets/Saves/Profile";
-        savesInfoPath = (Application.dataPath) + "/StreamingAssets/SavesInfo.xml";
+        datapath = (Application.streamingAssetsPath)+"/Saves/Profile";
+        savesInfoPath = (Application.streamingAssetsPath) + "/SavesInfo.xml";
         GameObject p=SpecialFunctions.Player;
         Transform interfaceWindows = SpecialFunctions.gameInterface.transform;
         dialogWindow = interfaceWindows.GetComponentInChildren<DialogWindowScript>();
@@ -1262,7 +1283,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     public void GetAchievement(string _achievementID)
     {
-        if (SteamManager.Initialized)
+        /*if (SteamManager.Initialized)
         {
             bool isAchivementAlreadyGet;
             if (SteamUserStats.GetAchievement(_achievementID, out isAchivementAlreadyGet) && !isAchivementAlreadyGet)
@@ -1270,7 +1291,7 @@ public class GameController : MonoBehaviour
                 SteamUserStats.SetAchievement(_achievementID);
                 SteamUserStats.StoreStats();
             }
-        }
+        }*/
     }
 
     /// <summary>

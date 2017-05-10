@@ -446,7 +446,7 @@ public class History
     /// </summary>
     public void GetAchievement(StoryAction _action)
     {
-        if (SteamManager.Initialized)
+        /*if (SteamManager.Initialized)
         {
             bool isAchivementAlreadyGet;
             if (SteamUserStats.GetAchievement(_action.id1, out isAchivementAlreadyGet) && !isAchivementAlreadyGet)
@@ -454,7 +454,7 @@ public class History
                 SteamUserStats.SetAchievement(_action.id1);
                 SteamUserStats.StoreStats();
             }
-        }
+        }*/
     }
 
     /// <summary>

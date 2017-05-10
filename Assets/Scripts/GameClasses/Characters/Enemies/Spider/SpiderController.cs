@@ -1873,14 +1873,14 @@ public class SpiderController : AIController
         yield return new WaitForSeconds(appearTime);
         Animate(new AnimationEventArgs("moveOut"));
         yield return new WaitForSeconds(1f);
+        anim.transform.localPosition = new Vector3(0f, anim.transform.localPosition.y, 0f);
+        immobile = false;
+        inGround = false;
         if (!optimized)
         {
             rigid.isKinematic = false;
             EnableColliders();
         }
-        anim.transform.localPosition = new Vector3(0f, anim.transform.localPosition.y, 0f);
-        immobile = false;
-        inGround = false;
         BecomeCalm();
         Loyalty = LoyaltyEnum.enemy;
     }

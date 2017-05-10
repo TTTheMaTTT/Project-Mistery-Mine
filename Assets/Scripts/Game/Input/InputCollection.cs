@@ -29,8 +29,15 @@ public class InputCollection : MonoBehaviour
         }
         if (InputManager.ActiveDevice != null)
             InitializeData();
+        InputManager.OnActiveDeviceChanged += inputData => StartCoroutine("InitializeProcess");
         InputManager.OnDeviceAttached += inputDevice => StartCoroutine("InitializeProcess"); 
     }
+
+    public void StartInitializeProcess()
+    {
+        StartCoroutine("InitializeProcess");
+    }
+
 
     /// <summary>
     /// Процесс инициализации управления
@@ -67,6 +74,17 @@ public class InputCollection : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Возвращает класс, ответственный за управление при помощи конкретного элемента геймпада
+    /// </summary>
+    /// <param name="_inputName"></param>
+    /// <returns></returns>
+    public InputControl GetInputControl(string _inputName)
+    {
+        InputDataClass _inputData = inputData.Find(x => x.inputName == _inputName);
+        return _inputData != null ? _inputData.joystickControl : null;
+    }
+        
     /// <summary>
     /// Нажат ли элемент управления с данным названием?
     /// </summary>
@@ -194,14 +212,10 @@ public class InputDataClass
     /// </summary>
     public bool GetButtonDown()
     {
-        if (joystickName == "action1")
+        /*if (joystickControl!=null?joystickControl.Target == InputControlType.None: false)
         {
-            bool k = joystickControl.WasPressed;
-            if (k)
-            {
-                bool j = false;
-            }
-        }
+            InputCollection.instance.StartInitializeProcess();
+        }*/
         return Input.GetButtonDown(inputManagerName) ? true : (joystickControl != null ? joystickControl.WasPressed : false) || (joystickAxis != null ? joystickAxis.WasPressed : false);
     }
 

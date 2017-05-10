@@ -750,7 +750,7 @@ public class HeroController : CharacterController
     /// </summary>
     public override void TakeDamage(HitParametres hitData)
     {
-        if (!invul && (!noDamage || hitData.attackPower!=-1))
+        if (!invul && (!noDamage || hitData.attackPower==-1))
         {
             if (mutagenEffect != null)
             {
@@ -802,7 +802,7 @@ public class HeroController : CharacterController
     /// </summary>
     public override void TakeDamage(HitParametres hitData, bool ignoreInvul)
     {
-        if (ignoreInvul || !invul && (!noDamage || hitData.attackPower != -1))
+        if ((ignoreInvul || !invul) && (!noDamage || hitData.attackPower == -1))
         {
             if (mutagenEffect != null && attacker!=null? attacker.attackType==AttackTypeEnum.melee:false)
             {
@@ -926,7 +926,7 @@ public class HeroController : CharacterController
     /// </summary>
     protected virtual void HealthDrain(HitEventArgs e)
     {
-        if (!e.Target.name.Contains("Ghost") && !e.Target.name.Contains("Lich"))
+        if (!e.Target.name.Contains("Ghost") && !e.Target.name.Contains("Lich") && !e.Target.name.Contains("box"))
         {
             SpecialFunctions.gameController.AddGameEffectName("HealthDrain");
             Health = Mathf.Clamp(health + 2f, 0f, maxHealth);
