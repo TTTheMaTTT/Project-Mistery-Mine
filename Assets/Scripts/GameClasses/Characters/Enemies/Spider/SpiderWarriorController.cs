@@ -11,7 +11,10 @@ public class SpiderWarriorController : SpiderController
     #region parametres
 
     protected MultiLanguageText takeDamageMessage = new MultiLanguageText("Не стоит испытывать благосклонность Королевы на прочность",
-                                                                          "Do not tresspass upon the Queen's favour", "", "","");
+                                                                          "Do not tresspass upon the Queen's favour",
+                                                                          "Не варто випробовувати Королеву на міцність", 
+                                                                          "",
+                                                                          "Il ne faut pas entrer dans la faveur de la Reine");
     protected int takeDamageTimes = 0;//Сколько раз уже паук получал урон
 
     public override LoyaltyEnum Loyalty

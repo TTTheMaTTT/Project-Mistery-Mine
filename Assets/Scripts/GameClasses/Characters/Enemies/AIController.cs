@@ -237,6 +237,8 @@ public class AIController : CharacterController
 
     protected override bool Underwater{get{return base.Underwater;}set{base.Underwater = value;Animate(new AnimationEventArgs("waterSplash"));}}
 
+    protected virtual float deathTime { get { return 3f; } }
+
     #endregion //parametres
 
     protected virtual void FixedUpdate()
@@ -647,6 +649,20 @@ public class AIController : CharacterController
             Animate(new AnimationEventArgs("death", _id, 0));
             if (targetCharacter != null)
                 targetCharacter.CharacterDeathEvent -= HandleTargetDeathEvent;
+
+            if (anim!=null)
+            {
+                anim.transform.SetParent(null);
+                SpriteRenderer _sRenderer = anim.GetComponent<SpriteRenderer>();
+                Animator _anim = anim.GetComponent<Animator>();
+                //Animate(new AnimationEventArgs("playSound", "Death", 1));
+                if (_sRenderer) _sRenderer.enabled = false;
+                if (_anim) _anim.enabled = false;
+                for (int i = 0; i < anim.transform.childCount; i++)
+                    Destroy(anim.transform.GetChild(i).gameObject);
+                anim.enabled = false;
+                Destroy(anim, deathTime);
+            }
             Destroy(gameObject);
         }
     }

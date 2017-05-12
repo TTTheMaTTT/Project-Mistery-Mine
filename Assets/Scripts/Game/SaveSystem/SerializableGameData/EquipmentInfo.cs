@@ -49,4 +49,21 @@ public class EquipmentInfo
         foreach (ItemClass _item in _equip.activeTrinkets)
             activeTrinkets.Add(_item != null ? _item.itemName : string.Empty);
     }
+
+    /// <summary>
+    /// Установить предметы, как активные, но только в том случае, если они уже есть в основном инвентаре (то есть герой не просто подобрал предмет, дошёл до предыдущего чекпоинта и сохранил его)
+    /// </summary>
+    public void SetActiveItems(WeaponClass _weapon, List<TrinketClass> _activeTrinkets)
+    {
+        if (_weapon != null)
+            if (weapons.Contains(_weapon.itemName))
+                weapon =  _weapon.itemName;
+
+        activeTrinkets = new List<string>();
+        foreach (ItemClass _item in _activeTrinkets)
+            if (_item != null)
+                if (trinkets.Contains(_item.itemName))
+                    activeTrinkets.Add(_item.itemName);
+    }
+
 }

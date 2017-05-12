@@ -36,6 +36,8 @@ public class CharacterVisual : MonoBehaviour
     protected CharacterEffectSystem effectSystem;//Система событий, воспроизводящая эффекты при проигрывании анимаций
     protected SpriteRenderer sRenderer;
 
+    [SerializeField] protected List<AudioData> audioInfo=new List<AudioData>();
+
     #endregion //fields
 
     #region parametres
@@ -48,6 +50,7 @@ public class CharacterVisual : MonoBehaviour
     protected Color silhouetteColor = new Color(0.047f, 0.592f, 0.815f, 1f);//Основной цвет, используемый для отображения персонажа под водой
 
     protected AudioSource soundSource;//Источник звуков анимированных анимаций
+    protected AudioSource soundSource2;
 
     #region effectColors
 
@@ -81,11 +84,21 @@ public class CharacterVisual : MonoBehaviour
         FormDictionaries();
         sRenderer = GetComponent<SpriteRenderer>();
         SetDefaultColor();
-        soundSource = GetComponent<AudioSource>();
-        if (soundSource == null)
-            soundSource = gameObject.AddComponent<AudioSource>();
-        SpecialFunctions.Settings.soundEventHandler += HandleSoundLevelChange;
-        soundSource.volume = PlayerPrefs.GetFloat("SoundVolume");
+        AudioSource[] aSources = GetComponents<AudioSource>();
+        if (aSources.Length < 2)
+        {
+            for (int i = aSources.Length; i < 2; i++)
+                gameObject.AddComponent<AudioSource>();
+            aSources = GetComponents<AudioSource>();
+        }
+        for (int i = 0; i < 2; i++)
+        {
+            aSources[i].volume = PlayerPrefs.GetFloat("SoundVolume");
+            aSources[i].spatialBlend = 1f;
+        }
+        soundSource = aSources[0];
+        soundSource2 = aSources[1];
+
     }
 
     /// <summary>
@@ -113,6 +126,70 @@ public class CharacterVisual : MonoBehaviour
         visualFunctions.Add("stopWet", StopWet);
         visualFunctions.Add("stopAlly", StopAlly);
         visualFunctions.Add("death", Death);
+        visualFunctions.Add("playSound", PlaySoundWithName);
+    }
+
+    /// <summary>
+    /// Проиграть звук из коллекции
+    /// </summary>
+    public virtual void PlaySoundWithName(string id, int argument)
+    {
+        if (argument == 0)
+            PlaySound(id);
+        else if (argument == 1)
+            PlayAdditionalSound(id);
+    }
+
+    /// <summary>
+    /// Проиграть звук из коллекции
+    /// </summary>
+    public virtual void PlayAdditionalSound(string _audioName)
+    {
+        AudioData _aData = audioInfo.Find(x => x.audioName == _audioName);
+        if (_aData == null)
+            return;
+        AudioClip _clip = _aData.audios[UnityEngine.Random.Range(0, _aData.audios.Count)];
+        soundSource2.clip = _clip;
+        soundSource2.PlayOneShot(_clip, _aData.volume);
+    }
+
+    /// <summary>
+    /// Проиграть звук из коллекции
+    /// </summary>
+    public virtual void PlaySound(string _audioName)
+    {
+        AudioData _aData = audioInfo.Find(x => x.audioName == _audioName);
+        if (_aData == null)
+            return;
+        AudioClip _clip = _aData.audios[UnityEngine.Random.Range(0, _aData.audios.Count)];
+        soundSource.clip = _clip;
+        soundSource.PlayOneShot(_clip,_aData.volume);
+    }
+
+    /*
+    void StartVolumeProcess(float _time)
+    {
+        StopCoroutine("VolumeProcess");
+        StartCoroutine("VolumeProcess", _time);
+    }
+
+    /// <summary>
+    /// Процесс, после которого возвращается прежний уровень громкости
+    /// </summary>
+    protected IEnumerator VolumeProcess(float _time)
+    {
+        yield return new WaitForSeconds(_time);
+        soundSource.volume = SpecialFunctions.soundVolume;
+    }
+    */
+
+    /// <summary>
+    /// Аудио начинаются играть зацикленно
+    /// </summary>
+    public virtual void MakeSoundCycle(bool _cycle)
+    {
+        if (soundSource!=null)
+        soundSource.loop = _cycle;
     }
 
     /// <summary>
@@ -130,6 +207,7 @@ public class CharacterVisual : MonoBehaviour
             }
         }
         Blink();
+        PlayAdditionalSound("Damage");
     }
 
     /// <summary>
@@ -160,6 +238,9 @@ public class CharacterVisual : MonoBehaviour
                     }
             }
         }
+        soundSource.Stop();
+        soundSource2.Stop();
+        PlayAdditionalSound("Death");
     }
 
     /// <summary>
@@ -451,6 +532,7 @@ public class CharacterVisual : MonoBehaviour
     protected virtual void HandleSoundLevelChange(object sender, SoundChangesEventArgs e)
     {
         soundSource.volume = e.SoundVolume;
+        soundSource2.volume = e.SoundVolume;
     }
 
     #endregion //sounds
@@ -468,6 +550,35 @@ public class CharacterVisual : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Обработчик паузы
+    /// </summary>
+    protected virtual void HandlePause(object sender, PauseEventArgs e)
+    {
+        if (soundSource == null)
+            return;
+        if (e.Paused)
+        {
+            soundSource.Pause();
+            soundSource2.Pause();
+        }
+        else
+        {
+            soundSource.UnPause();
+            soundSource2.UnPause();
+        }
+    }
+
     #endregion //eventHandlers
+
+}
+
+[System.Serializable]
+public class AudioData
+{
+    public string audioName;
+    public List<AudioClip> audios = new List<AudioClip>();
+    [Range(0f,1f)]
+    public float volume = 1f;//Громкость данных звуков
 
 }

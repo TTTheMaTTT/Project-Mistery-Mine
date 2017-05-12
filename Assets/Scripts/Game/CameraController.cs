@@ -125,6 +125,10 @@ public class CameraController : MonoBehaviour
 
     protected void Initialize()
     {
+        GameObject audioListener = new GameObject("AudioListener");
+        audioListener.transform.SetParent(transform);
+        audioListener.transform.localPosition = new Vector3(0f, 0f, 10f);
+        audioListener.AddComponent<AudioListener>();
         player = GameObject.FindGameObjectWithTag("player").transform;
         ChangeCameraMod(CameraModEnum.player);
         lightManager = GetComponent<SpriteLightKitImageEffect>();

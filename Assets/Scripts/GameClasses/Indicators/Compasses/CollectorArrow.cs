@@ -91,7 +91,11 @@ public class CollectorArrow : MonoBehaviour
 
         if (target == null)
         {
-            SpecialFunctions.SetSecretText(2f, "Рядом с Вами нет ничего ценного");
+            SpecialFunctions.SetSecretText(2f, new MultiLanguageText("Рядом с Вами нет ничего ценного",
+                                                           "There is nothing valuable close to you",
+                                                           "Поряд з Вами немає нічого цінного",
+                                                           "Nie ma nic wartościowego w pobliżu ciebie",
+                                                           ""));
             DestroyArrow();
         }
         else

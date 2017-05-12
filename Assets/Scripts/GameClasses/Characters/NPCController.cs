@@ -50,7 +50,10 @@ public class NPCController : MonoBehaviour, IInteractive, IHaveStory
 
     protected bool spoken = false;
     protected MultiLanguageText battleMessage = new MultiLanguageText("Вы не можете разговаривать, пока находитесь в бою",
-                                                                      "You could not have a conversation while you are in a battle", "", "", "");
+                                                                      "You could not have a conversation while you are in a battle",
+                                                                      "Ви не можете спілкуватись, перебуваючи в бою",
+                                                                      "Nie możesz prowadzić rozmowy kiedy jesteś w walce",
+                                                                      "Vous ne pouvez pas parler au cours de la bataille");
 
     [SerializeField]protected DialogModEnum speechMod;
     [SerializeField]protected int dialogArgument1, dialogArgument2;

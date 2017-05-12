@@ -21,7 +21,8 @@ public class MainMenuScript : UIPanel, ILanguageChangeable
     private GameObject buttons;
     private GameObject creditsPanel;
     private UIPanel creditsUIWindow;
-    private Text creditsText;
+    private Transform developersPanel;
+    private Text creditsText2;
 
     private Image fadeScreen;
 
@@ -42,7 +43,8 @@ public class MainMenuScript : UIPanel, ILanguageChangeable
         buttons = transform.FindChild("Buttons").gameObject;
         creditsPanel = transform.FindChild("CreditsPanel").gameObject;
         creditsUIWindow = creditsPanel.GetComponent<UIPanel>();
-        creditsText = creditsPanel.transform.FindChild("CreditsText").GetComponent<Text>();
+        developersPanel = creditsPanel.transform.FindChild("DevelopersPanel");
+        creditsText2 = creditsPanel.transform.FindChild("CreditsText2").GetComponent<Text>();
 
         fadeScreen = transform.FindChild("FadeScreen").GetComponent<Image>();
         fadeScreen.color = Color.black;
@@ -103,6 +105,8 @@ public class MainMenuScript : UIPanel, ILanguageChangeable
     public void OpenCredits()
     {
         creditsPanel.SetActive(true);
+        developersPanel.gameObject.SetActive(true);
+        creditsText2.gameObject.SetActive(false);
         //buttons.SetActive(false);
         if (activeElement)
         {
@@ -112,6 +116,15 @@ public class MainMenuScript : UIPanel, ILanguageChangeable
         }
         SetInactive();
         creditsUIWindow.SetActive();
+    }
+
+    /// <summary>
+    /// Показать определённую страницу титр
+    /// </summary>
+    public void ShowCredits(int creditsNumb)
+    {
+        developersPanel.gameObject.SetActive(creditsNumb == 1);
+        creditsText2.gameObject.SetActive(creditsNumb == 2);
     }
 
     /// <summary>

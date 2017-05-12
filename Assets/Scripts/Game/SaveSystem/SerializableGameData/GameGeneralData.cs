@@ -72,6 +72,23 @@ public class GameGeneralData
         gameEffectsCreated = _gECreated;
     }
 
+    public void SetGameGeneralData(int cNumb, HeroController player, List<ItemCollection> _collections, float _gameAddTime, List<string> _vEnemies, List<string> _gECreated)
+    {
+        firstCheckpointNumber = cNumb;
+        eInfo = new EquipmentInfo(player.CurrentWeapon, player.Equipment);
+
+        cInfo = new List<CollectionInfo>();
+        for (int i = 0; i < _collections.Count; i++)
+            cInfo.Add(new CollectionInfo(_collections[i]));
+        GameStatistics gStats = SpecialFunctions.statistics;
+        if (gStats != null)
+            progressInfo = new GameProgressData(gStats.gameHistoryProgress);
+        maxHP = player.MaxHealth;
+        gameAddTime = _gameAddTime;
+        vulnerableEnemies = _vEnemies;
+        gameEffectsCreated = _gECreated;
+    }
+
     /// <summary>
     /// Увеличить счётчик смертей
     /// </summary>

@@ -602,6 +602,7 @@ public class GhostLadyController : BossController
         StopMoving();
         employment = Mathf.Clamp(employment - 5, 0, maxEmployment);
         Animate(new AnimationEventArgs("attack", "DiveAttack", Mathf.RoundToInt(100 * diveAttackParametres.prepareAttackTime)));
+        Animate(new AnimationEventArgs("playSound", "Fury", 0));
         yield return new WaitForSeconds(diveAttackParametres.preAttackTime);
         Vector2 targetDirection = (currentTarget - (Vector2)transform.position).normalized;
         rigid.AddForce(targetDirection * diveAttackPushForce);
@@ -780,6 +781,7 @@ public class GhostLadyController : BossController
 
     protected override void Death()
     {
+        //Animate(new AnimationEventArgs("playSound", "Death", 0));
         SpecialFunctions.gameController.GetAchievement("THE_PHANTOM");
         base.Death();
     }

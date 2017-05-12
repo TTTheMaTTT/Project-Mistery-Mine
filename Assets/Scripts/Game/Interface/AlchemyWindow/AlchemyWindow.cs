@@ -27,7 +27,7 @@ public class AlchemyWindow : InterfaceWindow
     private Image potionImage;//Изображение зелья
     private Text potionNameText;//Текст с названием зелья
     public Sprite emptyFlaskImage;//Изображение пустой фляги с зельем
-    private MultiLanguageText unknownPotionText = new MultiLanguageText("Неизвестное зелье", "Unknown potion","","","");
+    private MultiLanguageText unknownPotionText = new MultiLanguageText("Неизвестное зелье", "Unknown potion", "Невідоме зілля", "Nieznana mikstura", "Une potion inconnue");
 
     private GameObject mixPotionButtonObject, drinkPotionButtonObject;//Кнопки, которые вызывают смешивание и выпивание зелья
 

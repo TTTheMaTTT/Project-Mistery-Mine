@@ -103,6 +103,7 @@ public static class SpecialFunctions
     public static void PauseGame()
     {
         Time.timeScale = 0f;
+        Settings.OnPause();
     }
 
     /// <summary>
@@ -111,7 +112,10 @@ public static class SpecialFunctions
     public static void PlayGame()
     {
         if (!totalPaused)
+        {
             Time.timeScale = 1f;
+            Settings.OnPlay();
+        }
     }
 
     /// <summary>
@@ -197,7 +201,11 @@ public static class SpecialFunctions
     /// </summary>
     public static void FindSecretPlace(float textTime)
     {
-        gameUI.SetSecretMessage(textTime, new MultiLanguageText("Вы нашли секретное место!", "You've found secret place", "", "Znalazłeś sekretne miejsce!", "").GetText(SettingsScript.language));
+        gameUI.SetSecretMessage(textTime, new MultiLanguageText("Вы нашли секретное место!", 
+                                                                "You have found a secret place!",
+                                                                "Ви знайшли секретне місце!", 
+                                                                "Znalazłeś sekretne miejsce!",
+                                                                "Vous avez trouvé un lieu secret!").GetText(SettingsScript.language));
         gameController.FindSecretPlace();
     }
 

@@ -504,7 +504,7 @@ public class EquipmentMenu : InterfaceWindow
         for (int i = 0; i < activeTrinketCells.Count; i++)
             activeTrinketCells[i].transform.parent.gameObject.SetActive(i < magicSlotsCount);
 
-        AddItem(SpecialFunctions.statistics.ItemDict["LifeBookPage"]);
+        //AddItem(SpecialFunctions.statistics.ItemDict["LifeBookPage"]);
 
         activeTrinketsUIPanel.SetActiveChildElements();
     }

@@ -441,10 +441,13 @@ public class BatBossController: BossController
         if (attackerInfo != null)
         {
             attacker = attackerInfo;
+
             if (mainTarget.transform != attackerInfo.attacker.transform)
                 MainTarget = new ETarget(attackerInfo.attacker.transform);
             if (behavior == BehaviorEnum.calm)
                 BecomeAgressive();
+            else if (behavior == BehaviorEnum.agressive)
+                currentTarget = mainTarget;
         }
     }
 

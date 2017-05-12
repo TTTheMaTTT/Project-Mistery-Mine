@@ -41,13 +41,13 @@ public class GameController : MonoBehaviour
     //protected Dictionary<string, BuffFunction> buffFunctions = new Dictionary<string, BuffFunction>();
     protected Dictionary<string, StopBuffFunction> stopBuffFunctions = new Dictionary<string, StopBuffFunction>();
     protected Dictionary<string, MultiLanguageText> buffNamesDict = new Dictionary<string, MultiLanguageText>()
-    { {"AncestorsRevenge", new MultiLanguageText("Месть предков","Ancestors revenge","","","")},
-    {"TribalLeader", new MultiLanguageText("Вождь племени", "Tribal leader", "","","")},
-    {"TreasureHunter", new MultiLanguageText("Кладоскатель", "Treasure hunter", "", "","")},
-    {"Collector", new MultiLanguageText("Коллекционер", "Collector", "","","")},
-    {"AncientDarkness",new MultiLanguageText("Древняя тьма", "Ancient darkness","","","")},
-    { "TotemAnimal", new MultiLanguageText("Тотемное животное", "Totem animal", "","","")},
-    { "TribalRitual", new MultiLanguageText("Ритуал племени", "Tribal ritual", "", "", "")} };
+    { {"AncestorsRevenge", new MultiLanguageText("Месть предков","Revenge of the ancestors","Помста предків","Zemsta przodków","Vengeance des ancêtres")},
+    {"TribalLeader", new MultiLanguageText("Вождь племени", "The Tribe Leader", "Вождь племені","Wódz plemienia","Chef de la tribu")},
+    {"TreasureHunter", new MultiLanguageText("Кладоскатель", "The Seeker of treasures", "Шукач скарбів", "Poszukiwacz skarbów","Chercheur de trésors")},
+    {"Collector", new MultiLanguageText("Коллекционер", "The Collectioneer", "Колекціонер","Kolekcjoner","Collectioneur")},
+    {"AncientDarkness",new MultiLanguageText("Древняя тьма", "The Ancient Darkness","Древня пітьма","Starożytna Ciemność","Obscurité ancienne")},
+    { "TotemAnimal", new MultiLanguageText("Тотемное животное", "The Spiritual Animal", "Тотемна тварина","Duchowe zwierze","Animal de totem")},
+    { "TribalRitual", new MultiLanguageText("Ритуал племени", "The Ritual of the tribe", "Ритуал племені", "Rytułał plemienia", "Rituel de tribu")} };
 
     protected Dictionary<string, GameEffectDeathFunction> deathEffectsDictionary = new Dictionary<string, GameEffectDeathFunction>();//Словарь игровых эффектов, вызываемых при смерти персонажей (монстров)
     protected Dictionary<string, GameEffectUsualFunction> usualEffectsDictionary = new Dictionary<string, GameEffectUsualFunction>();//Словарь игровых эффектов, вызываемых при, например, 
@@ -115,8 +115,10 @@ public class GameController : MonoBehaviour
 
     public bool haveActiveDevice;
 
-    protected MultiLanguageText underEffectMLText = new MultiLanguageText("Вы находитесь под действием эффекта \"",
-                                                                          "You are under effect \"", "", "", "");
+    protected MultiLanguageText underEffectMLText = new MultiLanguageText("На вас действует эффект \"",
+                                                                          "You are under effect \"",
+                                                                          "На вас діє ефект \"",
+                                                                          "Jesteś pod efektem\"", "");
 
     int profileNumber;
 
@@ -1018,11 +1020,12 @@ public class GameController : MonoBehaviour
     {
         Hero.ResetAdditionalWeapon();//При сохранении идёт сброс доп оружия
         GameData gData = Serializator.DeXml(datapath + profileNumber.ToString() + ".xml");
-        if (gData!=null)
+        if (gData != null)
         {
-            if (general)
-                gData.gGData.eInfo.weapon = weaponName;
-            else
+            if (general || gData.lData == null ? true : !gData.lData.active)
+                if (gData.gGData.eInfo.weapons.Contains(weaponName))
+                    gData.gGData.eInfo.weapon = weaponName;
+            else if (gData.lData.eInfo.weapons.Contains(weaponName))
                 gData.lData.eInfo.weapon = weaponName;
             Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");
         }
@@ -1038,10 +1041,10 @@ public class GameController : MonoBehaviour
         GameData gData = Serializator.DeXml(datapath + profileNumber.ToString() + ".xml");
         if (gData != null)
         {
-            if (general)
-                gData.gGData.eInfo= new EquipmentInfo(hero.CurrentWeapon,hero.Equipment);
+            if (general || gData.lData == null ? true : !gData.lData.active)
+                gData.gGData.eInfo.SetActiveItems(hero.CurrentWeapon,hero.Equipment.activeTrinkets);
             else
-                gData.lData.eInfo = new EquipmentInfo(hero.CurrentWeapon, hero.Equipment);
+                gData.lData.eInfo.SetActiveItems(hero.CurrentWeapon, hero.Equipment.activeTrinkets);
             Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");
         }
     }
@@ -1941,6 +1944,14 @@ public class GameController : MonoBehaviour
         GameData gData = Serializator.DeXml(datapath + profileNumber.ToString() + ".xml");
         if (gData != null)
         {
+            gData.gGData.AddDeath();
+            gData.SetGameStatistics(Time.fixedTime, vulnerableEnemiesNames, gameEffectsNames);
+            Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");
+        }
+        else
+        {
+            gData = new GameData();
+            gData.gGData = new GameGeneralData();
             gData.gGData.AddDeath();
             gData.SetGameStatistics(Time.fixedTime, vulnerableEnemiesNames, gameEffectsNames);
             Serializator.SaveXml(gData, datapath + profileNumber.ToString() + ".xml");

@@ -8,7 +8,12 @@ using UnityEngine;
 public class AnimatedSoundManager : MonoBehaviour
 {
 
-    AudioSource soundSource;
+    #region fields
+
+    private AudioSource soundSource;
+    [SerializeField]private List<AudioData> audioInfo=new List<AudioData>();
+
+    #endregion //fields
 
     private void Awake()
     {
@@ -17,6 +22,21 @@ public class AnimatedSoundManager : MonoBehaviour
             soundSource = gameObject.AddComponent<AudioSource>();
         soundSource.volume = PlayerPrefs.GetFloat("SoundVolume");
         SpecialFunctions.Settings.soundEventHandler += HandleSoundVolumeChange;
+        SettingsScript.pauseEventHandler += HandlePause;
+        soundSource.spatialBlend = 1f;
+    }
+
+    /// <summary>
+    /// Проиграть звук из коллекции
+    /// </summary>
+    public virtual void PlaySound(string _audioName)
+    {
+        AudioData _aData = audioInfo.Find(x => x.audioName == _audioName);
+        if (_aData == null)
+            return;
+        AudioClip _clip = _aData.audios[UnityEngine.Random.Range(0, _aData.audios.Count)];
+        soundSource.clip = _clip;
+        soundSource.PlayOneShot(_clip, _aData.volume);
     }
 
     /// <summary>
@@ -34,6 +54,19 @@ public class AnimatedSoundManager : MonoBehaviour
     private void HandleSoundVolumeChange(object sender, SoundChangesEventArgs e)
     {
         soundSource.volume = e.SoundVolume;
+    }
+
+    /// <summary>
+    /// Обработчик паузы
+    /// </summary>
+    protected virtual void HandlePause(object sender, PauseEventArgs e)
+    {
+        if (soundSource == null)
+            return;
+        if (e.Paused)
+            soundSource.Pause();
+        else
+            soundSource.UnPause();
     }
 
 }

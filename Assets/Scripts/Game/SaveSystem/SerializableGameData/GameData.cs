@@ -46,7 +46,9 @@ public class GameData
     /// </summary>
     public void SetGeneralGameData(int cNumber, HeroController player, List<ItemCollection> _collection, float _gameAddTime, List<string> _vEnemies, List<string> _gECreated)
     {
-        gGData = new GameGeneralData(cNumber,player,_collection,_gameAddTime,_vEnemies,_gECreated);
+        if (gGData == null)
+            gGData = new GameGeneralData();
+        gGData.SetGameGeneralData(cNumber,player,_collection,_gameAddTime,_vEnemies,_gECreated);
     }
 
     /// <summary>

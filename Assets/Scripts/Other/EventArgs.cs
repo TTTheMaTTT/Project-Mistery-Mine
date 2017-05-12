@@ -65,6 +65,22 @@ public class LanguageChangeEventArgs : EventArgs
 }
 
 /// <summary>
+/// Событийные данные о паузе
+/// </summary>
+public class PauseEventArgs : EventArgs
+{
+    private bool paused;
+
+    public bool Paused { get { return paused; } }
+
+    public PauseEventArgs(bool _paused)
+    {
+        paused = _paused;
+    }
+
+}
+
+/// <summary>
 /// Данные о событии, связанном с изменением уровня хп
 /// </summary>
 public class HealthEventArgs : EventArgs

@@ -12,9 +12,15 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism, IHaveStory
 
     [SerializeField]protected string keyID;//Название ключа, что откроет эту дверь
     [SerializeField]protected MultiLanguageText closedDoorMessage = new MultiLanguageText("Для того чтобы открыть эту дверь тебе нужен ключ - найди его!",
-                                                                                                    "You need a key to open this door - you should find it!", "", "", ""),
+                                                                                          "You need the key to open that door",
+                                                                                           "Для того, щоб відчинити ці двері, тобі потрібен ключ -- знайди його!",
+                                                                                           "Potrzebujesz klucza żeby otworzyć te drzwi",
+                                                                                           "Pour ouvrir cette porte tu as besoin d'une clé - trouve-le!"),
                                                           openedDoorMessage = new MultiLanguageText("Дверь открыта",
-                                                                                                    "Door is opened","","","");//Какое сообщение должно выводится при различных попытках открыть дверь
+                                                                                                    "The door is opened",
+                                                                                                    "Двері відкрито",
+                                                                                                    "Drzwi są otwarte",
+                                                                                                    "La porte est ouverte");//Какое сообщение должно выводится при различных попытках открыть дверь
 
     protected Collider2D col;
     protected Animator anim;

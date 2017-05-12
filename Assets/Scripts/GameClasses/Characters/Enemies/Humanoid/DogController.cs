@@ -345,6 +345,20 @@ public class DogController : HumanoidController
         }
     }
 
+    protected override void BecomeAgressive()
+    {
+        Animate(new AnimationEventArgs("playSound", "DogNoise", 0));
+        if (anim)
+            anim.MakeSoundCycle(true);
+        base.BecomeAgressive();
+    }
+
+    protected override void BecomeCalm()
+    {
+        anim.MakeSoundCycle(false);
+        base.BecomeCalm();
+    }
+
     /// <summary>
     /// Агрессивное поведение
     /// </summary>

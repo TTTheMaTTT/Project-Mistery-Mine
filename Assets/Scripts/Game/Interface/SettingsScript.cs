@@ -14,6 +14,7 @@ public class SettingsScript : InterfaceWindow
 
     public EventHandler<SoundChangesEventArgs> soundEventHandler;
     public EventHandler<LanguageChangeEventArgs> languageEventHandler;
+    public static EventHandler<PauseEventArgs> pauseEventHandler;
 
     #endregion //eventHandlers
 
@@ -23,6 +24,8 @@ public class SettingsScript : InterfaceWindow
     private Slider musSlider;
     private Slider fxSlider;
     private Text languageText;
+    private GameObject controllerSchemePanel;
+    private UIPanel controllerSchemeUIPanel;
 
     #endregion //fields
 
@@ -54,6 +57,10 @@ public class SettingsScript : InterfaceWindow
         SpecialFunctions.soundVolume = fxSlider.value;
 
         languageText = panel.FindChild("LanguageChange").FindChild("LanguageText").GetComponent<Text>();
+
+        controllerSchemePanel = panel.FindChild("ControllerSchemePanel").gameObject;
+        controllerSchemePanel.SetActive(false);
+        controllerSchemeUIPanel = controllerSchemePanel.GetComponent<UIPanel>();
 
     }
 
@@ -88,7 +95,7 @@ public class SettingsScript : InterfaceWindow
     public void ChangeMusicVolume()
     {
         PlayerPrefs.SetFloat("MusicVolume", musSlider.value);
-        if (SpecialFunctions.gameController!=null)
+        if (SpecialFunctions.gameController != null)
             SpecialFunctions.gameController.ChangeMusicVolume(musSlider.value);
     }
 
@@ -143,6 +150,18 @@ public class SettingsScript : InterfaceWindow
             languageEventHandler(this, e);
     }
 
+    public void OnPause()
+    {
+        if (pauseEventHandler != null)
+            pauseEventHandler(this, new PauseEventArgs(true));
+    }
+
+    public void OnPlay()
+    {
+        if (pauseEventHandler != null)
+            pauseEventHandler(this, new PauseEventArgs(false));
+    }
+
     /// <summary>
     /// Открыть меню паузы
     /// </summary>
@@ -165,6 +184,7 @@ public class SettingsScript : InterfaceWindow
         openedWindow = this;
         canvas.enabled = true;
 
+        controllerSchemePanel.SetActive(false);
         activePanel = this;
         currentIndex = new UIElementIndex(-1, -1);
         Cursor.visible = true;
@@ -184,6 +204,31 @@ public class SettingsScript : InterfaceWindow
         activePanel = null;
         Cursor.visible = true;
         SpecialFunctions.PlayGame();
+    }
+
+    /// <summary>
+    /// Открыть окно со схемой контроллера
+    /// </summary>
+    public void OpenControllerScheme()
+    {
+        controllerSchemePanel.SetActive(true);
+        if (activeElement)
+        {
+            activeElement.SetInactive();
+            activeElement = null;
+            currentIndex = new UIElementIndex(-1, -1);
+        }
+        SetInactive();
+        controllerSchemeUIPanel.SetActive();
+    }
+
+    /// <summary>
+    /// Закрыть окно со схемой контроллера
+    /// </summary>
+    public void CloseControllerScheme()
+    {
+        controllerSchemePanel.SetActive(false);
+        SetActive();
     }
 
 }

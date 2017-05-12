@@ -775,7 +775,10 @@ public class HeroController : CharacterController
                 return;
             }
             else
-                Animate(new AnimationEventArgs("hitted", "", hitData.attackPower>balance ? 0 : 1));
+            {
+                Animate(new AnimationEventArgs("hitted", "", hitData.attackPower > balance ? 0 : 1));
+                Animate(new AnimationEventArgs("playSound", hitData.damage > 4f ? "HeavyDamage" : hitData.damage > 2f ? "MediumDamage" : "LightDamage", 1));
+            }
 
             if ((hitData.damageType != DamageType.Physical) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
                 TakeDamageEffect(hitData.damageType);
@@ -826,7 +829,10 @@ public class HeroController : CharacterController
                 return;
             }
             else
+            {
                 Animate(new AnimationEventArgs("hitted", "", hitData.attackPower > balance ? 0 : 1));
+                Animate(new AnimationEventArgs("playSound", hitData.damage > 4f ? "HeavyDamage" : hitData.damage > 2f ? "MediumDamage" : "LightDamage", 1)); 
+            }
 
             if ((hitData.damageType != DamageType.Physical) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
                 TakeDamageEffect(hitData.damageType);
@@ -1017,11 +1023,14 @@ public class HeroController : CharacterController
                 }
             }
             else if (item.itemName == "LifeBookPage")
+            {
                 SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Увеличивает максимальное число активных особых предметов",
                                                                                  "Gains max number of active trinkets",
                                                                                  "",
                                                                                  "",
                                                                                  "").GetText(SettingsScript.language), 4.5f);
+                AddItem("LifeBookPage1");
+            }
             else if (item.itemName == "LifeBookPage2")
             {
                 SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Добавляет в инвентарь красную и зелёную субстанции",

@@ -17,6 +17,18 @@ public class HeroVisual : GroundMoveVisual
 
     #endregion //consts
 
+    #region parametres
+
+    protected bool dead = false;
+
+    #endregion //parametres
+
+    protected override void Initialize()
+    {
+        base.Initialize();
+        dead = false;
+    }
+
     /// <summary>
     /// Сформировать словари анимационных функций
     /// </summary>
@@ -195,8 +207,12 @@ public class HeroVisual : GroundMoveVisual
         }
         else
         {
+            if (dead)
+                return;
+            PlayAdditionalSound("Death");
             anim.Play("Death2");
         }
+        dead = true;
     }
 
     /// <summary>
