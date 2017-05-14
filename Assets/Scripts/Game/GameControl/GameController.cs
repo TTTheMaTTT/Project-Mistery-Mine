@@ -24,7 +24,7 @@ public class GameController : MonoBehaviour
     protected const float compassArrowOffsetY = 0.17f;//Насколько смещена по вертикали стрелка компаса относительно персонажа
     protected const float ancientDarknessTime = 15f;//Время и шанс эффекта "Древняя тьма"
 
-    protected const float deathTime = 2.1f;
+    protected const float deathTime = 4f;
 
     #endregion //gameEffectConsts
 
@@ -299,7 +299,7 @@ public class GameController : MonoBehaviour
         {
             ambientSource = audioSources[1];
             ambientSource.volume = PlayerPrefs.GetFloat("SoundVolume");
-            SpecialFunctions.Settings.soundEventHandler += HandleSoundVolumeChange;
+            SettingsScript.soundEventHandler += HandleSoundVolumeChange;
             if (ambientClips.Count > 0)
             {
                 ambientSource.clip = ambientClips[0];
@@ -1774,6 +1774,8 @@ public class GameController : MonoBehaviour
     IEnumerator CompleteLevelProcess(string nextLevelName, bool withCompleteLevelScreen)
     {
         SpecialFunctions.StartStoryEvent(this, EndGameEvent, new StoryEventArgs());
+        if (withCompleteLevelScreen)
+            PlaySound("CompleteLevel");
         yield return new WaitForSeconds(nextLevelTime);
         if (nextLevelName != string.Empty)
         {
@@ -1835,6 +1837,16 @@ public class GameController : MonoBehaviour
     }
 
     #region musicAndSounds
+
+    /// <summary>
+    /// Остановить музыку
+    /// </summary>
+    public void StopMusic()
+    {
+        if (musicSource == null)
+            return;
+        musicSource.Stop();
+    }
 
     /// <summary>
     /// Поменять громкость музыки
@@ -1959,6 +1971,7 @@ public class GameController : MonoBehaviour
 
         SpecialFunctions.SetFade(true);
         PlayerPrefs.SetFloat("Hero Health", hero.MaxHealth);
+        PlaySound("DeathSound");
         yield return new WaitForSeconds(deathTime);
         LoadingScreenScript.instance.LoadScene(SceneManager.GetActiveScene().name);
         //SceneManager.LoadScene(SceneManager.GetActiveScene().name);

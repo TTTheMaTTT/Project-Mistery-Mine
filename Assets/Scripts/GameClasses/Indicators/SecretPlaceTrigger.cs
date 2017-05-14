@@ -40,6 +40,7 @@ public class SecretPlaceTrigger : StoryTrigger, IMechanism
                 RevealTruth();
                 triggered = true;
                 SpecialFunctions.statistics.ConsiderStatistics(this);
+                SpecialFunctions.gameController.PlaySound("Secret");
             }
         }
     }

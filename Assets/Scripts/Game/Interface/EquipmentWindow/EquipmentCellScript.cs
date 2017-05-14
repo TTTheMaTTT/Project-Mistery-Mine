@@ -153,6 +153,7 @@ public class EquipmentCellScript : UIElementScript
         base.Activate();
         button.onClick.Invoke();
         SetActive();
+        SpecialFunctions.PlaySound("Button");
     }
 
     /// <summary>

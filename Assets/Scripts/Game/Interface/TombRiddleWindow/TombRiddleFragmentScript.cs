@@ -96,6 +96,7 @@ public class TombRiddleFragmentScript : UIElementScript
     /// </summary>
     IEnumerator TurnProcess()
     {
+        tombRiddleWindow.Turn();
         turning = true;
         int nextValue = fragmentValue + 1;
         if (nextValue == 5) nextValue = 1;

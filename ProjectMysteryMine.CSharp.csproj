@@ -180,6 +180,7 @@
     <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\StoryInfo.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\SerializableGameData\StoryProgressData.cs" />
     <Compile Include="Assets\Scripts\Game\SaveSystem\Serializator.cs" />
+    <Compile Include="Assets\Scripts\Game\SoundManager.cs" />
     <Compile Include="Assets\Scripts\Game\Summoner.cs" />
     <Compile Include="Assets\Scripts\GameClasses\BuffClass.cs" />
     <Compile Include="Assets\Scripts\GameClasses\Characters\CharacterController.cs" />

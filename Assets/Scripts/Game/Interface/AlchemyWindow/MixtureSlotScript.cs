@@ -143,6 +143,7 @@ public class MixtureSlotScript : UIElementScript, IDropHandler
         base.Activate();
         ActivateMixtureSlot();
         SetActive();
+        SpecialFunctions.PlaySound("Button");
     }
 
     /// <summary>

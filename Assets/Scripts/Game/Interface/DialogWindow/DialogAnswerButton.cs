@@ -60,6 +60,7 @@ public class DialogAnswerButton : MonoBehaviour
             UIElementScript.activeElement = null;
             UIElementScript.activePanel = null;
         }
+        SpecialFunctions.PlaySound("Button");
     }
 
 }

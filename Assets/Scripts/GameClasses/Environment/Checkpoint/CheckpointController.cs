@@ -88,8 +88,8 @@ public class CheckpointController : MonoBehaviour, IInteractive
         if (!activated)
         {
             ChangeCheckpoint();
+            SpecialFunctions.gameController.PlaySound("Checkpoint");
             SpecialFunctions.gameController.SaveGame(checkpointNumb, false, SceneManager.GetActiveScene().name);
-            
         }
         else
         {

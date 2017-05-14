@@ -87,6 +87,7 @@ public class ProfileButton: UIElementScript
         base.Activate();
         ChooseSave();
         SetActive();
+        SpecialFunctions.PlaySound("Button");
     }
 
     /// <summary>

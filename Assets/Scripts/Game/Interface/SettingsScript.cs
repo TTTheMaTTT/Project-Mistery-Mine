@@ -12,8 +12,8 @@ public class SettingsScript : InterfaceWindow
 
     #region EventHandlers
 
-    public EventHandler<SoundChangesEventArgs> soundEventHandler;
-    public EventHandler<LanguageChangeEventArgs> languageEventHandler;
+    public static EventHandler<SoundChangesEventArgs> soundEventHandler;
+    public static EventHandler<LanguageChangeEventArgs> languageEventHandler;
     public static EventHandler<PauseEventArgs> pauseEventHandler;
 
     #endregion //eventHandlers
@@ -97,6 +97,8 @@ public class SettingsScript : InterfaceWindow
         PlayerPrefs.SetFloat("MusicVolume", musSlider.value);
         if (SpecialFunctions.gameController != null)
             SpecialFunctions.gameController.ChangeMusicVolume(musSlider.value);
+        if (SpecialFunctions.soundManager != null)
+            SpecialFunctions.soundManager.ChangeMusicVolume(musSlider.value);
     }
 
     /// <summary>

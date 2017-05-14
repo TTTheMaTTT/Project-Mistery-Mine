@@ -324,6 +324,7 @@ public class BatController : AIController
         hearing.enabled = false;//В агрессивном состоянии персонажу не нужен слух
         StartCoroutine(CooldownProcess());
         Animate(new AnimationEventArgs("fly"));
+        StartCoroutine("PipProcess");
     }
 
     /// <summary>
@@ -335,6 +336,7 @@ public class BatController : AIController
         rigid.isKinematic = true;
         hearing.Radius = r1;
         hearing.enabled = true;
+        StopCoroutine("PipProcess");
     }
 
     /// <summary>
@@ -347,6 +349,7 @@ public class BatController : AIController
         if (!optimized)
             rigid.isKinematic = false;
         hearing.enabled = true;
+        StartCoroutine("PipProcess");
     }
 
     #region behaviourActions
@@ -630,6 +633,13 @@ public class BatController : AIController
     public override NavMapTypeEnum GetMapType()
     {
         return NavMapTypeEnum.fly;
+    }
+
+    protected IEnumerator PipProcess()
+    {
+        yield return new WaitForSeconds(UnityEngine.Random.Range(0f, 4f));
+        Animate(new AnimationEventArgs("playSound", "BatPip", 1));
+        StartCoroutine("PipProcess");
     }
 
     #region eventHandlers

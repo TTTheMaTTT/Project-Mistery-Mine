@@ -21,7 +21,7 @@ public class AnimatedSoundManager : MonoBehaviour
         if (soundSource == null)
             soundSource = gameObject.AddComponent<AudioSource>();
         soundSource.volume = PlayerPrefs.GetFloat("SoundVolume");
-        SpecialFunctions.Settings.soundEventHandler += HandleSoundVolumeChange;
+        SettingsScript.soundEventHandler += HandleSoundVolumeChange;
         SettingsScript.pauseEventHandler += HandlePause;
         soundSource.spatialBlend = 1f;
     }

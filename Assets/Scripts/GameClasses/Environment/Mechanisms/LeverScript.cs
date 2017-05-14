@@ -22,6 +22,7 @@ public class LeverScript : MonoBehaviour, IInteractive
 
     protected bool once = false;//Взаимодействовал ли уже игрок с рычагом
     protected SpriteRenderer sRenderer;
+    protected AnimatedSoundManager soundManager;
 
     #endregion //fields
 
@@ -51,6 +52,7 @@ public class LeverScript : MonoBehaviour, IInteractive
         }
         sRenderer = GetComponent<SpriteRenderer>();
         once = false;
+        soundManager = GetComponent<AnimatedSoundManager>();
     }
 
     #region events
@@ -96,6 +98,7 @@ public class LeverScript : MonoBehaviour, IInteractive
                 once = true;
                 SpecialFunctions.statistics.ConsiderStatistics(this);
             }
+            if (soundManager) soundManager.PlaySound("Activate");
         }
     }
 

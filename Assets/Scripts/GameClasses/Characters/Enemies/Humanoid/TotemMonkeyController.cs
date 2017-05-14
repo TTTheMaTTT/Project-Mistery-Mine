@@ -16,6 +16,7 @@ public class TotemMonkeyController : HumanoidController
 
     #region parametres
 
+    protected override float attackDistance { get { return .06f; } }
     protected override float allyTime{get{return 2f;}}
 
     #endregion //parametres

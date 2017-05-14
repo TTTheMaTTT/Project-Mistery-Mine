@@ -25,7 +25,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism, IHaveStory
     protected Collider2D col;
     protected Animator anim;
     protected SpriteRenderer sRenderer;
-
+    protected AnimatedSoundManager soundManager;
 
     #endregion //fields
 
@@ -44,6 +44,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism, IHaveStory
         col = GetComponent<Collider2D>();
         anim = GetComponent<Animator>();
         sRenderer = GetComponent<SpriteRenderer>();
+        soundManager = GetComponent<AnimatedSoundManager>();
     }
 
     /// <summary>
@@ -59,6 +60,7 @@ public class DoorClass : MonoBehaviour, IInteractive, IMechanism, IHaveStory
             anim.Play("Opened");
         }
         SetOutline(false);
+        if (soundManager) soundManager.PlaySound("Open");
     }
 
     /// <summary>

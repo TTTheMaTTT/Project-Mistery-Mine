@@ -36,7 +36,7 @@ public class CharacterVisual : MonoBehaviour
     protected CharacterEffectSystem effectSystem;//Система событий, воспроизводящая эффекты при проигрывании анимаций
     protected SpriteRenderer sRenderer;
 
-    [SerializeField] protected List<AudioData> audioInfo=new List<AudioData>();
+    [SerializeField] protected List<AudioData> audioInfo = new List<AudioData>();
 
     #endregion //fields
 
@@ -51,6 +51,7 @@ public class CharacterVisual : MonoBehaviour
 
     protected AudioSource soundSource;//Источник звуков анимированных анимаций
     protected AudioSource soundSource2;
+    protected List<AudioSource> soundSources = new List<AudioSource>();
 
     #region effectColors
 
@@ -98,6 +99,7 @@ public class CharacterVisual : MonoBehaviour
         }
         soundSource = aSources[0];
         soundSource2 = aSources[1];
+        SettingsScript.soundEventHandler += HandleSoundLevelChange;
 
     }
 
@@ -127,6 +129,7 @@ public class CharacterVisual : MonoBehaviour
         visualFunctions.Add("stopAlly", StopAlly);
         visualFunctions.Add("death", Death);
         visualFunctions.Add("playSound", PlaySoundWithName);
+        visualFunctions.Add("makeSoundCycle", MakeSoundSourceCycle);
     }
 
     /// <summary>
@@ -138,6 +141,8 @@ public class CharacterVisual : MonoBehaviour
             PlaySound(id);
         else if (argument == 1)
             PlayAdditionalSound(id);
+        else
+            PlaySoundWithIndex(id, argument - 2);
     }
 
     /// <summary>
@@ -163,7 +168,18 @@ public class CharacterVisual : MonoBehaviour
             return;
         AudioClip _clip = _aData.audios[UnityEngine.Random.Range(0, _aData.audios.Count)];
         soundSource.clip = _clip;
-        soundSource.PlayOneShot(_clip,_aData.volume);
+        soundSource.PlayOneShot(_clip, _aData.volume);
+    }
+
+    public virtual void PlaySoundWithIndex(string _audioName, int sourceIndex)
+    {
+        AudioSource soundSource1 = soundSources[sourceIndex];
+        AudioData _aData = audioInfo.Find(x => x.audioName == _audioName);
+        if (_aData == null)
+            return;
+        AudioClip _clip = _aData.audios[UnityEngine.Random.Range(0, _aData.audios.Count)];
+        soundSource1.clip = _clip;
+        soundSource1.PlayOneShot(_clip, _aData.volume);
     }
 
     /*
@@ -188,8 +204,25 @@ public class CharacterVisual : MonoBehaviour
     /// </summary>
     public virtual void MakeSoundCycle(bool _cycle)
     {
-        if (soundSource!=null)
-        soundSource.loop = _cycle;
+        if (soundSource != null)
+            soundSource.loop = _cycle;
+    }
+
+    public virtual void MakeSoundSourceCycle(bool _cycle, int index)
+    {
+        if (index == 0)
+            soundSource.loop = _cycle;
+        else if (index == 1)
+            soundSource.loop = _cycle;
+        else
+        {
+            soundSources[index - 2].loop = _cycle;
+        }
+    }
+
+    public virtual void MakeSoundSourceCycle(string id, int argument)
+    {
+        MakeSoundSourceCycle(id == "loop", argument);
     }
 
     /// <summary>
@@ -515,6 +548,17 @@ public class CharacterVisual : MonoBehaviour
         sRenderer.SetPropertyBlock(mpb);
     }
 
+    /// <summary>
+    /// Добавить новый источник звука
+    /// </summary>
+    public void AddSoundSource()
+    {
+        AudioSource newSource = gameObject.AddComponent<AudioSource>();
+        soundSources.Add(newSource);
+        newSource.volume = PlayerPrefs.GetFloat("SoundVolume");
+        newSource.spatialBlend = 1f;
+    }
+
     #region sounds
 
     /// <summary>
@@ -526,6 +570,10 @@ public class CharacterVisual : MonoBehaviour
         soundSource.Play();
     }
 
+    #endregion //sounds
+
+    #region eventHandlers
+
     /// <summary>
     /// Обработать событие "Поменялась громкость звука"
     /// </summary>
@@ -533,11 +581,11 @@ public class CharacterVisual : MonoBehaviour
     {
         soundSource.volume = e.SoundVolume;
         soundSource2.volume = e.SoundVolume;
+        for (int i = 0; i < soundSources.Count; i++)
+        {
+            soundSources[i].volume = e.SoundVolume;
+        }
     }
-
-    #endregion //sounds
-
-    #region eventHandlers
 
     /// <summary>
     /// Обработчик запроса на анимирование
@@ -570,6 +618,12 @@ public class CharacterVisual : MonoBehaviour
     }
 
     #endregion //eventHandlers
+
+    void OnDestroy()
+    {
+        SettingsScript.soundEventHandler -= HandleSoundLevelChange;
+    }
+
 
 }
 

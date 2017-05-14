@@ -11,6 +11,7 @@ public class TombRiddleWindowScript : InterfaceWindow
     #region fields
 
     private TombDoorClass tombDoor;//Дверь, которая отпирается данной головоломкой
+    private AnimatedSoundManager tDoorSoundManager;
     private List<TombRiddleFragmentScript> fragments;//Список фрагментов головоломки
 
     #endregion //fields
@@ -28,6 +29,7 @@ public class TombRiddleWindowScript : InterfaceWindow
     {
         base.Initialize();
         tombDoor = FindObjectOfType<TombDoorClass>();
+        tDoorSoundManager = tombDoor.GetComponent<AnimatedSoundManager>();
         fragments = new List<TombRiddleFragmentScript>();
         Transform fragmentsTrans = transform.FindChild("Panel").FindChild("Fragments");
         for (int i = 0; i < fragmentsTrans.childCount; i++)
@@ -41,7 +43,7 @@ public class TombRiddleWindowScript : InterfaceWindow
         }
         TombRiddleFragmentScript.tombRiddleWindow = this;
 
-        SpecialFunctions.Settings.languageEventHandler += HandleLanguageChangeEvent;
+        SettingsScript.languageEventHandler += HandleLanguageChangeEvent;
     }
 
     /// <summary>
@@ -67,6 +69,11 @@ public class TombRiddleWindowScript : InterfaceWindow
     }
 
 
+    public void Turn()
+    {
+        tDoorSoundManager.PlaySound("Turn");
+    }
+
     /// <summary>
     /// Обновить информацию о значениях фрагмента, в соответствии с новой информацией о них
     /// </summary>
@@ -81,6 +88,7 @@ public class TombRiddleWindowScript : InterfaceWindow
 
     IEnumerator ActivationProcess()
     {
+        tDoorSoundManager.PlaySound("CombineFragments");
         dontCloseWindow = true;
         foreach (TombRiddleFragmentScript fragment in fragments)
             fragment.Open();

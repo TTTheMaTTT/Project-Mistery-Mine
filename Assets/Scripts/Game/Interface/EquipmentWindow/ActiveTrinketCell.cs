@@ -147,6 +147,7 @@ public class ActiveTrinketCell : UIElementScript, IDropHandler
         if (activated && TrinketCell.activeTrinketCell)
             Trinket = TrinketCell.activeTrinketCell.Trinket;
         ElementState = UIElementStateEnum.active;
+        SpecialFunctions.PlaySound("Button");
     }
 
     /// <summary>

@@ -21,8 +21,11 @@ public class BulletScript : MonoBehaviour
     protected bool groundDetect = true;
     public bool GroundDetect { get { return groundDetect; } set { groundDetect = value; if (value) hitBox.SetHitBox(attackParametres); else hitBox.ResetHitBox(); } }
     Rigidbody2D rigid;
+    AudioSource soundSource;
 
     [SerializeField]protected GameObject destroyParticles;
+    [SerializeField]
+    protected AudioData destroySound;
 
     #endregion //fields
 
@@ -37,6 +40,13 @@ public class BulletScript : MonoBehaviour
         hitBox = GetComponentInChildren<HitBoxController>();
         hitBox.AttackEventHandler += HandleAttackProcess;
         rigid = GetComponent<Rigidbody2D>();
+        if (transform.FindChild("SoundSource") != null)
+        {
+            soundSource = transform.FindChild("SoundSource").GetComponent<AudioSource>();
+            soundSource.volume = PlayerPrefs.GetFloat("SoundVolume");
+            soundSource.spatialBlend = 1f;
+            SettingsScript.soundEventHandler += HandleSoundLevelChange;
+        }
     }
 
     protected virtual void FixedUpdate()
@@ -72,6 +82,12 @@ public class BulletScript : MonoBehaviour
             particles.transform.localScale = new Vector3(Mathf.Sign(transform.localScale.x) * scal.x, scal.y, scal.z);
             Destroy(particles, 1.5f);
         }
+        if (soundSource != null)
+        {
+            soundSource.transform.SetParent(null);
+            soundSource.PlayOneShot(destroySound.audios[Random.RandomRange(0,destroySound.audios.Count)],destroySound.volume);
+            SettingsScript.soundEventHandler -= HandleSoundLevelChange;
+        }
         Destroy(gameObject);
     }
 
@@ -83,6 +99,14 @@ public class BulletScript : MonoBehaviour
     protected void HandleAttackProcess(object sender, HitEventArgs e)
     {
         DestroyBullet();
+    }
+
+    /// <summary>
+    /// Обработать событие "Поменялась громкость звука"
+    /// </summary>
+    protected virtual void HandleSoundLevelChange(object sender, SoundChangesEventArgs e)
+    {
+        soundSource.volume = e.SoundVolume;
     }
 
     #endregion //events

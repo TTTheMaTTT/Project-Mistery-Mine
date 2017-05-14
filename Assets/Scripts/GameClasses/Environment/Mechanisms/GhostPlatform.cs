@@ -10,6 +10,7 @@ public class GhostPlatform : MonoBehaviour, IMechanism
     #region fields 
 
     protected Animator anim;
+    protected AnimatedSoundManager sManager;
 
     #endregion fields
 
@@ -33,6 +34,7 @@ public class GhostPlatform : MonoBehaviour, IMechanism
             StartCoroutine(AppearProcess());
             anim.Play(activated ? "Appear" : "Disappear");
         }
+        sManager = GetComponent<AnimatedSoundManager>();
     }
 
     /// <summary>
@@ -43,6 +45,8 @@ public class GhostPlatform : MonoBehaviour, IMechanism
         activated = !activated;
         StopAllCoroutines();
         StartCoroutine(AppearProcess());
+        if (sManager != null)
+            sManager.PlaySound("Activate");
     }
 
     IEnumerator AppearProcess()

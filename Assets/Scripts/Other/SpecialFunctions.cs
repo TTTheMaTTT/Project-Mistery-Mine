@@ -29,12 +29,27 @@ public static class SpecialFunctions
     public static CameraController camControl;
     public static CameraController CamController { get { camControl = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<CameraController>(); return camControl; } }
 
+    private static GameController gameController1;
     public static GameController gameController
     {
         get
         {
+            if (!gameController1)
+            {
+                GameObject gControl = GameObject.FindGameObjectWithTag("gameController");
+                if (gControl)
+                    gameController1=gControl.GetComponent<GameController>(); else gameController1=null;
+            }
+            return gameController1;
+        }
+    }
+
+    public static SoundManager soundManager
+    {
+        get
+        {
             GameObject gControl = GameObject.FindGameObjectWithTag("gameController");
-            if (gControl) return GameObject.FindGameObjectWithTag("gameController").GetComponent<GameController>(); else return null;
+            if (gControl) return gControl.GetComponent<SoundManager>(); else return null;
         }
     }
 
@@ -272,5 +287,14 @@ public static class SpecialFunctions
         source.volume = soundVolume;
         source.Play();
     }
+
+    public static void PlaySound(string _soundName)
+    {
+        if (gameController != null)
+            gameController.PlaySound(_soundName);
+        else if (soundManager != null)
+            soundManager.PlaySound(_soundName);
+    }
+
 
 }

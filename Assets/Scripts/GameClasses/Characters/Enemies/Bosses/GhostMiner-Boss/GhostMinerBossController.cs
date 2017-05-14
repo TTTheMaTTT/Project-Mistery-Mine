@@ -687,7 +687,7 @@ public class GhostMinerBossController : BossController
         if (health <= 0f)
             Death();
         GhostMinerBossVisual bAnim = (GhostMinerBossVisual)anim;
-        if (bAnim != null)
+        if (bAnim != null && !dead)
             bAnim.Blink();
     }
 

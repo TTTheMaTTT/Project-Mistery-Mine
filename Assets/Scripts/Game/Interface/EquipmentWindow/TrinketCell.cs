@@ -136,6 +136,7 @@ public class TrinketCell : UIElementScript, IBeginDragHandler, IDragHandler, IEn
     {
         ChooseTrinket();
         SetActive();
+        SpecialFunctions.PlaySound("Button");
     }
 
     /// <summary>

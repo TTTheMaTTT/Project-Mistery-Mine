@@ -14,6 +14,9 @@ public class LavaGolemController : GolemController
     {
         base.Start();
         StartCoroutine("StartBurningProcess");
+        anim.AddSoundSource();
+        anim.PlaySoundWithIndex("Fire",0);
+        anim.MakeSoundSourceCycle(true, 2);
     }
 
     #region damageEffects

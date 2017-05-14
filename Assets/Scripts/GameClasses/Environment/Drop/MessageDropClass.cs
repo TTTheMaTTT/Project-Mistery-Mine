@@ -50,6 +50,7 @@ public class MessageDropClass : DropClass
             SpecialFunctions.StartStoryEvent(this, StoryDropIsGot, new StoryEventArgs());
             if (gameObject.layer == LayerMask.NameToLayer("hidden"))
                 gameObject.layer = LayerMask.NameToLayer("drop");
+            SpecialFunctions.gameController.PlaySound(dropSoundName);
         }
     }
 

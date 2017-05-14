@@ -234,6 +234,7 @@ public class HeroVisual : GroundMoveVisual
             effectSystem.SpawnEffect("dust");
             effectSystem.FallEffect();
         }
+        PlaySound("Fall");
     }
 
     protected virtual void BattleCry(string id, int argument)

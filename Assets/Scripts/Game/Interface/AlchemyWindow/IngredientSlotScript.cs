@@ -130,6 +130,7 @@ public class IngredientSlotScript : UIElementScript
         base.Activate();
         ChooseIngredient();
         SetActive();
+        SpecialFunctions.PlaySound("Button");
     }
 
     /// <summary>

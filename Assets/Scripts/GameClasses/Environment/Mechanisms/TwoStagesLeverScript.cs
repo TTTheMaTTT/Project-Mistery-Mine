@@ -19,6 +19,7 @@ public class TwoStagesLeverScript : LeverScript, IMechanism
         {
             anim.Play(activated ? "Active" : "Inactive");
         }
+        if (soundManager) soundManager.PlaySound("Activate");
     }
 
     public void ActivateMechanism()

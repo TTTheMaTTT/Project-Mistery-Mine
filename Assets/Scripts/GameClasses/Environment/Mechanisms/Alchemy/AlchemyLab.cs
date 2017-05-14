@@ -21,7 +21,10 @@ public class AlchemyLab : MonoBehaviour, IInteractive
     #region parametres
 
     private MultiLanguageText usedPotionText = new MultiLanguageText("Это зелье больше на вас никак не действует",
-                                                                     "The potion has no more effect on you", "", "","");
+                                                                     "The potion has no more effect on you",
+                                                                     "Це зілля більше не діє на вас",
+                                                                     "Mikstura nie daje żadnego efektu",
+                                                                     "Cette potion n'agit plus sur vous");
 
     [SerializeField][HideInInspector]private int id;
     private Color outlineColor = Color.yellow;

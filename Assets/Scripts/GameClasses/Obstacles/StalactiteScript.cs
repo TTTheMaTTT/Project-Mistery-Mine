@@ -31,6 +31,7 @@ public class StalactiteScript : MonoBehaviour, IMechanism, IInteractive
     private Transform groundCheck;
 
     private SpriteRenderer sRenderer;
+    private AudioSource soundSource;//Источник звуков
 
     #endregion //fields
 
@@ -60,6 +61,8 @@ public class StalactiteScript : MonoBehaviour, IMechanism, IInteractive
         groundCheck = transform.FindChild("GroundCheck");
 
         sRenderer = GetComponent<SpriteRenderer>();
+
+        soundSource = GetComponent<AudioSource>();
 
     }
 
@@ -100,6 +103,7 @@ public class StalactiteScript : MonoBehaviour, IMechanism, IInteractive
         Destroy(rigid);
         Destroy(groundCheck.gameObject);
         Destroy(this);
+        soundSource.Play();
     }
 
     #region IHaveID

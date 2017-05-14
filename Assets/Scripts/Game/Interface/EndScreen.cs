@@ -45,8 +45,8 @@ public class EndScreen : MonoBehaviour, ILanguageChangeable
     [SerializeField]
     private List<MultiLanguageTextInfo> languageChanges = new List<MultiLanguageTextInfo>();//Переводы текстов
 
-    private MultiLanguageText gameTimeMLText = new MultiLanguageText("Времени затрачено: ", "Time spent: ", "", "", "");
-    private MultiLanguageText deathCountMLText = new MultiLanguageText("Количество смертей: ", "Number of deaths: ", "", "","");
+    private MultiLanguageText gameTimeMLText = new MultiLanguageText("Времени затрачено: ", "Time spent: ", "Витрачено часу: ", "Spędzony czas: ", "");
+    private MultiLanguageText deathCountMLText = new MultiLanguageText("Количество смертей: ", "Number of deaths: ", "Кількість смертей: ", "Ilość śmierci: ", "");
 
     private float totalGameTime;
     private int deathCount;

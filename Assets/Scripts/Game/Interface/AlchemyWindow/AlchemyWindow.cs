@@ -97,7 +97,7 @@ public class AlchemyWindow : InterfaceWindow
         CurrentPotion = null;
         ResetActiveSlots();
 
-        SpecialFunctions.Settings.languageEventHandler += HandleLanguageChangeEvent;
+        SettingsScript.languageEventHandler += HandleLanguageChangeEvent;
 
     }
 
@@ -159,6 +159,7 @@ public class AlchemyWindow : InterfaceWindow
         if (newPotion == null)
             return;
         CurrentPotion = newPotion;
+        SpecialFunctions.gameController.PlaySound("CreatePotion");
     }
 
     /// <summary>

@@ -1,25 +1,2 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Game_x0020_Data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <Level_x0020_Data Active="false">
-    <Checkpoint>0</Checkpoint>
-    <Light_x0020_Intensity>0</Light_x0020_Intensity>
-    <Light_x0020_HDR>0</Light_x0020_HDR>
-    <Max_x0020_HP>12</Max_x0020_HP>
-    <Collections_x0020_Level_x0020_Data />
-    <Enemies_x0020_Info />
-    <Interactive_x0020_Objects_x0020_Info />
-    <NPCs_x0020_Data />
-    <Dialog_x0020_Data>
-      <Dialogs_x0020_Info />
-    </Dialog_x0020_Data>
-  </Level_x0020_Data>
-  <General_x0020_Game_x0020_Data>
-    <First_x0020_Checkpoint>0</First_x0020_Checkpoint>
-    <Max_x0020_HP>12</Max_x0020_HP>
-    <Collections_x0020_Info />
-    <Death_x0020_Count>1</Death_x0020_Count>
-    <Game_x0020_Time>0</Game_x0020_Time>
-    <Game_x0020_Additional_x0020_Time>4.94</Game_x0020_Additional_x0020_Time>
-    <Secret_x0020_Places_x0020_Count>0</Secret_x0020_Places_x0020_Count>
-  </General_x0020_Game_x0020_Data>
-</Game_x0020_Data>
+<Game_x0020_Data xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xsi:nil="true" />

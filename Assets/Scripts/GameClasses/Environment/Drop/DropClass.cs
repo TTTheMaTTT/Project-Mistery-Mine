@@ -37,6 +37,8 @@ public class DropClass : MonoBehaviour, IInteractive, IHaveStory
 
     protected Color outlineColor = Color.yellow;
 
+    [SerializeField]protected string dropSoundName="AnyDrop";
+
     #endregion //parametres
 
     protected virtual void Awake()
@@ -98,6 +100,7 @@ public class DropClass : MonoBehaviour, IInteractive, IHaveStory
             Destroy(gameObject);
             SpecialFunctions.statistics.ConsiderStatistics(this);
             SpecialFunctions.StartStoryEvent(this, StoryDropIsGot, new StoryEventArgs());
+            SpecialFunctions.gameController.PlaySound(dropSoundName);
         }
     }
 

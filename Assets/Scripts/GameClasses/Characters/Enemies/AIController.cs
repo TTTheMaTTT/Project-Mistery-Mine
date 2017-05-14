@@ -661,7 +661,7 @@ public class AIController : CharacterController
                 for (int i = 0; i < anim.transform.childCount; i++)
                     Destroy(anim.transform.GetChild(i).gameObject);
                 anim.enabled = false;
-                Destroy(anim, deathTime);
+                Destroy(anim.gameObject, deathTime);
             }
             Destroy(gameObject);
         }

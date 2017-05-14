@@ -62,6 +62,7 @@ public class UIImageButtonScript : UIElementScript
     /// </summary>
     public override void Activate()
     {
+        SpecialFunctions.PlaySound("Button");
         SetActive();
         base.Activate();
         button.onClick.Invoke();

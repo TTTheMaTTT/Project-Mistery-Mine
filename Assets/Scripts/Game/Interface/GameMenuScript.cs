@@ -134,6 +134,7 @@ public class GameMenuScript : InterfaceWindow
         if (!canOpen)
             return;
         base.OpenWindow();
+        SpecialFunctions.PlaySound("Pause");
         StartCoroutine(CantInteractProcess());
     }
 

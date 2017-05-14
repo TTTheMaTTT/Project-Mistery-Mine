@@ -445,7 +445,10 @@ public class BatBossController: BossController
             if (mainTarget.transform != attackerInfo.attacker.transform)
                 MainTarget = new ETarget(attackerInfo.attacker.transform);
             if (behavior == BehaviorEnum.calm)
+            {
                 BecomeAgressive();
+                StartCoroutine("PipProcess");
+            }
             else if (behavior == BehaviorEnum.agressive)
                 currentTarget = mainTarget;
         }
@@ -561,6 +564,16 @@ public class BatBossController: BossController
 
     #endregion //damageEffects
 
+    /// <summary>
+    /// Процесс пищания
+    /// </summary>
+    protected IEnumerator PipProcess()
+    {
+        yield return new WaitForSeconds(UnityEngine.Random.Range(0f, 4f));
+        Animate(new AnimationEventArgs("playSound", "BatPip", 1));
+        StartCoroutine("PipProcess");
+    }
+
     #endregion //attack
 
     #region behaviourActions
@@ -663,6 +676,7 @@ public class BatBossController: BossController
         StopCoroutine("SpecialAttackCooldownProcess");
         rigid.isKinematic = true;
         hearing.enabled = true;
+        StopCoroutine("PipProcess");
     }
 
     /// <summary>
@@ -689,12 +703,13 @@ public class BatBossController: BossController
             TargetCharacter = null;
         }
         Animate(new AnimationEventArgs("fly"));
+        //StartCoroutine("PipProcess");
     }
 
     /// <summary>
     /// Выдвинуться к целевой позиции
     /// </summary>
-    /// <param name="targetPosition">Целевая позиция</param>
+    /// <param name="targetPosition">1Целевая позиция</param>
     protected override void GoToThePoint(Vector2 targetPosition)
     {
         BecomePatrolling();
@@ -876,15 +891,18 @@ public class BatBossController: BossController
 
     #region events
 
-    /*
     /// <summary>
     /// Обработка события "Услышал врага"
     /// </summary>
-    protected virtual void HandleHearingEvent(object sender, EventArgs e)
+    protected override void HandleHearingEvent(object sender, HearingEventArgs e)
     {
-        BecomeAgressive();
+        if (behavior != BehaviorEnum.agressive)
+        {
+            MainTarget = new ETarget(e.Target.transform);
+            StartCoroutine("PipProcess");
+            BecomeAgressive();
+        }
     }
-    */
 
     /// <summary>
     ///  Обработка события "произошла атака"

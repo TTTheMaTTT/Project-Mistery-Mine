@@ -397,7 +397,7 @@ public class HeroController : CharacterController
 
             if (fallSpeed > minDamageFallSpeed)
             {
-                TakeDamage(new HitParametres(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed), DamageType.Physical,1), true);
+                TakeDamage(new HitParametres(Mathf.Round((fallSpeed - minDamageFallSpeed) * damagePerFallSpeed), DamageType.Physical,-1), true);
             }
             if (fallSpeed > minDamageFallSpeed / 10f)
                 Animate(new AnimationEventArgs("fall"));
@@ -777,7 +777,7 @@ public class HeroController : CharacterController
             else
             {
                 Animate(new AnimationEventArgs("hitted", "", hitData.attackPower > balance ? 0 : 1));
-                Animate(new AnimationEventArgs("playSound", hitData.damage > 4f ? "HeavyDamage" : hitData.damage > 2f ? "MediumDamage" : "LightDamage", 1));
+                Animate(new AnimationEventArgs("playSound", "Damage", 1));
             }
 
             if ((hitData.damageType != DamageType.Physical) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
@@ -831,7 +831,7 @@ public class HeroController : CharacterController
             else
             {
                 Animate(new AnimationEventArgs("hitted", "", hitData.attackPower > balance ? 0 : 1));
-                Animate(new AnimationEventArgs("playSound", hitData.damage > 4f ? "HeavyDamage" : hitData.damage > 2f ? "MediumDamage" : "LightDamage", 1)); 
+                Animate(new AnimationEventArgs("playSound", "Damage", 1));
             }
 
             if ((hitData.damageType != DamageType.Physical) ? UnityEngine.Random.Range(0f, 100f) <= hitData.effectChance : false)
@@ -1001,9 +1001,9 @@ public class HeroController : CharacterController
             {
                 SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Увеличивает максимальное количество здровья",
                                                                                  "Gains max health level",
-                                                                                 "",
-                                                                                 "",
-                                                                                 "").GetText(SettingsScript.language), 4.5f);
+                                                                                 "Збільшує максимальну кількість здоров'я",
+                                                                                 "Zapewnia maksymalne zdrowie",
+                                                                                 "Augmente le niveau maximal de santé").GetText(SettingsScript.language), 4.5f);
                 MaxHealth += 4f;
             }
             else
@@ -1025,25 +1025,25 @@ public class HeroController : CharacterController
             else if (item.itemName == "LifeBookPage")
             {
                 SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Увеличивает максимальное число активных особых предметов",
-                                                                                 "Gains max number of active trinkets",
-                                                                                 "",
-                                                                                 "",
-                                                                                 "").GetText(SettingsScript.language), 4.5f);
+                                                                                 "Gains max number of active amulets",
+                                                                                 "Збільшує максимальну кількість активних особливих предметів",
+                                                                                 "Zapewnia maksymalną liczbę aktywnych amuletów",
+                                                                                 "Augmente le niveau maximal des objets actifs spéciaux").GetText(SettingsScript.language), 4.5f);
                 AddItem("LifeBookPage1");
             }
             else if (item.itemName == "LifeBookPage2")
             {
                 SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Добавляет в инвентарь красную и зелёную субстанции",
-                                                                 "Add to equipment red and green substances",
-                                                                 "",
-                                                                 "",
+                                                                 "Adds red and green substance to the inventory",
+                                                                 "Додає в інвентар червона та зелену субстанції",
+                                                                 "Dodaje czerwoną i zieloną substancje do ekwipunku",
                                                                  "").GetText(SettingsScript.language), 4.5f);
                 AddItem("RedSubstance");
                 AddItem("GreenSubstance");
             }
             else
                 SpecialFunctions.SetSecretText(2f, new MultiLanguageText("Вы нашли ",
-                                                                         "You have found", "", "Znalazłeś", "").GetText(SettingsScript.language) + item.itemMLTextName1.GetText(SettingsScript.language));
+                                                                         "You have found", "Ви знайшли", "Znalazłeś", "Vous avez trouvé").GetText(SettingsScript.language) + item.itemMLTextName1.GetText(SettingsScript.language));
         }
     }
 

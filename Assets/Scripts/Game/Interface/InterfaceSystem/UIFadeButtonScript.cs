@@ -70,6 +70,7 @@ public class UIFadeButtonScript : UIElementScript
         SetActive();    
         base.Activate();
         button.onClick.Invoke();
+        SpecialFunctions.PlaySound("Button");
     }
 
 }

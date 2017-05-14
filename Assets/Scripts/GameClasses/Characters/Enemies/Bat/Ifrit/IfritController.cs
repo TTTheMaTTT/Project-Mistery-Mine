@@ -41,6 +41,9 @@ public class IfritController : BatController
     {
         base.Start();
         StartCoroutine("StartBurningProcess");
+        anim.AddSoundSource();
+        anim.PlaySoundWithIndex("Fire", 0);
+        anim.MakeSoundSourceCycle(true, 2);
     }
 
     /// <summary>
@@ -187,6 +190,18 @@ public class IfritController : BatController
     }
 
     #endregion //damageEffects
+
+    protected override void BecomeAgressive()
+    {
+        base.BecomeAgressive();
+        StopCoroutine("PipProcess");
+    }
+
+    protected override void BecomePatrolling()
+    {
+        base.BecomeAgressive();
+        StopCoroutine("PipProcess");
+    }
 
     //Функция, реализующая агрессивное состояние ИИ
     protected override void AgressiveBehavior()
