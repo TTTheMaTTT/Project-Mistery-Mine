@@ -23,6 +23,7 @@ public class GameMenuScript : InterfaceWindow
 
     public void Update()
     {
+        /*
         //Читы для разработчиков. Потом надо будет убрать
         if (canvas.enabled && Input.anyKeyDown)
         {
@@ -93,6 +94,7 @@ public class GameMenuScript : InterfaceWindow
             #endregion //weaponSet
 
         }
+        */
     }
 
     /// <summary>

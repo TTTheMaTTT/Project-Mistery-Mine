@@ -15,7 +15,7 @@ using Steamworks;
 //
 [DisallowMultipleComponent]
 class SteamManager : MonoBehaviour {
-	private static SteamManager s_instance;
+	public static SteamManager s_instance;
 	private static SteamManager Instance {
 		get {
 			return s_instance ?? new GameObject("SteamManager").AddComponent<SteamManager>();

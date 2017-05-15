@@ -71,6 +71,7 @@ public static class SpecialFunctions
     public static bool totalPaused = false;//Пауза, которая не может быть снята функцией PlayGame()
     public static bool levelEnd = false;//Закончен ли уровень
     public static string nextLevelName = "";//Название следующего уровня
+    public static bool loading;
 
     public static float soundVolume;//Громкость звуков
 
@@ -288,6 +289,9 @@ public static class SpecialFunctions
         source.Play();
     }
 
+    /// <summary>
+    /// Проиграть звук с заданным названием
+    /// </summary>
     public static void PlaySound(string _soundName)
     {
         if (gameController != null)

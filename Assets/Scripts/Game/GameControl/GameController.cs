@@ -434,6 +434,8 @@ public class GameController : MonoBehaviour
         GameStatistics gStats = GetComponent<GameStatistics>();
         Summoner summoner = GetComponent<Summoner>();
 
+        SpecialFunctions.loading = true;
+
         if (gGData != null)
         {
             if (Time.fixedTime < gGData.gameAddTime - 1f)
@@ -922,6 +924,8 @@ public class GameController : MonoBehaviour
 
         #endregion //LevelLoad
 
+        SpecialFunctions.loading = false;
+
         /*
         //Сначала переместим главного героя к последнему чекпоинту
         CheckpointController currentCheckpoint = checkpoints.Find(x => (x.checkpointNumb == PlayerPrefs.GetInt("Checkpoint Number")));
@@ -1286,7 +1290,7 @@ public class GameController : MonoBehaviour
     /// </summary>
     public void GetAchievement(string _achievementID)
     {
-        /*if (SteamManager.Initialized)
+        if (SteamManager.Initialized)
         {
             bool isAchivementAlreadyGet;
             if (SteamUserStats.GetAchievement(_achievementID, out isAchivementAlreadyGet) && !isAchivementAlreadyGet)
@@ -1294,7 +1298,7 @@ public class GameController : MonoBehaviour
                 SteamUserStats.SetAchievement(_achievementID);
                 SteamUserStats.StoreStats();
             }
-        }*/
+        }
     }
 
     /// <summary>

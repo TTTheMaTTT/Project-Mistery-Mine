@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
+using Steamworks;
 
 /// <summary>
 /// Скрипт, управляющий окном главного меню игры 
@@ -52,6 +53,28 @@ public class MainMenuScript : UIPanel, ILanguageChangeable
 
         SpecialFunctions.PlayGame();
         activated = false;
+    }
+
+    public void Start()
+    {
+        if (!PlayerPrefs.HasKey("DefaultLanguage") && SteamManager.s_instance != null)
+        {
+            switch (SteamApps.GetCurrentGameLanguage())
+            {
+                case "english":
+                    PlayerPrefs.SetString("DefaultLanguage", "English");
+                    SpecialFunctions.Settings.ChangeLanguage(LanguageEnum.english);
+                    break;
+                case "russian":
+                    PlayerPrefs.SetString("DefaultLanguage", "Russian");
+                    SpecialFunctions.Settings.ChangeLanguage(LanguageEnum.russian);
+                    break;
+                default:
+                    PlayerPrefs.SetString("DefaultLanguage", "English");
+                    SpecialFunctions.Settings.ChangeLanguage(LanguageEnum.english);
+                    break;
+            }
+        }
     }
 
     public void Update()

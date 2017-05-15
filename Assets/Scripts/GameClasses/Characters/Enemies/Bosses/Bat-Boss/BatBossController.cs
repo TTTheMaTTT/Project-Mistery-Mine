@@ -598,6 +598,7 @@ public class BatBossController: BossController
                 Destroy(col);
                 Destroy(this);
                 Destroy(indicators.gameObject);
+                Animate(new AnimationEventArgs("playSound", "Fall", 1));
             }
             return;
         }

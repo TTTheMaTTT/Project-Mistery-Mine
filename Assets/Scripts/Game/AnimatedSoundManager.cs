@@ -36,7 +36,26 @@ public class AnimatedSoundManager : MonoBehaviour
             return;
         AudioClip _clip = _aData.audios[UnityEngine.Random.Range(0, _aData.audios.Count)];
         soundSource.clip = _clip;
+        soundSource.loop = false;
         soundSource.PlayOneShot(_clip, _aData.volume);
+    }
+
+    public virtual void PlaySoundLoop(string _audioName)
+    {
+        AudioData _aData = audioInfo.Find(x => x.audioName == _audioName);
+        if (_aData == null)
+            return;
+        AudioClip _clip = _aData.audios[UnityEngine.Random.Range(0, _aData.audios.Count)];
+        soundSource.clip = _clip;
+        soundSource.loop = true;
+        soundSource.clip = _clip;
+        soundSource.Play();
+        //soundSource.PlayOneShot(_clip, _aData.volume);
+    }
+
+    public virtual void StopPlaying()
+    {
+        soundSource.Stop();
     }
 
     /// <summary>

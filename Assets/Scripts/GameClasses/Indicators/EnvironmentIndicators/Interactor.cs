@@ -43,7 +43,7 @@ public class Interactor : MonoBehaviour
             return;
         if (interactions.Count > 0)
         {
-            if (interactions[0] != null)
+            if (interactions[0] != null ? interactions[0].active : false)
             {
                 IInteractive interaction = interactions[0].GetComponent<IInteractive>();
                 if (interaction != null)
@@ -51,6 +51,10 @@ public class Interactor : MonoBehaviour
                     interaction.Interact();
                     StartCoroutine(InteractionProcess());
                 }
+            }
+            else
+            {
+                interactions.RemoveAt(0);
             }
             if (interactions[0] == null ? true : (interactions[0].GetComponent<IInteractive>() == null
                                                  || interactions[0].GetComponent<Collider2D>() == null ? true : !interactions[0].GetComponent<Collider2D>().enabled))
@@ -143,7 +147,7 @@ public class Interactor : MonoBehaviour
     {
         Collider2D col = null;
         yield return new WaitForSeconds(0.1f);
-        if (interactions.Count > 0 ? (interactions[0] != null ? ((col = interactions[0].GetComponent<Collider2D>()) == null ? true : !col.enabled) : true) : false)
+        if (interactions.Count > 0 ? ((interactions[0] != null ? interactions[0].active: false)? ((col = interactions[0].GetComponent<Collider2D>()) == null ? true : !col.enabled) : true) : false)
         {
             interactions.RemoveAt(0);
         }

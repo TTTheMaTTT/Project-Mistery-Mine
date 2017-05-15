@@ -1022,14 +1022,16 @@ public class HeroController : CharacterController
                     AddItem("GoldHeart");
                 }
             }
-            else if (item.itemName == "LifeBookPage")
+            else if (item.itemName == "LifeBookPage1")
             {
                 SpecialFunctions.gameUI.ConsiderItem(item, new MultiLanguageText("Увеличивает максимальное число активных особых предметов",
                                                                                  "Gains max number of active amulets",
                                                                                  "Збільшує максимальну кількість активних особливих предметів",
                                                                                  "Zapewnia maksymalną liczbę aktywnych amuletów",
                                                                                  "Augmente le niveau maximal des objets actifs spéciaux").GetText(SettingsScript.language), 4.5f);
-                AddItem("LifeBookPage1");
+
+                if (!SpecialFunctions.loading)
+                    AddItem("LifeBookPage");
             }
             else if (item.itemName == "LifeBookPage2")
             {
@@ -1038,8 +1040,11 @@ public class HeroController : CharacterController
                                                                  "Додає в інвентар червона та зелену субстанції",
                                                                  "Dodaje czerwoną i zieloną substancje do ekwipunku",
                                                                  "").GetText(SettingsScript.language), 4.5f);
-                AddItem("RedSubstance");
-                AddItem("GreenSubstance");
+                if (!SpecialFunctions.loading)
+                {
+                    AddItem("RedSubstance");
+                    AddItem("GreenSubstance");
+                }
             }
             else
                 SpecialFunctions.SetSecretText(2f, new MultiLanguageText("Вы нашли ",

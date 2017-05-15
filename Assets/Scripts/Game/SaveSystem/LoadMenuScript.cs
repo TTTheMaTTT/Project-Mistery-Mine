@@ -50,7 +50,6 @@ public class LoadMenuScript : InterfaceWindow
         base.Initialize();
         savePath = Application.streamingAssetsPath + "/Saves/";
         savesInfoPath = Application.streamingAssetsPath+"/SavesInfo.xml";
-        savesInfo = Serializator.DeXmlSavesInfo(savesInfoPath);
 
         FileInfo[] fInfos = new DirectoryInfo(Application.streamingAssetsPath).GetFiles();
         bool hasFile = false;
@@ -67,6 +66,8 @@ public class LoadMenuScript : InterfaceWindow
             for (int i = 0; i < 3; i++)
                 Serializator.SaveXml(null, savePath + "Profile" + i.ToString()+".xml");
         }
+
+        savesInfo = Serializator.DeXmlSavesInfo(savesInfoPath);
 
         chosenButton = null;
 

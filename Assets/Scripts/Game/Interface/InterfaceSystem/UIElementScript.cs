@@ -82,6 +82,7 @@ public class UIElementScript : MonoBehaviour
     /// </summary>
     public virtual void Activate()
     {
+
     }
 
     /// <summary>

@@ -142,6 +142,24 @@ public class SettingsScript : InterfaceWindow
         OnLanguageChange(new LanguageChangeEventArgs(language));
     }
 
+    public void ChangeLanguage(LanguageEnum _lEnum)
+    {
+        language = _lEnum;
+        PlayerPrefs.SetInt("Language", (int)language);
+        languageText.text = language == LanguageEnum.russian ? "Русский" : language == LanguageEnum.english ? "English" : language == LanguageEnum.ukrainian ? "Український" :
+                                language == LanguageEnum.polish ? "Polski" : language == LanguageEnum.french ? "Français" : "Русский";
+        //Применить изменения ко всем объектам интерфейса
+        Transform interfaceWindows = SpecialFunctions.gameInterface.transform;
+        for (int i = 0; i < interfaceWindows.childCount; i++)
+        {
+            ILanguageChangeable lChangeable = interfaceWindows.GetChild(i).GetComponent<ILanguageChangeable>();
+            if (lChangeable != null)
+                lChangeable.MakeLanguageChanges(language);
+
+        }
+        OnLanguageChange(new LanguageChangeEventArgs(language));
+    }
+
     /// <summary>
     /// Событие язык игры изменился
     /// </summary>

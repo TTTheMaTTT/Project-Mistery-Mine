@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -60,6 +61,18 @@ public class MisteryCaveEditor : Editor{
     [MenuItem("Mystery Mine/Create SavesInfo")]
     public static void CreateSavesInfo()
     {
+        /*
+        FileInfo[] fInfos = new DirectoryInfo(Application.streamingAssetsPath).GetFiles();
+        for (int i = 0; i < fInfos.Length; i++)
+            if (fInfos[i].Name == "SavesInfo.xml")
+                fInfos[i].Delete();
+        fInfos = new DirectoryInfo(Application.streamingAssetsPath + "/Saves/").GetFiles();
+        for (int i = 0; i < fInfos.Length; i++)
+            if (fInfos[i].Name.Contains("Profile"))
+                fInfos[i].Delete();
+        */
+
+        PlayerPrefs.DeleteKey("DefaultLanguage");
         Serializator.SaveXmlSavesInfo(new SavesInfo(3), "Assets/StreamingAssets/SavesInfo.xml");
         Serializator.SaveXml(null, "Assets/StreamingAssets/Saves/Profile0.xml");
         Serializator.SaveXml(null, "Assets/StreamingAssets/Saves/Profile1.xml");
