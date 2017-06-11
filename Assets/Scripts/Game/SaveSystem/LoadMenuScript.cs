@@ -38,7 +38,7 @@ public class LoadMenuScript : InterfaceWindow
 
     #region parametres
 
-    protected MultiLanguageText defaultMLSaveName = new MultiLanguageText("Новое сохранение", "New Game", "", "", "");
+    protected MultiLanguageText defaultMLSaveName = new MultiLanguageText("Новое сохранение", "New Game", "Нове збереження", "", "");
 
     #endregion //parametres
 
@@ -48,7 +48,7 @@ public class LoadMenuScript : InterfaceWindow
     public override void Initialize()
     {
         base.Initialize();
-        savePath = Application.streamingAssetsPath + "/Saves/";
+        savePath = Application.streamingAssetsPath;
         savesInfoPath = Application.streamingAssetsPath+"/SavesInfo.xml";
 
         FileInfo[] fInfos = new DirectoryInfo(Application.streamingAssetsPath).GetFiles();
@@ -64,7 +64,10 @@ public class LoadMenuScript : InterfaceWindow
         {
             Serializator.SaveXmlSavesInfo(new SavesInfo(3), savesInfoPath);
             for (int i = 0; i < 3; i++)
-                Serializator.SaveXml(null, savePath + "Profile" + i.ToString()+".xml");
+            {
+                string savePath1 = savePath + "Profile" + i.ToString() + ".xml";
+                Serializator.SaveXml(null, savePath + "/Profile" + i.ToString() + ".xml");
+            }
         }
 
         savesInfo = Serializator.DeXmlSavesInfo(savesInfoPath);
@@ -190,7 +193,8 @@ public class LoadMenuScript : InterfaceWindow
 
                 createNewFadePanel.SetActive(false);
                 Serializator.SaveXmlSavesInfo(savesInfo, savesInfoPath);
-                Serializator.SaveXml(null, savePath + "Profile" + savesInfo.currentProfileNumb.ToString()+".xml");
+                string save1 = savePath + "Profile" + savesInfo.currentProfileNumb.ToString() + ".xml";
+                Serializator.SaveXml(null, savePath + "/Profile" + savesInfo.currentProfileNumb.ToString()+".xml");
                 LoadingScreenScript.instance.LoadScene(firstLevelName);
                 CloseWindow();
             }

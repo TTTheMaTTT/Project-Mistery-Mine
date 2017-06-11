@@ -314,6 +314,7 @@ public class BatBossController: BossController
     void SpecialAttack(SimpleCurveHitParametres _attackParametres)
     {
         BecomeAgressive();
+        StopCoroutine("ReturnToUsualProcess");
         Vector2 pos = transform.position;
         if (pos.x > (batPosition1.transform.position + batPosition2.transform.position).x/2f)
             Turn(OrientationEnum.left);
@@ -366,6 +367,13 @@ public class BatBossController: BossController
         }
     }
 
+    IEnumerator ReturnToUsualProcess()
+    {
+        yield return new WaitForSeconds(5f);
+        StopCoroutine("SpecialAttackCooldownProcess");
+        BecomeAgressive();
+    }
+
     /// <summary>
     /// Выбрать, из какой позиции совершать специальную атаку
     /// </summary>
@@ -396,6 +404,7 @@ public class BatBossController: BossController
             BecomeAgressive();
         SpecialFunctions.camControl.StartSizeTransition(specialAttackCameraSize);
         stillAgressive = false;
+        StartCoroutine("ReturnToUsualProcess");
     }
 
     /// <summary>

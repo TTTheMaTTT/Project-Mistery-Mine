@@ -493,6 +493,7 @@
     <Compile Include="Assets\Scripts\InControl\Source\iCade\ICadeState.cs" />
     <Compile Include="Assets\Scripts\InControl\Test\TestInputManager.cs" />
     <Compile Include="Assets\Scripts\Interfaces\interfaces.cs" />
+    <Compile Include="Assets\Scripts\Other\ControllerShow.cs" />
     <Compile Include="Assets\Scripts\Other\EditorCollider.cs" />
     <Compile Include="Assets\Scripts\Other\EditorColliderCreator.cs" />
     <Compile Include="Assets\Scripts\Other\Enums.cs" />
@@ -608,10 +609,6 @@
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonBasicOutline.shader" />
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLit.shader" />
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLitOutline.shader" />
-    <None Include="Assets\StreamingAssets\Saves\Profile0.xml" />
-    <None Include="Assets\StreamingAssets\Saves\Profile1.xml" />
-    <None Include="Assets\StreamingAssets\Saves\Profile2.xml" />
-    <None Include="Assets\StreamingAssets\SavesInfo.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
 </Project>

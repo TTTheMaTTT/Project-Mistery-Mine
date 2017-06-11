@@ -149,6 +149,7 @@ public class HeroController : CharacterController
     protected int jumpInput = 0;
     protected GroundStateEnum groundState;
     protected float fallSpeed = 0f;
+    [SerializeField]protected float acceleration;
 
     protected bool onLadder;
     public override bool OnLadder { get { return onLadder; } }
@@ -207,9 +208,9 @@ public class HeroController : CharacterController
                 if (employment > 6)
                 {
                     if (InputCollection.instance.GetButton("Horizontal"))
-                    {
                         Move(InputCollection.instance.GetAxis("Horizontal") > 0f ? OrientationEnum.right : OrientationEnum.left);
-                    }
+                    else
+                        SlowDown();
 
                     if (InputCollection.instance.GetButtonDown("Jump"))
                     {
@@ -504,6 +505,11 @@ public class HeroController : CharacterController
     {
         base.StopMoving();
         rigid.velocity = new Vector3(0f, rigid.velocity.y);
+    }
+
+    protected virtual void SlowDown()
+    {
+        rigid.velocity = Vector2.Lerp(rigid.velocity, Vector2.up * rigid.velocity.y, Time.deltaTime * acceleration);
     }
 
     /// <summary>
@@ -1048,7 +1054,10 @@ public class HeroController : CharacterController
             }
             else
                 SpecialFunctions.SetSecretText(2f, new MultiLanguageText("Вы нашли ",
-                                                                         "You have found", "Ви знайшли", "Znalazłeś", "Vous avez trouvé").GetText(SettingsScript.language) + item.itemMLTextName1.GetText(SettingsScript.language));
+                                                                         "You have found ", 
+                                                                         "Ви знайшли ", 
+                                                                         "Znalazłeś ", 
+                                                                         "Vous avez trouvé ").GetText(SettingsScript.language) + item.itemMLTextName1.GetText(SettingsScript.language));
         }
     }
 

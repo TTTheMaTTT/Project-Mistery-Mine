@@ -69,7 +69,7 @@ public class SettingsScript : InterfaceWindow
         if (PlayerPrefs.HasKey("Language"))
         {
             language = (LanguageEnum)PlayerPrefs.GetInt("Language");
-            languageText.text = language == LanguageEnum.russian ? "Русский" : language == LanguageEnum.english ? "English" : language == LanguageEnum.ukrainian ? "Український" :
+            languageText.text = language == LanguageEnum.russian ? "Русский" : language == LanguageEnum.english ? "English" : language == LanguageEnum.ukrainian ? "Українськa" :
                                 language == LanguageEnum.polish ? "Polski" : language == LanguageEnum.french ? "Français" : "Русский";
         }
         else
@@ -126,7 +126,7 @@ public class SettingsScript : InterfaceWindow
     /// <param name="direction">направление, в котором меняется язык</param>
     public void ChangeLanguage(int direction)
     {
-        language = (LanguageEnum)(Mathf.RoundToInt(Mathf.Repeat((int)language + direction, 2)));
+        language = (LanguageEnum)(Mathf.RoundToInt(Mathf.Repeat((int)language + direction, 3)));
         PlayerPrefs.SetInt("Language", (int)language);
         languageText.text = language == LanguageEnum.russian ? "Русский" : language == LanguageEnum.english ? "English" : language == LanguageEnum.ukrainian ? "Український" :
                                 language == LanguageEnum.polish ? "Polski" : language == LanguageEnum.french ? "Français" : "Русский";

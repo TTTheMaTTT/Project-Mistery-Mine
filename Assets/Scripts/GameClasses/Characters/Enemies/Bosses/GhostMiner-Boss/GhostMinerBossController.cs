@@ -686,6 +686,8 @@ public class GhostMinerBossController : BossController
         Health = Mathf.Clamp(Health - hitData.damage, 0f, maxHealth);
         if (health <= 0f)
             Death();
+        else
+            Animate(new AnimationEventArgs("playSound", "Damage", 0));
         GhostMinerBossVisual bAnim = (GhostMinerBossVisual)anim;
         if (bAnim != null && !dead)
             bAnim.Blink();

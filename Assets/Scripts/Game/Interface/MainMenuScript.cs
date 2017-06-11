@@ -69,6 +69,10 @@ public class MainMenuScript : UIPanel, ILanguageChangeable
                     PlayerPrefs.SetString("DefaultLanguage", "Russian");
                     SpecialFunctions.Settings.ChangeLanguage(LanguageEnum.russian);
                     break;
+                case "ukrainian ":
+                    PlayerPrefs.SetString("DefaultLanguage", "Ukrainian");
+                    SpecialFunctions.Settings.ChangeLanguage(LanguageEnum.ukrainian);
+                    break;
                 default:
                     PlayerPrefs.SetString("DefaultLanguage", "English");
                     SpecialFunctions.Settings.ChangeLanguage(LanguageEnum.english);
@@ -85,6 +89,14 @@ public class MainMenuScript : UIPanel, ILanguageChangeable
                 UIElementScript.activePanel.MoveHorizontal(Mathf.RoundToInt(Mathf.Sign(InputCollection.instance.GetAxis("InterfaceMoveHorizontal"))));
             if (InputCollection.instance.GetButtonDown("InterfaceMoveVertical"))
                 UIElementScript.activePanel.MoveVertical(-Mathf.RoundToInt(Mathf.Sign(InputCollection.instance.GetAxis("InterfaceMoveVertical"))));
+            if (InputCollection.instance.GetButtonDown("Up"))
+                UIElementScript.activePanel.MoveVertical(-1);
+            if (InputCollection.instance.GetButtonDown("Down"))
+                UIElementScript.activePanel.MoveVertical(1);
+            if (InputCollection.instance.GetButtonDown("Left"))
+                UIElementScript.activePanel.MoveHorizontal(-1);
+            if (InputCollection.instance.GetButtonDown("Right"))
+                UIElementScript.activePanel.MoveHorizontal(1);
             if (InputCollection.instance.GetButtonDown("Cancel"))
                 UIElementScript.activePanel.Cancel();
         }

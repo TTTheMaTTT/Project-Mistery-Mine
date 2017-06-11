@@ -156,18 +156,17 @@ public class GameController : MonoBehaviour
 
         if (UIElementScript.activePanel!=null)
         {
-            bool up = Input.GetButtonDown("Up"), down = Input.GetButtonDown("Down"), left = Input.GetButtonDown("Left"), right = Input.GetButtonDown("Right");
             if (InputCollection.instance.GetButtonDown("InterfaceMoveHorizontal"))
                 UIElementScript.activePanel.MoveHorizontal(Mathf.RoundToInt(Mathf.Sign(InputCollection.instance.GetAxis("InterfaceMoveHorizontal"))));
             if (InputCollection.instance.GetButtonDown("InterfaceMoveVertical"))
                 UIElementScript.activePanel.MoveVertical(-Mathf.RoundToInt(Mathf.Sign(InputCollection.instance.GetAxis("InterfaceMoveVertical"))));
-            if (up)
+            if (InputCollection.instance.GetButtonDown("Up"))
                 UIElementScript.activePanel.MoveVertical(-1);
-            if (down)
+            if (InputCollection.instance.GetButtonDown("Down"))
                 UIElementScript.activePanel.MoveVertical(1);
-            if (left)
+            if (InputCollection.instance.GetButtonDown("Left"))
                 UIElementScript.activePanel.MoveHorizontal(-1);
-            if (right)
+            if (InputCollection.instance.GetButtonDown("Right"))
                 UIElementScript.activePanel.MoveHorizontal(1);
             if (InputCollection.instance.GetButtonDown("Cancel"))
                 UIElementScript.activePanel.Cancel();
@@ -243,7 +242,7 @@ public class GameController : MonoBehaviour
         npcsIdCount = 0;
         SpecialFunctions.InitializeObjects();
         InitializeDictionaries();
-        datapath = (Application.streamingAssetsPath)+"/Saves/Profile";
+        datapath = (Application.streamingAssetsPath)+"/Profile";
         savesInfoPath = (Application.streamingAssetsPath) + "/SavesInfo.xml";
         GameObject p=SpecialFunctions.Player;
         Transform interfaceWindows = SpecialFunctions.gameInterface.transform;

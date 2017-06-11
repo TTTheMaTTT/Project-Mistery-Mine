@@ -10,7 +10,7 @@ public class BuildManager : MonoBehaviour {
     [PostProcessBuild(10000)]
     public static void OnPostprocessBuild(BuildTarget buildTarget, string path)
     {
-        if (buildTarget == BuildTarget.StandaloneOSXIntel ||
+        /*if (buildTarget == BuildTarget.StandaloneOSXIntel ||
             buildTarget == BuildTarget.StandaloneOSXIntel64 ||
             buildTarget == BuildTarget.StandaloneOSXUniversal)
         {
@@ -33,6 +33,6 @@ public class BuildManager : MonoBehaviour {
             for (int i = 0; i < fInfos.Length; i++)
                 if (fInfos[i].Name.Contains("Profile"))
                     fInfos[i].Delete();
-        }
+        }*/
     }
 }

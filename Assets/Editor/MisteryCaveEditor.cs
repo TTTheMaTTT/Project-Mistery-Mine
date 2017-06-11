@@ -74,9 +74,9 @@ public class MisteryCaveEditor : Editor{
 
         PlayerPrefs.DeleteKey("DefaultLanguage");
         Serializator.SaveXmlSavesInfo(new SavesInfo(3), "Assets/StreamingAssets/SavesInfo.xml");
-        Serializator.SaveXml(null, "Assets/StreamingAssets/Saves/Profile0.xml");
-        Serializator.SaveXml(null, "Assets/StreamingAssets/Saves/Profile1.xml");
-        Serializator.SaveXml(null, "Assets/StreamingAssets/Saves/Profile2.xml");
+        Serializator.SaveXml(null, "Assets/StreamingAssets/Profile0.xml");
+        Serializator.SaveXml(null, "Assets/StreamingAssets/Profile1.xml");
+        Serializator.SaveXml(null, "Assets/StreamingAssets/Profile2.xml");
         PlayerPrefs.SetInt("Checkpoint Number", 0);
     }
 

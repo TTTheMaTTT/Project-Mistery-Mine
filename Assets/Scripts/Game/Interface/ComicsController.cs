@@ -34,7 +34,7 @@ public class ComicsController : MonoBehaviour
     void Start ()
     {
         currentPageNumber = 0;
-        comicsPageImage = transform.FindChild("ComicsPanel").FindChild("ComicsPage").GetComponent<Image>();
+        comicsPageImage = transform.FindChild("ComicsPage").GetComponent<Image>();
         ShowPage();
         SpecialFunctions.PlayGame();
     }

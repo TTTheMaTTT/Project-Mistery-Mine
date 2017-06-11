@@ -68,7 +68,7 @@ public class EndScreen : MonoBehaviour, ILanguageChangeable
         gameTimeText = transform.FindChild("GameTimeText").GetComponent<Text>();
         deathCountText = transform.FindChild("DeathCountText").GetComponent<Text>();
 
-        datapath= (Application.streamingAssetsPath) + "/Saves/Profile";
+        datapath= (Application.streamingAssetsPath) + "/Profile";
         int profileNumber = PlayerPrefs.GetInt("Profile Number");
 
         

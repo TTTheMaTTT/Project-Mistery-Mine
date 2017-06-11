@@ -20,6 +20,7 @@ public class LoadingScreenScript : MonoBehaviour
 
     void Awake()
     {
+        SpecialFunctions.loading = false;
         if (instance != null && instance != this)
         {
             Destroy(gameObject);
@@ -36,6 +37,8 @@ public class LoadingScreenScript : MonoBehaviour
     /// <param name="levelName"></param>
     public void LoadScene(string levelName)
     {
+        if (SpecialFunctions.loading)
+            return;
         StartCoroutine(LoadSceneRoutine(levelName));
     }
 
@@ -46,6 +49,7 @@ public class LoadingScreenScript : MonoBehaviour
     /// <returns></returns>
     private IEnumerator LoadSceneRoutine(string levelName)
     {
+        SpecialFunctions.loading = true;
         //SpecialFunctions.PauseGame();
         ShowLoadingScreen();
         AsyncOperation operation = SceneManager.LoadSceneAsync(levelName);
